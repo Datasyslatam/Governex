@@ -1,0 +1,28 @@
+.riesgos-page__top {
+  display: grid;
+  grid-template-columns: 2fr 1.4fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.riesgos-page__bottom {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.riesgos-page__panel {
+  background: #ffffff;
+  border-radius: 0.9rem;
+  border: 1px solid #d1dce8;
+  padding: 1rem;
+}
+
+.riesgos-page__panel-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.riesgos-page__panel-header span {
+  font-size: 0.8rem;
+  color: #7a8fa6;
+}

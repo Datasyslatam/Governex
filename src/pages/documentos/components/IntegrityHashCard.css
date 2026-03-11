@@ -1,0 +1,28 @@
+.integrity-card {
+  background: #f0faf5;
+  border-radius: 0.9rem;
+  border: 1px solid #1a9c5b;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.8rem;
+}
+
+.integrity-card h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: #1a9c5b;
+}
+
+.integrity-card__row {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.integrity-card__label {
+  min-width: 130px;
+  font-weight: 600;
+}
+
+.integrity-card__value--pending {
+  color: #e08a00;
+}

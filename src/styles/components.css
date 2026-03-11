@@ -1,0 +1,81 @@
+/* Panel / card estándar */
+.panel {
+  background: #ffffff;
+  border-radius: 0.9rem;
+  border: 1px solid #d1dce8;
+  padding: 1rem;
+}
+
+/* Tabla estándar */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.table thead {
+  background: #eef3fb;
+}
+
+.table th,
+.table td {
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+}
+
+.table__row--alt {
+  background: #f8fafc;
+}
+
+/* Pills de estado */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+}
+
+.pill--success {
+  background: rgba(26, 156, 91, 0.12);
+  color: #1a9c5b;
+}
+
+.pill--warning {
+  background: rgba(224, 138, 0, 0.12);
+  color: #e08a00;
+}
+
+.pill--danger {
+  background: rgba(217, 48, 37, 0.12);
+  color: #d93025;
+}
+
+.pill--muted {
+  background: rgba(122, 143, 166, 0.12);
+  color: #7a8fa6;
+}
+
+/* Botón primario genérico */
+.btn {
+  border-radius: 999px;
+  border: none;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.btn--primary {
+  background: #1a6ebd;
+  color: #ffffff;
+}
+
+/* Inputs base */
+.input {
+  border-radius: 0.5rem;
+  border: 1px solid #d1dce8;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.85rem;
+  background: #f5f8fc;
+}

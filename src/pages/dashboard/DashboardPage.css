@@ -1,0 +1,39 @@
+.dashboard-page__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-page__bottom {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1.4fr;
+  gap: 1rem;
+}
+
+.dashboard-page__panel {
+  background: #ffffff;
+  border-radius: 0.9rem;
+  padding: 1rem;
+  border: 1px solid #d1dce8;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dashboard-page__panel h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.dashboard-page__panel span {
+  font-size: 0.8rem;
+  color: #7a8fa6;
+}
+
+.dashboard-page__activity ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+  color: #4a5e78;
+}

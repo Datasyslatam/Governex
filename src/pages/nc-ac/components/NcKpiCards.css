@@ -1,0 +1,36 @@
+.nc-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+}
+
+.nc-kpis__card {
+  background: #ffffff;
+  border-radius: 0.8rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #d1dce8;
+  display: flex;
+  flex-direction: column;
+}
+
+.nc-kpis__value {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.nc-kpis__label {
+  font-size: 0.8rem;
+  color: #4a5e78;
+}
+
+.nc-kpis__card--success .nc-kpis__value {
+  color: #1a9c5b;
+}
+
+.nc-kpis__card--warning .nc-kpis__value {
+  color: #e08a00;
+}
+
+.nc-kpis__card--danger .nc-kpis__value {
+  color: #d93025;
+}

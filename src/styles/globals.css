@@ -1,0 +1,89 @@
+/* Reset básico */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --color-bg: #f0f4f8;
+  --color-panel: #ffffff;
+  --color-border: #d1dce8;
+  --color-text-main: #1a2b45;
+  --color-text-secondary: #4a5e78;
+  --color-text-muted: #7a8fa6;
+  --color-sidebar: #1b3a6b;
+  --color-primary: #1a6ebd;
+  --color-success: #1a9c5b;
+  --color-warning: #e08a00;
+  --color-danger: #d93025;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-size: 16px;
+  background-color: var(--color-bg);
+  color: var(--color-text-main);
+}
+
+/* Layout base de página */
+.page {
+  padding: 1.5rem 2rem;
+}
+
+.page__header {
+  margin-bottom: 1rem;
+}
+
+.page__header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.page__header span {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* Tipografía general */
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 600;
+}
+
+p {
+  margin-top: 0;
+}
+
+/* Elementos genéricos */
+button {
+  font-family: inherit;
+}
+
+/* Scrollbar suave */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 999px;
+}

@@ -1,0 +1,51 @@
+.topbar {
+  height: 64px;
+  background-color: #1b3a6b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+}
+
+.topbar__left {
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.topbar__subtitle {
+  font-size: 0.75rem;
+  color: #a8bdd4;
+}
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.topbar__user {
+  color: #e2eaf5;
+}
+
+.topbar__logout {
+  border: none;
+  border-radius: 999px;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  background-color: #f0f4f8;
+  color: #1b3a6b;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.topbar__logout:hover {
+  background-color: #e2eaf5;
+}

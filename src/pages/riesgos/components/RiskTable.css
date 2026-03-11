@@ -1,0 +1,57 @@
+.risk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.risk-table thead {
+  background: #eef3fb;
+}
+
+.risk-table th,
+.risk-table td {
+  padding: 0.45rem 0.5rem;
+  text-align: left;
+}
+
+.risk-table__row--alt {
+  background: #f8fafc;
+}
+
+.risk-table__code {
+  font-weight: 600;
+  color: #1a6ebd;
+}
+
+.risk-table__level {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: #1a6ebd;
+  color: #ffffff;
+  font-size: 0.7rem;
+}
+
+.risk-table__status {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+}
+
+.risk-table__status--critico {
+  background: rgba(217, 48, 37, 0.1);
+  color: #d93025;
+}
+
+.risk-table__status--tratamiento {
+  background: rgba(224, 138, 0, 0.12);
+  color: #e08a00;
+}
+
+.risk-table__status--monitoreo {
+  background: rgba(26, 156, 91, 0.12);
+  color: #1a9c5b;
+}

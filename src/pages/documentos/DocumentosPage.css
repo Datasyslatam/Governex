@@ -1,0 +1,13 @@
+.documentos-page__body {
+  display: grid;
+  grid-template-columns: 2.1fr 1.6fr;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.documentos-page__left,
+.documentos-page__right {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}

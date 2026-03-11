@@ -1,0 +1,13 @@
+.ncac-page__body {
+  display: grid;
+  grid-template-columns: 2.1fr 1.7fr;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.ncac-page__left,
+.ncac-page__right {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}

@@ -1,0 +1,65 @@
+.approval-flow {
+  background: #ffffff;
+  border-radius: 0.9rem;
+  border: 1px solid #d1dce8;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.8rem;
+}
+
+.approval-flow h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.approval-flow__steps {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.approval-flow__step {
+  text-align: center;
+  position: relative;
+}
+
+.approval-flow__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+.approval-flow__icon--done {
+  background: #1a9c5b;
+  color: #ffffff;
+}
+
+.approval-flow__icon--pending {
+  background: #e08a00;
+  color: #ffffff;
+}
+
+.approval-flow__icon--empty {
+  border: 1px dashed #d1dce8;
+  color: #7a8fa6;
+}
+
+.approval-flow__label {
+  font-size: 0.75rem;
+}
+
+.approval-flow__person {
+  font-size: 0.7rem;
+  color: #7a8fa6;
+}
+
+.approval-flow__arrow {
+  position: absolute;
+  top: 16px;
+  right: -14px;
+  font-size: 0.8rem;
+  color: #7a8fa6;
+}

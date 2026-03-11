@@ -1,0 +1,62 @@
+.doc-timeline {
+  background: #ffffff;
+  border-radius: 0.9rem;
+  border: 1px solid #d1dce8;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.8rem;
+}
+
+.doc-timeline h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.doc-timeline__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.doc-timeline__item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.5rem;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.doc-timeline__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  margin-top: 0.25rem;
+}
+
+.doc-timeline__dot--Aprobado {
+  background: #1a9c5b;
+}
+
+.doc-timeline__dot--{"En Revisión"} {
+  background: #e08a00;
+}
+
+.doc-timeline__dot--Obsoleto {
+  background: #7a8fa6;
+}
+
+.doc-timeline__line {
+  position: absolute;
+  left: 5px;
+  top: 14px;
+  width: 2px;
+  height: calc(100% - 14px);
+  background: #d1dce8;
+}
+
+.doc-timeline__version {
+  font-weight: 600;
+}
+
+.doc-timeline__status {
+  font-size: 0.75rem;
+}

@@ -1,0 +1,50 @@
+.nc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  background: #ffffff;
+  border-radius: 0.9rem;
+  overflow: hidden;
+  border: 1px solid #d1dce8;
+}
+
+.nc-table thead {
+  background: #eef3fb;
+}
+
+.nc-table th,
+.nc-table td {
+  padding: 0.4rem 0.55rem;
+  text-align: left;
+}
+
+.nc-table__row--alt {
+  background: #f8fafc;
+}
+
+.nc-table__code {
+  font-weight: 600;
+  color: #1a6ebd;
+}
+
+.nc-table__status {
+  font-size: 0.7rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+}
+
+.nc-table__status--ABIERTA,
+.nc-table__status--EN\ PROCESO {
+  background: rgba(224, 138, 0, 0.12);
+  color: #e08a00;
+}
+
+.nc-table__status--VENCIDA {
+  background: rgba(217, 48, 37, 0.12);
+  color: #d93025;
+}
+
+.nc-table__status--CERRADA {
+  background: rgba(26, 156, 91, 0.12);
+  color: #1a9c5b;
+}

@@ -1,0 +1,89 @@
+.login {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  min-height: 80vh;
+  background: #e8eef5;
+  border-radius: 1.5rem;
+  overflow: hidden;
+}
+
+.login__left {
+  background: #1b3a6b;
+  color: #ffffff;
+  padding: 3rem 2.5rem;
+}
+
+.login__brand h1 {
+  margin: 0 0 0.25rem;
+  font-size: 2rem;
+}
+
+.login__brand p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.login__brand ul {
+  margin-top: 1.5rem;
+  padding-left: 1rem;
+  font-size: 0.9rem;
+  color: #c8d8e8;
+}
+
+.login__right {
+  padding: 3rem 2.5rem;
+  background: #eef3f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login__card {
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.login__card h2 {
+  margin: 0 0 0.5rem;
+}
+
+.login__card label {
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.login__card input,
+.login__card select {
+  border-radius: 0.5rem;
+  border: 1px solid #d1dce8;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.9rem;
+  background: #f5f8fc;
+}
+
+.login__submit {
+  margin-top: 0.75rem;
+  border-radius: 999px;
+  border: none;
+  padding: 0.55rem 1rem;
+  background: #1a6ebd;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login__helper {
+  font-size: 0.75rem;
+  color: #7a8fa6;
+  margin: 0.25rem 0 0;
+}

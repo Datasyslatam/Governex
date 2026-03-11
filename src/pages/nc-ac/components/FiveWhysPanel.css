@@ -1,0 +1,34 @@
+.fivewhys {
+  background: #fff9f0;
+  border-radius: 0.9rem;
+  border: 1px solid #f5c842;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.8rem;
+}
+
+.fivewhys h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: #e08a00;
+}
+
+.fivewhys__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fivewhys__item {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.fivewhys__label {
+  font-weight: 600;
+  min-width: 90px;
+}
+
+.fivewhys__item--root .fivewhys__label {
+  color: #d93025;
+}
