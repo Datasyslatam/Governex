@@ -63,7 +63,7 @@ const DocumentTable: React.FC = () => {
             <td>{d.version}</td>
             <td>
               <span
-                className={`document-table__status document-table__status--${d.status}`}
+                className={`document-table__status document-table__status--${d.status.replace(/\s+/g, "-")}`}
               >
                 {d.status}
               </span>

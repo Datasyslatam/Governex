@@ -1,0 +1,50 @@
+.heatmap {
+  display: inline-grid;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.heatmap__labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.heatmap__labels--rows {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.heatmap__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+}
+
+.heatmap__row {
+  display: contents;
+}
+
+.heatmap__cell {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.25rem;
+  background: var(--color-surface);
+  transition: background 0.2s ease;
+}
+
+.heatmap__cell--low {
+  background: #b3e5fc;
+}
+
+.heatmap__cell--medium {
+  background: #ffeb3b;
+}
+
+.heatmap__cell--high {
+  background: #ff9800;
+}
+
+.heatmap__cell--critical {
+  background: #f44336;
+}

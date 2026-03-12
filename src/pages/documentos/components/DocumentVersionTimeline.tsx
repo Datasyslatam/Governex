@@ -21,7 +21,9 @@ const DocumentVersionTimeline: React.FC = () => {
       <ul className="doc-timeline__list">
         {versions.map((v, index) => (
           <li key={v.version} className="doc-timeline__item">
-            <div className={`doc-timeline__dot doc-timeline__dot--${v.status}`} />
+            <div
+              className={`doc-timeline__dot doc-timeline__dot--${v.status.replace(/\s+/g, "-")}`}
+            />
             {index < versions.length - 1 && (
               <div className="doc-timeline__line" />
             )}
@@ -30,7 +32,7 @@ const DocumentVersionTimeline: React.FC = () => {
                 {v.version} · {v.date}
               </div>
               <div
-                className={`doc-timeline__status doc-timeline__status--${v.status}`}
+                className={`doc-timeline__status doc-timeline__status--${v.status.replace(/\s+/g, "-")}`}
               >
                 {v.status}
               </div>
