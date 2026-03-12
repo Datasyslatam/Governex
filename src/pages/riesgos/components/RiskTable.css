@@ -1,7 +1,7 @@
 .risk-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 }
 
 .risk-table thead {
@@ -10,7 +10,7 @@
 
 .risk-table th,
 .risk-table td {
-  padding: 0.45rem 0.5rem;
+  padding: 0.8rem 1rem;
   text-align: left;
 }
 

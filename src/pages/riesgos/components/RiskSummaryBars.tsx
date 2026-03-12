@@ -15,13 +15,15 @@ const RiskSummaryBars: React.FC = () => {
     <div className="risk-summary-bars">
       {data.map(item => (
         <div key={item.label} className="risk-summary-bars__item">
-          <div className="risk-summary-bars__bar-bg">
-            <div
-              className={`risk-summary-bars__bar risk-summary-bars__bar--${item.variant}`}
-              style={{ height: `${(item.value / MAX) * 100}%` }}
-            />
+          <div className="risk-summary-bars__bar-wrapper">
+            <div className="risk-summary-bars__value">{item.value}</div>
+            <div className="risk-summary-bars__bar-bg">
+              <div
+                className={`risk-summary-bars__bar risk-summary-bars__bar--${item.variant}`}
+                style={{ height: `${(item.value / MAX) * 100}%` }}
+              />
+            </div>
           </div>
-          <div className="risk-summary-bars__value">{item.value}</div>
           <div className="risk-summary-bars__label">{item.label}</div>
         </div>
       ))}

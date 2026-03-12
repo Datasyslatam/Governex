@@ -47,7 +47,7 @@ const DashboardPage: React.FC = () => {
 
       <section className="dashboard-page__bottom">
         <div className="dashboard-page__panel">
-          <h3>Cumplimiento por Proceso (%)</h3>
+          <h3>Cumplimiento de requerimientos por Proceso (%)</h3>
           <span>Meta: 85% · Governex Q1 2026</span>
           <BarChart
             categories={["Estrategia", "Comercial", "Producción", "RRHH", "Compras", "TI"]}

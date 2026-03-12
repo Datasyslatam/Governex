@@ -21,15 +21,26 @@ const LoginPage: React.FC = () => {
     <div className="login">
       <div className="login__left">
         <div className="login__brand">
+          <div className="login__brand-icon" aria-hidden="true">
+            <svg width="56" height="56" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M18 16H46L54 32L46 48H18L10 32L18 16Z"
+                stroke="currentColor"
+                strokeWidth="4"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
           <h1>Governex</h1>
           <p>Sistema de Gestión de Calidad</p>
-          <p>NTC-ISO 9001:2015 · Colombia</p>
+          <div className="login__divider" />
           <ul>
             <li>Trazabilidad total del SGC</li>
             <li>Control documental versionado</li>
             <li>Auditoría interna integrada</li>
             <li>Dashboard ejecutivo en tiempo real</li>
           </ul>
+          <div className="login__brand-footer">© 2026 Governex · Barranquilla, Colombia</div>
         </div>
       </div>
 

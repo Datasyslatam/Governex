@@ -1,20 +1,74 @@
-.riesgos-page__top {
-  display: grid;
-  grid-template-columns: 2fr 1.4fr;
+.riesgos-page__header {
+  display: flex;
+  justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
+  align-items: center;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  margin-bottom: 1.5rem;
 }
 
-.riesgos-page__bottom {
+.riesgos-page__header h2 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.riesgos-page__header span {
+  display: block;
+  font-size: 0.85rem;
+  color: #5f6f8a;
+  margin-top: 0.4rem;
+}
+
+.riesgos-page__action {
+  background: #1a6ebd;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.65rem 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(26, 110, 189, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.riesgos-page__action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(26, 110, 189, 0.25);
+}
+
+.riesgos-page__main {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1.8fr 1.2fr;
+  gap: 1.25rem;
 }
 
 .riesgos-page__panel {
   background: #ffffff;
   border-radius: 0.9rem;
   border: 1px solid #d1dce8;
-  padding: 1rem;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.riesgos-page__panel--left {
+  min-height: calc(10vh - 100px);
+  display: flex;
+  justify-content: center;
+}
+
+.riesgos-page__panel-body {
+  width: 100%;
+  max-width: 34rem;
+}
+
+.riesgos-page__panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
 }
 
 .riesgos-page__panel-header h3 {
@@ -25,4 +79,32 @@
 .riesgos-page__panel-header span {
   font-size: 0.8rem;
   color: #7a8fa6;
+}
+
+.riesgos-page__panel-header--compact {
+  padding-top: 0.4rem;
+  padding-bottom: 0;
+}
+
+.riesgos-page__divider {
+  height: 1px;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.06);
+  margin: 0.3rem 0 0.6rem;
+}
+
+@media (max-width: 1020px) {
+  .riesgos-page__main {
+    grid-template-columns: 1fr;
+  }
+
+  .riesgos-page__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .riesgos-page__action {
+    width: 100%;
+    text-align: center;
+  }
 }

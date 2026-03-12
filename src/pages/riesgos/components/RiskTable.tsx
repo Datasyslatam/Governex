@@ -61,7 +61,7 @@ const RiskTable: React.FC = () => {
           <th>Código</th>
           <th>Descripción</th>
           <th>Proceso</th>
-          <th>P x I</th>
+          <th>PxI</th>
           <th>Estado</th>
           <th>Responsable</th>
         </tr>

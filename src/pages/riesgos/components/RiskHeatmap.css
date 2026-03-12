@@ -2,27 +2,28 @@
   display: grid;
   grid-template-columns: auto 1fr;
   grid-template-rows: 1fr auto auto;
-  gap: 0.3rem 0.5rem;
+  gap: 0.25rem 0.35rem;
+  width: clamp(280px, 38vw, 420px);
 }
 
 .risk-heatmap__grid {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.3rem;
+  gap: 0.12rem;
+  padding: 0.25rem;
   background: #f8fafc;
-  border-radius: 0.6rem;
+  border-radius: 0.55rem;
 }
 
 .risk-heatmap__row {
   display: flex;
-  gap: 0.15rem;
+  gap: 0.12rem;
 }
 
 .risk-heatmap__cell {
   flex: 1;
-  height: 46px;
-  border-radius: 0.45rem;
+  aspect-ratio: 2 / 1;
+  border-radius: 0.35rem;
   border: 1px solid #ffffff;
 }
 

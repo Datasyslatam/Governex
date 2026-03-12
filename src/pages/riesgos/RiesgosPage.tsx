@@ -7,36 +7,42 @@ import "./RiesgosPage.css";
 const RiesgosPage: React.FC = () => {
   return (
     <div className="page riesgos-page">
-      <header className="page__header">
-        <h2>Matriz de Riesgos y Oportunidades</h2>
-        <span>Governex · Cap. 6.1 · Pensamiento basado en riesgos</span>
+      <header className="page__header riesgos-page__header">
+        <div>
+          <h2>Matriz de Riesgos y Oportunidades</h2>
+          <span>Governex · Cap. 6.1 · Pensamiento basado en riesgos</span>
+        </div>
+        <button className="riesgos-page__action">+ Nuevo Riesgo</button>
       </header>
 
-      <section className="riesgos-page__top">
-        <div className="riesgos-page__panel">
-          <div className="riesgos-page__panel-header">
-            <h3>Mapa de Calor de Riesgos</h3>
-            <span>Posición actual de riesgos identificados</span>
+      <main className="riesgos-page__main">
+        <div className="riesgos-page__panel riesgos-page__panel--left">
+          <div className="riesgos-page__panel-body">
+            <div className="riesgos-page__panel-header">
+              <div>
+                <h3>Mapa de Calor de Riesgos</h3>
+                <span>Posición actual de riesgos identificados</span>
+              </div>
+            </div>
+
+            <RiskHeatmap />
+
+            <div className="riesgos-page__divider" />
+
+            <div className="riesgos-page__panel-header riesgos-page__panel-header--compact">
+              <h3>Riesgos por Nivel de Criticidad</h3>
+            </div>
+            <RiskSummaryBars />
           </div>
-          <RiskHeatmap />
         </div>
 
-        <div className="riesgos-page__panel">
-          <div className="riesgos-page__panel-header">
-            <h3>Riesgos por Nivel de Criticidad</h3>
-          </div>
-          <RiskSummaryBars />
-        </div>
-      </section>
-
-      <section className="riesgos-page__bottom">
-        <div className="riesgos-page__panel">
+        <div className="riesgos-page__panel riesgos-page__panel--right">
           <div className="riesgos-page__panel-header">
             <h3>Registro de Riesgos — Governex</h3>
           </div>
           <RiskTable />
         </div>
-      </section>
+      </main>
     </div>
   );
 };
