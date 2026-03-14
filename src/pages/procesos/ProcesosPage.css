@@ -683,8 +683,13 @@
   align-items: center;
 }
 
-/* ── ISO cards ── */
+/* ── ISO cards (now <button> elements) ── */
 .iso-card {
+  /* Reset button defaults */
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+
   padding: 0.65rem 0.85rem;
   border-radius: 0.45rem;
   font-size: 0.78rem;
@@ -693,12 +698,16 @@
   min-width: 110px;
   max-width: 160px;
   line-height: 1.3;
-  transition: transform 0.15s, box-shadow 0.15s;
-  cursor: default;
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+  cursor: pointer;
 }
 .iso-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.16);
+  filter: brightness(0.95);
+}
+.iso-card:active {
+  transform: translateY(-1px);
 }
 
 .iso-card--estrategico {

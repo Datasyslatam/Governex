@@ -60,6 +60,7 @@ const AuditoriaPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
   const [auditorias, setAuditorias] = useState<Auditoria[]>(initialAuditoriasData);
   const [showModal, setShowModal] = useState(false);
+  const [editingCodigo, setEditingCodigo] = useState<string | null>(null); // null = nueva auditoría
   const [form, setForm] = useState<Omit<Auditoria, "codigo" | "hallazgos">>(emptyForm);
 
   // Filter States
@@ -71,28 +72,61 @@ const AuditoriaPage: React.FC = () => {
   const [filterHalType, setFilterHalType]       = useState("");
   const [filterHalStatus, setFilterHalStatus]   = useState("");
 
-  const filteredProgramas   = programasData.filter(p  => !filterProgYear   || p.año.toString().includes(filterProgYear));
-  const filteredAuditorias  = auditorias.filter(a     =>
+  const filteredProgramas  = programasData.filter(p =>
+    !filterProgYear || p.año.toString().includes(filterProgYear));
+  const filteredAuditorias = auditorias.filter(a =>
     (!filterAudProcess || a.proceso.toLowerCase().includes(filterAudProcess.toLowerCase())) &&
     (!filterAudAuditor || a.auditor.toLowerCase().includes(filterAudAuditor.toLowerCase())) &&
     (!filterAudStatus  || a.estado === filterAudStatus)
   );
-  const filteredHallazgos   = hallazgosData.filter(h =>
-    (!filterHalAudit   || h.auditoria.toLowerCase().includes(filterHalAudit.toLowerCase())) &&
-    (!filterHalType    || h.tipo   === filterHalType) &&
-    (!filterHalStatus  || h.estado === filterHalStatus)
+  const filteredHallazgos  = hallazgosData.filter(h =>
+    (!filterHalAudit  || h.auditoria.toLowerCase().includes(filterHalAudit.toLowerCase())) &&
+    (!filterHalType   || h.tipo   === filterHalType) &&
+    (!filterHalStatus || h.estado === filterHalStatus)
   );
 
-  const handleAddAudit = () => {
-    const nextNum = String(auditorias.length + 1).padStart(2, "0");
-    const year = form.fechaInicio.slice(2, 4);
-    const newAudit: Auditoria = {
-      ...form,
-      codigo: `AI-${year}-${nextNum}`,
-      hallazgos: 0,
-    };
-    setAuditorias(prev => [...prev, newAudit]);
+  // Abre el modal para CREAR
+  const openCreate = () => {
+    setEditingCodigo(null);
+    setForm(emptyForm);
+    setShowModal(true);
+  };
+
+  // Abre el modal para EDITAR una auditoría existente
+  const openEdit = (aud: Auditoria) => {
+    setEditingCodigo(aud.codigo);
+    setForm({
+      proceso:      aud.proceso,
+      fechaInicio:  aud.fechaInicio,
+      duracionDias: aud.duracionDias,
+      auditor:      aud.auditor,
+      estado:       aud.estado,
+    });
+    setShowModal(true);
+  };
+
+  // Guarda: crea o actualiza según editingCodigo
+  const handleSaveAudit = () => {
+    if (editingCodigo) {
+      // Actualizar auditoría existente
+      setAuditorias(prev =>
+        prev.map(a =>
+          a.codigo === editingCodigo ? { ...a, ...form } : a
+        )
+      );
+    } else {
+      // Crear nueva auditoría
+      const nextNum = String(auditorias.length + 1).padStart(2, "0");
+      const year = form.fechaInicio.slice(2, 4);
+      const newAudit: Auditoria = {
+        ...form,
+        codigo:    `AI-${year}-${nextNum}`,
+        hallazgos: 0,
+      };
+      setAuditorias(prev => [...prev, newAudit]);
+    }
     setShowModal(false);
+    setEditingCodigo(null);
     setForm(emptyForm);
   };
 
@@ -147,56 +181,47 @@ const AuditoriaPage: React.FC = () => {
                 <span className="pill pill--muted">Requisito 9.2.2</span>
               </div>
               <div className="audit-section-controls">
-                <div className="audit-view-toggle">
-                  <button className={`toggle-btn ${viewMode === "table"    ? "active" : ""}`} onClick={() => setViewMode("table")}>Tabla</button>
-                  <button className={`toggle-btn ${viewMode === "calendar" ? "active" : ""}`} onClick={() => setViewMode("calendar")}>Calendario</button>
-                </div>
                 <div className="audit-filters">
                   <input type="text" placeholder="Filtrar por año..." value={filterProgYear}
                     onChange={e => setFilterProgYear(e.target.value)} className="filter-input" />
                 </div>
               </div>
             </div>
-
-            {viewMode === "table" ? (
-              <table className="table audit-table">
-                <thead>
-                  <tr>
-                    <th>Año</th>
-                    <th>Objetivo General</th>
-                    <th>Estimación Tiempo/Recursos</th>
-                    <th>Avance</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProgramas.map((prog, i) => (
-                    <tr key={prog.año} className={i % 2 === 1 ? "table__row--alt" : ""}>
-                      <td className="audit-table__code">{prog.año}</td>
-                      <td className="audit-table__title">{prog.objetivo}</td>
-                      <td className="audit-table__duration">{prog.duracion}</td>
-                      <td>
-                        <div className="audit-progress">
-                          <div className="audit-progress__bar">
-                            <div className={`audit-progress__fill ${prog.avance === 100 ? "bg-success" : "bg-primary"}`} style={{ width: `${prog.avance}%` }}></div>
-                          </div>
-                          <span className="audit-progress__text">{prog.avance}%</span>
+            <table className="table audit-table">
+              <thead>
+                <tr>
+                  <th>Año</th>
+                  <th>Objetivo General</th>
+                  <th>Estimación Tiempo/Recursos</th>
+                  <th>Avance</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProgramas.map((prog, i) => (
+                  <tr key={prog.año} className={i % 2 === 1 ? "table__row--alt" : ""}>
+                    <td className="audit-table__code">{prog.año}</td>
+                    <td className="audit-table__title">{prog.objetivo}</td>
+                    <td className="audit-table__duration">{prog.duracion}</td>
+                    <td>
+                      <div className="audit-progress">
+                        <div className="audit-progress__bar">
+                          <div className={`audit-progress__fill ${prog.avance === 100 ? "bg-success" : "bg-primary"}`} style={{ width: `${prog.avance}%` }}></div>
                         </div>
-                      </td>
-                      <td>
-                        <span className={`pill ${prog.estado === "Cerrado" ? "pill--success" : "pill--warning"}`}>{prog.estado}</span>
-                      </td>
-                      <td className="audit-table__actions">
-                        <button className="audit-action-btn" title="Ver programa">👁️</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <AuditCalendar auditorias={auditorias} />
-            )}
+                        <span className="audit-progress__text">{prog.avance}%</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`pill ${prog.estado === "Cerrado" ? "pill--success" : "pill--warning"}`}>{prog.estado}</span>
+                    </td>
+                    <td className="audit-table__actions">
+                      <button className="audit-action-btn" title="Ver programa">👁️</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 
@@ -208,6 +233,10 @@ const AuditoriaPage: React.FC = () => {
                 <h3>Planificación y Ejecución de Auditorías</h3>
               </div>
               <div className="audit-section-controls">
+                <div className="audit-view-toggle">
+                  <button className={`toggle-btn ${viewMode === "table"    ? "active" : ""}`} onClick={() => setViewMode("table")}>Tabla</button>
+                  <button className={`toggle-btn ${viewMode === "calendar" ? "active" : ""}`} onClick={() => setViewMode("calendar")}>Calendario</button>
+                </div>
                 <div className="audit-filters">
                   <input type="text" placeholder="Proceso..." value={filterAudProcess}
                     onChange={e => setFilterAudProcess(e.target.value)} className="filter-input" />
@@ -220,9 +249,13 @@ const AuditoriaPage: React.FC = () => {
                     <option value="Cerrada">Cerrada</option>
                   </select>
                 </div>
-                <button className="btn btn--primary audit-btn-small" onClick={() => setShowModal(true)}>+ Nueva Auditoría</button>
+                <button className="btn btn--primary audit-btn-small" onClick={openCreate}>+ Nueva Auditoría</button>
               </div>
             </div>
+
+            {viewMode === "calendar" ? (
+              <AuditCalendar auditorias={filteredAuditorias} />
+            ) : (
             <table className="table audit-table">
               <thead>
                 <tr>
@@ -256,6 +289,11 @@ const AuditoriaPage: React.FC = () => {
                       }`}>{aud.estado}</span>
                     </td>
                     <td className="audit-table__actions">
+                      <button
+                        className="audit-action-btn"
+                        title="Editar auditoría"
+                        onClick={() => openEdit(aud)}
+                      >✏️</button>
                       <button className="audit-action-btn" title="Plan de auditoría">📋</button>
                       {aud.estado === "Cerrada" && (
                         <button className="audit-action-btn" title="Informe final">📄</button>
@@ -265,6 +303,7 @@ const AuditoriaPage: React.FC = () => {
                 ))}
               </tbody>
             </table>
+            )}
           </div>
         )}
 
@@ -339,11 +378,11 @@ const AuditoriaPage: React.FC = () => {
 
       {/* ── Modal Nueva Auditoría ── */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay" onClick={() => { setShowModal(false); setEditingCodigo(null); }}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>📋 Nueva Auditoría</h3>
-              <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+              <h3>{editingCodigo ? `✏️ Editar Auditoría — ${editingCodigo}` : "📋 Nueva Auditoría"}</h3>
+              <button className="modal-close" onClick={() => { setShowModal(false); setEditingCodigo(null); }}>✕</button>
             </div>
             <div className="modal-body">
               <div className="form-group">
@@ -393,9 +432,9 @@ const AuditoriaPage: React.FC = () => {
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn--secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="btn btn--primary" onClick={handleAddAudit} disabled={!form.fechaInicio || !form.proceso}>
-                Guardar Auditoría
+              <button className="btn btn--secondary" onClick={() => { setShowModal(false); setEditingCodigo(null); }}>Cancelar</button>
+              <button className="btn btn--primary" onClick={handleSaveAudit} disabled={!form.fechaInicio || !form.proceso}>
+                {editingCodigo ? "Guardar Cambios" : "Guardar Auditoría"}
               </button>
             </div>
           </div>
