@@ -1,0 +1,227 @@
+.prov-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.prov-page__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.prov-page__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: #7a8fa6;
+}
+.prov-page__bc-sep { color: #b0bdcc; }
+.prov-page__bc-active { color: #3d5a80; font-weight: 500; }
+
+.prov-page__header h2 {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #1a2b45;
+}
+
+.prov-page__subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #7a8fa6;
+}
+
+.prov-page__actions {
+  display: flex;
+  align-items: center;
+}
+
+/* ── Layout ── */
+.prov-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+/* ── Main Toolbar ── */
+.prov-toolbar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.prov-search { flex: 1; }
+.prov-search__input { width: 100%; max-width: 400px; }
+.prov-filter { min-width: 160px; }
+
+/* ── Table ── */
+.prov-table { width: 100%; }
+
+.prov-table th {
+  font-weight: 600;
+  color: #5f6f8a;
+  text-align: left;
+  padding-bottom: 0.8rem;
+}
+
+.prov-table td {
+  padding: 0.8rem 0.6rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #f0f4f9;
+}
+
+.prov-table__code { font-weight: 700; color: #1a2b45; font-size: 0.85rem; }
+.prov-table__title { font-weight: 600; color: #1a6ebd; font-size: 0.9rem; }
+.prov-table__type { font-size: 0.8rem; color: #4a5e78; }
+.prov-table__date, .prov-table__next { font-size: 0.8rem; color: #7a8fa6; }
+
+/* Score Badge */
+.prov-score-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: white;
+}
+
+.score-good { background: #1a9c5b; }
+.score-warn { background: #e08a00; }
+.score-bad { background: #d93025; }
+
+.prov-table__actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.prov-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 0.3rem;
+  transition: background 0.15s;
+  font-size: 0.9rem;
+}
+
+.prov-action-btn:hover { background: #eef3fb; }
+
+.btn-evaluar {
+  background: #f8fafc;
+  color: #1a6ebd;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #d1dce8;
+}
+
+.btn-evaluar:hover {
+  background: #eef3fb;
+  border-color: #1a6ebd;
+}
+
+/* ── Side panel ── */
+.prov-side-header h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: #1a2b45;
+  border-bottom: 1px solid #f0f4f9;
+  padding-bottom: 0.5rem;
+}
+
+.prov-eval-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.prov-eval-card {
+  background: #f8fafc;
+  border: 1px solid #eef3fb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.prov-eval-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.prov-eval-card-header strong { font-size: 0.9rem; color: #1a2b45; }
+.prov-eval-total { font-size: 0.85rem; font-weight: 700; color: #1a6ebd; }
+
+.prov-eval-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: #4a5e78;
+  background: white;
+  padding: 0.6rem;
+  border-radius: 0.3rem;
+  border: 1px dashed #d1dce8;
+}
+
+.prov-eval-item {
+  display: flex;
+  justify-content: space-between;
+}
+
+.prov-eval-item span { color: #7a8fa6; }
+
+.prov-eval-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #7a8fa6;
+}
+
+/* ── Alerts ── */
+.prov-alerts { margin-top: 1.5rem; }
+.prov-alert-item {
+  display: flex;
+  gap: 0.8rem;
+  padding: 0.8rem;
+  background: rgba(217, 48, 37, 0.05);
+  border: 1px solid rgba(217, 48, 37, 0.2);
+  border-radius: 0.5rem;
+  align-items: flex-start;
+}
+.prov-alert-item strong { display: block; font-size: 0.85rem; color: #1a2b45; }
+.prov-alert-item span { font-size: 0.8rem; color: #d93025; }
+.prov-alert-icon { font-size: 1.2rem; }
+
+@media (max-width: 1024px) {
+  .prov-layout { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .prov-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .prov-search__input {
+    max-width: 100%;
+  }
+  .prov-main-col {
+    overflow-x: auto;
+  }
+  .prov-table {
+    min-width: 600px;
+  }
+}

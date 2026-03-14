@@ -50,8 +50,38 @@ const rows: RiskRow[] = [
     level: 9,
     status: "CRITICO",
     owner: "V. Pérez"
+  },
+  {
+    code: "R-006",
+    description: "Docs desactualizados",
+    process: "SGC",
+    level: 3,
+    status: "MONITOREO",
+    owner: "Dir. Calidad"
+  },
+  {
+    code: "R-007",
+    description: "Proveedor sin certif.",
+    process: "Compras",
+    level: 4,
+    status: "MONITOREO",
+    owner: "J. Torres"
   }
 ];
+
+// Color of level badge based on score
+function getLevelVariant(level: number): string {
+  if (level >= 9) return "critical";
+  if (level >= 6) return "high";
+  if (level >= 4) return "medium";
+  return "low";
+}
+
+const statusLabel: Record<string, string> = {
+  CRITICO: "CRÍTICO",
+  TRATAMIENTO: "TRATAMIENTO",
+  MONITOREO: "MONITOREO"
+};
 
 const RiskTable: React.FC = () => {
   return (
@@ -61,28 +91,27 @@ const RiskTable: React.FC = () => {
           <th>Código</th>
           <th>Descripción</th>
           <th>Proceso</th>
-          <th>PxI</th>
+          <th>P × I</th>
           <th>Estado</th>
           <th>Responsable</th>
         </tr>
       </thead>
       <tbody>
-        {rows.map((r, idx) => (
-          <tr
-            key={r.code}
-            className={idx % 2 === 0 ? "risk-table__row--alt" : ""}
-          >
+        {rows.map(r => (
+          <tr key={r.code}>
             <td className="risk-table__code">{r.code}</td>
             <td>{r.description}</td>
             <td>{r.process}</td>
             <td>
-              <span className="risk-table__level">{r.level}</span>
+              <span className={`risk-table__level risk-table__level--${getLevelVariant(r.level)}`}>
+                {r.level}
+              </span>
             </td>
             <td>
               <span
                 className={`risk-table__status risk-table__status--${r.status.toLowerCase()}`}
               >
-                {r.status}
+                {statusLabel[r.status]}
               </span>
             </td>
             <td>{r.owner}</td>

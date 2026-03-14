@@ -1,0 +1,233 @@
+.audit-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.audit-page__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.audit-page__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: #7a8fa6;
+}
+.audit-page__bc-sep { color: #b0bdcc; }
+.audit-page__bc-active { color: #3d5a80; font-weight: 500; }
+
+.audit-page__header h2 {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #1a2b45;
+}
+
+.audit-page__subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #7a8fa6;
+}
+
+.audit-page__actions {
+  display: flex;
+  align-items: center;
+}
+
+/* ── Tabs ── */
+.audit-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid #dee6f0;
+  padding-bottom: 0;
+}
+
+.audit-tabs__tab {
+  background: none;
+  border: none;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #5f6f8a;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 0.4rem 0.4rem 0 0;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.audit-tabs__tab:hover {
+  color: #1a6ebd;
+  background: rgba(26,110,189,0.04);
+}
+
+.audit-tabs__tab--active {
+  color: #1a6ebd;
+  border-bottom-color: #1a6ebd;
+  background: rgba(26,110,189,0.06);
+}
+
+/* ── Tables Section ── */
+.audit-table-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  overflow-x: auto;
+}
+
+.audit-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid #f0f4f9;
+}
+
+.audit-section-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1a2b45;
+  font-weight: 600;
+}
+
+.audit-btn-small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+
+/* ── Data & Progress ── */
+.audit-table {
+  width: 100%;
+}
+
+.audit-table th {
+  font-weight: 600;
+  color: #5f6f8a;
+  text-align: left;
+  padding-bottom: 0.8rem;
+}
+
+.audit-table td {
+  padding: 0.8rem 0.6rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #f0f4f9;
+}
+
+.audit-table__code {
+  font-weight: 700;
+  color: #1a6ebd;
+  white-space: nowrap;
+}
+
+.audit-table__title {
+  font-size: 0.85rem;
+  color: #1a2b45;
+  font-weight: 500;
+  max-width: 300px;
+}
+
+.audit-table__process {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #3d5a80;
+}
+
+.audit-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.audit-progress__bar {
+  flex: 1;
+  max-width: 150px;
+  height: 0.4rem;
+  background: #eef3fb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.audit-progress__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #1a6ebd;
+}
+
+.audit-progress__fill.bg-success { background: #1a9c5b; }
+.audit-progress__fill.bg-primary { background: #1a6ebd; }
+
+.audit-progress__text {
+  font-size: 0.75rem;
+  color: #5f6f8a;
+  font-weight: 600;
+  min-width: 2.5rem;
+}
+
+/* ── Hallazgos ── */
+.audit-table__desc {
+  font-size: 0.85rem;
+  color: #4a5e78;
+  max-width: 350px;
+}
+
+.audit-table__ref {
+  font-size: 0.8rem;
+  color: #7a8fa6;
+  font-weight: 600;
+}
+
+.audit-table__clausula {
+  font-size: 0.8rem;
+  color: #1a2b45;
+  background: #f8fafc;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.2rem;
+  font-weight: 600;
+}
+
+.audit-table__actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.audit-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 0.3rem;
+  transition: background 0.15s;
+  font-size: 0.9rem;
+}
+
+.audit-action-btn:hover {
+  background: #eef3fb;
+}
+
+@media (max-width: 768px) {
+  .audit-page__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .audit-page__actions {
+    width: 100%;
+  }
+  
+  .audit-tabs {
+    flex-wrap: wrap;
+  }
+  .audit-tabs__tab {
+    flex: 1 1 40%;
+    text-align: center;
+  }
+}

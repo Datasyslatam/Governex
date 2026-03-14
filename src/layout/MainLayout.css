@@ -16,3 +16,12 @@
   min-height: 0;
   overflow: auto;
 }
+
+@media (max-width: 768px) {
+  .main-layout {
+    flex-direction: column;
+  }
+  .main-layout__content {
+    margin-bottom: 60px; /* space for bottom sidebar */
+  }
+}

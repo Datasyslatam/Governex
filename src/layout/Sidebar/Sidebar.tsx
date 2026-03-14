@@ -7,7 +7,7 @@ const Sidebar: React.FC = () => {
     <aside className="sidebar">
       <div className="sidebar__logo">
         <span className="sidebar__logo-main">Governex</span>
-        <span className="sidebar__logo-sub">SGC · ISO 9001:2015</span>
+        <span className="sidebar__logo-sub">Sistema de Gestión de Calidad</span>
       </div>
 
       <nav className="sidebar__nav">
@@ -22,6 +22,15 @@ const Sidebar: React.FC = () => {
         </NavLink>
         <NavLink to="/documentos" className="sidebar__link">
           Documentos
+        </NavLink>
+        <NavLink to="/politica" className="sidebar__link">
+          Política & Objetivos
+        </NavLink>
+        <NavLink to="/competencias" className="sidebar__link">
+          Competencias
+        </NavLink>
+        <NavLink to="/proveedores" className="sidebar__link">
+          Proveedores
         </NavLink>
         <NavLink to="/auditorias" className="sidebar__link">
           Auditorías

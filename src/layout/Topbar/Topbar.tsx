@@ -9,7 +9,6 @@ const Topbar: React.FC = () => {
     <header className="topbar">
       <div className="topbar__left">
         <div className="topbar__title">Governex · Sistema de Gestión de Calidad</div>
-        <div className="topbar__subtitle">NTC-ISO 9001:2015</div>
       </div>
 
       <div className="topbar__right">

@@ -15,6 +15,9 @@ import AuditoriaPage from "../pages/auditoria/AuditoriaPage";
 import ProcesosPage from "../pages/procesos/ProcesosPage";
 import RevDireccionPage from "../pages/rev-direccion/RevDireccionPage";
 import IndicadoresPage from "../pages/indicadores/IndicadoresPage";
+import PoliticaPage from "../pages/politica/PoliticaPage";
+import CompetenciasPage from "../pages/competencias/CompetenciasPage";
+import ProveedoresPage from "../pages/proveedores/ProveedoresPage";
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -44,6 +47,9 @@ export const AppRoutes: React.FC = () => {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="riesgos" element={<RiesgosPage />} />
         <Route path="documentos" element={<DocumentosPage />} />
+        <Route path="politica" element={<PoliticaPage />} />
+        <Route path="competencias" element={<CompetenciasPage />} />
+        <Route path="proveedores" element={<ProveedoresPage />} />
         <Route path="nc-ac" element={<NcAcPage />} />
         <Route path="auditorias" element={<AuditoriaPage />} />
         <Route path="procesos" element={<ProcesosPage />} />

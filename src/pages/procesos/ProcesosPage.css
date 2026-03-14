@@ -1,0 +1,508 @@
+/* ─────────────────── HEADER ─────────────────── */
+.procesos-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.procesos-page__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.procesos-page__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: #7a8fa6;
+}
+.procesos-page__bc-sep  { color: #b0bdcc; }
+.procesos-page__bc-active { color: #3d5a80; font-weight: 500; }
+
+.procesos-page__header h2 {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #1a2b45;
+}
+
+.procesos-page__subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #7a8fa6;
+}
+
+/* ── KPI strip ── */
+.procesos-page__header-kpis {
+  display: flex;
+  gap: 0.8rem;
+  flex-shrink: 0;
+}
+
+.procesos-kpi {
+  background: #fff;
+  border: 1px solid #d1dce8;
+  border-radius: 0.75rem;
+  padding: 0.6rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 5rem;
+}
+
+.procesos-kpi__value {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #1a6ebd;
+  line-height: 1;
+}
+
+.procesos-kpi__label {
+  font-size: 0.68rem;
+  color: #7a8fa6;
+  margin-top: 0.2rem;
+  text-align: center;
+}
+
+/* ─────────────────── TABS ─────────────────── */
+.procesos-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid #dee6f0;
+  padding-bottom: 0;
+}
+
+.procesos-tabs__tab {
+  background: none;
+  border: none;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #5f6f8a;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 0.4rem 0.4rem 0 0;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.procesos-tabs__tab:hover {
+  color: #1a6ebd;
+  background: rgba(26,110,189,0.04);
+}
+
+.procesos-tabs__tab--active {
+  color: #1a6ebd;
+  border-bottom-color: #1a6ebd;
+  background: rgba(26,110,189,0.06);
+}
+
+/* ─────────────────── MAPA DE PROCESOS ─────────────────── */
+.procesos-mapa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.procesos-mapa__flujo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding: 1.25rem;
+}
+
+.procesos-mapa__flujo-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  background: linear-gradient(135deg, #1b3a6b, #1a6ebd);
+  color: #fff;
+  border-radius: 0.8rem;
+  padding: 0.9rem 0.8rem;
+  min-width: 5.5rem;
+  text-align: center;
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+.procesos-mapa__flujo-icon {
+  font-size: 1.5rem;
+}
+
+.procesos-mapa__flujo-arrow {
+  font-size: 1.6rem;
+  color: #7a8fa6;
+  flex-shrink: 0;
+  font-weight: 300;
+}
+
+.procesos-mapa__flujo-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+/* Tiers */
+.procesos-mapa__tier {
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.procesos-mapa__tier--estrategico {
+  background: rgba(26,110,189,0.06);
+  border: 1px solid rgba(26,110,189,0.2);
+}
+
+.procesos-mapa__tier--operativo {
+  background: rgba(26,156,91,0.06);
+  border: 1px solid rgba(26,156,91,0.2);
+}
+
+.procesos-mapa__tier--apoyo {
+  background: rgba(122,143,166,0.06);
+  border: 1px solid rgba(122,143,166,0.2);
+}
+
+.procesos-mapa__tier-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4a5e78;
+}
+
+.procesos-mapa__cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Process cards */
+.proc-card {
+  background: #fff;
+  border-radius: 0.65rem;
+  padding: 0.75rem 0.85rem;
+  width: 10rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  border: 1px solid transparent;
+  transition: transform 0.15s, box-shadow 0.15s;
+  cursor: default;
+}
+
+.proc-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+}
+
+.proc-card--estrategico { border-color: rgba(26,110,189,0.3); }
+.proc-card--operativo   { border-color: rgba(26,156,91,0.3); }
+.proc-card--apoyo       { border-color: rgba(122,143,166,0.3); }
+
+.proc-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.proc-card__icon   { font-size: 1.1rem; }
+
+.proc-card__clausula {
+  font-size: 0.6rem;
+  color: #7a8fa6;
+  background: #f0f4f8;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+}
+
+.proc-card__codigo {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #1a6ebd;
+  margin-top: 0.15rem;
+}
+
+.proc-card__nombre {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1a2b45;
+  line-height: 1.25;
+}
+
+.proc-card__desc {
+  font-size: 0.68rem;
+  color: #7a8fa6;
+  line-height: 1.35;
+  margin-top: 0.1rem;
+}
+
+/* Legend */
+.procesos-mapa__legend {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 1rem;
+  flex-wrap: wrap;
+}
+
+.procesos-mapa__legend-title {
+  font-size: 0.75rem;
+  color: #4a5e78;
+  font-weight: 600;
+}
+
+.procesos-mapa__badge {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.procesos-mapa__badge--estrategico {
+  background: rgba(26,110,189,0.1);
+  color: #1a5a9e;
+}
+.procesos-mapa__badge--operativo {
+  background: rgba(26,156,91,0.12);
+  color: #157a46;
+}
+.procesos-mapa__badge--apoyo {
+  background: rgba(122,143,166,0.15);
+  color: #4a5e78;
+}
+
+.procesos-mapa__legend-ref {
+  font-size: 0.7rem;
+  color: #b0bdcc;
+  margin-left: auto;
+}
+
+/* ─────────────────── CONTEXTO (PESTEL + DOFA) ─────────────────── */
+.procesos-contexto {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.procesos-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.procesos-section-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a2b45;
+}
+
+.procesos-section-desc {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: #7a8fa6;
+}
+
+/* PESTEL table */
+.procesos-pestel__table-wrap {
+  overflow-x: auto;
+}
+
+.procesos-pestel__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.procesos-pestel__table thead tr {
+  border-bottom: 2px solid #e8edf4;
+}
+
+.procesos-pestel__table th {
+  padding: 0.65rem 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #5f6f8a;
+  text-align: left;
+}
+
+.procesos-pestel__table td {
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid #f0f4f9;
+  vertical-align: middle;
+  color: #253046;
+}
+
+.procesos-pestel__table tbody tr:hover { background: #f8faff; }
+
+/* PESTEL factor badge */
+.pestel-factor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #fff;
+}
+.pestel-factor--p { background: #1a6ebd; }
+.pestel-factor--e { background: #1a9c5b; }
+.pestel-factor--s { background: #e08a00; }
+.pestel-factor--t { background: #6644aa; }
+.pestel-factor--a { background: #00897b; }
+.pestel-factor--l { background: #d93025; }
+
+.pestel-categoria { font-weight: 600; color: #1a2b45; white-space: nowrap; }
+.pestel-desc      { max-width: 30rem; line-height: 1.4; }
+
+/* ─── DOFA ─── */
+.dofa-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.dofa-quadrant {
+  border-radius: 0.75rem;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dofa-quadrant--fortaleza {
+  background: rgba(26,156,91,0.06);
+  border: 1px solid rgba(26,156,91,0.25);
+}
+.dofa-quadrant--oportunidad {
+  background: rgba(26,110,189,0.06);
+  border: 1px solid rgba(26,110,189,0.25);
+}
+.dofa-quadrant--debilidad {
+  background: rgba(224,138,0,0.06);
+  border: 1px solid rgba(224,138,0,0.25);
+}
+.dofa-quadrant--amenaza {
+  background: rgba(217,48,37,0.06);
+  border: 1px solid rgba(217,48,37,0.25);
+}
+
+.dofa-quadrant__header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.dofa-quadrant__icon { font-size: 1.3rem; }
+
+.dofa-quadrant__title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1a2b45;
+}
+
+.dofa-quadrant__subtitle {
+  font-size: 0.72rem;
+  color: #7a8fa6;
+}
+
+.dofa-quadrant__list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.dofa-quadrant__list li {
+  font-size: 0.82rem;
+  color: #253046;
+  line-height: 1.4;
+}
+
+/* ─────────────────── CARACTERIZACIÓN ─────────────────── */
+.procesos-char {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.procesos-char__table-wrap {
+  overflow-x: auto;
+}
+
+.procesos-char__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.procesos-char__table thead tr {
+  border-bottom: 2px solid #e8edf4;
+}
+
+.procesos-char__table th {
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #5f6f8a;
+  white-space: nowrap;
+}
+
+.procesos-char__table td {
+  padding: 0.65rem 0.85rem;
+  color: #253046;
+  vertical-align: top;
+  border-bottom: 1px solid #f0f4f9;
+  line-height: 1.4;
+}
+
+.procesos-char__table tbody tr:hover { background: #f8faff; }
+.procesos-char__row--alt { background: #fafcff; }
+
+.procesos-char__code      { font-weight: 700; color: #1a6ebd; white-space: nowrap; }
+.procesos-char__name      { font-weight: 600; color: #1a2b45; white-space: nowrap; }
+.procesos-char__objetivo  { max-width: 16rem; }
+.procesos-char__io        { max-width: 12rem; font-size: 0.78rem; color: #4a5e78; }
+.procesos-char__indicador { font-size: 0.78rem; max-width: 12rem; }
+.procesos-char__resp      { white-space: nowrap; font-size: 0.8rem; }
+
+/* ─────────────────── RESPONSIVE ─────────────────── */
+@media (max-width: 900px) {
+  .procesos-page__header { flex-direction: column; }
+  .procesos-page__header-kpis { flex-wrap: wrap; }
+  .dofa-grid { grid-template-columns: 1fr; }
+  .procesos-mapa__flujo { flex-direction: column; }
+  .procesos-mapa__flujo-arrow { transform: rotate(90deg); }
+}
+
+@media (max-width: 768px) {
+  .procesos-tabs {
+    flex-wrap: wrap;
+  }
+  .procesos-tabs__tab {
+    flex: 1 1 40%;
+    text-align: center;
+  }
+}
