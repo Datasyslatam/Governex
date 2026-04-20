@@ -1,0 +1,219 @@
+.sidebar {
+  width: 240px;
+  background-color: #1b3a6b;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1rem 1.5rem;
+}
+
+.sidebar__logo {
+  margin-bottom: 1.5rem;
+}
+
+.sidebar__logo-main {
+  display: block;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.sidebar__logo-sub {
+  display: block;
+  font-size: 0.75rem;
+  color: #a8bdd4;
+}
+
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidebar__link {
+  display: block;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.35rem;
+  font-size: 0.9rem;
+  color: #a8bdd4;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sidebar__link:hover {
+  background-color: #162f58;
+  color: #ffffff;
+}
+
+.sidebar__link.active {
+  background-color: #2e86de;
+  color: #ffffff;
+}
+
+/* ── ISO Section labels ─────────────────────────────────── */
+.sidebar__section-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5a80a8;
+  padding: 0.75rem 0.75rem 0.2rem;
+  margin-top: 0.25rem;
+  user-select: none;
+}
+
+/* ── Link layout with icon ──────────────────────────────── */
+.sidebar__link {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.sidebar__icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  width: 1.4rem;
+  text-align: center;
+  line-height: 1;
+}
+
+.sidebar__text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    flex-direction: row;
+    padding: 0;
+    z-index: 1000;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    align-items: center;
+  }
+  
+  .sidebar::-webkit-scrollbar {
+    height: 0;
+  }
+
+  .sidebar__logo {
+    display: none;
+  }
+
+  .sidebar__nav {
+    flex-direction: row;
+    height: 100%;
+    align-items: center;
+    gap: 0;
+    padding: 0 0.5rem;
+  }
+
+  .sidebar__link {
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 0.75rem;
+    border-radius: 0;
+    border-bottom: 3px solid transparent;
+  }
+
+  .sidebar__section-label {
+    display: none;
+  }
+
+  .sidebar__text {
+    display: none;
+  }
+
+  .sidebar__icon {
+    font-size: 1.3rem;
+    width: auto;
+  }
+
+  .sidebar__link.active {
+    background-color: #162f58;
+    border-bottom-color: #2e86de;
+  }
+}
+
+/* ── Collapsible groups ─────────────────────────────────── */
+.sidebar__group {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar__section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.55rem 0.75rem 0.3rem;
+  margin-top: 0.25rem;
+  border-radius: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5a80a8;
+  user-select: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sidebar__section-toggle:hover {
+  background-color: #162f58;
+  color: #a8bdd4;
+}
+
+.sidebar__section-toggle--active {
+  color: #7fb3e8;
+}
+
+.sidebar__section-toggle-label {
+  flex: 1;
+  text-align: left;
+}
+
+.sidebar__chevron {
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1;
+  transition: transform 0.2s ease;
+  transform: rotate(0deg);
+  display: inline-block;
+  color: #5a80a8;
+}
+
+.sidebar__chevron--open {
+  transform: rotate(90deg);
+}
+
+/* ── Animated items container ───────────────────────────── */
+.sidebar__group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+
+.sidebar__group-items--open {
+  max-height: 600px;
+  opacity: 1;
+}
+
+/* ── Nested links indentation ───────────────────────────── */
+.sidebar__link--nested {
+  padding-left: 1.25rem;
+}

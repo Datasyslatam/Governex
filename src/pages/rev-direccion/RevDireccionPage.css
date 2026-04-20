@@ -1,0 +1,276 @@
+.rev-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.rev-page__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.rev-page__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: #7a8fa6;
+}
+.rev-page__bc-sep { color: #b0bdcc; }
+.rev-page__bc-active { color: #3d5a80; font-weight: 500; }
+
+.rev-page__header h2 {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #1a2b45;
+}
+
+.rev-page__subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #7a8fa6;
+}
+
+.rev-page__actions {
+  display: flex;
+  align-items: center;
+}
+
+/* ── Layout ── */
+.rev-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+/* ── Main Column ── */
+.rev-main-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rev-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.rev-section-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a2b45;
+}
+
+.rev-desc {
+  font-size: 0.85rem;
+  color: #5f6f8a;
+  margin-bottom: 1rem;
+}
+
+.rev-inputs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.rev-input-card {
+  background: #f8fafc;
+  border: 1px solid #d1dce8;
+  border-radius: 0.6rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  transition: border-color 0.2s;
+}
+
+.rev-input-card--done {
+  background: rgba(26, 156, 91, 0.03);
+  border-color: rgba(26, 156, 91, 0.2);
+}
+
+.rev-input-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.rev-input-req {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #1a6ebd;
+}
+
+.rev-check {
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.icon-success { color: #1a9c5b; }
+.icon-pending { color: #e08a00; }
+
+.rev-input-desc {
+  font-size: 0.8rem;
+  color: #1a2b45;
+  flex: 1;
+}
+
+.rev-btn-small {
+  align-self: flex-start;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 0.3rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-action {
+  background: #eef3fb;
+  color: #1a6ebd;
+}
+
+.btn-action:hover { background: #dce7f5; }
+
+.btn-view {
+  background: rgba(26, 156, 91, 0.1);
+  color: #1a9c5b;
+}
+
+.btn-view:hover { background: rgba(26, 156, 91, 0.2); }
+
+.rev-footer-action {
+  background: #fdf2f2;
+  border: 1px dashed #f5c2c7;
+  border-radius: 0.6rem;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.rev-lock-msg {
+  font-size: 0.85rem;
+  color: #842029;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lock-icon { font-size: 1.1rem; }
+
+/* ── Side Column ── */
+.rev-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.rev-hist-panel h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a2b45;
+  border-bottom: 1px solid #f0f4f9;
+  padding-bottom: 0.5rem;
+}
+
+.rev-hist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rev-hist-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: #f8fafc;
+  padding: 0.8rem;
+  border-radius: 0.5rem;
+  border: 1px solid #eef3fb;
+}
+
+.rev-hist-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.rev-hist-item-header strong { font-size: 0.85rem; color: #1a6ebd; }
+.rev-hist-date { font-size: 0.75rem; color: #7a8fa6; }
+
+.rev-hist-item-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rev-hist-type { font-size: 0.8rem; color: #4a5e78; }
+
+.rev-hist-btn {
+  background: none;
+  border: 1px solid #d1dce8;
+  padding: 0.4rem;
+  border-radius: 0.3rem;
+  font-size: 0.75rem;
+  color: #5f6f8a;
+  cursor: pointer;
+  margin-top: 0.2rem;
+}
+.rev-hist-btn:hover { background: #eef3fb; color: #1a6ebd; border-color: #1a6ebd; }
+
+/* ── Compromisos ── */
+.rev-commit-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rev-commit-list li {
+  font-size: 0.85rem;
+  color: #1a2b45;
+  background: #f8fafc;
+  padding: 0.8rem;
+  border-radius: 0.5rem;
+  border-left: 3px solid #1a6ebd;
+}
+
+.rev-commit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.rev-commit-date { font-size: 0.75rem; color: #7a8fa6; font-weight: 600; }
+
+@media (max-width: 1024px) {
+  .rev-layout { grid-template-columns: 1fr; }
+  .rev-footer-action { flex-direction: column; text-align: center; }
+}
+
+@media (max-width: 768px) {
+  .rev-page__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

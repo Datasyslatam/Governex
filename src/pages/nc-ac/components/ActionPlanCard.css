@@ -1,0 +1,33 @@
+.action-plan-card {
+  background: #f0faf5;
+  border-radius: 0.9rem;
+  border: 1px solid #1a9c5b;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.8rem;
+}
+
+.action-plan-card h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: #1a9c5b;
+}
+
+.action-plan-card__list {
+  margin: 0;
+  padding: 0;
+}
+
+.action-plan-card__item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.action-plan-card__item dt {
+  font-weight: 600;
+}
+
+.action-plan-card__item dd {
+  margin: 0;
+}

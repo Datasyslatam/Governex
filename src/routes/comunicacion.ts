@@ -1,0 +1,100 @@
+import { Router, Response } from 'express'
+import { pool } from '../db'
+import { authMiddleware, AuthRequest } from '../middleware/auth'
+
+const router = Router()
+router.use(authMiddleware)
+
+// GET /api/comunicacion
+router.get('/', async (_req, res: Response) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT c.*, u.nombre AS creado_por_nombre
+       FROM comunicaciones c
+       LEFT JOIN usuarios u ON u.id = c.creado_por
+       ORDER BY c.tipo, c.creado_en ASC`
+    )
+    res.json(rows)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al obtener comunicaciones' })
+  }
+})
+
+// GET /api/comunicacion/:id
+router.get('/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM comunicaciones WHERE id=$1`, [req.params.id]
+    )
+    if (!rows[0]) return res.status(404).json({ error: 'Comunicación no encontrada' })
+    res.json(rows[0])
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al obtener comunicación' })
+  }
+})
+
+// POST /api/comunicacion
+router.post('/', async (req: AuthRequest, res: Response) => {
+  const { que, cuando, quien, a_quien, como, tipo, estado } = req.body
+  if (!que || !quien) {
+    return res.status(400).json({ error: 'que y quien son requeridos' })
+  }
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO comunicaciones
+         (que, cuando, quien, a_quien, como, tipo, estado, creado_por)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [
+        que,
+        cuando   || null,
+        quien,
+        a_quien  || null,
+        como     || null,
+        tipo     || 'Interna',
+        estado   || 'Activo',
+        req.user?.id || null,
+      ]
+    )
+    res.status(201).json(rows[0])
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al crear comunicación' })
+  }
+})
+
+// PUT /api/comunicacion/:id
+router.put('/:id', async (req: AuthRequest, res: Response) => {
+  const { id } = req.params
+  const { que, cuando, quien, a_quien, como, tipo, estado } = req.body
+  try {
+    const { rows } = await pool.query(
+      `UPDATE comunicaciones
+       SET que=$1, cuando=$2, quien=$3, a_quien=$4, como=$5, tipo=$6, estado=$7
+       WHERE id=$8 RETURNING *`,
+      [que, cuando || null, quien, a_quien || null, como || null, tipo, estado, id]
+    )
+    if (!rows[0]) return res.status(404).json({ error: 'Comunicación no encontrada' })
+    res.json(rows[0])
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al actualizar comunicación' })
+  }
+})
+
+// DELETE /api/comunicacion/:id
+router.delete('/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const { rowCount } = await pool.query(
+      `DELETE FROM comunicaciones WHERE id=$1`, [req.params.id]
+    )
+    if (!rowCount) return res.status(404).json({ error: 'Comunicación no encontrada' })
+    res.status(204).send()
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al eliminar comunicación' })
+  }
+})
+
+export default router

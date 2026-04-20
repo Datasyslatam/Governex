@@ -1,0 +1,631 @@
+/* ══════════════════════════════════════════════════════════════
+   RolesPage — §5.3 Roles, Responsabilidades y Autoridad
+   ══════════════════════════════════════════════════════════════ */
+
+.roles-page {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.roles-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.roles-page__title-block h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1b3a6b;
+  margin: 0 0 0.25rem;
+}
+
+.roles-page__title-block p {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.roles-page__clause {
+  display: inline-block;
+  background: #e8f0fb;
+  color: #1b3a6b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.2rem 0.75rem;
+  margin-top: 0.4rem;
+}
+
+/* ── Tabs ───────────────────────────────────────────────── */
+.roles-page__tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.roles-tab-btn {
+  padding: 0.55rem 1.1rem;
+  border: none;
+  background: none;
+  font-size: 0.88rem;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 4px 4px 0 0;
+  transition: color 0.15s, border-color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.roles-tab-btn:hover { color: #1b3a6b; }
+
+.roles-tab-btn.active {
+  color: #1b3a6b;
+  font-weight: 600;
+  border-bottom-color: #2e86de;
+}
+
+/* ── Organigrama panel ──────────────────────────────────── */
+.roles-org-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.roles-org-upload-card {
+  background: #fff;
+  border: 2px dashed #c5d5e8;
+  border-radius: 0.75rem;
+  padding: 2.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.roles-org-upload-card:hover {
+  border-color: #2e86de;
+  background: #f0f6ff;
+}
+
+.roles-org-upload-card .upload-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.roles-org-upload-card h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1b3a6b;
+  margin: 0;
+}
+
+.roles-org-upload-card p {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.roles-org-upload-card input[type="file"] {
+  display: none;
+}
+
+.roles-org-preview {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.roles-org-preview__toolbar {
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.roles-org-preview__toolbar span {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.roles-org-preview__img-wrap {
+  padding: 1.5rem;
+  display: flex;
+  justify-content: center;
+  background: #fff;
+  min-height: 260px;
+}
+
+.roles-org-preview__img-wrap img {
+  max-width: 100%;
+  max-height: 520px;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+/* ── Matriz panel ───────────────────────────────────────── */
+.roles-matriz-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.roles-matriz-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.roles-matriz-topbar__info {
+  font-size: 0.83rem;
+  color: #6b7280;
+}
+
+.roles-matriz-topbar__info strong {
+  color: #1b3a6b;
+}
+
+.roles-matriz-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ── Table wrapper ──────────────────────────────────────── */
+.roles-table-wrapper {
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.roles-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+  min-width: 900px;
+}
+
+.roles-matrix-table thead tr {
+  background: #1b3a6b;
+  color: #fff;
+}
+
+.roles-matrix-table thead th {
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+  border-right: 1px solid rgba(255,255,255,0.15);
+}
+
+.roles-matrix-table thead th:last-child {
+  border-right: none;
+}
+
+.roles-matrix-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.roles-matrix-table tbody tr:hover {
+  background: #eef4ff;
+}
+
+.roles-matrix-table tbody td {
+  padding: 0.6rem 0.85rem;
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
+}
+
+.roles-matrix-table tbody td:last-child {
+  border-right: none;
+}
+
+/* tipo badge */
+.proceso-tipo-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.proceso-tipo-badge.estrategico {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.proceso-tipo-badge.misional {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.proceso-tipo-badge.apoyo {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* ── Editable cell ──────────────────────────────────────── */
+.roles-cell-edit {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.roles-cell-edit textarea,
+.roles-cell-edit input {
+  flex: 1;
+  font-size: 0.81rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 0.3rem 0.4rem;
+  resize: vertical;
+  font-family: inherit;
+  color: #374151;
+  background: #f0f6ff;
+}
+
+.roles-cell-edit textarea:focus,
+.roles-cell-edit input:focus {
+  outline: 2px solid #2e86de;
+  border-color: transparent;
+}
+
+.roles-cell-text {
+  color: #374151;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.roles-cell-empty {
+  color: #9ca3af;
+  font-style: italic;
+  font-size: 0.78rem;
+}
+
+/* ── Buttons ────────────────────────────────────────────── */
+.btn-primary {
+  padding: 0.45rem 1rem;
+  background: #2e86de;
+  color: #fff;
+  border: none;
+  border-radius: 0.4rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: background 0.15s;
+}
+
+.btn-primary:hover { background: #1b6ec2; }
+
+.btn-secondary {
+  padding: 0.45rem 1rem;
+  background: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 0.4rem;
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-secondary:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.btn-icon {
+  padding: 0.3rem 0.5rem;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.15s;
+  color: #374151;
+}
+
+.btn-icon:hover { background: #f3f4f6; }
+
+.btn-icon.danger:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+
+/* ── Legend ─────────────────────────────────────────────── */
+.roles-legend {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.roles-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* ── Add-process modal ──────────────────────────────────── */
+.roles-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.roles-modal {
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.roles-modal h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1b3a6b;
+  margin: 0;
+}
+
+.roles-modal label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.roles-modal input,
+.roles-modal select {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+.roles-modal input:focus,
+.roles-modal select:focus {
+  outline: 2px solid #2e86de;
+  border-color: transparent;
+}
+
+.roles-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+/* ── Responsiveness ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .roles-page { padding: 1rem; }
+  .roles-page__header { flex-direction: column; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Panel de IA — Generar Matriz con Organigrama
+   ══════════════════════════════════════════════════════════════ */
+
+.roles-ai-panel {
+  background: linear-gradient(135deg, #f0f7ff 0%, #e8f4fd 100%);
+  border: 1.5px solid #bfdbfe;
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.roles-ai-panel__info {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  flex: 1;
+  min-width: 260px;
+}
+
+.roles-ai-panel__icon {
+  font-size: 1.8rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.roles-ai-panel__info strong {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1b3a6b;
+  margin-bottom: 0.2rem;
+}
+
+.roles-ai-panel__info p {
+  font-size: 0.82rem;
+  color: #4b5563;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Botón generar IA */
+.btn-ai-generate {
+  background: linear-gradient(135deg, #2e86de 0%, #1a5fa8 100%);
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.65rem 1.4rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(46,134,222,0.35);
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-ai-generate:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(46,134,222,0.45);
+}
+
+.btn-ai-generate:active {
+  transform: translateY(0);
+}
+
+.btn-ai-generate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Loading */
+.roles-ai-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #2e86de;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.roles-ai-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid #bfdbfe;
+  border-top-color: #2e86de;
+  border-radius: 50%;
+  animation: roles-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes roles-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Éxito */
+.roles-ai-success {
+  display: flex;
+  align-items: center;
+  color: #166534;
+  font-size: 0.88rem;
+  font-weight: 600;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Error */
+.roles-ai-error {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 0.4rem;
+  padding: 0.6rem 1rem;
+  color: #b91c1c;
+  font-size: 0.83rem;
+  font-weight: 600;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+/* Banner en la pestaña Matriz */
+.roles-ai-banner {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1.5px solid #93c5fd;
+  border-radius: 0.6rem;
+  padding: 0.75rem 1.1rem;
+  font-size: 0.84rem;
+  color: #1d4ed8;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+/* ── Empty state (sin análisis de IA aún) ──────────────────── */
+.roles-empty-state {
+  background: #fff;
+  border: 1.5px dashed #93c5fd;
+  border-radius: 1rem;
+  padding: 3rem 2.5rem;
+  text-align: center;
+  max-width: 600px;
+  margin: 2rem auto;
+}
+
+.roles-empty-state__icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+
+.roles-empty-state h2 {
+  font-size: 1.3rem;
+  color: #1b3a6b;
+  margin-bottom: 0.75rem;
+}
+
+.roles-empty-state p {
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+}
+
+.roles-empty-state__steps {
+  text-align: left;
+  display: inline-block;
+  color: #374151;
+  font-size: 0.9rem;
+  line-height: 2;
+  margin-bottom: 0.5rem;
+  padding-left: 1.4rem;
+}
+
+.roles-empty-state__steps li strong {
+  color: #1b3a6b;
+}

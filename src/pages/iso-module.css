@@ -1,0 +1,280 @@
+/* ══════════════════════════════════════════════════════════════
+   iso-module.css — Estilos compartidos para módulos ISO 9001
+   ══════════════════════════════════════════════════════════════ */
+
+.iso-page {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.iso-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.iso-page__title-block h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1b3a6b;
+  margin: 0 0 0.25rem;
+}
+.iso-page__title-block p {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0;
+}
+.iso-page__clause {
+  display: inline-block;
+  background: #e8f0fb;
+  color: #1b3a6b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.2rem 0.75rem;
+  margin-top: 0.4rem;
+}
+
+/* ── Tabs ───────────────────────────────────────────────── */
+.iso-tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+.iso-tab-btn {
+  padding: 0.55rem 1.1rem;
+  border: none;
+  background: none;
+  font-size: 0.88rem;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 4px 4px 0 0;
+  transition: color 0.15s, border-color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.iso-tab-btn:hover { color: #1b3a6b; }
+.iso-tab-btn.active { color: #1b3a6b; font-weight: 600; border-bottom-color: #2e86de; }
+
+/* ── Cards grid ─────────────────────────────────────────── */
+.iso-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.iso-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: box-shadow 0.15s;
+}
+.iso-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.iso-card__icon { font-size: 1.8rem; line-height: 1; }
+.iso-card__title { font-size: 0.92rem; font-weight: 700; color: #1b3a6b; margin: 0; }
+.iso-card__desc  { font-size: 0.8rem; color: #6b7280; line-height: 1.5; }
+.iso-card__clause { font-size: 0.7rem; font-weight: 700; color: #2e86de; }
+
+/* ── Table ──────────────────────────────────────────────── */
+.iso-table-wrapper {
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+.iso-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+}
+.iso-table thead tr { background: #1b3a6b; color: #fff; }
+.iso-table thead th { padding: 0.65rem 0.85rem; text-align: left; font-weight: 600; white-space: nowrap; border-right: 1px solid rgba(255,255,255,0.15); }
+.iso-table thead th:last-child { border-right: none; }
+.iso-table tbody tr:nth-child(even) { background: #f8fafc; }
+.iso-table tbody tr:hover { background: #eef4ff; }
+.iso-table tbody td { padding: 0.6rem 0.85rem; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+.iso-table tbody td:last-child { border-right: none; }
+
+/* ── Form panel ─────────────────────────────────────────── */
+.iso-form-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.iso-form-panel h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1b3a6b;
+  margin: 0;
+}
+.iso-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.iso-form-row.full { grid-template-columns: 1fr; }
+.iso-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.iso-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+}
+.iso-field input,
+.iso-field select,
+.iso-field textarea {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: #374151;
+}
+.iso-field input:focus,
+.iso-field select:focus,
+.iso-field textarea:focus {
+  outline: 2px solid #2e86de;
+  border-color: transparent;
+}
+.iso-field textarea { resize: vertical; }
+
+/* ── Topbar ─────────────────────────────────────────────── */
+.iso-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.iso-topbar__info { font-size: 0.83rem; color: #6b7280; }
+.iso-topbar__info strong { color: #1b3a6b; }
+.iso-topbar__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* ── Status badges ──────────────────────────────────────── */
+.iso-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.iso-badge.verde    { background: #d1fae5; color: #065f46; }
+.iso-badge.amarillo { background: #fef3c7; color: #92400e; }
+.iso-badge.rojo     { background: #fee2e2; color: #991b1b; }
+.iso-badge.azul     { background: #dbeafe; color: #1e40af; }
+.iso-badge.gris     { background: #f3f4f6; color: #374151; }
+
+/* ── Info box ISO ───────────────────────────────────────── */
+.iso-info-box {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: #f0f6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.6rem;
+  font-size: 0.82rem;
+  color: #1e40af;
+  line-height: 1.55;
+}
+.iso-info-box__icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+/* ── Buttons ────────────────────────────────────────────── */
+.iso-btn-primary {
+  padding: 0.45rem 1rem;
+  background: #2e86de;
+  color: #fff;
+  border: none;
+  border-radius: 0.4rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: background 0.15s;
+}
+.iso-btn-primary:hover { background: #1b6ec2; }
+.iso-btn-secondary {
+  padding: 0.45rem 1rem;
+  background: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 0.4rem;
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: background 0.15s;
+}
+.iso-btn-secondary:hover { background: #f3f4f6; }
+.iso-btn-icon {
+  padding: 0.3rem 0.5rem;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.15s;
+  color: #374151;
+}
+.iso-btn-icon:hover { background: #f3f4f6; }
+.iso-btn-icon.danger:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+
+/* ── Modal ──────────────────────────────────────────────── */
+.iso-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+}
+.iso-modal {
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.iso-modal h2 { font-size: 1.05rem; font-weight: 700; color: #1b3a6b; margin: 0; }
+.iso-modal__footer { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.25rem; }
+
+/* ── Empty state ────────────────────────────────────────── */
+.iso-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+.iso-empty__icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+@media (max-width: 768px) {
+  .iso-page { padding: 1rem; }
+  .iso-form-row { grid-template-columns: 1fr; }
+}

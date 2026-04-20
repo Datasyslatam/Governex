@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "./dist-server",
+    "rootDir": "./src",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/index.ts",
+    "src/db.ts",
+    "src/middleware/**/*",
+    "src/routes/**/*"
+  ],
+  "exclude": [
+    "src/main.tsx",
+    "src/App.tsx",
+    "src/pages/**/*",
+    "src/components/**/*",
+    "src/context/**/*",
+    "src/hooks/**/*",
+    "src/layout/**/*",
+    "src/routes/AppRoutes.tsx",
+    "src/routes/ProtectedRoute.tsx",
+    "src/services/**/*",
+    "src/styles/**/*",
+    "node_modules"
+  ]
+}

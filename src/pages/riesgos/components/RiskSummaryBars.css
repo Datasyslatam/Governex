@@ -1,0 +1,53 @@
+.risk-summary-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.8rem;
+  height: 9rem;
+  padding: 0.5rem 0.8rem 0;
+  width: 100%;
+}
+
+.risk-summary-bars__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.risk-summary-bars__value {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #1a2b45;
+  margin-bottom: 0.3rem;
+}
+
+.risk-summary-bars__bar-bg {
+  width: 100%;
+  flex: 1;
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: #eef3fb;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.risk-summary-bars__bar {
+  width: 100%;
+  border-radius: 0.5rem 0.5rem 0 0;
+  transition: height 0.3s ease;
+}
+
+.risk-summary-bars__bar--critical    { background: #d93025; }
+.risk-summary-bars__bar--high        { background: #f5944a; }
+.risk-summary-bars__bar--medium      { background: #e08a00; }
+.risk-summary-bars__bar--low         { background: #1a9c5b; }
+.risk-summary-bars__bar--opportunity { background: #6644aa; }
+
+.risk-summary-bars__label {
+  font-size: 0.72rem;
+  color: #4a5e78;
+  margin-top: 0.4rem;
+  text-align: center;
+  white-space: nowrap;
+}

@@ -1,0 +1,435 @@
+/* ─── Page Header ─── */
+.riesgos-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  margin-bottom: 1.25rem;
+}
+
+.riesgos-page__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.riesgos-page__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: #7a8fa6;
+}
+
+.riesgos-page__breadcrumb-sep {
+  color: #b0bdcc;
+}
+
+.riesgos-page__breadcrumb-active {
+  color: #3d5a80;
+  font-weight: 500;
+}
+
+.riesgos-page__header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a2b45;
+}
+
+.riesgos-page__ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  color: #4338ca;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid #c7d2fe;
+  width: fit-content;
+}
+
+.riesgos-page__action {
+  background: #1a6ebd;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(26, 110, 189, 0.22);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  flex-shrink: 0;
+}
+
+.riesgos-page__action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(26, 110, 189, 0.28);
+}
+
+/* ─── KPIs ─── */
+.riesgos-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.riesgos-kpi {
+  background: #fff;
+  border-radius: 0.75rem;
+  border: 1px solid #d1dce8;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.riesgos-kpi__value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.riesgos-kpi__label {
+  font-size: 0.78rem;
+  color: #7a8fa6;
+  font-weight: 500;
+}
+
+.riesgos-kpi--risk        .riesgos-kpi__value { color: #1a6ebd; }
+.riesgos-kpi--critical    .riesgos-kpi__value { color: #d93025; }
+.riesgos-kpi--treatment   .riesgos-kpi__value { color: #e08a00; }
+.riesgos-kpi--opportunity .riesgos-kpi__value { color: #6644aa; }
+
+/* ─── Two-panel grid ─── */
+.riesgos-page__main {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+/* ─── Panels ─── */
+.riesgos-page__panel {
+  background: #ffffff;
+  border-radius: 0.9rem;
+  border: 1px solid #d1dce8;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+/* ─── Section headers ─── */
+.riesgos-page__section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.riesgos-page__section-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1a2b45;
+}
+
+.riesgos-page__section-subtitle {
+  display: block;
+  font-size: 0.78rem;
+  color: #7a8fa6;
+  margin-top: 0.2rem;
+}
+
+/* ─── Heatmap wrap ─── */
+.riesgos-page__heatmap-wrap {
+  width: 100%;
+}
+
+/* ─── Divider ─── */
+.riesgos-page__divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.07);
+  margin: 0.1rem 0;
+}
+
+/* ─── Filters ─── */
+.riesgos-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.riesgos-filter-input {
+  flex: 1;
+  min-width: 140px;
+  padding: 0.42rem 0.75rem;
+  border: 1px solid #d1dce8;
+  border-radius: 0.5rem;
+  font-size: 0.82rem;
+  color: #1a2b45;
+  background: #f9fbfd;
+  outline: none;
+  transition: border-color 0.18s;
+}
+
+.riesgos-filter-input:focus { border-color: #1a6ebd; }
+
+.riesgos-filter-select {
+  padding: 0.42rem 0.65rem;
+  border: 1px solid #d1dce8;
+  border-radius: 0.5rem;
+  font-size: 0.82rem;
+  color: #1a2b45;
+  background: #f9fbfd;
+  cursor: pointer;
+  outline: none;
+}
+
+/* ─── Table wrap ─── */
+.riesgos-page__table-wrap {
+  overflow-x: auto;
+}
+
+/* ─── Risk table ─── */
+.risk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.81rem;
+}
+
+.risk-table th {
+  background: #f4f7fb;
+  color: #4a5e78;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.6rem 0.7rem;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 2px solid #d1dce8;
+}
+
+.risk-table td {
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid #eef3fb;
+  vertical-align: middle;
+  color: #2c3e52;
+}
+
+.risk-table tr:hover td { background: #f8fbff; }
+
+.risk-table__code {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #1a6ebd;
+  white-space: nowrap;
+}
+
+.risk-table__desc {
+  max-width: 220px;
+  white-space: normal;
+  line-height: 1.4;
+}
+
+.risk-table__cat {
+  font-size: 0.77rem;
+  color: #4a5e78;
+  white-space: nowrap;
+}
+
+/* Tipo badge */
+.risk-table__tipo {
+  display: inline-block;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.risk-table__tipo--riesgo      { background: #fff3e0; color: #bf6400; border: 1px solid #f5c842; }
+.risk-table__tipo--oportunidad { background: #f0eaff; color: #5c33a6; border: 1px solid #c4a8f8; }
+
+/* Fuente badge */
+.risk-table__fuente {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.risk-table__fuente--pestel { background: #e0f0ff; color: #1a6ebd; }
+.risk-table__fuente--dofa   { background: #e6f9f0; color: #1a7a4a; }
+
+/* Nivel badge */
+.risk-table__level {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.risk-table__level--low      { background: #d4f0d4; color: #1a5c2a; }
+.risk-table__level--medium   { background: #fff3cd; color: #7d5a00; }
+.risk-table__level--high     { background: #ffe5cc; color: #8a3a00; }
+.risk-table__level--critical { background: #fdd; color: #8b1a1a; }
+
+/* Estado select */
+.risk-table__estado-select {
+  border: none;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+}
+.risk-table__estado-select--monitoreo   { background: #e6f9f0; color: #1a5c2a; }
+.risk-table__estado-select--tratamiento { background: #fff3cd; color: #7d5a00; }
+.risk-table__estado-select--critico     { background: #fdd;    color: #8b1a1a; }
+
+/* Responsable edit */
+.risk-table__responsable {
+  cursor: pointer;
+  color: #3d5a80;
+  font-size: 0.8rem;
+  border-bottom: 1px dashed #b0bdcc;
+  transition: color 0.15s;
+}
+.risk-table__responsable:hover { color: #1a6ebd; }
+
+.risk-table__edit-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.risk-table__edit-cell input {
+  flex: 1;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid #1a6ebd;
+  border-radius: 0.3rem;
+  font-size: 0.78rem;
+  outline: none;
+  min-width: 0;
+}
+
+.risk-table__edit-cell button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.1rem 0.2rem;
+  opacity: 0.75;
+}
+.risk-table__edit-cell button:hover { opacity: 1; }
+
+/* ─── Table footer ─── */
+.riesgos-table-footer {
+  font-size: 0.78rem;
+  color: #7a8fa6;
+  text-align: right;
+  padding-top: 0.25rem;
+}
+
+/* ─── Empty state ─── */
+.riesgos-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 2rem;
+  background: #fff;
+  border-radius: 1rem;
+  border: 2px dashed #d1dce8;
+  text-align: center;
+  max-width: 580px;
+  margin: 2rem auto;
+}
+
+.riesgos-empty-state__icon {
+  font-size: 3.5rem;
+  line-height: 1;
+}
+
+.riesgos-empty-state h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1a2b45;
+}
+
+.riesgos-empty-state p {
+  margin: 0;
+  color: #4a5e78;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.riesgos-empty-state__steps {
+  margin: 0;
+  padding-left: 1.5rem;
+  text-align: left;
+  color: #4a5e78;
+  font-size: 0.88rem;
+  line-height: 2;
+}
+
+.riesgos-empty-cta {
+  display: inline-block;
+  background: #1a6ebd;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.65rem 1.4rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.18s;
+}
+.riesgos-empty-cta:hover { background: #1558a0; }
+
+/* ─── Responsive ─── */
+@media (max-width: 1100px) {
+  .riesgos-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 1020px) {
+  .riesgos-page__main {
+    grid-template-columns: 1fr;
+  }
+
+  .riesgos-page__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .riesgos-page__action {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .riesgos-page__panel {
+    padding: 1rem;
+  }
+
+  .riesgos-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+

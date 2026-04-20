@@ -1,0 +1,125 @@
+import React, { useState } from 'react'
+import '../iso-module.css'
+
+interface Liberacion {
+  id: number
+  codigoOp: string
+  productoServicio: string
+  cliente: string
+  criteriosAceptacion: string
+  inspeccionRealizada: string
+  resultados: string
+  autorizadoPor: string
+  fecha: string
+  decision: 'Liberado' | 'Retenido' | 'Rechazado'
+  observaciones: string
+}
+
+const datosIniciales: Liberacion[] = [
+  { id: 1, codigoOp: 'OP-2025-001', productoServicio: 'Estructura metálica lote A', cliente: 'Constructora del Norte', criteriosAceptacion: 'Dimensiones según plano ±0.5mm, sin fisuras, pintura uniforme, soldadura certificada', inspeccionRealizada: 'Inspección visual 100%, medición dimensional, prueba de carga', resultados: 'Todas las unidades cumplen especificaciones. Sin observaciones.', autorizadoPor: 'Inspector de Calidad', fecha: '2025-03-20', decision: 'Liberado', observaciones: '' },
+  { id: 2, codigoOp: 'OP-2025-003', productoServicio: 'Lote de tornillos M10', cliente: 'Uso interno', criteriosAceptacion: 'Dureza HRC 32-36, longitud 50mm ±0.2mm, certificado de material', inspeccionRealizada: 'Muestreo AQL 2.5%, verificación dimensional, revisión certificado', resultados: '3 unidades fuera de tolerancia en longitud (5% del lote)', autorizadoPor: 'Coordinador de Calidad', fecha: '2025-03-18', decision: 'Retenido', observaciones: 'Se retiene lote pendiente de decisión. Se notificó al proveedor.' },
+]
+
+const empty = { codigoOp: '', productoServicio: '', cliente: '', criteriosAceptacion: '', inspeccionRealizada: '', resultados: '', autorizadoPor: '', fecha: '', decision: 'Liberado' as const, observaciones: '' }
+
+const LiberacionPSPage: React.FC = () => {
+  const [items, setItems] = useState<Liberacion[]>(datosIniciales)
+  const [showModal, setShowModal] = useState(false)
+  const [form, setForm] = useState({ ...empty })
+
+  const guardar = () => {
+    if (!form.productoServicio) return
+    const id = Math.max(0, ...items.map(i => i.id)) + 1
+    setItems(prev => [...prev, { id, ...form }])
+    setShowModal(false); setForm({ ...empty })
+  }
+  const eliminar = (id: number) => { if (window.confirm('¿Eliminar?')) setItems(prev => prev.filter(i => i.id !== id)) }
+
+  return (
+    <div className="iso-page">
+      <div className="iso-page__header">
+        <div className="iso-page__title-block">
+          <h1>⚙️ Liberación de Productos y Servicios</h1>
+          <p>Registros de inspección y decisiones de liberación para asegurar la conformidad antes de la entrega</p>
+          <span className="iso-page__clause">ISO 9001:2015 — §8.6</span>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {(['Liberado','Retenido','Rechazado'] as const).map(d => (
+            <div key={d} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.5rem 0.85rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1b3a6b' }}>{items.filter(i => i.decision === d).length}</div>
+              <div style={{ fontSize: '0.68rem', color: '#6b7280' }}>{d}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="iso-info-box">
+        <span className="iso-info-box__icon">📌</span>
+        <span><strong>ISO 9001:2015 §8.6</strong> — La organización debe implementar disposiciones planificadas para verificar que se cumplen los requisitos de los productos y servicios antes de su liberación. La información documentada debe incluir: evidencia de conformidad, trazabilidad a la persona que autoriza la liberación.</span>
+      </div>
+
+      <div className="iso-topbar">
+        <div className="iso-topbar__info">Total registros: <strong>{items.length}</strong></div>
+        <button className="iso-btn-primary" onClick={() => setShowModal(true)}>＋ Nuevo registro</button>
+      </div>
+
+      <div className="iso-table-wrapper">
+        <table className="iso-table">
+          <thead>
+            <tr><th>#</th><th>Código OP</th><th>Producto / Servicio</th><th>Cliente</th><th>Criterios de aceptación</th><th>Inspección realizada</th><th>Resultados</th><th>Autorizado por</th><th>Fecha</th><th>Decisión</th><th></th></tr>
+          </thead>
+          <tbody>
+            {items.map((r, i) => (
+              <tr key={r.id}>
+                <td style={{ color: '#9ca3af' }}>{i + 1}</td>
+                <td style={{ fontWeight: 600, color: '#1b3a6b', fontSize: '0.78rem' }}>{r.codigoOp}</td>
+                <td>{r.productoServicio}</td>
+                <td>{r.cliente}</td>
+                <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>{r.criteriosAceptacion}</td>
+                <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>{r.inspeccionRealizada}</td>
+                <td style={{ fontSize: '0.78rem' }}>{r.resultados}</td>
+                <td>{r.autorizadoPor}</td>
+                <td>{r.fecha}</td>
+                <td><span className={`iso-badge ${r.decision === 'Liberado' ? 'verde' : r.decision === 'Retenido' ? 'amarillo' : 'rojo'}`}>{r.decision}</span></td>
+                <td><button className="iso-btn-icon danger" onClick={() => eliminar(r.id)}>🗑️</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {showModal && (
+        <div className="iso-modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="iso-modal" onClick={e => e.stopPropagation()}>
+            <h2>➕ Nuevo registro de liberación</h2>
+            <div className="iso-form-row">
+              <div className="iso-field"><label>Código OP</label><input type="text" value={form.codigoOp} onChange={e => setForm(p => ({ ...p, codigoOp: e.target.value }))} /></div>
+              <div className="iso-field"><label>Producto / Servicio *</label><input type="text" value={form.productoServicio} onChange={e => setForm(p => ({ ...p, productoServicio: e.target.value }))} /></div>
+            </div>
+            <div className="iso-form-row">
+              <div className="iso-field"><label>Cliente</label><input type="text" value={form.cliente} onChange={e => setForm(p => ({ ...p, cliente: e.target.value }))} /></div>
+              <div className="iso-field"><label>Fecha</label><input type="date" value={form.fecha} onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} /></div>
+            </div>
+            <div className="iso-field"><label>Criterios de aceptación</label><textarea rows={2} value={form.criteriosAceptacion} onChange={e => setForm(p => ({ ...p, criteriosAceptacion: e.target.value }))} /></div>
+            <div className="iso-field"><label>Inspección realizada</label><textarea rows={2} value={form.inspeccionRealizada} onChange={e => setForm(p => ({ ...p, inspeccionRealizada: e.target.value }))} /></div>
+            <div className="iso-field"><label>Resultados de inspección</label><textarea rows={2} value={form.resultados} onChange={e => setForm(p => ({ ...p, resultados: e.target.value }))} /></div>
+            <div className="iso-form-row">
+              <div className="iso-field"><label>Autorizado por</label><input type="text" value={form.autorizadoPor} onChange={e => setForm(p => ({ ...p, autorizadoPor: e.target.value }))} /></div>
+              <div className="iso-field"><label>Decisión</label>
+                <select value={form.decision} onChange={e => setForm(p => ({ ...p, decision: e.target.value as any }))}>
+                  <option>Liberado</option><option>Retenido</option><option>Rechazado</option>
+                </select>
+              </div>
+            </div>
+            <div className="iso-modal__footer">
+              <button className="iso-btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
+              <button className="iso-btn-primary" onClick={guardar} disabled={!form.productoServicio}>＋ Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default LiberacionPSPage

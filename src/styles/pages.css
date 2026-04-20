@@ -1,0 +1,40 @@
+/* Utilidades de layout para páginas */
+
+.page-grid-2-1 {
+  display: grid;
+  grid-template-columns: 2fr 1.4fr;
+  gap: 1rem;
+}
+
+.page-grid-1 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.page-row {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+}
+
+.page-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Responsive básico */
+@media (max-width: 960px) {
+  .page {
+    padding: 1rem 1.25rem;
+  }
+
+  .page-grid-2-1 {
+    grid-template-columns: 1fr;
+  }
+
+  .page-row {
+    flex-direction: column;
+  }
+}
