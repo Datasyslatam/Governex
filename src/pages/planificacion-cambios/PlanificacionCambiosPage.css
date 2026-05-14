@@ -1,0 +1,313 @@
+/* ══════════════════════════════════════════════════════════════
+   PlanificacionCambiosPage.css — §6.3 Planificación de Cambios
+   ══════════════════════════════════════════════════════════════ */
+
+/* ─── Breadcrumb ──────────────────────────────────────────── */
+.pc-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: #7a8fa6;
+  margin-bottom: 0.25rem;
+}
+.pc-breadcrumb__sep    { color: #b0bdcc; }
+.pc-breadcrumb__active { color: #3d5a80; font-weight: 500; }
+
+/* ─── Botón agregar ───────────────────────────────────────── */
+.pc-btn-add {
+  white-space: nowrap;
+  padding: 0.55rem 1.2rem;
+  font-size: 0.88rem;
+  border-radius: 0.5rem;
+  align-self: flex-start;
+}
+
+/* ─── KPIs ────────────────────────────────────────────────── */
+.pc-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+
+.pc-kpi {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  transition: box-shadow 0.15s;
+}
+.pc-kpi:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.07); }
+
+.pc-kpi__icon  { font-size: 1.1rem; line-height: 1; margin-bottom: 0.1rem; }
+.pc-kpi__value { font-size: 1.75rem; font-weight: 700; line-height: 1; }
+.pc-kpi__label { font-size: 0.72rem; color: #6b7280; font-weight: 500; }
+
+/* ─── Filtros ─────────────────────────────────────────────── */
+.pc-search {
+  padding: 0.42rem 0.75rem;
+  border: 1px solid #d1dce8;
+  border-radius: 0.5rem;
+  font-size: 0.82rem;
+  color: #1a2b45;
+  background: #f9fbfd;
+  outline: none;
+  min-width: 180px;
+  transition: border-color 0.18s;
+}
+.pc-search:focus { border-color: #2e86de; }
+
+.pc-filter {
+  padding: 0.42rem 0.65rem;
+  border: 1px solid #d1dce8;
+  border-radius: 0.5rem;
+  font-size: 0.82rem;
+  color: #1a2b45;
+  background: #f9fbfd;
+  cursor: pointer;
+  outline: none;
+}
+
+/* ─── Wrapper y tabla ─────────────────────────────────────── */
+.pc-matrix-wrapper { overflow-x: auto; }
+.pc-matrix         { min-width: 1100px; }
+
+/* ─── Filas de la matriz ──────────────────────────────────── */
+.pc-matrix-row {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.pc-matrix-row:hover td { background: #f0f6ff; }
+
+/* ─── Código ──────────────────────────────────────────────── */
+.pc-matrix__code {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.83rem;
+  color: #2e86de;
+  white-space: nowrap;
+  background: #e8f0fb;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.3rem;
+  display: inline-block;
+}
+
+/* ─── Descripción y justificación ─────────────────────────── */
+.pc-matrix__desc {
+  max-width: 220px;
+}
+.pc-matrix__desc-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+.pc-matrix__justif {
+  max-width: 180px;
+  font-size: 0.8rem;
+  color: #4b5563;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ─── Categoría chip ──────────────────────────────────────── */
+.pc-categoria {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1b3a6b;
+  background: #f0f4fa;
+  border: 1px solid #d1dce8;
+  border-radius: 0.35rem;
+  padding: 0.18rem 0.55rem;
+  white-space: nowrap;
+}
+
+/* ─── Impacto ─────────────────────────────────────────────── */
+.pc-impacto {
+  display: inline-block;
+  padding: 0.18rem 0.55rem;
+  border-radius: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.pc-impacto--alto  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.pc-impacto--medio { background: #fef9c3; color: #713f12; border: 1px solid #fde047; }
+.pc-impacto--bajo  { background: #dcfce7; color: #14532d; border: 1px solid #86efac; }
+
+/* ─── Fechas ──────────────────────────────────────────────── */
+.pc-fecha {
+  font-size: 0.79rem;
+  color: #374151;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.pc-fecha-fin-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.pc-dias {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  width: fit-content;
+}
+.pc-dias--ok      { background: #d1fae5; color: #065f46; }
+.pc-dias--urgente { background: #fef3c7; color: #92400e; }
+.pc-dias--vencido { background: #fee2e2; color: #991b1b; }
+
+/* ─── Estado badges ───────────────────────────────────────── */
+.pc-badge {
+  display: inline-block;
+  font-size: 0.69rem;
+  font-weight: 700;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.pc-badge--planificado { background: #ede9fe; color: #5b21b6; border: 1px solid #c4b5fd; }
+.pc-badge--ejecucion   { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+.pc-badge--completado  { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+.pc-badge--suspendido  { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+.pc-badge--cancelado   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+/* ─── Acciones de fila ────────────────────────────────────── */
+.pc-matrix__actions {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+/* ─── Fila expandida ──────────────────────────────────────── */
+.pc-expand-row td {
+  padding: 0 !important;
+  background: #f8fafc !important;
+  border-bottom: 2px solid #e5e7eb !important;
+}
+
+.pc-expand-content {
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+/* Chips de metadata */
+.pc-expand-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pc-expand-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  min-width: 160px;
+  max-width: 300px;
+  flex: 1;
+}
+
+.pc-expand-chip__label {
+  font-size: 0.71rem;
+  font-weight: 700;
+  color: #1b3a6b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pc-expand-chip span:last-child {
+  font-size: 0.82rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+/* Columnas de detalle */
+.pc-expand-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.pc-expand-block {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.pc-expand-block h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1b3a6b;
+}
+
+.pc-expand-block p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #374151;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+/* ─── Modal ───────────────────────────────────────────────── */
+.pc-modal {
+  max-width: 640px;
+}
+
+.pc-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pc-modal__header h2 { margin: 0; }
+
+.pc-modal__codigo {
+  font-family: monospace;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #2e86de;
+  background: #e8f0fb;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.4rem;
+  white-space: nowrap;
+}
+
+/* ─── Responsive ──────────────────────────────────────────── */
+@media (max-width: 1280px) {
+  .pc-kpis { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 900px) {
+  .pc-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .pc-kpis    { grid-template-columns: 1fr 1fr; }
+  .pc-btn-add { width: 100%; justify-content: center; }
+}

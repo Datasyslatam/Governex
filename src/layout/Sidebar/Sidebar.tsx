@@ -3,13 +3,13 @@ import { NavLink, useLocation } from "react-router-dom";
 import "./Sidebar.css";
 
 interface SectionItem {
-  to: string;
+  to:   string;
   icon: string;
   text: string;
 }
 
 interface Section {
-  id: string;
+  id:    string;
   label: string;
   items: SectionItem[];
 }
@@ -34,7 +34,9 @@ const SECTIONS: Section[] = [
     id: "s6",
     label: "§6 · Planificación",
     items: [
-      { to: "/riesgos", icon: "🗺️", text: "Riesgos y Oportunidades" },
+      { to: "/riesgos",                icon: "🗺️", text: "Riesgos y Oportunidades" },
+      { to: "/objetivos-calidad",      icon: "🎯", text: "Objetivos de Calidad" },
+      { to: "/planificacion-cambios",  icon: "🔄", text: "Planificación de los Cambios" }, // ← NUEVO
     ],
   },
   {
@@ -74,7 +76,7 @@ const SECTIONS: Section[] = [
     id: "s10",
     label: "§10 · Mejora",
     items: [
-      { to: "/nc-ac",          icon: "♾️", text: "No Conformidades y Acciones" },
+      { to: "/nc-ac",           icon: "♾️", text: "No Conformidades y Acciones" },
       { to: "/mejora-continua", icon: "♾️", text: "Mejora Continua" },
     ],
   },
@@ -114,7 +116,7 @@ const Sidebar: React.FC = () => {
         </NavLink>
 
         {SECTIONS.map(section => {
-          const isOpen = openSections.has(section.id);
+          const isOpen    = openSections.has(section.id);
           const hasActive = section.items.some(item =>
             location.pathname.startsWith(item.to)
           );
@@ -122,17 +124,29 @@ const Sidebar: React.FC = () => {
           return (
             <div key={section.id} className="sidebar__group">
               <button
-                className={"sidebar__section-toggle" + (hasActive ? " sidebar__section-toggle--active" : "")}
+                className={
+                  "sidebar__section-toggle" +
+                  (hasActive ? " sidebar__section-toggle--active" : "")
+                }
                 onClick={() => toggleSection(section.id)}
                 aria-expanded={isOpen}
               >
                 <span className="sidebar__section-toggle-label">{section.label}</span>
-                <span className={"sidebar__chevron" + (isOpen ? " sidebar__chevron--open" : "")}>›</span>
+                <span className={
+                  "sidebar__chevron" + (isOpen ? " sidebar__chevron--open" : "")
+                }>›</span>
               </button>
 
-              <div className={"sidebar__group-items" + (isOpen ? " sidebar__group-items--open" : "")}>
+              <div className={
+                "sidebar__group-items" +
+                (isOpen ? " sidebar__group-items--open" : "")
+              }>
                 {section.items.map(item => (
-                  <NavLink key={item.to} to={item.to} className="sidebar__link sidebar__link--nested">
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className="sidebar__link sidebar__link--nested"
+                  >
                     <span className="sidebar__icon">{item.icon}</span>
                     <span className="sidebar__text">{item.text}</span>
                   </NavLink>

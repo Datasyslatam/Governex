@@ -6,29 +6,31 @@ import { useAuth } from "../hooks/useAuth";
 import AuthLayout from "../layout/AuthLayout";
 import MainLayout from "../layout/MainLayout";
 
-import LoginPage                from "../pages/auth/LoginPage";
-import DashboardPage            from "../pages/dashboard/DashboardPage";
-import RiesgosPage              from "../pages/riesgos/RiesgosPage";
-import DocumentosPage           from "../pages/documentos/DocumentosPage";
-import NcAcPage                 from "../pages/nc-ac/NcAcPage";
-import AuditoriaPage            from "../pages/auditoria/AuditoriaPage";
-import ProcesosPage             from "../pages/procesos/ProcesosPage";
-import RevDireccionPage         from "../pages/rev-direccion/RevDireccionPage";
-import IndicadoresPage          from "../pages/indicadores/IndicadoresPage";
-import PoliticaPage             from "../pages/politica/PoliticaPage";
-import CompetenciasPage         from "../pages/competencias/CompetenciasPage";
-import ProveedoresPage          from "../pages/proveedores/ProveedoresPage";
-import RolesPage                from "../pages/roles/RolesPage";
-import TomaConscienciaPage      from "../pages/toma-consciencia/TomaConscienciaPage";
-import ComunicacionPage         from "../pages/comunicacion/ComunicacionPage";
-import PlanificacionOperacionPage from "../pages/planificacion-operacion/PlanificacionOperacionPage";
-import RequerimientosPSPage     from "../pages/requerimientos-ps/RequerimientosPSPage";
-import DisenoDesarrolloPage     from "../pages/diseno-desarrollo/DisenoDesarrolloPage";
-import ComprasPage              from "../pages/compras/ComprasPage";
-import ProduccionServicioPage   from "../pages/produccion-servicio/ProduccionServicioPage";
-import LiberacionPSPage         from "../pages/liberacion-ps/LiberacionPSPage";
-import SalidasNCPage            from "../pages/salidas-nc/SalidasNCPage";
-import MejoraContinuaPage       from "../pages/mejora-continua/MejoraContinuaPage";
+import LoginPage                   from "../pages/auth/LoginPage";
+import DashboardPage               from "../pages/dashboard/DashboardPage";
+import RiesgosPage                 from "../pages/riesgos/RiesgosPage";
+import ObjetivosCalidadPage        from "../pages/objetivos-calidad/ObjetivosCalidadPage";
+import PlanificacionCambiosPage    from "../pages/planificacion-cambios/PlanificacionCambiosPage"; // ← NUEVO
+import DocumentosPage              from "../pages/documentos/DocumentosPage";
+import NcAcPage                    from "../pages/nc-ac/NcAcPage";
+import AuditoriaPage               from "../pages/auditoria/AuditoriaPage";
+import ProcesosPage                from "../pages/procesos/ProcesosPage";
+import RevDireccionPage            from "../pages/rev-direccion/RevDireccionPage";
+import IndicadoresPage             from "../pages/indicadores/IndicadoresPage";
+import PoliticaPage                from "../pages/politica/PoliticaPage";
+import CompetenciasPage            from "../pages/competencias/CompetenciasPage";
+import ProveedoresPage             from "../pages/proveedores/ProveedoresPage";
+import RolesPage                   from "../pages/roles/RolesPage";
+import TomaConscienciaPage         from "../pages/toma-consciencia/TomaConscienciaPage";
+import ComunicacionPage            from "../pages/comunicacion/ComunicacionPage";
+import PlanificacionOperacionPage  from "../pages/planificacion-operacion/PlanificacionOperacionPage";
+import RequerimientosPSPage        from "../pages/requerimientos-ps/RequerimientosPSPage";
+import DisenoDesarrolloPage        from "../pages/diseno-desarrollo/DisenoDesarrolloPage";
+import ComprasPage                 from "../pages/compras/ComprasPage";
+import ProduccionServicioPage      from "../pages/produccion-servicio/ProduccionServicioPage";
+import LiberacionPSPage            from "../pages/liberacion-ps/LiberacionPSPage";
+import SalidasNCPage               from "../pages/salidas-nc/SalidasNCPage";
+import MejoraContinuaPage          from "../pages/mejora-continua/MejoraContinuaPage";
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -57,10 +59,12 @@ export const AppRoutes: React.FC = () => {
 
         {/* §6 */}
         <Route path="riesgos"                 element={<RiesgosPage />} />
+        <Route path="objetivos-calidad"       element={<ObjetivosCalidadPage />} />
+        <Route path="planificacion-cambios"   element={<PlanificacionCambiosPage />} /> {/* ← NUEVO */}
 
         {/* §7 */}
         <Route path="competencias"            element={<CompetenciasPage />} />
-        <Route path="documentos"              element={<DocumentosPage />} />
+        <Route path="documentos"             element={<DocumentosPage />} />
         <Route path="toma-consciencia"        element={<TomaConscienciaPage />} />
         <Route path="comunicacion"            element={<ComunicacionPage />} />
 

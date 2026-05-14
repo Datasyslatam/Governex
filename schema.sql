@@ -1,663 +1,848 @@
--- ============================================================
+-- Database: governex
+
+-- DROP DATABASE IF EXISTS governex;
+
+CREATE DATABASE governex
+    WITH
+    OWNER = "LuisM"
+    ENCODING = 'UTF8'
+    LC_COLLATE = 'Spanish_Colombia.1252'
+    LC_CTYPE = 'Spanish_Colombia.1252'
+    LOCALE_PROVIDER = 'libc'
+    TABLESPACE = pg_default
+    CONNECTION LIMIT = -1
+    IS_TEMPLATE = False;
+
+	-- ============================================================
 --  GOVERNEX — Esquema de Base de Datos PostgreSQL
 --  Sistema de Gestión de Calidad (SGC) basado en ISO 9001
 -- ============================================================
-
-CREATE TABLE roles (
-    id        SERIAL PRIMARY KEY,
-    nombre    VARCHAR(50) NOT NULL UNIQUE
+CREATE TABLE ROLES (
+	ID SERIAL PRIMARY KEY,
+	NOMBRE VARCHAR(50) NOT NULL UNIQUE
 );
 
-CREATE TABLE usuarios (
-    id             SERIAL PRIMARY KEY,
-    nombre         VARCHAR(100) NOT NULL,
-    email          VARCHAR(150) NOT NULL UNIQUE,
-    password_hash  TEXT NOT NULL,
-    rol_id         INTEGER NOT NULL REFERENCES roles(id),
-    activo         BOOLEAN NOT NULL DEFAULT TRUE,
-    creado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE USUARIOS (
+	ID SERIAL PRIMARY KEY,
+	NOMBRE VARCHAR(100) NOT NULL,
+	EMAIL VARCHAR(150) NOT NULL UNIQUE,
+	PASSWORD_HASH TEXT NOT NULL,
+	ROL_ID INTEGER NOT NULL REFERENCES ROLES (ID),
+	ACTIVO BOOLEAN NOT NULL DEFAULT TRUE,
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE tipos_proceso (
-    id     SERIAL PRIMARY KEY,
-    nombre VARCHAR(50) NOT NULL UNIQUE
+CREATE TABLE TIPOS_PROCESO (
+	ID SERIAL PRIMARY KEY,
+	NOMBRE VARCHAR(50) NOT NULL UNIQUE
 );
 
-CREATE TABLE procesos (
-    id            SERIAL PRIMARY KEY,
-    codigo        VARCHAR(20) NOT NULL UNIQUE,
-    nombre        VARCHAR(150) NOT NULL,
-    objetivo      TEXT,
-    entradas      TEXT,
-    salidas       TEXT,
-    indicador_kpi TEXT,
-    responsable   VARCHAR(100),
-    tipo_id       INTEGER NOT NULL REFERENCES tipos_proceso(id),
-    estado        VARCHAR(20) NOT NULL DEFAULT 'Activo'
-                  CHECK (estado IN ('Activo', 'Revisión', 'Inactivo')),
-    creado_en     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE PROCESOS (
+	ID SERIAL PRIMARY KEY,
+	CODIGO VARCHAR(20) NOT NULL UNIQUE,
+	NOMBRE VARCHAR(150) NOT NULL,
+	OBJETIVO TEXT,
+	ENTRADAS TEXT,
+	SALIDAS TEXT,
+	INDICADOR_KPI TEXT,
+	RESPONSABLE VARCHAR(100),
+	TIPO_ID INTEGER NOT NULL REFERENCES TIPOS_PROCESO (ID),
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Activo' CHECK (ESTADO IN ('Activo', 'Revisión', 'Inactivo')),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE pestel (
-    id           SERIAL PRIMARY KEY,
-    factor       CHAR(1) NOT NULL CHECK (factor IN ('P','E','S','T','A','L')),
-    categoria    VARCHAR(50) NOT NULL,
-    descripcion  TEXT NOT NULL,
-    impacto      VARCHAR(10) NOT NULL CHECK (impacto IN ('Alto','Medio','Bajo')),
-    oportunidad  BOOLEAN NOT NULL DEFAULT FALSE,
-    creado_en    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE PESTEL (
+	ID SERIAL PRIMARY KEY,
+	FACTOR CHAR(1) NOT NULL CHECK (FACTOR IN ('P', 'E', 'S', 'T', 'A', 'L')),
+	CATEGORIA VARCHAR(50) NOT NULL,
+	DESCRIPCION TEXT NOT NULL,
+	IMPACTO VARCHAR(10) NOT NULL CHECK (IMPACTO IN ('Alto', 'Medio', 'Bajo')),
+	OPORTUNIDAD BOOLEAN NOT NULL DEFAULT FALSE,
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE dofa (
-    id           SERIAL PRIMARY KEY,
-    tipo         VARCHAR(20) NOT NULL
-                 CHECK (tipo IN ('Fortaleza','Oportunidad','Debilidad','Amenaza')),
-    descripcion  TEXT NOT NULL,
-    creado_en    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE DOFA (
+	ID SERIAL PRIMARY KEY,
+	TIPO VARCHAR(20) NOT NULL CHECK (
+		TIPO IN (
+			'Fortaleza',
+			'Oportunidad',
+			'Debilidad',
+			'Amenaza'
+		)
+	),
+	DESCRIPCION TEXT NOT NULL,
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE politica_calidad (
-    id              SERIAL PRIMARY KEY,
-    version         VARCHAR(10) NOT NULL,
-    contenido       TEXT NOT NULL,
-    estado          VARCHAR(20) NOT NULL DEFAULT 'Vigente'
-                    CHECK (estado IN ('Vigente', 'Obsoleto', 'Borrador')),
-    aprobado_por    INTEGER REFERENCES usuarios(id),
-    fecha_vigencia  DATE,
-    creado_en       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE POLITICA_CALIDAD (
+	ID SERIAL PRIMARY KEY,
+	VERSION VARCHAR(10) NOT NULL,
+	CONTENIDO TEXT NOT NULL,
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Vigente' CHECK (ESTADO IN ('Vigente', 'Obsoleto', 'Borrador')),
+	APROBADO_POR INTEGER REFERENCES USUARIOS (ID),
+	FECHA_VIGENCIA DATE,
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE politica_lecturas (
-    id             SERIAL PRIMARY KEY,
-    politica_id    INTEGER NOT NULL REFERENCES politica_calidad(id),
-    nombre_persona VARCHAR(100) NOT NULL,
-    area           VARCHAR(100),
-    fecha_lectura  DATE,
-    estado         VARCHAR(30) NOT NULL DEFAULT 'Pendiente'
-                   CHECK (estado IN ('Leído y Aceptado', 'Pendiente')),
-    creado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE POLITICA_LECTURAS (
+	ID SERIAL PRIMARY KEY,
+	POLITICA_ID INTEGER NOT NULL REFERENCES POLITICA_CALIDAD (ID),
+	NOMBRE_PERSONA VARCHAR(100) NOT NULL,
+	AREA VARCHAR(100),
+	FECHA_LECTURA DATE,
+	ESTADO VARCHAR(30) NOT NULL DEFAULT 'Pendiente' CHECK (ESTADO IN ('Leído y Aceptado', 'Pendiente')),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE riesgos (
-    id           SERIAL PRIMARY KEY,
-    codigo       VARCHAR(20) NOT NULL UNIQUE,
-    descripcion  TEXT NOT NULL,
-    proceso_id   INTEGER REFERENCES procesos(id),
-    probabilidad INTEGER NOT NULL CHECK (probabilidad BETWEEN 1 AND 5),
-    impacto      INTEGER NOT NULL CHECK (impacto BETWEEN 1 AND 5),
-    nivel        INTEGER GENERATED ALWAYS AS (probabilidad * impacto) STORED,
-    estado       VARCHAR(20) NOT NULL DEFAULT 'MONITOREO'
-                 CHECK (estado IN ('CRITICO', 'TRATAMIENTO', 'MONITOREO')),
-    responsable  VARCHAR(100),
-    tipo         VARCHAR(15) NOT NULL DEFAULT 'Riesgo'
-                 CHECK (tipo IN ('Riesgo', 'Oportunidad')),
-    creado_en    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE RIESGOS (
+	ID SERIAL PRIMARY KEY,
+	CODIGO VARCHAR(20) NOT NULL UNIQUE,
+	DESCRIPCION TEXT NOT NULL,
+	PROCESO_ID INTEGER REFERENCES PROCESOS (ID),
+	PROBABILIDAD INTEGER NOT NULL CHECK (PROBABILIDAD BETWEEN 1 AND 5),
+	IMPACTO INTEGER NOT NULL CHECK (IMPACTO BETWEEN 1 AND 5),
+	NIVEL INTEGER GENERATED ALWAYS AS (PROBABILIDAD * IMPACTO) STORED,
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'MONITOREO' CHECK (ESTADO IN ('CRITICO', 'TRATAMIENTO', 'MONITOREO')),
+	RESPONSABLE VARCHAR(100),
+	TIPO VARCHAR(15) NOT NULL DEFAULT 'Riesgo' CHECK (TIPO IN ('Riesgo', 'Oportunidad')),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE indicadores (
-    id            SERIAL PRIMARY KEY,
-    codigo        VARCHAR(20) NOT NULL UNIQUE,
-    titulo        VARCHAR(200) NOT NULL,
-    proceso_id    INTEGER REFERENCES procesos(id),
-    frecuencia    VARCHAR(20) NOT NULL
-                  CHECK (frecuencia IN ('Diaria','Semanal','Mensual','Trimestral','Semestral','Anual')),
-    meta          VARCHAR(50) NOT NULL,
-    activo        BOOLEAN NOT NULL DEFAULT TRUE,
-    creado_en     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE INDICADORES (
+	ID SERIAL PRIMARY KEY,
+	CODIGO VARCHAR(20) NOT NULL UNIQUE,
+	TITULO VARCHAR(200) NOT NULL,
+	PROCESO_ID INTEGER REFERENCES PROCESOS (ID),
+	FRECUENCIA VARCHAR(20) NOT NULL CHECK (
+		FRECUENCIA IN (
+			'Diaria',
+			'Semanal',
+			'Mensual',
+			'Trimestral',
+			'Semestral',
+			'Anual'
+		)
+	),
+	META VARCHAR(50) NOT NULL,
+	ACTIVO BOOLEAN NOT NULL DEFAULT TRUE,
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE indicador_mediciones (
-    id             SERIAL PRIMARY KEY,
-    indicador_id   INTEGER NOT NULL REFERENCES indicadores(id),
-    valor          VARCHAR(50) NOT NULL,
-    tendencia      VARCHAR(10) CHECK (tendencia IN ('up', 'down', 'stable')),
-    estado         VARCHAR(20) NOT NULL
-                   CHECK (estado IN ('Cumple', 'Riesgo', 'No Cumple')),
-    fecha          DATE NOT NULL DEFAULT CURRENT_DATE,
-    registrado_por INTEGER REFERENCES usuarios(id),
-    creado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE INDICADOR_MEDICIONES (
+	ID SERIAL PRIMARY KEY,
+	INDICADOR_ID INTEGER NOT NULL REFERENCES INDICADORES (ID),
+	VALOR VARCHAR(50) NOT NULL,
+	TENDENCIA VARCHAR(10) CHECK (TENDENCIA IN ('up', 'down', 'stable')),
+	ESTADO VARCHAR(20) NOT NULL CHECK (ESTADO IN ('Cumple', 'Riesgo', 'No Cumple')),
+	FECHA DATE NOT NULL DEFAULT CURRENT_DATE,
+	REGISTRADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE documentos (
-    id          SERIAL PRIMARY KEY,
-    codigo      VARCHAR(20) NOT NULL UNIQUE,
-    titulo      VARCHAR(200) NOT NULL,
-    tipo        VARCHAR(20) NOT NULL
-                CHECK (tipo IN ('Manual','Política','Proceso','Instrucción','Formato','Otro')),
-    proceso_id  INTEGER REFERENCES procesos(id),
-    version     VARCHAR(10) NOT NULL,
-    estado      VARCHAR(20) NOT NULL DEFAULT 'Borrador'
-                CHECK (estado IN ('Aprobado','En Revision','Borrador','Obsoleto')),
-    archivo_url TEXT,
-    hash_sha256 TEXT,
-    creado_por  INTEGER REFERENCES usuarios(id),
-    creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE DOCUMENTOS (
+	ID SERIAL PRIMARY KEY,
+	CODIGO VARCHAR(20) NOT NULL UNIQUE,
+	TITULO VARCHAR(200) NOT NULL,
+	TIPO VARCHAR(20) NOT NULL CHECK (
+		TIPO IN (
+			'Manual',
+			'Política',
+			'Proceso',
+			'Instrucción',
+			'Formato',
+			'Otro'
+		)
+	),
+	PROCESO_ID INTEGER REFERENCES PROCESOS (ID),
+	VERSION VARCHAR(10) NOT NULL,
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Borrador' CHECK (
+		ESTADO IN ('Aprobado', 'En Revision', 'Borrador', 'Obsoleto')
+	),
+	ARCHIVO_URL TEXT,
+	HASH_SHA256 TEXT,
+	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE documento_versiones (
-    id            SERIAL PRIMARY KEY,
-    documento_id  INTEGER NOT NULL REFERENCES documentos(id),
-    version       VARCHAR(10) NOT NULL,
-    descripcion   TEXT,
-    archivo_url   TEXT,
-    hash_sha256   TEXT,
-    autor_id      INTEGER REFERENCES usuarios(id),
-    fecha         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE DOCUMENTO_VERSIONES (
+	ID SERIAL PRIMARY KEY,
+	DOCUMENTO_ID INTEGER NOT NULL REFERENCES DOCUMENTOS (ID),
+	VERSION VARCHAR(10) NOT NULL,
+	DESCRIPCION TEXT,
+	ARCHIVO_URL TEXT,
+	HASH_SHA256 TEXT,
+	AUTOR_ID INTEGER REFERENCES USUARIOS (ID),
+	FECHA TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE documento_aprobaciones (
-    id            SERIAL PRIMARY KEY,
-    documento_id  INTEGER NOT NULL REFERENCES documentos(id),
-    aprobador_id  INTEGER NOT NULL REFERENCES usuarios(id),
-    paso          VARCHAR(50) NOT NULL,
-    resultado     VARCHAR(20) CHECK (resultado IN ('Aprobado','Rechazado','Pendiente')),
-    comentarios   TEXT,
-    fecha         TIMESTAMPTZ
+CREATE TABLE DOCUMENTO_APROBACIONES (
+	ID SERIAL PRIMARY KEY,
+	DOCUMENTO_ID INTEGER NOT NULL REFERENCES DOCUMENTOS (ID),
+	APROBADOR_ID INTEGER NOT NULL REFERENCES USUARIOS (ID),
+	PASO VARCHAR(50) NOT NULL,
+	RESULTADO VARCHAR(20) CHECK (
+		RESULTADO IN ('Aprobado', 'Rechazado', 'Pendiente')
+	),
+	COMENTARIOS TEXT,
+	FECHA TIMESTAMPTZ
 );
 
-CREATE TABLE personal (
-    id          SERIAL PRIMARY KEY,
-    nombre      VARCHAR(100) NOT NULL,
-    cargo       VARCHAR(100),
-    proceso_id  INTEGER REFERENCES procesos(id),
-    usuario_id  INTEGER REFERENCES usuarios(id),
-    activo      BOOLEAN NOT NULL DEFAULT TRUE,
-    creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE PERSONAL (
+	ID SERIAL PRIMARY KEY,
+	NOMBRE VARCHAR(100) NOT NULL,
+	CARGO VARCHAR(100),
+	PROCESO_ID INTEGER REFERENCES PROCESOS (ID),
+	USUARIO_ID INTEGER REFERENCES USUARIOS (ID),
+	ACTIVO BOOLEAN NOT NULL DEFAULT TRUE,
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE evaluaciones_competencia (
-    id             SERIAL PRIMARY KEY,
-    personal_id    INTEGER NOT NULL REFERENCES personal(id),
-    brecha_pct     INTEGER NOT NULL DEFAULT 0 CHECK (brecha_pct BETWEEN 0 AND 100),
-    estado         VARCHAR(20) NOT NULL
-                   CHECK (estado IN ('Competente','En Formación','Brecha Crítica')),
-    evaluado_por   INTEGER REFERENCES usuarios(id),
-    fecha          DATE NOT NULL DEFAULT CURRENT_DATE,
-    creado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE EVALUACIONES_COMPETENCIA (
+	ID SERIAL PRIMARY KEY,
+	PERSONAL_ID INTEGER NOT NULL REFERENCES PERSONAL (ID),
+	BRECHA_PCT INTEGER NOT NULL DEFAULT 0 CHECK (BRECHA_PCT BETWEEN 0 AND 100),
+	ESTADO VARCHAR(20) NOT NULL CHECK (
+		ESTADO IN ('Competente', 'En Formación', 'Brecha Crítica')
+	),
+	EVALUADO_POR INTEGER REFERENCES USUARIOS (ID),
+	FECHA DATE NOT NULL DEFAULT CURRENT_DATE,
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE plan_formacion (
-    id          SERIAL PRIMARY KEY,
-    tema        VARCHAR(200) NOT NULL,
-    fecha       DATE,
-    estado      VARCHAR(20) NOT NULL DEFAULT 'Planificado'
-                CHECK (estado IN ('Planificado','En Ejecución','Completado','Cancelado')),
-    creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE PLAN_FORMACION (
+	ID SERIAL PRIMARY KEY,
+	TEMA VARCHAR(200) NOT NULL,
+	FECHA DATE,
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Planificado' CHECK (
+		ESTADO IN (
+			'Planificado',
+			'En Ejecución',
+			'Completado',
+			'Cancelado'
+		)
+	),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE formacion_asistentes (
-    plan_id      INTEGER NOT NULL REFERENCES plan_formacion(id),
-    personal_id  INTEGER NOT NULL REFERENCES personal(id),
-    PRIMARY KEY (plan_id, personal_id)
+CREATE TABLE FORMACION_ASISTENTES (
+	PLAN_ID INTEGER NOT NULL REFERENCES PLAN_FORMACION (ID),
+	PERSONAL_ID INTEGER NOT NULL REFERENCES PERSONAL (ID),
+	PRIMARY KEY (PLAN_ID, PERSONAL_ID)
 );
 
-CREATE TABLE proveedores (
-    id          SERIAL PRIMARY KEY,
-    nit         VARCHAR(30) NOT NULL UNIQUE,
-    razon       VARCHAR(200) NOT NULL,
-    tipo        VARCHAR(50),
-    estado      VARCHAR(20) NOT NULL DEFAULT 'Aprobado'
-                CHECK (estado IN ('Aprobado','Condicional','Suspendido')),
-    prox_eval   DATE,
-    creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE PROVEEDORES (
+	ID SERIAL PRIMARY KEY,
+	NIT VARCHAR(30) NOT NULL UNIQUE,
+	RAZON VARCHAR(200) NOT NULL,
+	TIPO VARCHAR(50),
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Aprobado' CHECK (
+		ESTADO IN ('Aprobado', 'Condicional', 'Suspendido')
+	),
+	PROX_EVAL DATE,
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE proveedor_evaluaciones (
-    id             SERIAL PRIMARY KEY,
-    proveedor_id   INTEGER NOT NULL REFERENCES proveedores(id),
-    evaluador      VARCHAR(100),
-    calidad        INTEGER NOT NULL CHECK (calidad BETWEEN 0 AND 100),
-    entrega        INTEGER NOT NULL CHECK (entrega BETWEEN 0 AND 100),
-    precio         INTEGER NOT NULL CHECK (precio BETWEEN 0 AND 100),
-    servicio       INTEGER NOT NULL CHECK (servicio BETWEEN 0 AND 100),
-    total          INTEGER GENERATED ALWAYS AS
-                   ((calidad + entrega + precio + servicio) / 4) STORED,
-    fecha          DATE NOT NULL DEFAULT CURRENT_DATE,
-    creado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE PROVEEDOR_EVALUACIONES (
+	ID SERIAL PRIMARY KEY,
+	PROVEEDOR_ID INTEGER NOT NULL REFERENCES PROVEEDORES (ID),
+	EVALUADOR VARCHAR(100),
+	CALIDAD INTEGER NOT NULL CHECK (CALIDAD BETWEEN 0 AND 100),
+	ENTREGA INTEGER NOT NULL CHECK (ENTREGA BETWEEN 0 AND 100),
+	PRECIO INTEGER NOT NULL CHECK (PRECIO BETWEEN 0 AND 100),
+	SERVICIO INTEGER NOT NULL CHECK (SERVICIO BETWEEN 0 AND 100),
+	TOTAL INTEGER GENERATED ALWAYS AS ((CALIDAD + ENTREGA + PRECIO + SERVICIO) / 4) STORED,
+	FECHA DATE NOT NULL DEFAULT CURRENT_DATE,
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE programas_auditoria (
-    id          SERIAL PRIMARY KEY,
-    anio        INTEGER NOT NULL UNIQUE,
-    objetivo    TEXT NOT NULL,
-    duracion    VARCHAR(50),
-    estado      VARCHAR(20) NOT NULL DEFAULT 'En Ejecución'
-                CHECK (estado IN ('En Ejecución','Cerrado','Planificado')),
-    avance_pct  INTEGER NOT NULL DEFAULT 0 CHECK (avance_pct BETWEEN 0 AND 100),
-    creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE PROGRAMAS_AUDITORIA (
+	ID SERIAL PRIMARY KEY,
+	ANIO INTEGER NOT NULL UNIQUE,
+	OBJETIVO TEXT NOT NULL,
+	DURACION VARCHAR(50),
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'En Ejecución' CHECK (
+		ESTADO IN ('En Ejecución', 'Cerrado', 'Planificado')
+	),
+	AVANCE_PCT INTEGER NOT NULL DEFAULT 0 CHECK (AVANCE_PCT BETWEEN 0 AND 100),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE auditorias (
-    id              SERIAL PRIMARY KEY,
-    codigo          VARCHAR(20) NOT NULL UNIQUE,
-    programa_id     INTEGER REFERENCES programas_auditoria(id),
-    proceso_id      INTEGER REFERENCES procesos(id),
-    fecha_inicio    DATE NOT NULL,
-    duracion_dias   INTEGER NOT NULL DEFAULT 1,
-    auditor_lider   VARCHAR(100),
-    estado          VARCHAR(20) NOT NULL DEFAULT 'Planificada'
-                    CHECK (estado IN ('Planificada','En Ejecución','Cerrada')),
-    creado_en       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE AUDITORIAS (
+	ID SERIAL PRIMARY KEY,
+	CODIGO VARCHAR(20) NOT NULL UNIQUE,
+	PROGRAMA_ID INTEGER REFERENCES PROGRAMAS_AUDITORIA (ID),
+	PROCESO_ID INTEGER REFERENCES PROCESOS (ID),
+	FECHA_INICIO DATE NOT NULL,
+	DURACION_DIAS INTEGER NOT NULL DEFAULT 1,
+	AUDITOR_LIDER VARCHAR(100),
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Planificada' CHECK (
+		ESTADO IN ('Planificada', 'En Ejecución', 'Cerrada')
+	),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE hallazgos (
-    id            SERIAL PRIMARY KEY,
-    codigo        VARCHAR(20) NOT NULL UNIQUE,
-    auditoria_id  INTEGER NOT NULL REFERENCES auditorias(id),
-    tipo          VARCHAR(40) NOT NULL
-                  CHECK (tipo IN (
-                    'No Conformidad Menor',
-                    'No Conformidad Mayor',
-                    'Observación',
-                    'Oportunidad de Mejora'
-                  )),
-    descripcion   TEXT NOT NULL,
-    clausula      VARCHAR(20),
-    estado        VARCHAR(20) NOT NULL DEFAULT 'Abierto'
-                  CHECK (estado IN ('Abierto','Cerrado')),
-    creado_en     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE HALLAZGOS (
+	ID SERIAL PRIMARY KEY,
+	CODIGO VARCHAR(20) NOT NULL UNIQUE,
+	AUDITORIA_ID INTEGER NOT NULL REFERENCES AUDITORIAS (ID),
+	TIPO VARCHAR(40) NOT NULL CHECK (
+		TIPO IN (
+			'No Conformidad Menor',
+			'No Conformidad Mayor',
+			'Observación',
+			'Oportunidad de Mejora'
+		)
+	),
+	DESCRIPCION TEXT NOT NULL,
+	CLAUSULA VARCHAR(20),
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Abierto' CHECK (ESTADO IN ('Abierto', 'Cerrado')),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE no_conformidades (
-    id           SERIAL PRIMARY KEY,
-    codigo       VARCHAR(20) NOT NULL UNIQUE,
-    fecha        DATE NOT NULL DEFAULT CURRENT_DATE,
-    origen       VARCHAR(50) NOT NULL
-                 CHECK (origen IN (
-                   'Auditoría Interna','Cliente (Queja)',
-                   'Proceso Interno','Proveedor','Otro'
-                 )),
-    proceso_id   INTEGER REFERENCES procesos(id),
-    descripcion  TEXT NOT NULL,
-    gravedad     VARCHAR(20) NOT NULL
-                 CHECK (gravedad IN ('Menor','Mayor','Crítica')),
-    estado       VARCHAR(20) NOT NULL DEFAULT 'Abierta'
-                 CHECK (estado IN ('Abierta','En Análisis','Verificación','Cerrada')),
-    hallazgo_id  INTEGER REFERENCES hallazgos(id),
-    creado_en    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE NO_CONFORMIDADES (
+	ID SERIAL PRIMARY KEY,
+	CODIGO VARCHAR(20) NOT NULL UNIQUE,
+	FECHA DATE NOT NULL DEFAULT CURRENT_DATE,
+	ORIGEN VARCHAR(50) NOT NULL CHECK (
+		ORIGEN IN (
+			'Auditoría Interna',
+			'Cliente (Queja)',
+			'Proceso Interno',
+			'Proveedor',
+			'Otro'
+		)
+	),
+	PROCESO_ID INTEGER REFERENCES PROCESOS (ID),
+	DESCRIPCION TEXT NOT NULL,
+	GRAVEDAD VARCHAR(20) NOT NULL CHECK (GRAVEDAD IN ('Menor', 'Mayor', 'Crítica')),
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Abierta' CHECK (
+		ESTADO IN (
+			'Abierta',
+			'En Análisis',
+			'Verificación',
+			'Cerrada'
+		)
+	),
+	HALLAZGO_ID INTEGER REFERENCES HALLAZGOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE acciones_correctivas (
-    id              SERIAL PRIMARY KEY,
-    codigo          VARCHAR(20) NOT NULL UNIQUE,
-    nc_id           INTEGER NOT NULL REFERENCES no_conformidades(id),
-    metodo_analisis VARCHAR(30)
-                    CHECK (metodo_analisis IN ('5 Por Qué''s','Ishikawa','Pareto','Otro')),
-    accion          TEXT NOT NULL,
-    responsable     VARCHAR(100),
-    fecha_fin       DATE,
-    estado          VARCHAR(20) NOT NULL DEFAULT 'En Implementación'
-                    CHECK (estado IN ('En Implementación','Verificación','Cerrada')),
-    eficacia        VARCHAR(30) DEFAULT '-',
-    creado_en       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE ACCIONES_CORRECTIVAS (
+	ID SERIAL PRIMARY KEY,
+	CODIGO VARCHAR(20) NOT NULL UNIQUE,
+	NC_ID INTEGER NOT NULL REFERENCES NO_CONFORMIDADES (ID),
+	METODO_ANALISIS VARCHAR(30) CHECK (
+		METODO_ANALISIS IN ('5 Por Qué''s', 'Ishikawa', 'Pareto', 'Otro')
+	),
+	ACCION TEXT NOT NULL,
+	RESPONSABLE VARCHAR(100),
+	FECHA_FIN DATE,
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'En Implementación' CHECK (
+		ESTADO IN ('En Implementación', 'Verificación', 'Cerrada')
+	),
+	EFICACIA VARCHAR(30) DEFAULT '-',
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE rev_direccion (
-    id          SERIAL PRIMARY KEY,
-    fecha       DATE NOT NULL DEFAULT CURRENT_DATE,
-    asistentes  TEXT,
-    temas       TEXT,
-    conclusiones TEXT,
-    decisiones  TEXT,
-    proxima_rev DATE,
-    creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE REV_DIRECCION (
+	ID SERIAL PRIMARY KEY,
+	FECHA DATE NOT NULL DEFAULT CURRENT_DATE,
+	ASISTENTES TEXT,
+	TEMAS TEXT,
+	CONCLUSIONES TEXT,
+	DECISIONES TEXT,
+	PROXIMA_REV DATE,
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ============================================================
 --  DATOS SEMILLA
 -- ============================================================
+INSERT INTO
+	ROLES (NOMBRE)
+VALUES
+	('Alta Dirección'),
+	('Admin SGC'),
+	('Usuario');
 
-INSERT INTO roles (nombre) VALUES
-    ('Alta Dirección'),
-    ('Admin SGC'),
-    ('Usuario');
+INSERT INTO
+	TIPOS_PROCESO (NOMBRE)
+VALUES
+	('Estratégico'),
+	('Misional'),
+	('Apoyo');
 
-INSERT INTO tipos_proceso (nombre) VALUES
-    ('Estratégico'),
-    ('Misional'),
-    ('Apoyo');
+INSERT INTO
+	USUARIOS (NOMBRE, EMAIL, PASSWORD_HASH, ROL_ID)
+VALUES
+	(
+		'Administrador',
+		'admin2@governex.com',
+		'$2a$10$6Mg2Yn3K2b3etwW/jpCzEu/V6HWvWtun4BBiEGkpGnKaJ3vn1Nad6',
+		1
+	);
 
-
-INSERT INTO usuarios (nombre, email, password_hash, rol_id)
-VALUES (
-    'Administrador',
-    'admin2@governex.com',
-    '$2a$10$6Mg2Yn3K2b3etwW/jpCzEu/V6HWvWtun4BBiEGkpGnKaJ3vn1Nad6',
-    1
-);
 -- ============================================================
 --  ÍNDICES
 -- ============================================================
+CREATE INDEX IDX_DOCUMENTOS_ESTADO ON DOCUMENTOS (ESTADO);
 
-CREATE INDEX idx_documentos_estado      ON documentos(estado);
-CREATE INDEX idx_auditorias_estado      ON auditorias(estado);
-CREATE INDEX idx_nc_estado              ON no_conformidades(estado);
-CREATE INDEX idx_ac_estado              ON acciones_correctivas(estado);
-CREATE INDEX idx_riesgos_nivel          ON riesgos(nivel);
-CREATE INDEX idx_indicador_med_fecha    ON indicador_mediciones(fecha);
-CREATE INDEX idx_proveedor_eval_fecha   ON proveedor_evaluaciones(fecha);
+CREATE INDEX IDX_AUDITORIAS_ESTADO ON AUDITORIAS (ESTADO);
+
+CREATE INDEX IDX_NC_ESTADO ON NO_CONFORMIDADES (ESTADO);
+
+CREATE INDEX IDX_AC_ESTADO ON ACCIONES_CORRECTIVAS (ESTADO);
+
+CREATE INDEX IDX_RIESGOS_NIVEL ON RIESGOS (NIVEL);
+
+CREATE INDEX IDX_INDICADOR_MED_FECHA ON INDICADOR_MEDICIONES (FECHA);
+
+CREATE INDEX IDX_PROVEEDOR_EVAL_FECHA ON PROVEEDOR_EVALUACIONES (FECHA);
 
 -- ============================================================
 --  GOVERNEX — Extensión del Esquema de Base de Datos
 --  Migración: Tablas nuevas + columnas faltantes
 --  Compatible con schema.sql existente
 -- ============================================================
-
-
 -- ============================================================
 --  PARTE 1: COLUMNAS FALTANTES EN TABLAS EXISTENTES
 -- ============================================================
-
 -- ── riesgos: tratamiento y fecha_revision ──────────────────
-ALTER TABLE riesgos
-    ADD COLUMN IF NOT EXISTS tratamiento      TEXT,
-    ADD COLUMN IF NOT EXISTS fecha_revision   DATE;
+ALTER TABLE RIESGOS
+ADD COLUMN IF NOT EXISTS TRATAMIENTO TEXT,
+ADD COLUMN IF NOT EXISTS FECHA_REVISION DATE;
 
-COMMENT ON COLUMN riesgos.tratamiento    IS 'Descripción del plan de acción / tratamiento del riesgo (ISO 9001 §6.1)';
-COMMENT ON COLUMN riesgos.fecha_revision IS 'Próxima fecha programada de revisión del riesgo';
+COMMENT ON COLUMN RIESGOS.TRATAMIENTO IS 'Descripción del plan de acción / tratamiento del riesgo (ISO 9001 §6.1)';
+
+COMMENT ON COLUMN RIESGOS.FECHA_REVISION IS 'Próxima fecha programada de revisión del riesgo';
 
 -- ── acciones_correctivas: causa_raiz y fecha_implementacion ─
-ALTER TABLE acciones_correctivas
-    ADD COLUMN IF NOT EXISTS causa_raiz           TEXT,
-    ADD COLUMN IF NOT EXISTS fecha_implementacion DATE;
+ALTER TABLE ACCIONES_CORRECTIVAS
+ADD COLUMN IF NOT EXISTS CAUSA_RAIZ TEXT,
+ADD COLUMN IF NOT EXISTS FECHA_IMPLEMENTACION DATE;
 
-COMMENT ON COLUMN acciones_correctivas.causa_raiz           IS 'Causa raíz identificada mediante el método de análisis elegido';
-COMMENT ON COLUMN acciones_correctivas.fecha_implementacion IS 'Fecha real en que se implementó la acción correctiva';
+COMMENT ON COLUMN ACCIONES_CORRECTIVAS.CAUSA_RAIZ IS 'Causa raíz identificada mediante el método de análisis elegido';
+
+COMMENT ON COLUMN ACCIONES_CORRECTIVAS.FECHA_IMPLEMENTACION IS 'Fecha real en que se implementó la acción correctiva';
 
 -- ── personal: email y fecha_ingreso ────────────────────────
-ALTER TABLE personal
-    ADD COLUMN IF NOT EXISTS email         VARCHAR(150),
-    ADD COLUMN IF NOT EXISTS fecha_ingreso DATE;
+ALTER TABLE PERSONAL
+ADD COLUMN IF NOT EXISTS EMAIL VARCHAR(150),
+ADD COLUMN IF NOT EXISTS FECHA_INGRESO DATE;
 
-COMMENT ON COLUMN personal.email         IS 'Correo electrónico del colaborador';
-COMMENT ON COLUMN personal.fecha_ingreso IS 'Fecha de ingreso a la organización';
+COMMENT ON COLUMN PERSONAL.EMAIL IS 'Correo electrónico del colaborador';
 
+COMMENT ON COLUMN PERSONAL.FECHA_INGRESO IS 'Fecha de ingreso a la organización';
 
 -- ============================================================
 --  PARTE 2: TABLAS NUEVAS — MÓDULOS SIN PERSISTENCIA
 -- ============================================================
-
 -- ── §8.1 — Planificación y Control Operacional ─────────────
-CREATE TABLE IF NOT EXISTS planes_operacion (
-    id             SERIAL PRIMARY KEY,
-    proceso        VARCHAR(200) NOT NULL,
-    objetivo       TEXT NOT NULL,
-    criterios      TEXT,
-    recursos       TEXT,
-    controles      TEXT,
-    responsable    VARCHAR(100),
-    fecha_revision DATE,
-    estado         VARCHAR(20) NOT NULL DEFAULT 'Vigente'
-                   CHECK (estado IN ('Vigente', 'En revisión', 'Obsoleto')),
-    creado_por     INTEGER REFERENCES usuarios(id),
-    creado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS PLANES_OPERACION (
+	ID SERIAL PRIMARY KEY,
+	PROCESO VARCHAR(200) NOT NULL,
+	OBJETIVO TEXT NOT NULL,
+	CRITERIOS TEXT,
+	RECURSOS TEXT,
+	CONTROLES TEXT,
+	RESPONSABLE VARCHAR(100),
+	FECHA_REVISION DATE,
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Vigente' CHECK (ESTADO IN ('Vigente', 'En revisión', 'Obsoleto')),
+	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE planes_operacion IS 'ISO 9001:2015 §8.1 — Planificación y control operacional';
+COMMENT ON TABLE PLANES_OPERACION IS 'ISO 9001:2015 §8.1 — Planificación y control operacional';
 
 -- ── §8.2 — Requerimientos para Productos y Servicios ───────
-CREATE TABLE IF NOT EXISTS requerimientos_ps (
-    id                  SERIAL PRIMARY KEY,
-    cliente             VARCHAR(200) NOT NULL,
-    producto_servicio   VARCHAR(200) NOT NULL,
-    requisitos_cliente  TEXT,
-    requisitos_legales  TEXT,
-    requisitos_org      TEXT,
-    fecha_revision      DATE,
-    revisado_por        VARCHAR(100),
-    estado              VARCHAR(20) NOT NULL DEFAULT 'Pendiente'
-                        CHECK (estado IN ('Aprobado', 'Pendiente', 'Rechazado')),
-    creado_por          INTEGER REFERENCES usuarios(id),
-    creado_en           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS REQUERIMIENTOS_PS (
+	ID SERIAL PRIMARY KEY,
+	CLIENTE VARCHAR(200) NOT NULL,
+	PRODUCTO_SERVICIO VARCHAR(200) NOT NULL,
+	REQUISITOS_CLIENTE TEXT,
+	REQUISITOS_LEGALES TEXT,
+	REQUISITOS_ORG TEXT,
+	FECHA_REVISION DATE,
+	REVISADO_POR VARCHAR(100),
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Pendiente' CHECK (ESTADO IN ('Aprobado', 'Pendiente', 'Rechazado')),
+	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE requerimientos_ps IS 'ISO 9001:2015 §8.2 — Determinación y revisión de requisitos de P/S';
+COMMENT ON TABLE REQUERIMIENTOS_PS IS 'ISO 9001:2015 §8.2 — Determinación y revisión de requisitos de P/S';
 
 -- ── §8.3 — Diseño y Desarrollo ─────────────────────────────
-CREATE TABLE IF NOT EXISTS proyectos_diseno (
-    id             SERIAL PRIMARY KEY,
-    nombre         VARCHAR(200) NOT NULL,
-    cliente        VARCHAR(200),
-    entradas       TEXT,
-    salidas        TEXT,
-    responsable    VARCHAR(100),
-    fecha_inicio   DATE,
-    fecha_entrega  DATE,
-    etapa          VARCHAR(30) NOT NULL DEFAULT 'Planificación'
-                   CHECK (etapa IN ('Planificación', 'Desarrollo', 'Verificación', 'Validación', 'Completado')),
-    estado         VARCHAR(20) NOT NULL DEFAULT 'En tiempo'
-                   CHECK (estado IN ('En tiempo', 'En riesgo', 'Retrasado')),
-    creado_por     INTEGER REFERENCES usuarios(id),
-    creado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS PROYECTOS_DISENO (
+	ID SERIAL PRIMARY KEY,
+	NOMBRE VARCHAR(200) NOT NULL,
+	CLIENTE VARCHAR(200),
+	ENTRADAS TEXT,
+	SALIDAS TEXT,
+	RESPONSABLE VARCHAR(100),
+	FECHA_INICIO DATE,
+	FECHA_ENTREGA DATE,
+	ETAPA VARCHAR(30) NOT NULL DEFAULT 'Planificación' CHECK (
+		ETAPA IN (
+			'Planificación',
+			'Desarrollo',
+			'Verificación',
+			'Validación',
+			'Completado'
+		)
+	),
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'En tiempo' CHECK (ESTADO IN ('En tiempo', 'En riesgo', 'Retrasado')),
+	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE proyectos_diseno IS 'ISO 9001:2015 §8.3 — Diseño y desarrollo de productos y servicios';
+COMMENT ON TABLE PROYECTOS_DISENO IS 'ISO 9001:2015 §8.3 — Diseño y desarrollo de productos y servicios';
 
 -- ── §8.4 — Compras / Productos Suministrados Externamente ──
-CREATE TABLE IF NOT EXISTS ordenes_compra (
-    id             SERIAL PRIMARY KEY,
-    proveedor_id   INTEGER REFERENCES proveedores(id),
-    proveedor      VARCHAR(200) NOT NULL,
-    producto       VARCHAR(200) NOT NULL,
-    cantidad       VARCHAR(50),
-    unidad         VARCHAR(50),
-    precio_unit    VARCHAR(50),
-    total          VARCHAR(50),
-    fecha_emision  DATE,
-    fecha_entrega  DATE,
-    requisitos     TEXT,
-    responsable    VARCHAR(100),
-    estado         VARCHAR(30) NOT NULL DEFAULT 'Pendiente'
-                   CHECK (estado IN (
-                     'Pendiente',
-                     'Recibido conforme',
-                     'Recibido no conforme',
-                     'Cancelado'
-                   )),
-    observaciones  TEXT,
-    creado_por     INTEGER REFERENCES usuarios(id),
-    creado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS ORDENES_COMPRA (
+	ID SERIAL PRIMARY KEY,
+	PROVEEDOR_ID INTEGER REFERENCES PROVEEDORES (ID),
+	PROVEEDOR VARCHAR(200) NOT NULL,
+	PRODUCTO VARCHAR(200) NOT NULL,
+	CANTIDAD VARCHAR(50),
+	UNIDAD VARCHAR(50),
+	PRECIO_UNIT VARCHAR(50),
+	TOTAL VARCHAR(50),
+	FECHA_EMISION DATE,
+	FECHA_ENTREGA DATE,
+	REQUISITOS TEXT,
+	RESPONSABLE VARCHAR(100),
+	ESTADO VARCHAR(30) NOT NULL DEFAULT 'Pendiente' CHECK (
+		ESTADO IN (
+			'Pendiente',
+			'Recibido conforme',
+			'Recibido no conforme',
+			'Cancelado'
+		)
+	),
+	OBSERVACIONES TEXT,
+	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE ordenes_compra IS 'ISO 9001:2015 §8.4 — Control de productos y servicios suministrados externamente';
+COMMENT ON TABLE ORDENES_COMPRA IS 'ISO 9001:2015 §8.4 — Control de productos y servicios suministrados externamente';
 
 -- ── §8.5 — Producción y Provisión del Servicio ─────────────
-CREATE TABLE IF NOT EXISTS ordenes_produccion (
-    id                  SERIAL PRIMARY KEY,
-    codigo              VARCHAR(30) NOT NULL UNIQUE,
-    producto_servicio   VARCHAR(200) NOT NULL,
-    cliente             VARCHAR(200),
-    cantidad            VARCHAR(50),
-    instruccion_trabajo VARCHAR(50),
-    equipos             TEXT,
-    responsable         VARCHAR(100),
-    fecha_inicio        DATE,
-    fecha_entrega       DATE,
-    etapa               VARCHAR(30) NOT NULL DEFAULT 'Programado'
-                        CHECK (etapa IN (
-                          'Programado',
-                          'En proceso',
-                          'Control de calidad',
-                          'Entregado'
-                        )),
-    conformidad         VARCHAR(30) NOT NULL DEFAULT 'Pendiente inspección'
-                        CHECK (conformidad IN (
-                          'Conforme',
-                          'No conforme',
-                          'Pendiente inspección'
-                        )),
-    creado_por          INTEGER REFERENCES usuarios(id),
-    creado_en           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS ORDENES_PRODUCCION (
+	ID SERIAL PRIMARY KEY,
+	CODIGO VARCHAR(30) NOT NULL UNIQUE,
+	PRODUCTO_SERVICIO VARCHAR(200) NOT NULL,
+	CLIENTE VARCHAR(200),
+	CANTIDAD VARCHAR(50),
+	INSTRUCCION_TRABAJO VARCHAR(50),
+	EQUIPOS TEXT,
+	RESPONSABLE VARCHAR(100),
+	FECHA_INICIO DATE,
+	FECHA_ENTREGA DATE,
+	ETAPA VARCHAR(30) NOT NULL DEFAULT 'Programado' CHECK (
+		ETAPA IN (
+			'Programado',
+			'En proceso',
+			'Control de calidad',
+			'Entregado'
+		)
+	),
+	CONFORMIDAD VARCHAR(30) NOT NULL DEFAULT 'Pendiente inspección' CHECK (
+		CONFORMIDAD IN ('Conforme', 'No conforme', 'Pendiente inspección')
+	),
+	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE ordenes_produccion IS 'ISO 9001:2015 §8.5 — Producción y provisión del servicio';
+COMMENT ON TABLE ORDENES_PRODUCCION IS 'ISO 9001:2015 §8.5 — Producción y provisión del servicio';
 
 -- ── §8.6 — Liberación de Productos y Servicios ─────────────
-CREATE TABLE IF NOT EXISTS liberaciones_ps (
-    id                    SERIAL PRIMARY KEY,
-    codigo_op             VARCHAR(30),
-    orden_produccion_id   INTEGER REFERENCES ordenes_produccion(id),
-    producto_servicio     VARCHAR(200) NOT NULL,
-    cliente               VARCHAR(200),
-    criterios_aceptacion  TEXT,
-    inspeccion_realizada  TEXT,
-    resultados            TEXT,
-    autorizado_por        VARCHAR(100),
-    fecha                 DATE NOT NULL DEFAULT CURRENT_DATE,
-    decision              VARCHAR(20) NOT NULL DEFAULT 'Liberado'
-                          CHECK (decision IN ('Liberado', 'Retenido', 'Rechazado')),
-    observaciones         TEXT,
-    creado_por            INTEGER REFERENCES usuarios(id),
-    creado_en             TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS LIBERACIONES_PS (
+	ID SERIAL PRIMARY KEY,
+	CODIGO_OP VARCHAR(30),
+	ORDEN_PRODUCCION_ID INTEGER REFERENCES ORDENES_PRODUCCION (ID),
+	PRODUCTO_SERVICIO VARCHAR(200) NOT NULL,
+	CLIENTE VARCHAR(200),
+	CRITERIOS_ACEPTACION TEXT,
+	INSPECCION_REALIZADA TEXT,
+	RESULTADOS TEXT,
+	AUTORIZADO_POR VARCHAR(100),
+	FECHA DATE NOT NULL DEFAULT CURRENT_DATE,
+	DECISION VARCHAR(20) NOT NULL DEFAULT 'Liberado' CHECK (DECISION IN ('Liberado', 'Retenido', 'Rechazado')),
+	OBSERVACIONES TEXT,
+	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE liberaciones_ps IS 'ISO 9001:2015 §8.6 — Liberación de productos y servicios';
+COMMENT ON TABLE LIBERACIONES_PS IS 'ISO 9001:2015 §8.6 — Liberación de productos y servicios';
 
 -- ── §8.7 — Control de las Salidas No Conformes ─────────────
-CREATE TABLE IF NOT EXISTS salidas_nc (
-    id             SERIAL PRIMARY KEY,
-    codigo         VARCHAR(30) NOT NULL UNIQUE,
-    descripcion    TEXT NOT NULL,
-    proceso        VARCHAR(150),
-    detectado_en   VARCHAR(30) NOT NULL
-                   CHECK (detectado_en IN (
-                     'Producción',
-                     'Inspección final',
-                     'Entrega',
-                     'Postventa',
-                     'Proveedor'
-                   )),
-    disposicion    VARCHAR(40) NOT NULL
-                   CHECK (disposicion IN (
-                     'Reparar',
-                     'Reprocesar',
-                     'Concesión al cliente',
-                     'Devolver al proveedor',
-                     'Desechar'
-                   )),
-    responsable    VARCHAR(100),
-    fecha          DATE NOT NULL DEFAULT CURRENT_DATE,
-    accion_tomada  TEXT,
-    verificado_por VARCHAR(100),
-    estado         VARCHAR(20) NOT NULL DEFAULT 'Abierta'
-                   CHECK (estado IN ('Abierta', 'En tratamiento', 'Cerrada')),
-    nc_id          INTEGER REFERENCES no_conformidades(id),
-    creado_por     INTEGER REFERENCES usuarios(id),
-    creado_en      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS SALIDAS_NC (
+	ID SERIAL PRIMARY KEY,
+	CODIGO VARCHAR(30) NOT NULL UNIQUE,
+	DESCRIPCION TEXT NOT NULL,
+	PROCESO VARCHAR(150),
+	DETECTADO_EN VARCHAR(30) NOT NULL CHECK (
+		DETECTADO_EN IN (
+			'Producción',
+			'Inspección final',
+			'Entrega',
+			'Postventa',
+			'Proveedor'
+		)
+	),
+	DISPOSICION VARCHAR(40) NOT NULL CHECK (
+		DISPOSICION IN (
+			'Reparar',
+			'Reprocesar',
+			'Concesión al cliente',
+			'Devolver al proveedor',
+			'Desechar'
+		)
+	),
+	RESPONSABLE VARCHAR(100),
+	FECHA DATE NOT NULL DEFAULT CURRENT_DATE,
+	ACCION_TOMADA TEXT,
+	VERIFICADO_POR VARCHAR(100),
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Abierta' CHECK (
+		ESTADO IN ('Abierta', 'En tratamiento', 'Cerrada')
+	),
+	NC_ID INTEGER REFERENCES NO_CONFORMIDADES (ID),
+	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE salidas_nc IS 'ISO 9001:2015 §8.7 — Control de salidas no conformes';
+COMMENT ON TABLE SALIDAS_NC IS 'ISO 9001:2015 §8.7 — Control de salidas no conformes';
 
 -- ── §7.3 — Toma de Consciencia ──────────────────────────────
-CREATE TABLE IF NOT EXISTS toma_consciencia (
-    id           SERIAL PRIMARY KEY,
-    colaborador  VARCHAR(100) NOT NULL,
-    cargo        VARCHAR(100),
-    proceso      VARCHAR(150),
-    tema         VARCHAR(200) NOT NULL,
-    fecha        DATE,
-    modalidad    VARCHAR(20) NOT NULL
-                 CHECK (modalidad IN (
-                   'Capacitación',
-                   'Comunicado',
-                   'Taller',
-                   'Inducción',
-                   'E-learning'
-                 )),
-    evidencia    TEXT,
-    estado       VARCHAR(20) NOT NULL DEFAULT 'Pendiente'
-                 CHECK (estado IN ('Pendiente', 'Completado', 'Vencido')),
-    personal_id  INTEGER REFERENCES personal(id),
-    creado_por   INTEGER REFERENCES usuarios(id),
-    creado_en    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS TOMA_CONSCIENCIA (
+	ID SERIAL PRIMARY KEY,
+	COLABORADOR VARCHAR(100) NOT NULL,
+	CARGO VARCHAR(100),
+	PROCESO VARCHAR(150),
+	TEMA VARCHAR(200) NOT NULL,
+	FECHA DATE,
+	MODALIDAD VARCHAR(20) NOT NULL CHECK (
+		MODALIDAD IN (
+			'Capacitación',
+			'Comunicado',
+			'Taller',
+			'Inducción',
+			'E-learning'
+		)
+	),
+	EVIDENCIA TEXT,
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Pendiente' CHECK (ESTADO IN ('Pendiente', 'Completado', 'Vencido')),
+	PERSONAL_ID INTEGER REFERENCES PERSONAL (ID),
+	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE toma_consciencia IS 'ISO 9001:2015 §7.3 — Toma de consciencia del personal sobre el SGC';
+COMMENT ON TABLE TOMA_CONSCIENCIA IS 'ISO 9001:2015 §7.3 — Toma de consciencia del personal sobre el SGC';
 
 -- ── §7.4 — Comunicación ────────────────────────────────────
-CREATE TABLE IF NOT EXISTS comunicaciones (
-    id       SERIAL PRIMARY KEY,
-    que      VARCHAR(200) NOT NULL,
-    cuando   VARCHAR(200),
-    quien    VARCHAR(100),
-    a_quien  VARCHAR(200),
-    como     VARCHAR(200),
-    tipo     VARCHAR(10) NOT NULL DEFAULT 'Interna'
-             CHECK (tipo IN ('Interna', 'Externa')),
-    estado   VARCHAR(20) NOT NULL DEFAULT 'Activo'
-             CHECK (estado IN ('Activo', 'Revisión', 'Inactivo')),
-    creado_por INTEGER REFERENCES usuarios(id),
-    creado_en  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS COMUNICACIONES (
+	ID SERIAL PRIMARY KEY,
+	QUE VARCHAR(200) NOT NULL,
+	CUANDO VARCHAR(200),
+	QUIEN VARCHAR(100),
+	A_QUIEN VARCHAR(200),
+	COMO VARCHAR(200),
+	TIPO VARCHAR(10) NOT NULL DEFAULT 'Interna' CHECK (TIPO IN ('Interna', 'Externa')),
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Activo' CHECK (ESTADO IN ('Activo', 'Revisión', 'Inactivo')),
+	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE comunicaciones IS 'ISO 9001:2015 §7.4 — Matriz de comunicaciones internas y externas';
+COMMENT ON TABLE COMUNICACIONES IS 'ISO 9001:2015 §7.4 — Matriz de comunicaciones internas y externas';
 
 -- ── §10.3 — Mejora Continua ────────────────────────────────
-CREATE TABLE IF NOT EXISTS mejoras_continuas (
-    id                SERIAL PRIMARY KEY,
-    codigo            VARCHAR(30) NOT NULL UNIQUE,
-    titulo            VARCHAR(200) NOT NULL,
-    origen            VARCHAR(40) NOT NULL
-                      CHECK (origen IN (
-                        'Auditoría',
-                        'Indicador',
-                        'Revisión dirección',
-                        'Sugerencia',
-                        'Análisis de datos',
-                        'Quejas cliente'
-                      )),
-    proceso           VARCHAR(150),
-    descripcion       TEXT,
-    beneficio_esperado TEXT,
-    responsable       VARCHAR(100),
-    fecha_inicio      DATE,
-    fecha_cierre      DATE,
-    avance_pct        INTEGER NOT NULL DEFAULT 0
-                      CHECK (avance_pct BETWEEN 0 AND 100),
-    estado            VARCHAR(20) NOT NULL DEFAULT 'Propuesta'
-                      CHECK (estado IN (
-                        'Propuesta',
-                        'Aprobada',
-                        'En ejecución',
-                        'Completada',
-                        'Cancelada'
-                      )),
-    proceso_id        INTEGER REFERENCES procesos(id),
-    creado_por        INTEGER REFERENCES usuarios(id),
-    creado_en         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS MEJORAS_CONTINUAS (
+	ID SERIAL PRIMARY KEY,
+	CODIGO VARCHAR(30) NOT NULL UNIQUE,
+	TITULO VARCHAR(200) NOT NULL,
+	ORIGEN VARCHAR(40) NOT NULL CHECK (
+		ORIGEN IN (
+			'Auditoría',
+			'Indicador',
+			'Revisión dirección',
+			'Sugerencia',
+			'Análisis de datos',
+			'Quejas cliente'
+		)
+	),
+	PROCESO VARCHAR(150),
+	DESCRIPCION TEXT,
+	BENEFICIO_ESPERADO TEXT,
+	RESPONSABLE VARCHAR(100),
+	FECHA_INICIO DATE,
+	FECHA_CIERRE DATE,
+	AVANCE_PCT INTEGER NOT NULL DEFAULT 0 CHECK (AVANCE_PCT BETWEEN 0 AND 100),
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Propuesta' CHECK (
+		ESTADO IN (
+			'Propuesta',
+			'Aprobada',
+			'En ejecución',
+			'Completada',
+			'Cancelada'
+		)
+	),
+	PROCESO_ID INTEGER REFERENCES PROCESOS (ID),
+	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE mejoras_continuas IS 'ISO 9001:2015 §10.3 — Iniciativas de mejora continua del SGC';
+COMMENT ON TABLE MEJORAS_CONTINUAS IS 'ISO 9001:2015 §10.3 — Iniciativas de mejora continua del SGC';
 
+CREATE TABLE IF NOT EXISTS OBJETIVOS_CALIDAD (
+	ID SERIAL PRIMARY KEY,
+	CODIGO VARCHAR(20) NOT NULL UNIQUE,
+	OBJETIVO TEXT NOT NULL,
+	PROCESO_RELACIONADO VARCHAR(150),
+	FUENTE_RIESGO_OPORTUNIDAD TEXT, -- descripción del R/O que lo origina
+	TIPO_FUENTE VARCHAR(20) NOT NULL DEFAULT 'Riesgo' CHECK (TIPO_FUENTE IN ('Riesgo', 'Oportunidad')),
+	ACCION TEXT NOT NULL, -- acción para tratar el R/O
+	RESPONSABLE VARCHAR(100) NOT NULL,
+	RECURSOS TEXT,
+	FRECUENCIA_MEDICION VARCHAR(30) NOT NULL CHECK (
+		FRECUENCIA_MEDICION IN (
+			'Mensual',
+			'Bimestral',
+			'Trimestral',
+			'Cuatrimestral',
+			'Semestral',
+			'Anual'
+		)
+	),
+	META VARCHAR(150) NOT NULL, -- valor / porcentaje esperado
+	INDICADOR TEXT NOT NULL, -- cómo se va a medir
+	FECHA_INICIO DATE,
+	FECHA_FIN DATE,
+	ESTADO VARCHAR(30) NOT NULL DEFAULT 'Pendiente' CHECK (
+		ESTADO IN (
+			'Pendiente',
+			'En Progreso',
+			'Cumplido',
+			'No Cumplido'
+		)
+	),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS OBJETIVOS_CALIDAD_MEDICIONES (
+	ID SERIAL PRIMARY KEY,
+	OBJETIVO_ID INTEGER NOT NULL REFERENCES OBJETIVOS_CALIDAD (ID) ON DELETE CASCADE,
+	PERIODO VARCHAR(30) NOT NULL, -- ej. "Q1 2025", "Sem-1 2025"
+	VALOR NUMERIC(10, 2) NOT NULL,
+	ESTADO VARCHAR(30) NOT NULL CHECK (
+		ESTADO IN ('Cumplido', 'En Progreso', 'No Cumplido')
+	),
+	COMENTARIO TEXT,
+	FECHA DATE NOT NULL DEFAULT CURRENT_DATE,
+	REGISTRADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE objetivos_calidad
+ADD COLUMN IF NOT EXISTS _riesgo_codigo VARCHAR(20),
+ADD COLUMN IF NOT EXISTS _riesgo_nivel  SMALLINT;
+--
+CREATE INDEX IF NOT EXISTS idx_oc_riesgo_codigo
+ON objetivos_calidad(_riesgo_codigo);
 
 -- ============================================================
 --  PARTE 3: ÍNDICES PARA LAS NUEVAS TABLAS
 -- ============================================================
+CREATE INDEX IF NOT EXISTS IDX_PLANES_OP_ESTADO ON PLANES_OPERACION (ESTADO);
 
-CREATE INDEX IF NOT EXISTS idx_planes_op_estado         ON planes_operacion(estado);
-CREATE INDEX IF NOT EXISTS idx_reqs_ps_estado           ON requerimientos_ps(estado);
-CREATE INDEX IF NOT EXISTS idx_proyectos_diseno_etapa   ON proyectos_diseno(etapa);
-CREATE INDEX IF NOT EXISTS idx_ordenes_compra_estado    ON ordenes_compra(estado);
-CREATE INDEX IF NOT EXISTS idx_ordenes_prod_etapa       ON ordenes_produccion(etapa);
-CREATE INDEX IF NOT EXISTS idx_ordenes_prod_conformidad ON ordenes_produccion(conformidad);
-CREATE INDEX IF NOT EXISTS idx_liberaciones_decision    ON liberaciones_ps(decision);
-CREATE INDEX IF NOT EXISTS idx_salidas_nc_estado        ON salidas_nc(estado);
-CREATE INDEX IF NOT EXISTS idx_toma_consciencia_estado  ON toma_consciencia(estado);
-CREATE INDEX IF NOT EXISTS idx_comunicaciones_tipo      ON comunicaciones(tipo);
-CREATE INDEX IF NOT EXISTS idx_mejoras_estado           ON mejoras_continuas(estado);
-CREATE INDEX IF NOT EXISTS idx_mejoras_origen           ON mejoras_continuas(origen);
+CREATE INDEX IF NOT EXISTS IDX_REQS_PS_ESTADO ON REQUERIMIENTOS_PS (ESTADO);
 
+CREATE INDEX IF NOT EXISTS IDX_PROYECTOS_DISENO_ETAPA ON PROYECTOS_DISENO (ETAPA);
+
+CREATE INDEX IF NOT EXISTS IDX_ORDENES_COMPRA_ESTADO ON ORDENES_COMPRA (ESTADO);
+
+CREATE INDEX IF NOT EXISTS IDX_ORDENES_PROD_ETAPA ON ORDENES_PRODUCCION (ETAPA);
+
+CREATE INDEX IF NOT EXISTS IDX_ORDENES_PROD_CONFORMIDAD ON ORDENES_PRODUCCION (CONFORMIDAD);
+
+CREATE INDEX IF NOT EXISTS IDX_LIBERACIONES_DECISION ON LIBERACIONES_PS (DECISION);
+
+CREATE INDEX IF NOT EXISTS IDX_SALIDAS_NC_ESTADO ON SALIDAS_NC (ESTADO);
+
+CREATE INDEX IF NOT EXISTS IDX_TOMA_CONSCIENCIA_ESTADO ON TOMA_CONSCIENCIA (ESTADO);
+
+CREATE INDEX IF NOT EXISTS IDX_COMUNICACIONES_TIPO ON COMUNICACIONES (TIPO);
+
+CREATE INDEX IF NOT EXISTS IDX_MEJORAS_ESTADO ON MEJORAS_CONTINUAS (ESTADO);
+
+CREATE INDEX IF NOT EXISTS IDX_MEJORAS_ORIGEN ON MEJORAS_CONTINUAS (ORIGEN);
+
+-- Índices de soporte
+CREATE INDEX IF NOT EXISTS IDX_OCM_OBJETIVO_ID ON OBJETIVOS_CALIDAD_MEDICIONES (OBJETIVO_ID);
+
+CREATE INDEX IF NOT EXISTS IDX_OC_ESTADO ON OBJETIVOS_CALIDAD (ESTADO);
+
+CREATE INDEX IF NOT EXISTS IDX_OC_TIPO_FUENTE ON OBJETIVOS_CALIDAD (TIPO_FUENTE);
 
 -- ============================================================
 --  PARTE 4: DATOS SEMILLA INICIALES
 -- ============================================================
-
 -- Datos semilla para comunicaciones (matriz base del SGC)
-INSERT INTO comunicaciones (que, cuando, quien, a_quien, como, tipo, estado) VALUES
-  ('Política y objetivos de calidad',    'Al ingreso y revisión anual',       'Alta Dirección',       'Todo el personal',              'Reunión, cartelera, intranet',              'Interna', 'Activo'),
-  ('Resultados de auditorías internas',  'Al cierre de cada auditoría',        'Auditor Líder',        'Dueños de proceso auditados',   'Informe escrito + reunión de cierre',       'Interna', 'Activo'),
-  ('Cambios en el SGC',                  'Antes de implementar cambios',       'Director de Calidad',  'Personal impactado',            'Correo electrónico + capacitación',         'Interna', 'Activo'),
-  ('Retroalimentación al cliente',       'Después de cada entrega',            'Director Comercial',   'Clientes',                      'Encuesta de satisfacción + llamada',        'Externa', 'Activo'),
-  ('Requisitos a proveedores',           'Al emitir orden de compra',          'Jefe de Compras',      'Proveedores aprobados',         'Orden de compra + especificaciones',        'Externa', 'Activo'),
-  ('Indicadores de desempeño del SGC',   'Mensualmente',                       'Coordinador Calidad',  'Gerencia y dueños de proceso',  'Informe mensual + tablero de indicadores',  'Interna', 'Activo')
+INSERT INTO
+	COMUNICACIONES (QUE, CUANDO, QUIEN, A_QUIEN, COMO, TIPO, ESTADO)
+VALUES
+	(
+		'Política y objetivos de calidad',
+		'Al ingreso y revisión anual',
+		'Alta Dirección',
+		'Todo el personal',
+		'Reunión, cartelera, intranet',
+		'Interna',
+		'Activo'
+	),
+	(
+		'Resultados de auditorías internas',
+		'Al cierre de cada auditoría',
+		'Auditor Líder',
+		'Dueños de proceso auditados',
+		'Informe escrito + reunión de cierre',
+		'Interna',
+		'Activo'
+	),
+	(
+		'Cambios en el SGC',
+		'Antes de implementar cambios',
+		'Director de Calidad',
+		'Personal impactado',
+		'Correo electrónico + capacitación',
+		'Interna',
+		'Activo'
+	),
+	(
+		'Retroalimentación al cliente',
+		'Después de cada entrega',
+		'Director Comercial',
+		'Clientes',
+		'Encuesta de satisfacción + llamada',
+		'Externa',
+		'Activo'
+	),
+	(
+		'Requisitos a proveedores',
+		'Al emitir orden de compra',
+		'Jefe de Compras',
+		'Proveedores aprobados',
+		'Orden de compra + especificaciones',
+		'Externa',
+		'Activo'
+	),
+	(
+		'Indicadores de desempeño del SGC',
+		'Mensualmente',
+		'Coordinador Calidad',
+		'Gerencia y dueños de proceso',
+		'Informe mensual + tablero de indicadores',
+		'Interna',
+		'Activo'
+	)
 ON CONFLICT DO NOTHING;

@@ -1,0 +1,349 @@
+/* ══════════════════════════════════════════════════════════════
+   ObjetivosCalidadPage.css — §6.2 Objetivos de Calidad
+   ══════════════════════════════════════════════════════════════ */
+
+/* ─── Breadcrumb ──────────────────────────────────────────── */
+.oc-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: #7a8fa6;
+  margin-bottom: 0.25rem;
+}
+.oc-breadcrumb__sep    { color: #b0bdcc; }
+.oc-breadcrumb__active { color: #3d5a80; font-weight: 500; }
+
+/* ─── Header actions ──────────────────────────────────────── */
+.oc-header-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.oc-btn-confirm-all {
+  background: #059669 !important;
+  font-size: 0.86rem;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+}
+.oc-btn-confirm-all:hover { background: #047857 !important; }
+
+.oc-btn-regen {
+  font-size: 0.86rem;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+}
+
+/* ─── Banner de borradores ────────────────────────────────── */
+.oc-banner-borrador {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-left: 4px solid #f59e0b;
+  border-radius: 0.6rem;
+  font-size: 0.85rem;
+  color: #78350f;
+  line-height: 1.55;
+}
+.oc-banner-borrador__icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+/* ─── KPIs ────────────────────────────────────────────────── */
+.oc-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+
+.oc-kpi {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  transition: box-shadow 0.15s;
+}
+.oc-kpi:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.07); }
+.oc-kpi__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.oc-kpi__label {
+  font-size: 0.73rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* ─── Filtros ─────────────────────────────────────────────── */
+.oc-search {
+  padding: 0.42rem 0.75rem;
+  border: 1px solid #d1dce8;
+  border-radius: 0.5rem;
+  font-size: 0.82rem;
+  color: #1a2b45;
+  background: #f9fbfd;
+  outline: none;
+  min-width: 180px;
+  transition: border-color 0.18s;
+}
+.oc-search:focus { border-color: #2e86de; }
+
+.oc-filter-select {
+  padding: 0.42rem 0.65rem;
+  border: 1px solid #d1dce8;
+  border-radius: 0.5rem;
+  font-size: 0.82rem;
+  color: #1a2b45;
+  background: #f9fbfd;
+  cursor: pointer;
+  outline: none;
+}
+
+/* ─── Tabla / Matriz ──────────────────────────────────────── */
+.oc-matrix-wrapper { overflow-x: auto; }
+.oc-matrix         { min-width: 1200px; }
+
+/* ─── Fila normal ─────────────────────────────────────────── */
+.oc-matrix-row {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.oc-matrix-row:hover td { background: #f0f6ff; }
+
+/* ─── Fila borrador (generada por IA, no confirmada) ──────── */
+.oc-matrix-row--borrador td {
+  background: #fffdf0 !important;
+  border-left: 0;
+}
+.oc-matrix-row--borrador:first-child td:first-child {
+  border-left: 3px solid #f59e0b;
+}
+.oc-matrix-row--borrador:hover td { background: #fef9e7 !important; }
+
+/* ─── Código + tag borrador ───────────────────────────────── */
+.oc-code-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.oc-matrix__code {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #2e86de;
+  white-space: nowrap;
+}
+.oc-draft-tag {
+  display: inline-block;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.63rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid #fcd34d;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Celdas de texto largo ───────────────────────────────── */
+.oc-matrix__objetivo,
+.oc-matrix__accion {
+  max-width: 200px;
+  white-space: normal;
+  line-height: 1.4;
+  font-size: 0.8rem;
+}
+
+/* ─── Tipo badge ──────────────────────────────────────────── */
+.oc-tipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.71rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.oc-tipo--riesgo      { background: #fff3e0; color: #b45309; border: 1px solid #fcd34d; }
+.oc-tipo--oportunidad { background: #f0eaff; color: #6d28d9; border: 1px solid #c4b5fd; }
+
+/* ─── Nivel de criticidad ─────────────────────────────────── */
+.oc-nivel {
+  display: inline-block;
+  padding: 0.18rem 0.5rem;
+  border-radius: 0.3rem;
+  font-size: 0.71rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.oc-nivel--critico  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.oc-nivel--alto     { background: #ffe5cc; color: #8a3a00; border: 1px solid #fdba74; }
+.oc-nivel--medio    { background: #fef9c3; color: #713f12; border: 1px solid #fde047; }
+.oc-nivel--bajo     { background: #dcfce7; color: #14532d; border: 1px solid #86efac; }
+
+/* ─── Frecuencia chip ─────────────────────────────────────── */
+.oc-freq {
+  display: inline-block;
+  background: #e0f0ff;
+  color: #1a6ebd;
+  font-size: 0.71rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.3rem;
+  white-space: nowrap;
+}
+
+/* ─── Estado badges ───────────────────────────────────────── */
+.oc-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.oc-badge--pendiente  { background: #f3f4f6; color: #374151;  border: 1px solid #d1d5db; }
+.oc-badge--progreso   { background: #fef3c7; color: #92400e;  border: 1px solid #fcd34d; }
+.oc-badge--cumplido   { background: #d1fae5; color: #065f46;  border: 1px solid #6ee7b7; }
+.oc-badge--nocumplido { background: #fee2e2; color: #991b1b;  border: 1px solid #fca5a5; }
+
+/* ─── Acciones en fila ────────────────────────────────────── */
+.oc-matrix__actions {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+/* ─── Fila expandida ──────────────────────────────────────── */
+.oc-expand-row td {
+  padding: 0 !important;
+  background: #f8fafc !important;
+  border-bottom: 2px solid #e5e7eb !important;
+}
+.oc-expand-content {
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.oc-expand-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+.oc-expand-field {
+  display: flex;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: #374151;
+  align-items: flex-start;
+  max-width: 500px;
+}
+.oc-expand-label {
+  font-weight: 700;
+  color: #1b3a6b;
+  white-space: nowrap;
+}
+
+/* ─── Historial de mediciones ─────────────────────────────── */
+.oc-mediciones h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1b3a6b;
+}
+.oc-med-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  background: #fff;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+.oc-med-table th {
+  background: #1b3a6b;
+  color: #fff;
+  padding: 0.4rem 0.7rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+.oc-med-table td {
+  padding: 0.4rem 0.7rem;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+.oc-med-table tr:last-child td  { border-bottom: none; }
+.oc-med-table tr:nth-child(even) td { background: #f8fafc; }
+
+.oc-no-med {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  font-style: italic;
+  margin: 0;
+}
+
+/* ─── Modal ───────────────────────────────────────────────── */
+.oc-modal        { max-width: 660px; }
+.oc-modal__hint  {
+  margin: -0.25rem 0 0;
+  font-size: 0.82rem;
+  color: #6b7280;
+  font-style: italic;
+}
+.oc-form-row--full { grid-template-columns: 1fr !important; }
+
+/* ─── Empty state ─────────────────────────────────────────── */
+.oc-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 2rem;
+  background: #fff;
+  border-radius: 1rem;
+  border: 2px dashed #d1dce8;
+  text-align: center;
+  max-width: 580px;
+  margin: 2rem auto;
+}
+.oc-empty-state__icon { font-size: 3.5rem; line-height: 1; }
+.oc-empty-state h3    { margin: 0; font-size: 1.2rem; font-weight: 700; color: #1a2b45; }
+.oc-empty-state p     { margin: 0; color: #4a5e78; font-size: 0.92rem; line-height: 1.6; }
+.oc-empty-state__steps {
+  margin: 0; padding-left: 1.5rem; text-align: left;
+  color: #4a5e78; font-size: 0.88rem; line-height: 2;
+}
+.oc-empty-cta {
+  display: inline-block; background: #1a6ebd; color: #fff;
+  border-radius: 999px; padding: 0.65rem 1.4rem;
+  font-size: 0.88rem; font-weight: 600; text-decoration: none;
+  transition: background 0.18s;
+}
+.oc-empty-cta:hover { background: #1558a0; }
+
+/* ─── Responsive ──────────────────────────────────────────── */
+@media (max-width: 1300px) { .oc-kpis { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 900px)  { .oc-kpis { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) {
+  .oc-kpis { grid-template-columns: 1fr 1fr; }
+  .oc-header-actions { flex-direction: column; width: 100%; }
+  .oc-btn-confirm-all, .oc-btn-regen { width: 100%; justify-content: center; }
+}

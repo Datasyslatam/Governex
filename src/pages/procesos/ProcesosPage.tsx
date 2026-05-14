@@ -1,21 +1,19 @@
 /**
- * ProcesosPage.tsx  (MODIFICADO — integración Gemini real)
- * Ruta: src/pages/procesos/ProcesosPage.tsx
+ * ProcesosPage.tsx  (CORREGIDO — callbacks estables con useCallback)
  *
- * Cambios respecto al original:
- * 1. Se añade estado aiAnalysis para guardar resultado de Gemini.
- * 2. Al guardar el mapa (manual o IA), se llama a POST /api/gemini/analizar-organigrama.
- * 3. PESTEL, DOFA y Caracterización se muestran desde aiAnalysis si está disponible.
- * 4. Se añade modal de contexto (empresa/sector) antes de llamar a Gemini.
- * 5. Se muestra spinner de "Analizando con IA..." mientras Gemini trabaja.
+ * Fix: handleEmpresaConfirm y handleCancel se envuelven en useCallback
+ * para que EmpresaFormModal no reciba nuevas referencias en cada render,
+ * lo que causaba re-montaje del modal y pérdida de foco en los inputs.
  */
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import './ProcesosPage.css'
 import Swal from 'sweetalert2'
 import { useFetch } from '../../hooks/useFetch'
 import { procesosService } from '../../services'
-import { useAIAnalysis } from '../../context/AIAnalysisContext'
+import { useAIAnalysis, DatosEmpresa } from '../../context/AIAnalysisContext'
+import EmpresaFormModal            from './EmpresaFormModal'
+import ContextoOrganizacionalPanel from './ContextoOrganizacionalPanel'
 
 /* ─────────────────────────── TIPOS ─────────────────────────── */
 type Tab     = 'mapa' | 'contexto' | 'caracterizacion'
@@ -56,10 +54,11 @@ interface CaracterizacionRow {
 }
 
 interface AiAnalysis {
-  pestel:          PestelRow[]
-  dofa:            DofaRow[]
-  caracterizacion: CaracterizacionRow[]
-  matrizRoles?:    any[]
+  pestel:             PestelRow[]
+  dofa:               DofaRow[]
+  caracterizacion:    CaracterizacionRow[]
+  matrizRoles?:       any[]
+  contextoNarrativo?: string
 }
 
 /* ─────────────────── DATOS BASE DEL MAPA ─────────────────── */
@@ -78,9 +77,9 @@ interface ProcessDetail {
 }
 
 let processDetailsMap: Record<string, ProcessDetail> = {
-  'gestión de la dirección':  { objetivo: 'Asegurar el liderazgo y compromiso de la alta dirección con el SGC.', entradas: 'Resultados de auditorías, retroalimentación del cliente, indicadores de desempeño.', salidas: 'Política de calidad, objetivos estratégicos, actas de revisión por la dirección.', indicador: '% cumplimiento de objetivos de calidad', responsable: 'Gerente General', clausula: 'Cap. 5', procedimiento: 'PR-DIR-01: Revisión por la Dirección\n1. Recopilar informes de indicadores y auditorías.\n2. Revisar el desempeño del SGC en reunión.\n3. Identificar oportunidades de mejora y asignar responsables.\n4. Emitir acta y comunicar decisiones a las áreas.' },
-  'planificación del sgc':    { objetivo: 'Establecer acciones para abordar riesgos y lograr objetivos de calidad.', entradas: 'Contexto organizacional, DOFA, PESTEL, requisitos de partes interesadas.', salidas: 'Matriz de riesgos y oportunidades, plan de acción, objetivos de calidad.', indicador: '% de riesgos con plan de tratamiento activo', responsable: 'Director de Calidad', clausula: 'Cap. 6', procedimiento: 'PR-PLA-01: Gestión de Riesgos\n1. Identificar riesgos y oportunidades del contexto.\n2. Valorar probabilidad e impacto de cada riesgo.\n3. Definir acciones de tratamiento y responsables.\n4. Hacer seguimiento trimestral y actualizar la matriz.' },
-  'mejora continua':           { objetivo: 'Gestionar no conformidades y acciones correctivas para mejorar el SGC.', entradas: 'Hallazgos de auditorías, quejas, indicadores fuera de meta.', salidas: 'Acciones correctivas ejecutadas, informes de mejora, cierre de no conformidades.', indicador: '% de acciones correctivas cerradas en el plazo', responsable: 'Coordinador de Calidad', clausula: 'Cap. 10', procedimiento: 'PR-MEJ-01: Control de No Conformidades\n1. Registrar la no conformidad con evidencia objetiva.\n2. Analizar causa raíz (5 Por qués o Ishikawa).\n3. Definir e implementar acción correctiva.\n4. Verificar eficacia a los 30 días y cerrar el registro.' },
+  'gestión de la dirección': { objetivo: 'Asegurar el liderazgo y compromiso de la alta dirección con el SGC.', entradas: 'Resultados de auditorías, retroalimentación del cliente, indicadores de desempeño.', salidas: 'Política de calidad, objetivos estratégicos, actas de revisión por la dirección.', indicador: '% cumplimiento de objetivos de calidad', responsable: 'Gerente General', clausula: 'Cap. 5', procedimiento: 'PR-DIR-01: Revisión por la Dirección\n1. Recopilar informes de indicadores y auditorías.\n2. Revisar el desempeño del SGC en reunión.\n3. Identificar oportunidades de mejora y asignar responsables.\n4. Emitir acta y comunicar decisiones a las áreas.' },
+  'planificación del sgc':   { objetivo: 'Establecer acciones para abordar riesgos y lograr objetivos de calidad.', entradas: 'Contexto organizacional, DOFA, PESTEL, requisitos de partes interesadas.', salidas: 'Matriz de riesgos y oportunidades, plan de acción, objetivos de calidad.', indicador: '% de riesgos con plan de tratamiento activo', responsable: 'Director de Calidad', clausula: 'Cap. 6', procedimiento: 'PR-PLA-01: Gestión de Riesgos\n1. Identificar riesgos y oportunidades del contexto.\n2. Valorar probabilidad e impacto de cada riesgo.\n3. Definir acciones de tratamiento y responsables.\n4. Hacer seguimiento trimestral y actualizar la matriz.' },
+  'mejora continua':          { objetivo: 'Gestionar no conformidades y acciones correctivas para mejorar el SGC.', entradas: 'Hallazgos de auditorías, quejas, indicadores fuera de meta.', salidas: 'Acciones correctivas ejecutadas, informes de mejora, cierre de no conformidades.', indicador: '% de acciones correctivas cerradas en el plazo', responsable: 'Coordinador de Calidad', clausula: 'Cap. 10', procedimiento: 'PR-MEJ-01: Control de No Conformidades\n1. Registrar la no conformidad con evidencia objetiva.\n2. Analizar causa raíz (5 Por qués o Ishikawa).\n3. Definir e implementar acción correctiva.\n4. Verificar eficacia a los 30 días y cerrar el registro.' },
 }
 
 function generateProcessDetail(nombre: string, tipo: 'estrategico' | 'misional' | 'apoyo'): ProcessDetail {
@@ -145,11 +144,7 @@ function showProcessPopup(nombre: string, tipo: 'estrategico' | 'misional' | 'ap
         </div>
         ${detailHtml}
       </div>`,
-    showConfirmButton: false,
-    showCloseButton: true,
-    width: 620,
-    padding: '1.5rem',
-    background: '#ffffff',
+    showConfirmButton: false, showCloseButton: true, width: 620, padding: '1.5rem', background: '#ffffff',
   })
 }
 
@@ -157,10 +152,7 @@ function showProcessPopup(nombre: string, tipo: 'estrategico' | 'misional' | 'ap
 const ClassicMap: React.FC<{ mapa: MapaData }> = ({ mapa }) => (
   <div className="iso-map">
     <div className="iso-map__side iso-map__side--left">
-      <div className="iso-map__client-box">
-        <span className="iso-map__client-icon">👤</span>
-        <span className="iso-map__client-text">{mapa.cliente}</span>
-      </div>
+      <div className="iso-map__client-box"><span className="iso-map__client-icon">👤</span><span className="iso-map__client-text">{mapa.cliente}</span></div>
       <div className="iso-map__arrow iso-map__arrow--right">→</div>
     </div>
     <div className="iso-map__center">
@@ -196,10 +188,7 @@ const ClassicMap: React.FC<{ mapa: MapaData }> = ({ mapa }) => (
     </div>
     <div className="iso-map__side iso-map__side--right">
       <div className="iso-map__arrow iso-map__arrow--right">→</div>
-      <div className="iso-map__client-box">
-        <span className="iso-map__client-icon">😊</span>
-        <span className="iso-map__client-text">{mapa.satisfaccion}</span>
-      </div>
+      <div className="iso-map__client-box"><span className="iso-map__client-icon">😊</span><span className="iso-map__client-text">{mapa.satisfaccion}</span></div>
     </div>
   </div>
 )
@@ -221,9 +210,7 @@ const FormSection: React.FC<SectionProps> = ({ label, field, items, onUpdate, on
       <div key={i} className="manual-form__row">
         <input className="filter-input manual-form__input" placeholder="Nombre del proceso..."
           value={p.nombre} onChange={e => onUpdate(field, i, e.target.value)} />
-        {items.length > 1 && (
-          <button className="manual-form__del-btn" onClick={() => onRemove(field, i)}>✕</button>
-        )}
+        {items.length > 1 && <button className="manual-form__del-btn" onClick={() => onRemove(field, i)}>✕</button>}
       </div>
     ))}
     <button className="manual-form__add-btn" onClick={() => onAdd(field)}>+ Agregar proceso</button>
@@ -241,26 +228,16 @@ const ManualForm: React.FC<{ onSave: (m: MapaData) => void; onCancel: () => void
   const handleSave = () => {
     const clean = (arr: ProcesoItem[]) => arr.filter(p => p.nombre.trim())
     if (!clean(data.estrategicos).length && !clean(data.misionales).length && !clean(data.apoyo).length) {
-      Swal.fire({ icon: 'warning', title: 'Agrega al menos un proceso', timer: 2000, showConfirmButton: false })
-      return
+      Swal.fire({ icon: 'warning', title: 'Agrega al menos un proceso', timer: 2000, showConfirmButton: false }); return
     }
     onSave({ ...data, estrategicos: clean(data.estrategicos), misionales: clean(data.misionales), apoyo: clean(data.apoyo) })
   }
   return (
     <div className="manual-form panel">
-      <div className="manual-form__header">
-        <h3>✏️ Construcción Manual del Mapa de Procesos</h3>
-        <p>Ingresa los procesos de tu organización por categoría.</p>
-      </div>
+      <div className="manual-form__header"><h3>✏️ Construcción Manual del Mapa de Procesos</h3><p>Ingresa los procesos de tu organización por categoría.</p></div>
       <div className="manual-form__clients">
-        <div className="form-group">
-          <label>Entrada (izquierda del mapa)</label>
-          <input className="filter-input form-control" value={data.cliente} onChange={e => setData(d => ({ ...d, cliente: e.target.value }))} />
-        </div>
-        <div className="form-group">
-          <label>Salida (derecha del mapa)</label>
-          <input className="filter-input form-control" value={data.satisfaccion} onChange={e => setData(d => ({ ...d, satisfaccion: e.target.value }))} />
-        </div>
+        <div className="form-group"><label>Entrada (izquierda del mapa)</label><input className="filter-input form-control" value={data.cliente} onChange={e => setData(d => ({ ...d, cliente: e.target.value }))} /></div>
+        <div className="form-group"><label>Salida (derecha del mapa)</label><input className="filter-input form-control" value={data.satisfaccion} onChange={e => setData(d => ({ ...d, satisfaccion: e.target.value }))} /></div>
       </div>
       <FormSection label="🔵 Procesos Estratégicos"                field="estrategicos" items={data.estrategicos} onUpdate={updateItem} onAdd={addItem} onRemove={removeItem} />
       <FormSection label="🟦 Procesos Misionales / Cadena de Valor" field="misionales"   items={data.misionales}   onUpdate={updateItem} onAdd={addItem} onRemove={removeItem} />
@@ -292,8 +269,7 @@ const UploadAI: React.FC<{ onSave: (m: MapaData) => void; onCancel: () => void }
     const estrategicos: ProcesoItem[] = [], misionales: ProcesoItem[] = [], apoyo: ProcesoItem[] = []
     const seen = new Set<string>()
     for (const line of lines) {
-      const cat = classify(line)
-      if (!cat) continue
+      const cat = classify(line); if (!cat) continue
       const nombre = line.trim().replace(/\b\w/g, c => c.toUpperCase())
       if (seen.has(nombre.toLowerCase())) continue
       seen.add(nombre.toLowerCase())
@@ -312,93 +288,38 @@ const UploadAI: React.FC<{ onSave: (m: MapaData) => void; onCancel: () => void }
     setLoading(true)
     if (file.type.startsWith('image/')) {
       try {
-        // Convertir imagen a base64 y enviarla al backend para que Gemini Vision extraiga los procesos
-        const toBase64 = (f: File): Promise<string> => new Promise((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve((reader.result as string).split(',')[1])
-          reader.onerror = reject
-          reader.readAsDataURL(f)
-        })
+        const toBase64 = (f: File): Promise<string> => new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve((r.result as string).split(',')[1]); r.onerror = reject; r.readAsDataURL(f) })
         const base64 = await toBase64(file)
         const token  = localStorage.getItem('governex_token')
         const BASE   = import.meta.env.VITE_API_URL || ''
-        const res = await fetch(`${BASE}/api/gemini/extraer-procesos-imagen`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ base64, mimeType: file.type, fileName: file.name }),
-        })
+        const res = await fetch(`${BASE}/api/gemini/extraer-procesos-imagen`, { method:'POST', headers:{ 'Content-Type':'application/json', ...(token?{Authorization:`Bearer ${token}`}:{}) }, body: JSON.stringify({ base64, mimeType: file.type, fileName: file.name }) })
         if (!res.ok) throw new Error(`Error ${res.status}`)
         const generated: MapaData = await res.json()
-        injectAIDetails(generated)
-        setLoading(false)
+        injectAIDetails(generated); setLoading(false)
         const total = generated.estrategicos.length + generated.misionales.length + generated.apoyo.length
-        Swal.fire({
-          icon: 'success', title: '¡Organigrama procesado!',
-          html: `<p>Gemini Vision analizó <b>${file.name}</b> e identificó <b>${total} procesos</b>. Ahora se generará el análisis completo.</p>`,
-          confirmButtonText: 'Continuar', confirmButtonColor: '#1a6ebd',
-        }).then(() => onSave(generated))
-      } catch (err: any) {
+        Swal.fire({ icon:'success', title:'¡Organigrama procesado!', html:`<p>Gemini Vision analizó <b>${file.name}</b> e identificó <b>${total} procesos</b>. Ahora completa los datos de tu empresa.</p>`, confirmButtonText:'Continuar', confirmButtonColor:'#1a6ebd' }).then(() => onSave(generated))
+      } catch {
         setLoading(false)
-        // Fallback: usar procesos genéricos si Vision falla
-        const generated: MapaData = {
-          cliente: 'Requisitos del Cliente y Contexto', satisfaccion: 'Satisfacción del Cliente',
-          estrategicos: [{ nombre: 'Gerencia General' }, { nombre: 'Gestión de Calidad' }, { nombre: 'Planeación Estratégica' }],
-          misionales:   [{ nombre: 'Desarrollo de Producto' }, { nombre: 'Producción / Operaciones' }, { nombre: 'Ventas y Atención al Cliente' }],
-          apoyo:        [{ nombre: 'Talento Humano' }, { nombre: 'Finanzas y Contabilidad' }, { nombre: 'Compras y Logística' }, { nombre: 'TI e Infraestructura' }],
-        }
+        const generated: MapaData = { cliente:'Requisitos del Cliente y Contexto', satisfaccion:'Satisfacción del Cliente', estrategicos:[{nombre:'Gerencia General'},{nombre:'Gestión de Calidad'},{nombre:'Planeación Estratégica'}], misionales:[{nombre:'Desarrollo de Producto'},{nombre:'Producción / Operaciones'},{nombre:'Ventas y Atención al Cliente'}], apoyo:[{nombre:'Talento Humano'},{nombre:'Finanzas y Contabilidad'},{nombre:'Compras y Logística'},{nombre:'TI e Infraestructura'}] }
         injectAIDetails(generated)
-        Swal.fire({
-          icon: 'info', title: 'Usando procesos base',
-          html: `<p>No se pudo leer el organigrama automáticamente. Se usarán procesos base. Puedes editarlos manualmente.</p>`,
-          confirmButtonText: 'Continuar', confirmButtonColor: '#1a6ebd',
-        }).then(() => onSave(generated))
+        Swal.fire({ icon:'info', title:'Usando procesos base', html:`<p>No se pudo leer el organigrama. Se usarán procesos base.</p>`, confirmButtonText:'Continuar', confirmButtonColor:'#1a6ebd' }).then(() => onSave(generated))
       }
     } else {
       const reader = new FileReader()
-      reader.onload = (ev) => {
-        const content = ev.target?.result as string ?? ''
-        const generatedMapa = parseContent(content)
-        injectAIDetails(generatedMapa)
-        setLoading(false)
-        const total = generatedMapa.estrategicos.length + generatedMapa.misionales.length + generatedMapa.apoyo.length
-        Swal.fire({
-          icon: 'success', title: '¡Documento procesado!',
-          html: `<p>Se analizó <b>${file.name}</b> e identificaron <b>${total} procesos</b>. Ahora Gemini generará el análisis completo.</p>`,
-          confirmButtonText: 'Continuar', confirmButtonColor: '#1a6ebd',
-        }).then(() => onSave(generatedMapa))
-      }
-      reader.onerror = () => { setLoading(false); Swal.fire({ icon: 'error', title: 'Error al leer el archivo' }) }
+      reader.onload = (ev) => { const content = ev.target?.result as string ?? ''; const generatedMapa = parseContent(content); injectAIDetails(generatedMapa); setLoading(false); const total = generatedMapa.estrategicos.length + generatedMapa.misionales.length + generatedMapa.apoyo.length; Swal.fire({ icon:'success', title:'¡Documento procesado!', html:`<p>Se analizó <b>${file.name}</b> e identificaron <b>${total} procesos</b>.</p>`, confirmButtonText:'Continuar', confirmButtonColor:'#1a6ebd' }).then(() => onSave(generatedMapa)) }
+      reader.onerror = () => { setLoading(false); Swal.fire({ icon:'error', title:'Error al leer el archivo' }) }
       reader.readAsText(file, 'utf-8')
     }
   }
 
   return (
     <div className="upload-ai panel">
-      <div className="upload-ai__header">
-        <h3>🤖 Generar Mapa con IA</h3>
-        <p>Sube tu organigrama, descripción de la empresa o cualquier documento con la estructura organizacional. La IA clasifica los procesos y genera el análisis completo.</p>
+      <div className="upload-ai__header"><h3>🤖 Generar Mapa con IA</h3><p>Sube tu organigrama, descripción de la empresa o cualquier documento con la estructura organizacional.</p></div>
+      <div className={`upload-ai__dropzone ${file ? 'has-file' : ''}`} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) setFile(f) }} onClick={() => fileRef.current?.click()}>
+        <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg" style={{ display:'none' }} onChange={e => e.target.files?.[0] && setFile(e.target.files[0])} />
+        {file ? (<><span className="upload-ai__file-icon">📄</span><span className="upload-ai__file-name">{file.name}</span><span className="upload-ai__file-size">{(file.size/1024).toFixed(1)} KB · Listo para analizar</span></>) : (<><span className="upload-ai__drop-icon">☁️</span><span className="upload-ai__drop-title">Arrastra tu archivo aquí</span><span className="upload-ai__drop-sub">o haz clic para seleccionar · PDF, DOCX, TXT, Imagen</span></>)}
       </div>
-      <div className={`upload-ai__dropzone ${file ? 'has-file' : ''}`}
-        onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) setFile(f) }}
-        onClick={() => fileRef.current?.click()}>
-        <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg" style={{ display: 'none' }} onChange={e => e.target.files?.[0] && setFile(e.target.files[0])} />
-        {file ? (
-          <><span className="upload-ai__file-icon">📄</span><span className="upload-ai__file-name">{file.name}</span><span className="upload-ai__file-size">{(file.size / 1024).toFixed(1)} KB · Listo para analizar</span></>
-        ) : (
-          <><span className="upload-ai__drop-icon">☁️</span><span className="upload-ai__drop-title">Arrastra tu archivo aquí</span><span className="upload-ai__drop-sub">o haz clic para seleccionar · PDF, DOCX, TXT, Imagen</span></>
-        )}
-      </div>
-      <div className="upload-ai__tips">
-        <strong>💡 ¿Qué puedes subir?</strong>
-        <ul>
-          <li>Organigrama de la empresa (imagen JPG/PNG o PDF)</li>
-          <li>Descripción de áreas y cargos (.txt o .docx)</li>
-          <li>Manual de funciones o de calidad existente</li>
-        </ul>
-      </div>
+      <div className="upload-ai__tips"><strong>💡 ¿Qué puedes subir?</strong><ul><li>Organigrama de la empresa (imagen JPG/PNG o PDF)</li><li>Descripción de áreas y cargos (.txt o .docx)</li><li>Manual de funciones o de calidad existente</li></ul></div>
       {loading && (<div className="upload-ai__loading"><div className="upload-ai__spinner"></div><span>Procesando archivo...</span></div>)}
       <div className="upload-ai__footer">
         <button className="btn btn--secondary" onClick={onCancel} disabled={loading}>Cancelar</button>
@@ -409,218 +330,152 @@ const UploadAI: React.FC<{ onSave: (m: MapaData) => void; onCancel: () => void }
 }
 
 /* ─────────────────── DOFA QUADRANT ─────────────────── */
-interface DofaQuadrantProps {
-  title: string; subtitle: string; icon: string
-  variant: 'fortaleza' | 'oportunidad' | 'debilidad' | 'amenaza'
-  items: string[]
-}
+interface DofaQuadrantProps { title:string; subtitle:string; icon:string; variant:'fortaleza'|'oportunidad'|'debilidad'|'amenaza'; items:string[] }
 const DofaQuadrant: React.FC<DofaQuadrantProps> = ({ title, subtitle, icon, variant, items }) => (
   <div className={`dofa-quadrant dofa-quadrant--${variant}`}>
-    <div className="dofa-quadrant__header">
-      <span className="dofa-quadrant__icon">{icon}</span>
-      <div>
-        <div className="dofa-quadrant__title">{title}</div>
-        <div className="dofa-quadrant__subtitle">{subtitle}</div>
-      </div>
-    </div>
+    <div className="dofa-quadrant__header"><span className="dofa-quadrant__icon">{icon}</span><div><div className="dofa-quadrant__title">{title}</div><div className="dofa-quadrant__subtitle">{subtitle}</div></div></div>
     <ul className="dofa-quadrant__list">{items.map((item, i) => <li key={i}>{item}</li>)}</ul>
   </div>
 )
 
 /* ─────────────────── SPINNER OVERLAY ─────────────────── */
 const GeminiLoadingOverlay: React.FC = () => (
-  <div style={{
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-    zIndex: 9999,
-  }}>
-    <div style={{
-      background: '#fff', borderRadius: '1rem', padding: '2.5rem 3rem',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem',
-      boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-    }}>
-      <div style={{
-        width: 52, height: 52, border: '5px solid #e2e8f0',
-        borderTop: '5px solid #1a6ebd', borderRadius: '50%',
-        animation: 'spin 0.9s linear infinite',
-      }} />
+  <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:9999 }}>
+    <div style={{ background:'#fff',borderRadius:'1rem',padding:'2.5rem 3rem',display:'flex',flexDirection:'column',alignItems:'center',gap:'1rem',boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
+      <div style={{ width:52,height:52,border:'5px solid #e2e8f0',borderTop:'5px solid #1a6ebd',borderRadius:'50%',animation:'spin 0.9s linear infinite' }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1a2b45' }}>Analizando con Gemini IA</div>
-        <div style={{ color: '#64748b', fontSize: '0.875rem', marginTop: 4 }}>
-          Generando PESTEL, DOFA y Caracterización de Procesos…
-        </div>
+      <div style={{ textAlign:'center' }}>
+        <div style={{ fontWeight:700,fontSize:'1.1rem',color:'#1a2b45' }}>Analizando con Gemini IA</div>
+        <div style={{ color:'#64748b',fontSize:'0.875rem',marginTop:4 }}>Generando PESTEL, DOFA, Caracterización y Contexto Organizacional…</div>
       </div>
     </div>
   </div>
 )
 
-/* ─────────────────── MODAL CONTEXTO EMPRESA ─────────────────── */
-async function askCompanyContext(): Promise<{ nombreEmpresa: string; sector: string } | null> {
-  const { value: formValues } = await Swal.fire({
-    title: '🏢 Contexto de la empresa',
-    html: `
-      <p style="color:#64748b;font-size:.875rem;margin-bottom:1rem">
-        Esta información ayuda a Gemini a generar un análisis más preciso y contextualizado.
-      </p>
-      <div style="display:flex;flex-direction:column;gap:.75rem;text-align:left">
-        <div>
-          <label style="font-size:.8rem;font-weight:600;color:#374151;display:block;margin-bottom:4px">Nombre de la empresa (opcional)</label>
-          <input id="swal-empresa" class="swal2-input" placeholder="Ej: Industrias XYZ S.A.S." style="margin:0;width:100%;box-sizing:border-box">
-        </div>
-        <div>
-          <label style="font-size:.8rem;font-weight:600;color:#374151;display:block;margin-bottom:4px">Sector / Industria (opcional)</label>
-          <input id="swal-sector" class="swal2-input" placeholder="Ej: Manufactura, Servicios, Construcción…" style="margin:0;width:100%;box-sizing:border-box">
-        </div>
-      </div>`,
-    focusConfirm: false,
-    confirmButtonText: '🤖 Analizar con Gemini',
-    confirmButtonColor: '#1a6ebd',
-    showCancelButton: true,
-    cancelButtonText: 'Cancelar',
-    preConfirm: () => ({
-      nombreEmpresa: (document.getElementById('swal-empresa') as HTMLInputElement)?.value?.trim() ?? '',
-      sector:        (document.getElementById('swal-sector')  as HTMLInputElement)?.value?.trim() ?? '',
-    }),
-  })
-  return formValues ?? null
-}
-
-/* ─────────────────── COMPONENTE PRINCIPAL ─────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   COMPONENTE PRINCIPAL
+   ═══════════════════════════════════════════════════════════════ */
 const ProcesosPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('mapa')
-  const [mapMode, setMapMode]     = useState<MapMode>('empty')
-  const [mapa, setMapa]           = useState<MapaData>(defaultMapa)
-  const [showMap, setShowMap]     = useState(true)
+  const [mapMode,   setMapMode]   = useState<MapMode>('empty')
+  const [mapa,      setMapa]      = useState<MapaData>(defaultMapa)
+  const [showMap,   setShowMap]   = useState(true)
 
-  // Estado del análisis de Gemini
-  const [aiAnalysis, setAiAnalysis]   = useState<AiAnalysis | null>(null)
+  const [aiAnalysis,    setAiAnalysis]    = useState<AiAnalysis | null>(null)
   const [geminiLoading, setGeminiLoading] = useState(false)
-  const { setAnalysis: setGlobalAnalysis } = useAIAnalysis()
+  const [showEmpresaForm, setShowEmpresaForm] = useState(false)
 
-  // Datos desde la API (BD)
-  const { data: procesosDB, loading: lProc }   = useFetch(procesosService.getAll, [])
-  const { data: pestelDB,   loading: lPestel }  = useFetch(procesosService.getPestel, [])
-  const { data: dofaDB,     loading: lDofa }    = useFetch(procesosService.getDofa, [])
+  // Ref para el mapa pendiente — evita incluirlo en deps de useCallback
+  const pendingMapaRef = useRef<MapaData | null>(null)
 
-  // ── Llamar a Gemini tras guardar el mapa ──────────────────
-  const callGemini = async (newMapa: MapaData) => {
-    const ctx = await askCompanyContext()
-    if (!ctx) return // usuario canceló
+  const { setAnalysis: setGlobalAnalysis, setDatosEmpresa, datosEmpresa } = useAIAnalysis()
 
+  const { data: procesosDB, loading: lProc }  = useFetch(procesosService.getAll,   [])
+  const { data: pestelDB,   loading: lPestel } = useFetch(procesosService.getPestel, [])
+  const { data: dofaDB,     loading: lDofa }   = useFetch(procesosService.getDofa,   [])
+
+  /* ── Gemini call — estable (solo deps que no cambian cada render) */
+  const callGemini = useCallback(async (newMapa: MapaData, datos: DatosEmpresa) => {
     setGeminiLoading(true)
     try {
       const token = localStorage.getItem('governex_token')
       const BASE  = import.meta.env.VITE_API_URL || ''
       const res = await fetch(`${BASE}/api/gemini/analizar-organigrama`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          mapa:          newMapa,
-          nombreEmpresa: ctx.nombreEmpresa,
-          sector:        ctx.sector,
-          guardarEnBD:   true,
-        }),
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ mapa: newMapa, nombreEmpresa: datos.nombreEmpresa, sector: datos.sector, datosEmpresa: datos, guardarEnBD: true }),
       })
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Error desconocido' }))
-        throw new Error(err.error || `Error ${res.status}`)
-      }
+      if (!res.ok) { const err = await res.json().catch(() => ({ error:'Error desconocido' })); throw new Error(err.error || `Error ${res.status}`) }
 
       const data: AiAnalysis = await res.json()
       setAiAnalysis(data)
 
-      // ── Debug: confirmar que matrizRoles llegó ──
-      console.log('[Governex] matrizRoles recibidos:', data.matrizRoles?.length ?? 0, data.matrizRoles)
-
-      // ── Compartir análisis globalmente con otros módulos (ej. Riesgos, Roles) ──
+      const datosConNarrativo: DatosEmpresa = { ...datos, contextoNarrativo: data.contextoNarrativo ?? '' }
+      setDatosEmpresa(datosConNarrativo)
       setGlobalAnalysis({
         pestel:          Array.isArray(data.pestel)          ? data.pestel          as any : [],
         dofa:            Array.isArray(data.dofa)            ? data.dofa            as any : [],
         caracterizacion: Array.isArray(data.caracterizacion) ? data.caracterizacion as any : [],
-        matrizRoles:     Array.isArray(data.matrizRoles) && data.matrizRoles.length > 0
-                           ? data.matrizRoles as any
-                           : undefined,
+        matrizRoles:     Array.isArray(data.matrizRoles) && data.matrizRoles.length > 0 ? data.matrizRoles as any : undefined,
+        datosEmpresa:    datosConNarrativo,
       })
 
       const total = newMapa.estrategicos.length + newMapa.misionales.length + newMapa.apoyo.length
       Swal.fire({
-        icon: 'success',
-        title: '¡Análisis generado!',
-        html: `<p>Gemini analizó <b>${total} procesos</b> y generó:<br>
-          ✅ <b>${data.pestel.length}</b> factores PESTEL<br>
-          ✅ <b>${data.dofa.length}</b> elementos DOFA<br>
-          ✅ <b>${data.caracterizacion.length}</b> fichas de caracterización</p>
-          <p style="font-size:.8rem;color:#64748b;margin-top:.5rem">Todo guardado. Ve a las pestañas Contexto y Caracterización para ver los resultados.</p>`,
-        confirmButtonText: 'Ver resultados',
-        confirmButtonColor: '#1a6ebd',
-      })
+        icon: 'success', title: '¡Análisis generado!',
+        html: `<p>Gemini analizó <b>${total} procesos</b> de <b>${datos.nombreEmpresa || 'tu empresa'}</b> y generó:<br>
+          ✅ <b>${data.pestel?.length ?? 0}</b> factores PESTEL<br>
+          ✅ <b>${data.dofa?.length ?? 0}</b> elementos DOFA<br>
+          ✅ <b>${data.caracterizacion?.length ?? 0}</b> fichas de caracterización<br>
+          ✅ Contexto organizacional narrativo</p>`,
+        confirmButtonText: 'Ver resultados', confirmButtonColor: '#1a6ebd',
+      }).then(() => setActiveTab('contexto'))
     } catch (err: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error al analizar con Gemini',
-        text: err.message ?? 'Ocurrió un error inesperado',
-      })
+      Swal.fire({ icon:'error', title:'Error al analizar con Gemini', text: err.message ?? 'Error inesperado' })
     } finally {
       setGeminiLoading(false)
     }
-  }
+  }, [setDatosEmpresa, setGlobalAnalysis])
 
-  // ── Guardar mapa y disparar Gemini ───────────────────────
-  const handleSave = async (newMapa: MapaData) => {
+  /* ── handleSave: guarda mapa y abre modal empresa ─────── */
+  const handleSave = useCallback((newMapa: MapaData) => {
     setMapa(newMapa)
     setMapMode('empty')
     setShowMap(true)
     injectAIDetails(newMapa)
-    await callGemini(newMapa)
-  }
+    pendingMapaRef.current = newMapa
+    setShowEmpresaForm(true)
+  }, [])
+
+  /* ── ESTABLE: no se recrea en cada render ────────────── */
+  const handleEmpresaConfirm = useCallback(async (datos: DatosEmpresa) => {
+    setShowEmpresaForm(false)
+    const mapaActual = pendingMapaRef.current
+    if (mapaActual) {
+      pendingMapaRef.current = null
+      await callGemini(mapaActual, datos)
+    }
+  }, [callGemini])
+
+  /* ── ESTABLE: cierre del modal ──────────────────────── */
+  const handleEmpresaCancel = useCallback(() => {
+    setShowEmpresaForm(false)
+    pendingMapaRef.current = null
+  }, [])
+
+  /* ── Re-analizar desde el panel de contexto ─────────── */
+  const handleReanalizar = useCallback(() => {
+    pendingMapaRef.current = mapa
+    setShowEmpresaForm(true)
+  }, [mapa])
 
   const total = mapa.estrategicos.length + mapa.misionales.length + mapa.apoyo.length
-
-  // ── PESTEL: prioridad aiAnalysis → BD → hardcoded ────────
   const pestelData: PestelRow[] = aiAnalysis?.pestel ?? []
 
-  // ── DOFA: prioridad aiAnalysis → BD → hardcoded ──────────
   const dofaFinal = (() => {
-    if (!aiAnalysis?.dofa?.length) {
-      return {
-        fortalezas: [],
-        oportunidades: [],
-        debilidades: [],
-        amenazas: [],
-      }
-    }
-
+    if (!aiAnalysis?.dofa?.length) return { fortalezas:[], oportunidades:[], debilidades:[], amenazas:[] }
     return {
-      fortalezas: aiAnalysis.dofa
-        .filter(d => d.tipo === 'Fortaleza')
-        .map(d => d.descripcion),
-
-      oportunidades: aiAnalysis.dofa
-        .filter(d => d.tipo === 'Oportunidad')
-        .map(d => d.descripcion),
-
-      debilidades: aiAnalysis.dofa
-        .filter(d => d.tipo === 'Debilidad')
-        .map(d => d.descripcion),
-
-      amenazas: aiAnalysis.dofa
-        .filter(d => d.tipo === 'Amenaza')
-        .map(d => d.descripcion),
+      fortalezas:    aiAnalysis.dofa.filter(d => d.tipo==='Fortaleza').map(d => d.descripcion),
+      oportunidades: aiAnalysis.dofa.filter(d => d.tipo==='Oportunidad').map(d => d.descripcion),
+      debilidades:   aiAnalysis.dofa.filter(d => d.tipo==='Debilidad').map(d => d.descripcion),
+      amenazas:      aiAnalysis.dofa.filter(d => d.tipo==='Amenaza').map(d => d.descripcion),
     }
   })()
 
-  // ── Caracterización: prioridad aiAnalysis → BD → hardcoded
-  const caracterizacionData: CaracterizacionRow[] =
-  aiAnalysis?.caracterizacion ?? []
+  const caracterizacionData: CaracterizacionRow[] = aiAnalysis?.caracterizacion ?? []
 
   return (
     <div className="page procesos-page">
       {geminiLoading && <GeminiLoadingOverlay />}
+
+      {/* Modal empresa — callbacks estables, no se re-monta */}
+      {showEmpresaForm && (
+        <EmpresaFormModal
+          initial={datosEmpresa ?? {}}
+          onConfirm={handleEmpresaConfirm}
+          onCancel={handleEmpresaCancel}
+        />
+      )}
 
       <header className="page__header procesos-page__header">
         <div className="procesos-page__header-left">
@@ -638,8 +493,8 @@ const ProcesosPage: React.FC = () => {
           <div className="procesos-kpi"><span className="procesos-kpi__value">{mapa.misionales.length}</span><span className="procesos-kpi__label">Misionales</span></div>
           <div className="procesos-kpi"><span className="procesos-kpi__value">{mapa.apoyo.length}</span><span className="procesos-kpi__label">De Apoyo</span></div>
           {aiAnalysis && (
-            <div className="procesos-kpi" style={{ borderLeft: '3px solid #1a6ebd' }}>
-              <span className="procesos-kpi__value" style={{ color: '#1a6ebd' }}>✓</span>
+            <div className="procesos-kpi" style={{ borderLeft:'3px solid #1a6ebd' }}>
+              <span className="procesos-kpi__value" style={{ color:'#1a6ebd' }}>✓</span>
               <span className="procesos-kpi__label">Analizado por IA</span>
             </div>
           )}
@@ -647,12 +502,12 @@ const ProcesosPage: React.FC = () => {
       </header>
 
       <nav className="procesos-tabs">
-        {([{ id: 'mapa', label: '🗺️ Mapa de Procesos' }, { id: 'contexto', label: '🌐 Contexto Organizacional' }, { id: 'caracterizacion', label: '📋 Caracterización' }] as { id: Tab; label: string }[]).map(t => (
-          <button key={t.id} className={`procesos-tabs__tab${activeTab === t.id ? ' procesos-tabs__tab--active' : ''}`} onClick={() => setActiveTab(t.id)}>{t.label}</button>
+        {([{id:'mapa',label:'🗺️ Mapa de Procesos'},{id:'contexto',label:'🌐 Contexto Organizacional'},{id:'caracterizacion',label:'📋 Caracterización'}] as {id:Tab;label:string}[]).map(t => (
+          <button key={t.id} className={`procesos-tabs__tab${activeTab===t.id?' procesos-tabs__tab--active':''}`} onClick={() => setActiveTab(t.id)}>{t.label}</button>
         ))}
       </nav>
 
-      {/* ══════════ TAB 1: MAPA ══════════ */}
+      {/* TAB 1: MAPA */}
       {activeTab === 'mapa' && (
         <div className="procesos-mapa-wrap">
           {mapMode === 'empty' && (
@@ -672,11 +527,11 @@ const ProcesosPage: React.FC = () => {
                   <div className="iso-map-panel__header">
                     <h3>Mapa de Procesos — Estructura ISO 9001</h3>
                     <span className="pill pill--muted">Cláusula 4.4</span>
-                    {aiAnalysis && <span className="pill pill--success" style={{ marginLeft: 8 }}>✓ Analizado por Gemini</span>}
+                    {aiAnalysis && <span className="pill pill--success" style={{ marginLeft:8 }}>✓ Analizado por Gemini</span>}
                   </div>
                   <ClassicMap mapa={mapa} />
                   {!aiAnalysis && (
-                    <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '0.5rem', fontSize: '0.85rem', color: '#0369a1' }}>
+                    <div style={{ marginTop:'1rem',padding:'0.75rem 1rem',background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'0.5rem',fontSize:'0.85rem',color:'#0369a1' }}>
                       💡 <strong>Consejo:</strong> Usa <em>Construir Manualmente</em> o <em>Generar con IA</em> para que Gemini analice tus procesos y genere PESTEL, DOFA y Caracterización personalizados.
                     </div>
                   )}
@@ -689,12 +544,20 @@ const ProcesosPage: React.FC = () => {
         </div>
       )}
 
-      {/* ══════════ TAB 2: CONTEXTO ══════════ */}
+      {/* TAB 2: CONTEXTO */}
       {activeTab === 'contexto' && (
         <div className="procesos-contexto">
+          {datosEmpresa ? (
+            <ContextoOrganizacionalPanel datos={datosEmpresa} onEditar={handleReanalizar} />
+          ) : (
+            <div style={{ padding:'1rem 1.25rem',background:'#fffbeb',border:'1px solid #fde68a',borderLeft:'4px solid #f59e0b',borderRadius:'0.75rem',marginBottom:'1.5rem',color:'#92400e',fontSize:'0.875rem',lineHeight:1.6 }}>
+              ⚠️ <strong>Sin datos de la empresa.</strong> Ve a la pestaña <em>Mapa de Procesos</em>, construye o sube tu organigrama y completa el formulario de la empresa para que Gemini genere el análisis personalizado.
+            </div>
+          )}
+
           {!aiAnalysis && !lPestel && pestelDB.length === 0 && (
-            <div style={{ padding: '1.5rem', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '0.75rem', marginBottom: '1.5rem', color: '#92400e', fontSize: '0.875rem' }}>
-              ⚠️ <strong>Sin análisis personalizado.</strong> Ve a la pestaña <em>Mapa de Procesos</em>, construye o sube tu organigrama y Gemini generará el PESTEL y DOFA específico para tu organización.
+            <div style={{ padding:'1.5rem',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'0.75rem',marginBottom:'1.5rem',color:'#92400e',fontSize:'0.875rem' }}>
+              ⚠️ <strong>Sin análisis personalizado.</strong> Ve a la pestaña <em>Mapa de Procesos</em>, construye o sube tu organigrama y Gemini generará el PESTEL y DOFA específico.
             </div>
           )}
 
@@ -702,14 +565,11 @@ const ProcesosPage: React.FC = () => {
             <div className="procesos-section-header">
               <div>
                 <h3 className="procesos-section-title">Análisis PESTEL</h3>
-                <p className="procesos-section-desc">
-                  Análisis del contexto externo de la organización · Cláusula 4.1
-                  {aiAnalysis && <span style={{ marginLeft: 8, color: '#1a6ebd', fontWeight: 600 }}>— Generado por Gemini IA ✓</span>}
-                </p>
+                <p className="procesos-section-desc">Análisis del contexto externo · Cláusula 4.1{aiAnalysis && <span style={{ marginLeft:8,color:'#1a6ebd',fontWeight:600 }}>— Generado por Gemini IA ✓</span>}</p>
               </div>
               <span className="pill pill--muted">{pestelData.length} factores identificados</span>
             </div>
-            {lPestel && !aiAnalysis ? <div style={{ padding: '1rem', opacity: 0.5 }}>Cargando PESTEL...</div> : (
+            {lPestel && !aiAnalysis ? <div style={{ padding:'1rem',opacity:0.5 }}>Cargando PESTEL...</div> : (
               <div className="procesos-pestel__table-wrap">
                 <table className="procesos-pestel__table">
                   <thead><tr><th>Factor</th><th>Categoría</th><th>Descripción</th><th>Impacto</th><th>Tipo</th></tr></thead>
@@ -719,8 +579,8 @@ const ProcesosPage: React.FC = () => {
                         <td><span className={`pestel-factor pestel-factor--${row.factor.toLowerCase()}`}>{row.factor}</span></td>
                         <td className="pestel-categoria">{row.categoria}</td>
                         <td className="pestel-desc">{row.descripcion}</td>
-                        <td><span className={`pill ${row.impacto === 'Alto' ? 'pill--danger' : row.impacto === 'Medio' ? 'pill--warning' : 'pill--muted'}`}>{row.impacto}</span></td>
-                        <td><span className={`pill ${row.oportunidad ? 'pill--success' : 'pill--danger'}`}>{row.oportunidad ? 'Oportunidad' : 'Amenaza'}</span></td>
+                        <td><span className={`pill ${row.impacto==='Alto'?'pill--danger':row.impacto==='Medio'?'pill--warning':'pill--muted'}`}>{row.impacto}</span></td>
+                        <td><span className={`pill ${row.oportunidad?'pill--success':'pill--danger'}`}>{row.oportunidad?'Oportunidad':'Amenaza'}</span></td>
                       </tr>
                     ))}
                   </tbody>
@@ -733,13 +593,10 @@ const ProcesosPage: React.FC = () => {
             <div className="procesos-section-header">
               <div>
                 <h3 className="procesos-section-title">Matriz DOFA</h3>
-                <p className="procesos-section-desc">
-                  Análisis del contexto interno y externo · Cláusula 4.1 y 6.1
-                  {aiAnalysis && <span style={{ marginLeft: 8, color: '#1a6ebd', fontWeight: 600 }}>— Generado por Gemini IA ✓</span>}
-                </p>
+                <p className="procesos-section-desc">Análisis interno y externo · Cláusula 4.1 y 6.1{aiAnalysis && <span style={{ marginLeft:8,color:'#1a6ebd',fontWeight:600 }}>— Generado por Gemini IA ✓</span>}</p>
               </div>
             </div>
-            {lDofa && !aiAnalysis ? <div style={{ padding: '1rem', opacity: 0.5 }}>Cargando DOFA...</div> : (
+            {lDofa && !aiAnalysis ? <div style={{ padding:'1rem',opacity:0.5 }}>Cargando DOFA...</div> : (
               <div className="dofa-grid">
                 <DofaQuadrant title="Fortalezas"    subtitle="Factores internos positivos" icon="💪" variant="fortaleza"  items={dofaFinal.fortalezas}    />
                 <DofaQuadrant title="Oportunidades" subtitle="Factores externos positivos" icon="🚀" variant="oportunidad" items={dofaFinal.oportunidades} />
@@ -751,35 +608,28 @@ const ProcesosPage: React.FC = () => {
         </div>
       )}
 
-      {/* ══════════ TAB 3: CARACTERIZACIÓN ══════════ */}
+      {/* TAB 3: CARACTERIZACIÓN */}
       {activeTab === 'caracterizacion' && (
         <div className="procesos-char panel">
           <div className="procesos-section-header">
             <div>
               <h3 className="procesos-section-title">Caracterización de Procesos</h3>
-              <p className="procesos-section-desc">
-                Ficha de entradas, salidas e indicadores por proceso · Cláusula 4.4
-                {aiAnalysis && <span style={{ marginLeft: 8, color: '#1a6ebd', fontWeight: 600 }}>— Generado por Gemini IA ✓</span>}
-              </p>
+              <p className="procesos-section-desc">Fichas de entradas, salidas e indicadores · Cláusula 4.4{aiAnalysis && <span style={{ marginLeft:8,color:'#1a6ebd',fontWeight:600 }}>— Generado por Gemini IA ✓</span>}</p>
             </div>
             <span className="pill pill--muted">{caracterizacionData.length} procesos</span>
           </div>
-
           {!aiAnalysis && !lProc && procesosDB.length === 0 && (
-            <div style={{ padding: '1.5rem', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '0.75rem', marginBottom: '1.5rem', color: '#92400e', fontSize: '0.875rem' }}>
-              ⚠️ <strong>Sin caracterización personalizada.</strong> Ve a la pestaña <em>Mapa de Procesos</em> y construye tu organigrama para que Gemini genere la tabla con base en tus procesos reales.
+            <div style={{ padding:'1.5rem',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'0.75rem',marginBottom:'1.5rem',color:'#92400e',fontSize:'0.875rem' }}>
+              ⚠️ <strong>Sin caracterización personalizada.</strong> Construye tu organigrama para que Gemini genere las fichas.
             </div>
           )}
-
-          {lProc && !aiAnalysis ? <div style={{ padding: '1rem', opacity: 0.5 }}>Cargando procesos...</div> : (
+          {lProc && !aiAnalysis ? <div style={{ padding:'1rem',opacity:0.5 }}>Cargando procesos...</div> : (
             <div className="procesos-char__table-wrap">
               <table className="procesos-char__table">
-                <thead>
-                  <tr><th>Código</th><th>Proceso</th><th>Objetivo</th><th>Entradas</th><th>Salidas</th><th>Indicador</th><th>Responsable</th><th>Estado</th></tr>
-                </thead>
+                <thead><tr><th>Código</th><th>Proceso</th><th>Objetivo</th><th>Entradas</th><th>Salidas</th><th>Indicador</th><th>Responsable</th><th>Estado</th></tr></thead>
                 <tbody>
                   {caracterizacionData.map((row: CaracterizacionRow, i: number) => (
-                    <tr key={row.codigo} className={i % 2 === 1 ? 'procesos-char__row--alt' : ''}>
+                    <tr key={row.codigo} className={i%2===1?'procesos-char__row--alt':''}>
                       <td className="procesos-char__code">{row.codigo}</td>
                       <td className="procesos-char__name">{row.proceso}</td>
                       <td className="procesos-char__objetivo">{row.objetivo}</td>
@@ -787,7 +637,7 @@ const ProcesosPage: React.FC = () => {
                       <td className="procesos-char__io">{row.salidas}</td>
                       <td className="procesos-char__indicador">{row.indicador}</td>
                       <td className="procesos-char__resp">{row.responsable}</td>
-                      <td><span className={`pill ${row.estado === 'Activo' ? 'pill--success' : row.estado === 'Revisión' ? 'pill--warning' : 'pill--muted'}`}>{row.estado}</span></td>
+                      <td><span className={`pill ${row.estado==='Activo'?'pill--success':row.estado==='Revisión'?'pill--warning':'pill--muted'}`}>{row.estado}</span></td>
                     </tr>
                   ))}
                 </tbody>
