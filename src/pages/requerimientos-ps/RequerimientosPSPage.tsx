@@ -15,7 +15,7 @@ interface Requisito {
 
 const datosIniciales: Requisito[] = [
   { id: 1, cliente: 'Empresa ABC Ltda.', productoServicio: 'Software de gestión documental', requisitosCliente: 'Módulos de auditoría, reportes PDF, acceso multi-usuario, soporte 24/7', requisitosLegales: 'Ley 1581 de habeas data, normas de ciberseguridad', requisitosOrg: 'Tiempo de desarrollo: 3 meses, garantía 12 meses', fechaRevision: '2025-02-15', revisadoPor: 'Director Comercial', estado: 'Aprobado' },
-  { id: 2, cliente: 'Constructora XYZ', productoServicio: 'Consultoría ISO 9001', requisitosCliente: 'Implementación completa, formación de auditores, acompañamiento a certificación', requisitosLegales: 'Norma ISO 9001:2015 vigente', requisitosOrg: 'Duración: 6 meses, entregables documentados', fechaRevision: '2025-03-20', revisadoPor: 'Gerente General', estado: 'Aprobado' },
+  { id: 2, cliente: 'Constructora XYZ', productoServicio: 'Consultoría de calidad', requisitosCliente: 'Implementación completa, formación de auditores, acompañamiento a certificación', requisitosLegales: 'Norma de calidad vigente', requisitosOrg: 'Duración: 6 meses, entregables documentados', fechaRevision: '2025-03-20', revisadoPor: 'Gerente General', estado: 'Aprobado' },
   { id: 3, cliente: 'Distribuidora Sur', productoServicio: 'Suministro de insumos industriales', requisitosCliente: 'Entrega en 48h, certificados de calidad por lote, empaque especial', requisitosLegales: 'Fichas técnicas MSDS, normas de transporte', requisitosOrg: 'Inventario mínimo garantizado', fechaRevision: '2025-04-01', revisadoPor: 'Jefe de Compras', estado: 'Pendiente' },
 ]
 
@@ -40,13 +40,13 @@ const RequerimientosPSPage: React.FC = () => {
         <div className="iso-page__title-block">
           <h1>⚙️ Requerimientos para Productos y Servicios</h1>
           <p>Determinación, revisión y comunicación de requisitos relacionados con productos y servicios</p>
-          <span className="iso-page__clause">ISO 9001:2015 — §8.2</span>
+          <span className="iso-page__clause">Cláusula 8.2</span>
         </div>
       </div>
 
       <div className="iso-info-box">
         <span className="iso-info-box__icon">📌</span>
-        <span><strong>ISO 9001:2015 §8.2</strong> — La organización debe determinar los requisitos del cliente, los legales y reglamentarios aplicables, y cualquier requisito adicional que la organización considera necesario. Debe revisar estos requisitos antes de comprometerse a suministrar.</span>
+        <span><strong>Cláusula 8.2</strong> — La organización debe determinar los requisitos del cliente, los legales y reglamentarios aplicables, y cualquier requisito adicional que la organización considera necesario. Debe revisar estos requisitos antes de comprometerse a suministrar.</span>
       </div>
 
       <div className="iso-topbar">

@@ -563,8 +563,8 @@ const PlanificacionCambiosPage: React.FC = () => {
             <span className="pc-breadcrumb__active">Planificación de los Cambios</span>
           </nav>
           <h1>Planificación de los Cambios</h1>
-          <p>Registro y seguimiento de todos los cambios planificados que afectan al SGC · ISO 9001:2015 §6.3</p>
-          <span className="iso-page__clause">ISO 9001 — Cláusula 6.3</span>
+          <p>Registro y seguimiento de todos los cambios planificados que afectan al SGC · Cláusula 6.3</p>
+          <span className="iso-page__clause">Cláusula 6.3</span>
         </div>
         <button className="iso-btn-primary pc-btn-add" onClick={() => { setEditItem(null); setShowForm(true) }}>
           ➕ Registrar cambio
@@ -585,7 +585,7 @@ const PlanificacionCambiosPage: React.FC = () => {
       <div className="iso-info-box">
         <span className="iso-info-box__icon">ℹ️</span>
         <span>
-          ISO 9001:2015 §6.3 — Los cambios en el SGC deben llevarse a cabo de manera planificada,
+          Cláusula 6.3 — Los cambios en el SGC deben llevarse a cabo de manera planificada,
           considerando: el <em>propósito y consecuencias</em>, la <em>integridad del SGC</em>,
           la <em>disponibilidad de recursos</em> y la <em>asignación de responsabilidades</em>.
         </span>

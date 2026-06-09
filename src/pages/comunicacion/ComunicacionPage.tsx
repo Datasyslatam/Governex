@@ -49,7 +49,7 @@ const ComunicacionPage: React.FC = () => {
         <div className="iso-page__title-block">
           <h1>🔋 Comunicación</h1>
           <p>Matriz de comunicaciones internas y externas del Sistema de Gestión de Calidad</p>
-          <span className="iso-page__clause">ISO 9001:2015 — §7.4</span>
+          <span className="iso-page__clause">Cláusula 7.4</span>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.6rem 1rem', textAlign: 'center' }}>
@@ -65,7 +65,7 @@ const ComunicacionPage: React.FC = () => {
 
       <div className="iso-info-box">
         <span className="iso-info-box__icon">📌</span>
-        <span><strong>ISO 9001:2015 §7.4</strong> — La organización debe determinar las comunicaciones internas y externas pertinentes al SGC, incluyendo: qué comunicar, cuándo comunicar, a quién comunicar, cómo comunicar y quién comunica.</span>
+        <span><strong>Cláusula 7.4</strong> — La organización debe determinar las comunicaciones internas y externas pertinentes al SGC, incluyendo: qué comunicar, cuándo comunicar, a quién comunicar, cómo comunicar y quién comunica.</span>
       </div>
 
       <div className="iso-topbar">

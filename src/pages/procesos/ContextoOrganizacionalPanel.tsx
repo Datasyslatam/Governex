@@ -88,7 +88,7 @@ const ContextoOrganizacionalPanel: React.FC<Props> = ({ datos, onEditar }) => {
                 <span className="cop-narrativo__icon">🤖</span>
                 <div>
                   <h4>Análisis del Contexto Organizacional</h4>
-                  <p>Generado por Gemini AI a partir de la información proporcionada</p>
+                  <p>Generado por Governex a partir de la información proporcionada</p>
                 </div>
               </div>
               <div className="cop-narrativo__content">

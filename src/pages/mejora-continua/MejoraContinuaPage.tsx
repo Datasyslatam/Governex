@@ -49,7 +49,7 @@ const MejoraContinuaPage: React.FC = () => {
         <div className="iso-page__title-block">
           <h1>♾️ Mejora Continua</h1>
           <p>Gestión de iniciativas de mejora para incrementar el desempeño del Sistema de Gestión de Calidad</p>
-          <span className="iso-page__clause">ISO 9001:2015 — §10.3</span>
+          <span className="iso-page__clause">Cláusula 10.3</span>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.6rem 1rem', textAlign: 'center' }}>
@@ -69,7 +69,7 @@ const MejoraContinuaPage: React.FC = () => {
 
       <div className="iso-info-box">
         <span className="iso-info-box__icon">📌</span>
-        <span><strong>ISO 9001:2015 §10.3</strong> — La organización debe mejorar continuamente la conveniencia, adecuación y eficacia del SGC. Debe considerar los resultados del análisis y la evaluación, las salidas de la revisión por la dirección, para determinar necesidades u oportunidades de mejora.</span>
+        <span><strong>Cláusula 10.3</strong> — La organización debe mejorar continuamente la conveniencia, adecuación y eficacia del SGC. Debe considerar los resultados del análisis y la evaluación, las salidas de la revisión por la dirección, para determinar necesidades u oportunidades de mejora.</span>
       </div>
 
       <div className="iso-topbar">

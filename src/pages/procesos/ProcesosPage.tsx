@@ -87,7 +87,7 @@ function generateProcessDetail(nombre: string, tipo: 'estrategico' | 'misional' 
   const code   = `${prefix}-${Math.floor(Math.random() * 90 + 10)}`
   const templates = {
     estrategico: { objetivo: `Garantizar la dirección estratégica en ${nombre} alineada con la política de calidad.`, entradas: 'Planes estratégicos, resultados de indicadores, informes de auditoría.', salidas: `Directrices de ${nombre}, actas de revisión, planes de acción aprobados.`, indicador: `% de cumplimiento de objetivos estratégicos de ${nombre}`, responsable: 'Gerencia / Alta Dirección', clausula: 'Cap. 5 / Cap. 6', procedimiento: `${code}-01: Procedimiento de ${nombre}\n1. Revisar el contexto y resultados del período anterior.\n2. Definir o ajustar los objetivos estratégicos.\n3. Asignar responsables y recursos necesarios.\n4. Comunicar las directrices a las áreas correspondientes.` },
-    misional:    { objetivo: `Ejecutar y controlar ${nombre} conforme a los requisitos del cliente y los estándares ISO 9001.`, entradas: `Requisitos del cliente, orden de trabajo, especificaciones técnicas para ${nombre}.`, salidas: `Producto o servicio conforme de ${nombre}, registros de calidad.`, indicador: `% de conformidad en la entrega de ${nombre} (meta ≥95%)`, responsable: `Líder / Jefe de ${nombre}`, clausula: 'Cap. 8', procedimiento: `${code}-01: Procedimiento de ${nombre}\n1. Recibir y revisar los requisitos.\n2. Verificar disponibilidad de recursos.\n3. Ejecutar conforme a instrucciones de trabajo.\n4. Realizar controles de calidad y documentar.` },
+    misional:    { objetivo: `Ejecutar y controlar ${nombre} conforme a los requisitos del cliente y los estándares de calidad.`, entradas: `Requisitos del cliente, orden de trabajo, especificaciones técnicas para ${nombre}.`, salidas: `Producto o servicio conforme de ${nombre}, registros de calidad.`, indicador: `% de conformidad en la entrega de ${nombre} (meta ≥95%)`, responsable: `Líder / Jefe de ${nombre}`, clausula: 'Cap. 8', procedimiento: `${code}-01: Procedimiento de ${nombre}\n1. Recibir y revisar los requisitos.\n2. Verificar disponibilidad de recursos.\n3. Ejecutar conforme a instrucciones de trabajo.\n4. Realizar controles de calidad y documentar.` },
     apoyo:       { objetivo: `Proveer recursos y soporte necesarios a través de ${nombre}.`, entradas: `Solicitudes de servicio interno, planes de ${nombre}, normativas aplicables.`, salidas: `Servicios de soporte de ${nombre} entregados, registros de actividades.`, indicador: `% de solicitudes de ${nombre} atendidas oportunamente (meta ≥90%)`, responsable: `Coordinador / Jefe de ${nombre}`, clausula: 'Cap. 7', procedimiento: `${code}-01: Procedimiento de ${nombre}\n1. Recibir y priorizar solicitudes según urgencia.\n2. Asignar el recurso o especialista responsable.\n3. Ejecutar con base en procedimientos vigentes.\n4. Registrar la actividad y el tiempo de respuesta.` },
   }
   const t = templates[tipo]
@@ -297,7 +297,7 @@ const UploadAI: React.FC<{ onSave: (m: MapaData) => void; onCancel: () => void }
         const generated: MapaData = await res.json()
         injectAIDetails(generated); setLoading(false)
         const total = generated.estrategicos.length + generated.misionales.length + generated.apoyo.length
-        Swal.fire({ icon:'success', title:'¡Organigrama procesado!', html:`<p>Gemini Vision analizó <b>${file.name}</b> e identificó <b>${total} procesos</b>. Ahora completa los datos de tu empresa.</p>`, confirmButtonText:'Continuar', confirmButtonColor:'#1a6ebd' }).then(() => onSave(generated))
+        Swal.fire({ icon:'success', title:'¡Organigrama procesado!', html:`<p>Governex Vision analizó <b>${file.name}</b> e identificó <b>${total} procesos</b>. Ahora completa los datos de tu empresa.</p>`, confirmButtonText:'Continuar', confirmButtonColor:'#1a6ebd' }).then(() => onSave(generated))
       } catch {
         setLoading(false)
         const generated: MapaData = { cliente:'Requisitos del Cliente y Contexto', satisfaccion:'Satisfacción del Cliente', estrategicos:[{nombre:'Gerencia General'},{nombre:'Gestión de Calidad'},{nombre:'Planeación Estratégica'}], misionales:[{nombre:'Desarrollo de Producto'},{nombre:'Producción / Operaciones'},{nombre:'Ventas y Atención al Cliente'}], apoyo:[{nombre:'Talento Humano'},{nombre:'Finanzas y Contabilidad'},{nombre:'Compras y Logística'},{nombre:'TI e Infraestructura'}] }
@@ -345,7 +345,7 @@ const GeminiLoadingOverlay: React.FC = () => (
       <div style={{ width:52,height:52,border:'5px solid #e2e8f0',borderTop:'5px solid #1a6ebd',borderRadius:'50%',animation:'spin 0.9s linear infinite' }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <div style={{ textAlign:'center' }}>
-        <div style={{ fontWeight:700,fontSize:'1.1rem',color:'#1a2b45' }}>Analizando con Gemini IA</div>
+        <div style={{ fontWeight:700,fontSize:'1.1rem',color:'#1a2b45' }}>Analizando con Governex IA</div>
         <div style={{ color:'#64748b',fontSize:'0.875rem',marginTop:4 }}>Generando PESTEL, DOFA, Caracterización y Contexto Organizacional…</div>
       </div>
     </div>
@@ -403,7 +403,7 @@ const ProcesosPage: React.FC = () => {
       const total = newMapa.estrategicos.length + newMapa.misionales.length + newMapa.apoyo.length
       Swal.fire({
         icon: 'success', title: '¡Análisis generado!',
-        html: `<p>Gemini analizó <b>${total} procesos</b> de <b>${datos.nombreEmpresa || 'tu empresa'}</b> y generó:<br>
+        html: `<p>Governex analizó <b>${total} procesos</b> de <b>${datos.nombreEmpresa || 'tu empresa'}</b> y generó:<br>
           ✅ <b>${data.pestel?.length ?? 0}</b> factores PESTEL<br>
           ✅ <b>${data.dofa?.length ?? 0}</b> elementos DOFA<br>
           ✅ <b>${data.caracterizacion?.length ?? 0}</b> fichas de caracterización<br>
@@ -411,7 +411,7 @@ const ProcesosPage: React.FC = () => {
         confirmButtonText: 'Ver resultados', confirmButtonColor: '#1a6ebd',
       }).then(() => setActiveTab('contexto'))
     } catch (err: any) {
-      Swal.fire({ icon:'error', title:'Error al analizar con Gemini', text: err.message ?? 'Error inesperado' })
+      Swal.fire({ icon:'error', title:'Error al analizar con Governex', text: err.message ?? 'Error inesperado' })
     } finally {
       setGeminiLoading(false)
     }
@@ -519,20 +519,20 @@ const ProcesosPage: React.FC = () => {
                 </button>
                 <button className="iso-action-btn iso-action-btn--ai" onClick={() => { setShowMap(false); setMapMode('ai') }}>
                   <span className="iso-action-btn__icon">🤖</span>
-                  <div><div className="iso-action-btn__title">Generar con IA</div><div className="iso-action-btn__desc">Sube tu organigrama y Gemini construye el análisis completo</div></div>
+                  <div><div className="iso-action-btn__title">Generar con IA</div><div className="iso-action-btn__desc">Sube tu organigrama y Governex construye el análisis completo</div></div>
                 </button>
               </div>
               {showMap && (
                 <div className="panel iso-map-panel">
                   <div className="iso-map-panel__header">
-                    <h3>Mapa de Procesos — Estructura ISO 9001</h3>
+                    <h3>Mapa de Procesos — Estructura de Procesos</h3>
                     <span className="pill pill--muted">Cláusula 4.4</span>
-                    {aiAnalysis && <span className="pill pill--success" style={{ marginLeft:8 }}>✓ Analizado por Gemini</span>}
+                    {aiAnalysis && <span className="pill pill--success" style={{ marginLeft:8 }}>✓ Analizado por Governex</span>}
                   </div>
                   <ClassicMap mapa={mapa} />
                   {!aiAnalysis && (
                     <div style={{ marginTop:'1rem',padding:'0.75rem 1rem',background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:'0.5rem',fontSize:'0.85rem',color:'#0369a1' }}>
-                      💡 <strong>Consejo:</strong> Usa <em>Construir Manualmente</em> o <em>Generar con IA</em> para que Gemini analice tus procesos y genere PESTEL, DOFA y Caracterización personalizados.
+                      💡 <strong>Consejo:</strong> Usa <em>Construir Manualmente</em> o <em>Generar con IA</em> para que Governex analice tus procesos y genere PESTEL, DOFA y Caracterización personalizados.
                     </div>
                   )}
                 </div>
@@ -551,13 +551,13 @@ const ProcesosPage: React.FC = () => {
             <ContextoOrganizacionalPanel datos={datosEmpresa} onEditar={handleReanalizar} />
           ) : (
             <div style={{ padding:'1rem 1.25rem',background:'#fffbeb',border:'1px solid #fde68a',borderLeft:'4px solid #f59e0b',borderRadius:'0.75rem',marginBottom:'1.5rem',color:'#92400e',fontSize:'0.875rem',lineHeight:1.6 }}>
-              ⚠️ <strong>Sin datos de la empresa.</strong> Ve a la pestaña <em>Mapa de Procesos</em>, construye o sube tu organigrama y completa el formulario de la empresa para que Gemini genere el análisis personalizado.
+              ⚠️ <strong>Sin datos de la empresa.</strong> Ve a la pestaña <em>Mapa de Procesos</em>, construye o sube tu organigrama y completa el formulario de la empresa para que Governex genere el análisis personalizado.
             </div>
           )}
 
           {!aiAnalysis && !lPestel && pestelDB.length === 0 && (
             <div style={{ padding:'1.5rem',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'0.75rem',marginBottom:'1.5rem',color:'#92400e',fontSize:'0.875rem' }}>
-              ⚠️ <strong>Sin análisis personalizado.</strong> Ve a la pestaña <em>Mapa de Procesos</em>, construye o sube tu organigrama y Gemini generará el PESTEL y DOFA específico.
+              ⚠️ <strong>Sin análisis personalizado.</strong> Ve a la pestaña <em>Mapa de Procesos</em>, construye o sube tu organigrama y Governex generará el PESTEL y DOFA específico.
             </div>
           )}
 
@@ -565,7 +565,7 @@ const ProcesosPage: React.FC = () => {
             <div className="procesos-section-header">
               <div>
                 <h3 className="procesos-section-title">Análisis PESTEL</h3>
-                <p className="procesos-section-desc">Análisis del contexto externo · Cláusula 4.1{aiAnalysis && <span style={{ marginLeft:8,color:'#1a6ebd',fontWeight:600 }}>— Generado por Gemini IA ✓</span>}</p>
+                <p className="procesos-section-desc">Análisis del contexto externo · Cláusula 4.1{aiAnalysis && <span style={{ marginLeft:8,color:'#1a6ebd',fontWeight:600 }}>— Generado por Governex IA ✓</span>}</p>
               </div>
               <span className="pill pill--muted">{pestelData.length} factores identificados</span>
             </div>
@@ -593,7 +593,7 @@ const ProcesosPage: React.FC = () => {
             <div className="procesos-section-header">
               <div>
                 <h3 className="procesos-section-title">Matriz DOFA</h3>
-                <p className="procesos-section-desc">Análisis interno y externo · Cláusula 4.1 y 6.1{aiAnalysis && <span style={{ marginLeft:8,color:'#1a6ebd',fontWeight:600 }}>— Generado por Gemini IA ✓</span>}</p>
+                <p className="procesos-section-desc">Análisis interno y externo · Cláusula 4.1 y 6.1{aiAnalysis && <span style={{ marginLeft:8,color:'#1a6ebd',fontWeight:600 }}>— Generado por Governex IA ✓</span>}</p>
               </div>
             </div>
             {lDofa && !aiAnalysis ? <div style={{ padding:'1rem',opacity:0.5 }}>Cargando DOFA...</div> : (
@@ -614,13 +614,13 @@ const ProcesosPage: React.FC = () => {
           <div className="procesos-section-header">
             <div>
               <h3 className="procesos-section-title">Caracterización de Procesos</h3>
-              <p className="procesos-section-desc">Fichas de entradas, salidas e indicadores · Cláusula 4.4{aiAnalysis && <span style={{ marginLeft:8,color:'#1a6ebd',fontWeight:600 }}>— Generado por Gemini IA ✓</span>}</p>
+              <p className="procesos-section-desc">Fichas de entradas, salidas e indicadores · Cláusula 4.4{aiAnalysis && <span style={{ marginLeft:8,color:'#1a6ebd',fontWeight:600 }}>— Generado por Governex IA ✓</span>}</p>
             </div>
             <span className="pill pill--muted">{caracterizacionData.length} procesos</span>
           </div>
           {!aiAnalysis && !lProc && procesosDB.length === 0 && (
             <div style={{ padding:'1.5rem',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'0.75rem',marginBottom:'1.5rem',color:'#92400e',fontSize:'0.875rem' }}>
-              ⚠️ <strong>Sin caracterización personalizada.</strong> Construye tu organigrama para que Gemini genere las fichas.
+              ⚠️ <strong>Sin caracterización personalizada.</strong> Construye tu organigrama para que Governex genere las fichas.
             </div>
           )}
           {lProc && !aiAnalysis ? <div style={{ padding:'1rem',opacity:0.5 }}>Cargando procesos...</div> : (

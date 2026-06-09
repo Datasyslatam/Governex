@@ -104,7 +104,7 @@ const RevDireccionPage: React.FC = () => {
         {/* Panel principal: checklist de entradas */}
         <div className="rev-main-col panel">
           <div className="rev-section-header">
-            <h3>Preparación de Acta — Entradas Obligatorias ISO 9001:2015 § 9.3.2</h3>
+            <h3>Preparación de Acta — Entradas Obligatorias § 9.3.2</h3>
             <span className={`pill ${bloqueado ? 'pill--warning' : 'pill--success'}`}>
               {completadas}/{entradasRequeridas.length} completadas
             </span>

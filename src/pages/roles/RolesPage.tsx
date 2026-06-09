@@ -13,7 +13,7 @@ const COLS: { key: ColKey; label: string }[] = [
   { key: 'funciones',   label: 'Funciones y Responsabilidades' },
   { key: 'recursos',    label: 'Recursos Asignados' },
   { key: 'rendicion',   label: 'Rendición de Cuentas (Reporta a)' },
-  { key: 'clausula',    label: 'Cláusula ISO 9001' },
+  { key: 'clausula',    label: 'Cláusula' },
 ]
 
 /* ══════════════════════════════════════════════════════════════
@@ -91,7 +91,7 @@ const RolesPage: React.FC = () => {
         <div className="roles-page__title-block">
           <h1>⚓ Roles, Responsabilidades y Autoridad</h1>
           <p>Definición y comunicación de roles dentro del Sistema de Gestión de Calidad</p>
-          <span className="roles-page__clause">ISO 9001:2015 — §5.3</span>
+          <span className="roles-page__clause">Cláusula 5.3</span>
         </div>
       </div>
 
@@ -101,13 +101,13 @@ const RolesPage: React.FC = () => {
           <div className="roles-empty-state__icon">🤖</div>
           <h2>Matriz pendiente de generación</h2>
           <p>
-            La Matriz de Roles se genera automáticamente cuando Gemini analiza el organigrama
+            La Matriz de Roles se genera automáticamente cuando Governex analiza el organigrama
             en el módulo <strong>"Contexto de la Organización"</strong>.
           </p>
           <ol className="roles-empty-state__steps">
             <li>Ve al módulo <strong>Contexto de la Organización</strong> (§4 — Mapa de Procesos)</li>
             <li>Construye o sube tu organigrama / mapa de procesos</li>
-            <li>Haz clic en <strong>"Guardar y analizar con Gemini"</strong></li>
+            <li>Haz clic en <strong>"Guardar y analizar con Governex"</strong></li>
             <li>Regresa aquí — la matriz se habrá generado automáticamente</li>
           </ol>
           <a href="/procesos" className="btn-primary" style={{ display: 'inline-block', marginTop: '1.2rem', textDecoration: 'none' }}>
@@ -115,7 +115,7 @@ const RolesPage: React.FC = () => {
           </a>
           <div className="roles-legend" style={{ marginTop: '2rem' }}>
             <div className="roles-legend__item">
-              📌 <strong>ISO 9001:2015 §5.3</strong> — La alta dirección debe asegurarse de que las responsabilidades y autoridades para los roles pertinentes se asignen, se comuniquen y se entiendan en toda la organización.
+              📌 <strong>Cláusula 5.3</strong> — La alta dirección debe asegurarse de que las responsabilidades y autoridades para los roles pertinentes se asignen, se comuniquen y se entiendan en toda la organización.
             </div>
           </div>
         </div>
@@ -127,7 +127,7 @@ const RolesPage: React.FC = () => {
 
           {hasAnalysis && (
             <div className="roles-ai-banner">
-              🤖 Matriz generada automáticamente por Gemini a partir del organigrama analizado en "Contexto de la Organización". Puedes editar cualquier celda haciendo clic en ella.
+              🤖 Matriz generada automáticamente por Governex a partir del organigrama analizado en "Contexto de la Organización". Puedes editar cualquier celda haciendo clic en ella.
             </div>
           )}
 
@@ -217,7 +217,7 @@ const RolesPage: React.FC = () => {
             <label>Tipo de proceso<select value={newFila.tipo} onChange={e => setNewFila(p => ({ ...p, tipo: e.target.value as TipoProceso }))}><option value="estrategico">Estratégico</option><option value="misional">Misional</option><option value="apoyo">Apoyo</option></select></label>
             <label>Responsable del proceso<input type="text" placeholder="ej. Jefe de Proyectos" value={newFila.responsable} onChange={e => setNewFila(p => ({ ...p, responsable: e.target.value }))} /></label>
             <label>Autoridad de decisión<input type="text" placeholder="ej. Gerente de Operaciones" value={newFila.autoridad} onChange={e => setNewFila(p => ({ ...p, autoridad: e.target.value }))} /></label>
-            <label>Cláusula ISO 9001<input type="text" placeholder="ej. §8.1, §8.3" value={newFila.clausula} onChange={e => setNewFila(p => ({ ...p, clausula: e.target.value }))} /></label>
+            <label>Cláusula<input type="text" placeholder="ej. §8.1, §8.3" value={newFila.clausula} onChange={e => setNewFila(p => ({ ...p, clausula: e.target.value }))} /></label>
             <div className="roles-modal__footer">
               <button className="btn-secondary" onClick={() => setShowAddModal(false)}>Cancelar</button>
               <button className="btn-primary" onClick={addFila} disabled={!newFila.proceso.trim()}>＋ Agregar</button>

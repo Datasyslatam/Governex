@@ -44,7 +44,7 @@ const SalidasNCPage: React.FC = () => {
         <div className="iso-page__title-block">
           <h1>⚙️ Control de las Salidas No Conformes</h1>
           <p>Identificación, control y disposición de productos y servicios que no cumplen los requisitos</p>
-          <span className="iso-page__clause">ISO 9001:2015 — §8.7</span>
+          <span className="iso-page__clause">Cláusula 8.7</span>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           {(['Abierta','En tratamiento','Cerrada'] as const).map(e => (
@@ -58,7 +58,7 @@ const SalidasNCPage: React.FC = () => {
 
       <div className="iso-info-box">
         <span className="iso-info-box__icon">📌</span>
-        <span><strong>ISO 9001:2015 §8.7</strong> — La organización debe asegurarse de que las salidas que no sean conformes con sus requisitos se identifican y se controlan para prevenir su uso o entrega no intencionados. La disposición debe documentarse.</span>
+        <span><strong>Cláusula 8.7</strong> — La organización debe asegurarse de que las salidas que no sean conformes con sus requisitos se identifican y se controlan para prevenir su uso o entrega no intencionados. La disposición debe documentarse.</span>
       </div>
 
       <div className="iso-topbar">

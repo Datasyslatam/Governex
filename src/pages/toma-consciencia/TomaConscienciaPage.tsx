@@ -51,7 +51,7 @@ const TomaConscienciaPage: React.FC = () => {
         <div className="iso-page__title-block">
           <h1>🔋 Toma de Consciencia</h1>
           <p>Registro de actividades para asegurar que el personal conoce la política, objetivos e importancia del SGC</p>
-          <span className="iso-page__clause">ISO 9001:2015 — §7.3</span>
+          <span className="iso-page__clause">Cláusula 7.3</span>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.6rem 1rem', textAlign: 'center' }}>
@@ -67,7 +67,7 @@ const TomaConscienciaPage: React.FC = () => {
 
       <div className="iso-info-box">
         <span className="iso-info-box__icon">📌</span>
-        <span><strong>ISO 9001:2015 §7.3</strong> — La organización debe asegurarse de que las personas que realizan el trabajo bajo el control de la organización toman conciencia de: la política de calidad, los objetivos de calidad pertinentes, su contribución a la eficacia del SGC, y las implicaciones del incumplimiento de los requisitos.</span>
+        <span><strong>Cláusula 7.3</strong> — La organización debe asegurarse de que las personas que realizan el trabajo bajo el control de la organización toman conciencia de: la política de calidad, los objetivos de calidad pertinentes, su contribución a la eficacia del SGC, y las implicaciones del incumplimiento de los requisitos.</span>
       </div>
 
       <div className="iso-topbar">

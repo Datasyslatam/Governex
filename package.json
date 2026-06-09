@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "dev:frontend": "vite",
-    "dev:backend": "node --loader ts-node/esm src/index.ts",
+    "dev:backend": "tsx src/index.ts",
     "build": "node node_modules/typescript/bin/tsc -p tsconfig.server.json && node node_modules/vite/bin/vite.js build",
     "start": "node dist-server/index.js",
     "typecheck": "tsc --noEmit"

@@ -294,7 +294,7 @@ const EmpresaFormModal: React.FC<Props> = ({ onConfirm, onCancel, initial }) => 
                   label="Certificaciones actuales"
                   value={form.certificaciones}
                   onChange={setCertificaciones}
-                  placeholder="Ej: ISO 9001:2015, OHSAS 18001..."
+                  placeholder="Ej: ISO 14001, OHSAS 18001..."
                 />
               </div>
             </>
@@ -352,7 +352,7 @@ const EmpresaFormModal: React.FC<Props> = ({ onConfirm, onCancel, initial }) => 
                 value={form.parteInteresadas}
                 onChange={setParteInteresadas}
                 placeholder="Ej: clientes, empleados, proveedores, accionistas, entes reguladores, comunidad..."
-                hint="ISO 9001:2015 §4.2 — Identifica las partes interesadas y sus necesidades y expectativas."
+                hint="§4.2 — Identifica las partes interesadas y sus necesidades y expectativas."
               />
             </>
           )}
@@ -367,14 +367,14 @@ const EmpresaFormModal: React.FC<Props> = ({ onConfirm, onCancel, initial }) => 
                 onChange={setAlcanceSGC}
                 rows={4}
                 placeholder={'Ej: "Diseño, desarrollo y comercialización de software para el sector financiero en Colombia."'}
-                hint="ISO 9001:2015 §4.3 — El alcance determina los límites y la aplicabilidad del SGC."
+                hint="§4.3 — El alcance determina los límites y la aplicabilidad del SGC."
               />
               <div className="efm-info-box">
                 <span>✅</span>
                 <div>
                   <strong>¡Todo listo para el análisis!</strong>
                   <p>
-                    Con esta información, Gemini generará PESTEL, DOFA, Caracterización de Procesos
+                    Con esta información, Governex generará PESTEL, DOFA, Caracterización de Procesos
                     y un <strong>análisis narrativo del contexto organizacional</strong> específico
                     para <strong>{form.nombreEmpresa || 'tu empresa'}</strong>.
                   </p>
@@ -393,7 +393,7 @@ const EmpresaFormModal: React.FC<Props> = ({ onConfirm, onCancel, initial }) => 
           <div className="efm-footer__right">
             <span className="efm-progress-text">Paso {currentIdx + 1} de {secciones.length}</span>
             <button className="efm-btn efm-btn--primary" onClick={validateAndNext}>
-              {isLast ? '🤖 Analizar con Gemini →' : 'Siguiente →'}
+              {isLast ? '🤖 Analizar con Governex →' : 'Siguiente →'}
             </button>
           </div>
         </div>

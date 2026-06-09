@@ -46,7 +46,7 @@ const ComprasPage: React.FC = () => {
         <div className="iso-page__title-block">
           <h1>⚙️ Compras</h1>
           <p>Control de productos y servicios suministrados externamente</p>
-          <span className="iso-page__clause">ISO 9001:2015 — §8.4</span>
+          <span className="iso-page__clause">Cláusula 8.4</span>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           {(['Pendiente','Recibido conforme','Recibido no conforme'] as const).map(e => (
@@ -60,7 +60,7 @@ const ComprasPage: React.FC = () => {
 
       <div className="iso-info-box">
         <span className="iso-info-box__icon">📌</span>
-        <span><strong>ISO 9001:2015 §8.4</strong> — La organización debe asegurarse de que los procesos, productos y servicios suministrados externamente son conformes a los requisitos. Debe comunicar claramente los requisitos a los proveedores externos.</span>
+        <span><strong>Cláusula 8.4</strong> — La organización debe asegurarse de que los procesos, productos y servicios suministrados externamente son conformes a los requisitos. Debe comunicar claramente los requisitos a los proveedores externos.</span>
       </div>
 
       <div className="iso-topbar">

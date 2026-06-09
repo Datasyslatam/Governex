@@ -645,7 +645,7 @@ const ObjetivosCalidadPage: React.FC = () => {
               <span className="oc-breadcrumb__active">Objetivos de Calidad</span>
             </nav>
             <h1>Objetivos de Calidad</h1>
-            <span className="iso-page__clause">ISO 9001 — Cláusula 6.2</span>
+            <span className="iso-page__clause">Cláusula 6.2</span>
           </div>
         </header>
         <EmptyState />
@@ -665,8 +665,8 @@ const ObjetivosCalidadPage: React.FC = () => {
             <span className="oc-breadcrumb__active">Objetivos de Calidad</span>
           </nav>
           <h1>Objetivos de Calidad</h1>
-          <p>Generados automáticamente desde los Riesgos y Oportunidades §6.1 · ISO 9001:2015 §6.2</p>
-          <span className="iso-page__clause">ISO 9001 — Cláusula 6.2</span>
+          <p>Generados automáticamente desde los Riesgos y Oportunidades §6.1 · Cláusula 6.2</p>
+          <span className="iso-page__clause">Cláusula 6.2</span>
         </div>
         <div className="oc-header-actions">
           {borradores > 0 && (

@@ -439,7 +439,7 @@ const AuditoriaPage: React.FC = () => {
               <div className="form-group">
                 <label>Objetivo General</label>
                 <input type="text" className="filter-input form-control"
-                  placeholder="Ej: Verificar conformidad con ISO 9001:2015..."
+                  placeholder="Ej: Verificar conformidad con los requisitos establecidos..."
                   value={programaForm.objetivo}
                   onChange={e => setProgramaForm(f => ({ ...f, objetivo: e.target.value }))} />
               </div>

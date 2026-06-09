@@ -42,13 +42,13 @@ const DisenоDesarrolloPage: React.FC = () => {
         <div className="iso-page__title-block">
           <h1>⚙️ Diseño y Desarrollo</h1>
           <p>Control y seguimiento del diseño y desarrollo de productos y servicios</p>
-          <span className="iso-page__clause">ISO 9001:2015 — §8.3</span>
+          <span className="iso-page__clause">Cláusula 8.3</span>
         </div>
       </div>
 
       <div className="iso-info-box">
         <span className="iso-info-box__icon">📌</span>
-        <span><strong>ISO 9001:2015 §8.3</strong> — La organización debe establecer, implementar y mantener un proceso de diseño y desarrollo, con etapas de planificación, entradas, controles, salidas, y cambios documentados.</span>
+        <span><strong>Cláusula 8.3</strong> — La organización debe establecer, implementar y mantener un proceso de diseño y desarrollo, con etapas de planificación, entradas, controles, salidas, y cambios documentados.</span>
       </div>
 
       <div className="iso-topbar">

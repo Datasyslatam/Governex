@@ -18,7 +18,7 @@ interface OrdenProduccion {
 
 const datosIniciales: OrdenProduccion[] = [
   { id: 1, codigo: 'OP-2025-001', productoServicio: 'Fabricación estructura metálica', cliente: 'Constructora del Norte', cantidad: '10 unidades', instruccionTrabajo: 'IT-PRO-001 v2.0', equipos: 'Soldadora MIG, cortadora plasma, dobladora', responsable: 'Jefe de Producción', fechaInicio: '2025-03-01', fechaEntrega: '2025-03-20', etapa: 'Control de calidad', conformidad: 'Conforme' },
-  { id: 2, codigo: 'OP-2025-002', productoServicio: 'Servicio de consultoría ISO 9001', cliente: 'Alimentos del Valle S.A.', cantidad: '1 proyecto', instruccionTrabajo: 'IT-SER-003 v1.0', equipos: 'Computador, software de gestión documental', responsable: 'Director de Calidad', fechaInicio: '2025-03-10', fechaEntrega: '2025-09-10', etapa: 'En proceso', conformidad: 'Pendiente inspección' },
+  { id: 2, codigo: 'OP-2025-002', productoServicio: 'Servicio de consultoría de calidad', cliente: 'Alimentos del Valle S.A.', cantidad: '1 proyecto', instruccionTrabajo: 'IT-SER-003 v1.0', equipos: 'Computador, software de gestión documental', responsable: 'Director de Calidad', fechaInicio: '2025-03-10', fechaEntrega: '2025-09-10', etapa: 'En proceso', conformidad: 'Pendiente inspección' },
 ]
 
 const empty = { codigo: '', productoServicio: '', cliente: '', cantidad: '', instruccionTrabajo: '', equipos: '', responsable: '', fechaInicio: '', fechaEntrega: '', etapa: 'Programado' as const, conformidad: 'Pendiente inspección' as const }
@@ -44,13 +44,13 @@ const ProduccionServicioPage: React.FC = () => {
         <div className="iso-page__title-block">
           <h1>⚙️ Producción y Provisión del Servicio</h1>
           <p>Control de las condiciones bajo las cuales se realizan la producción y la prestación del servicio</p>
-          <span className="iso-page__clause">ISO 9001:2015 — §8.5</span>
+          <span className="iso-page__clause">Cláusula 8.5</span>
         </div>
       </div>
 
       <div className="iso-info-box">
         <span className="iso-info-box__icon">📌</span>
-        <span><strong>ISO 9001:2015 §8.5</strong> — La organización debe implementar la producción y provisión del servicio bajo condiciones controladas: información documentada, recursos de seguimiento, infraestructura adecuada, personas competentes, validación de procesos especiales, trazabilidad y preservación de salidas.</span>
+        <span><strong>Cláusula 8.5</strong> — La organización debe implementar la producción y provisión del servicio bajo condiciones controladas: información documentada, recursos de seguimiento, infraestructura adecuada, personas competentes, validación de procesos especiales, trazabilidad y preservación de salidas.</span>
       </div>
 
       <div className="iso-topbar">

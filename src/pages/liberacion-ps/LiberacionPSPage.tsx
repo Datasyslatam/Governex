@@ -41,7 +41,7 @@ const LiberacionPSPage: React.FC = () => {
         <div className="iso-page__title-block">
           <h1>⚙️ Liberación de Productos y Servicios</h1>
           <p>Registros de inspección y decisiones de liberación para asegurar la conformidad antes de la entrega</p>
-          <span className="iso-page__clause">ISO 9001:2015 — §8.6</span>
+          <span className="iso-page__clause">Cláusula 8.6</span>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           {(['Liberado','Retenido','Rechazado'] as const).map(d => (
@@ -55,7 +55,7 @@ const LiberacionPSPage: React.FC = () => {
 
       <div className="iso-info-box">
         <span className="iso-info-box__icon">📌</span>
-        <span><strong>ISO 9001:2015 §8.6</strong> — La organización debe implementar disposiciones planificadas para verificar que se cumplen los requisitos de los productos y servicios antes de su liberación. La información documentada debe incluir: evidencia de conformidad, trazabilidad a la persona que autoriza la liberación.</span>
+        <span><strong>Cláusula 8.6</strong> — La organización debe implementar disposiciones planificadas para verificar que se cumplen los requisitos de los productos y servicios antes de su liberación. La información documentada debe incluir: evidencia de conformidad, trazabilidad a la persona que autoriza la liberación.</span>
       </div>
 
       <div className="iso-topbar">

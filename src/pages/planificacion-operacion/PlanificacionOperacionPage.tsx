@@ -63,7 +63,7 @@ const EmptyState: React.FC = () => (
       <ol style={{ margin: '0.5rem 0 0', paddingLeft: '1.2rem', textAlign: 'left', lineHeight: 1.8 }}>
         <li>Ve al módulo <em>Contexto de la Organización</em> (Cap. 4).</li>
         <li>Construye o carga el organigrama en la pestaña <em>Mapa de Procesos</em>.</li>
-        <li>Haz clic en <strong>"Analizar con Gemini IA"</strong> e ingresa el nombre de la empresa y sector.</li>
+        <li>Haz clic en <strong>"Analizar con Governex IA"</strong> e ingresa el nombre de la empresa y sector.</li>
         <li>Regresa aquí: los tres documentos se generarán automáticamente.</li>
       </ol>
     </div>
@@ -83,7 +83,7 @@ const TablaCaracterizacion: React.FC<{ rows: CaracterizacionRow[] }> = ({ rows }
       <div className="iso-info-box">
         <span className="iso-info-box__icon">📌</span>
         <span>
-          <strong>ISO 9001:2015 §4.4 / §8.1</strong> — La tabla de caracterización documenta
+          <strong>§4.4 / §8.1</strong> — La tabla de caracterización documenta
           entradas, salidas, indicadores y responsables de cada proceso del SGC.
         </span>
       </div>
@@ -206,7 +206,7 @@ const MapaProcedimiento: React.FC<{ filas: FilaMatriz[]; empresa?: string; secto
       <div className="iso-info-box">
         <span className="iso-info-box__icon">🗺️</span>
         <span>
-          <strong>ISO 9001:2015 §4.4 / §8.1</strong> — Representación visual del mapa de procesos
+          <strong>§4.4 / §8.1</strong> — Representación visual del mapa de procesos
           clasificados por tipo: estratégicos, misionales y de apoyo.
         </span>
       </div>
@@ -288,7 +288,7 @@ const ManualProcedimiento: React.FC<{ rows: CaracterizacionRow[]; filas: FilaMat
       <div className="iso-info-box">
         <span className="iso-info-box__icon">📖</span>
         <span>
-          <strong>ISO 9001:2015 §8.1 / §4.4.2</strong> — El manual de procedimiento documenta
+          <strong>§8.1 / §4.4.2</strong> — El manual de procedimiento documenta
           las actividades, responsabilidades e indicadores de cada proceso operacional.
         </span>
       </div>
@@ -460,7 +460,7 @@ const PlanificacionOperacionPage: React.FC = () => {
               }}>{analysis.sector}</span>
             )}
           </p>
-          <span className="iso-page__clause">ISO 9001:2015 — §8.1</span>
+          <span className="iso-page__clause">Cláusula 8.1</span>
         </div>
 
         {hasData && (
