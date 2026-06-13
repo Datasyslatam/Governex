@@ -17,14 +17,14 @@ interface Section {
 const SECTIONS: Section[] = [
   {
     id: "s4",
-    label: "§4 · Contexto",
+    label: "4 · Contexto",
     items: [
       { to: "/procesos", icon: "🧭", text: "Contexto de la Organización" },
     ],
   },
   {
     id: "s5",
-    label: "§5 · Liderazgo",
+    label: "5 · Liderazgo",
     items: [
       { to: "/politica", icon: "⚓", text: "Liderazgo y Política" },
       { to: "/roles",    icon: "⚓", text: "Roles, Responsabilidades y Autoridad" },
@@ -32,7 +32,7 @@ const SECTIONS: Section[] = [
   },
   {
     id: "s6",
-    label: "§6 · Planificación",
+    label: "6 · Planificación",
     items: [
       { to: "/riesgos",                icon: "🗺️", text: "Riesgos y Oportunidades" },
       { to: "/objetivos-calidad",      icon: "🎯", text: "Objetivos de Calidad" },
@@ -41,7 +41,7 @@ const SECTIONS: Section[] = [
   },
   {
     id: "s7",
-    label: "§7 · Apoyo",
+    label: "7 · Apoyo",
     items: [
       { to: "/competencias",     icon: "🔋", text: "Competencias y Recursos" },
       { to: "/documentos",       icon: "🔋", text: "Información Documentada" },
@@ -51,7 +51,7 @@ const SECTIONS: Section[] = [
   },
   {
     id: "s8",
-    label: "§8 · Operación",
+    label: "8 · Operación",
     items: [
       { to: "/planificacion-operacion", icon: "⚙️", text: "Planificación y Control" },
       { to: "/requerimientos-ps",       icon: "⚙️", text: "Requerimientos para Productos y Servicios" },
@@ -65,7 +65,7 @@ const SECTIONS: Section[] = [
   },
   {
     id: "s9",
-    label: "§9 · Evaluación",
+    label: "9 · Evaluación",
     items: [
       { to: "/auditorias",    icon: "🔬", text: "Auditorías Internas" },
       { to: "/indicadores",   icon: "🔬", text: "Indicadores de Desempeño" },
@@ -74,7 +74,7 @@ const SECTIONS: Section[] = [
   },
   {
     id: "s10",
-    label: "§10 · Mejora",
+    label: "10 · Mejora",
     items: [
       { to: "/nc-ac",           icon: "♾️", text: "No Conformidades y Acciones" },
       { to: "/mejora-continua", icon: "♾️", text: "Mejora Continua" },

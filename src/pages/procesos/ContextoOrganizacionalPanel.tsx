@@ -1,113 +1,197 @@
+/**
+ * ContextoOrganizacionalPanel.tsx — Governex · ISO 9001:2015
+ *
+ * Muestra el contexto completo de la organización incluyendo:
+ * - Identidad (Sección 1)
+ * - Misión, Visión y Política de Calidad (generadas por IA)
+ * - Contexto operacional: productos, mercado, partes interesadas, alcance SGC
+ * - Narrativo de contexto (si lo generó Gemini)
+ */
+
 import React, { useState } from 'react'
 import { DatosEmpresa } from '../../context/AIAnalysisContext'
 import './ContextoOrganizacionalPanel.css'
 
+/* ── Props ─────────────────────────────────────────────────── */
 interface Props {
-  datos:    DatosEmpresa
-  onEditar: () => void
+  datos: DatosEmpresa
+  onEditar?: () => void
 }
 
-const SeccionDatos: React.FC<{ titulo:string; icon:string; items:{label:string;value:string}[] }> = ({ titulo, icon, items }) => {
-  const activos = items.filter(i => i.value?.trim())
-  if (!activos.length) return null
-  return (
-    <div className="cop-seccion">
-      <h4 className="cop-seccion__titulo"><span>{icon}</span> {titulo}</h4>
-      <div className="cop-seccion__grid">
-        {activos.map(item => (
-          <div className="cop-dato" key={item.label}>
-            <span className="cop-dato__label">{item.label}</span>
-            <span className="cop-dato__value">{item.value}</span>
-          </div>
-        ))}
+/* ── Helpers de presentación ────────────────────────────────── */
+const Badge: React.FC<{ label: string; variant?: 'blue' | 'navy' | 'green' | 'gray' }> = ({
+  label, variant = 'gray',
+}) => <span className={`ctx-badge ctx-badge--${variant}`}>{label}</span>
+
+const InfoChip: React.FC<{ icon: string; label: string; value: string }> = ({ icon, label, value }) =>
+  value ? (
+    <div className="ctx-chip">
+      <span className="ctx-chip__icon">{icon}</span>
+      <div>
+        <div className="ctx-chip__label">{label}</div>
+        <div className="ctx-chip__value">{value}</div>
       </div>
+    </div>
+  ) : null
+
+const TextBlock: React.FC<{
+  icon: string
+  title: string
+  subtitle: string
+  text: string
+  variant?: 'mision' | 'vision' | 'politica'
+  badgeLabel?: string
+}> = ({ icon, title, subtitle, text, variant = 'mision', badgeLabel }) => (
+  <div className={`ctx-textblock ctx-textblock--${variant}`}>
+    <div className="ctx-textblock__header">
+      <span className="ctx-textblock__icon">{icon}</span>
+      <div className="ctx-textblock__titles">
+        <div className="ctx-textblock__title">{title}</div>
+        <div className="ctx-textblock__subtitle">{subtitle}</div>
+      </div>
+      {badgeLabel && <span className="ctx-textblock__badge">{badgeLabel}</span>}
+    </div>
+    <p className="ctx-textblock__body">{text || <em className="ctx-empty">No definida aún.</em>}</p>
+  </div>
+)
+
+const SectionHeader: React.FC<{ icon: string; title: string; clause?: string }> = ({
+  icon, title, clause,
+}) => (
+  <div className="ctx-section-header">
+    <span className="ctx-section-header__icon">{icon}</span>
+    <h4 className="ctx-section-header__title">{title}</h4>
+    {clause && <span className="ctx-section-header__clause">{clause}</span>}
+  </div>
+)
+
+/* ── Bloque de texto con área expandible ────────────────────── */
+const ExpandableText: React.FC<{ label: string; text: string }> = ({ label, text }) => {
+  const [expanded, setExpanded] = useState(false)
+  const isLong = text.length > 220
+
+  return (
+    <div className="ctx-expandable">
+      <div className="ctx-expandable__label">{label}</div>
+      <p className={`ctx-expandable__text ${!expanded && isLong ? 'ctx-expandable__text--clamped' : ''}`}>
+        {text || <em className="ctx-empty">No especificado.</em>}
+      </p>
+      {isLong && (
+        <button className="ctx-expandable__toggle" onClick={() => setExpanded(e => !e)}>
+          {expanded ? 'Ver menos ▲' : 'Ver más ▼'}
+        </button>
+      )}
     </div>
   )
 }
 
+/* ══════════════════════════════════════════════════════════════
+   COMPONENTE PRINCIPAL
+   ══════════════════════════════════════════════════════════════ */
 const ContextoOrganizacionalPanel: React.FC<Props> = ({ datos, onEditar }) => {
-  const [expandido, setExpandido] = useState(true)
+  const tieneIdeario = !!(datos.mision || datos.vision || datos.politicaCalidad)
+  const tieneNarrativo = !!(datos.contextoNarrativo)
 
   return (
-    <div className="cop-wrapper">
-      <div className="cop-header">
-        <div className="cop-header__left">
-          <span className="cop-header__icon">🏢</span>
-          <div>
-            <h3 className="cop-header__title">{datos.nombreEmpresa || 'Organización'}</h3>
-            <div className="cop-header__chips">
-              {datos.sector      && <span className="cop-chip cop-chip--sector">{datos.sector}</span>}
-              {datos.tipoEmpresa && <span className="cop-chip cop-chip--tipo">{datos.tipoEmpresa}</span>}
-              {datos.tamano      && <span className="cop-chip cop-chip--tamano">{datos.tamano}</span>}
-              {datos.ubicacion   && <span className="cop-chip cop-chip--ubic">📍 {datos.ubicacion}</span>}
-            </div>
+    <div className="ctx-panel">
+
+      {/* ── ENCABEZADO DE LA EMPRESA ──────────────────────────── */}
+      <div className="ctx-header">
+        <div className="ctx-header__main">
+          <div className="ctx-header__name-row">
+            <h3 className="ctx-header__name">{datos.nombreEmpresa || 'Empresa sin nombre'}</h3>
+            {datos.tipoEmpresa && <Badge label={datos.tipoEmpresa} variant="navy" />}
+            {datos.sector && <Badge label={datos.sector} variant="blue" />}
+          </div>
+          <div className="ctx-header__chips">
+            <InfoChip icon="📍" label="Ubicación"      value={datos.ubicacion        ?? ''} />
+            <InfoChip icon="📅" label="Fundación"      value={datos.anoFundacion     ?? ''} />
+            <InfoChip icon="👥" label="Empleados"      value={datos.cantidadEmpleados ?? ''} />
+            <InfoChip icon="📏" label="Tamaño"         value={datos.tamano           ?? ''} />
+            <InfoChip icon="🏅" label="Certificaciones" value={datos.certificaciones  ?? ''} />
           </div>
         </div>
-        <div className="cop-header__actions">
-          <button className="cop-btn-edit" onClick={onEditar}>✏️ Editar</button>
-          <button className="cop-btn-toggle" onClick={() => setExpandido(v => !v)}>
-            {expandido ? '▲ Colapsar' : '▼ Ver datos'}
+        {onEditar && (
+          <button className="ctx-header__edit-btn" onClick={onEditar} title="Re-analizar con Governex IA">
+            🔄 Re-analizar
           </button>
-        </div>
+        )}
       </div>
 
-      {expandido && (
-        <div className="cop-body">
-          <div className="cop-datos">
-            <SeccionDatos titulo="Identidad" icon="🏢" items={[
-              { label:'Nombre',           value: datos.nombreEmpresa },
-              { label:'Tipo',             value: datos.tipoEmpresa },
-              { label:'Sector',           value: datos.sector },
-              { label:'Tamaño',           value: datos.tamano },
-              { label:'Ubicación',        value: datos.ubicacion },
-              { label:'Año de fundación', value: datos.anoFundacion },
-              { label:'N.º empleados',    value: datos.cantidadEmpleados },
-              { label:'Certificaciones',  value: datos.certificaciones },
-            ]} />
-
-            <SeccionDatos titulo="Direccionamiento Estratégico" icon="🧭" items={[
-              { label:'Misión',              value: datos.mision },
-              { label:'Visión',              value: datos.vision },
-              { label:'Política de Calidad', value: datos.politicaCalidad },
-            ]} />
-
-            <SeccionDatos titulo="Productos / Servicios y Mercado" icon="⚙️" items={[
-              { label:'Productos / Servicios', value: datos.productosServicios },
-              { label:'Mercado objetivo',       value: datos.mercadoObjetivo },
-              { label:'Partes interesadas',     value: datos.parteInteresadas },
-            ]} />
-
-            <SeccionDatos titulo="Sistema de Gestión de Calidad" icon="📋" items={[
-              { label:'Alcance del SGC', value: datos.alcanceSGC },
-            ]} />
+      {/* ── MISIÓN · VISIÓN · POLÍTICA DE CALIDAD ─────────────── */}
+      {tieneIdeario ? (
+        <section className="ctx-section">
+          <SectionHeader
+            icon="✨"
+            title="Ideario Estratégico"
+            clause="Cláusula 5.2"
+          />
+          <div className="ctx-ideario-grid">
+            <TextBlock
+              icon="🎯"
+              title="Misión"
+              subtitle="Razón de ser de la organización"
+              text={datos.mision ?? ''}
+              variant="mision"
+            />
+            <TextBlock
+              icon="🚀"
+              title="Visión"
+              subtitle="Proyección a 5–10 años"
+              text={datos.vision ?? ''}
+              variant="vision"
+            />
+            <TextBlock
+              icon="📜"
+              title="Política de Calidad"
+              subtitle="Compromiso con la excelencia operativa y la mejora continua"
+              text={datos.politicaCalidad ?? ''}
+              variant="politica"
+            />
           </div>
-
-          {datos.contextoNarrativo && (
-            <div className="cop-narrativo">
-              <div className="cop-narrativo__header">
-                <span className="cop-narrativo__icon">🤖</span>
-                <div>
-                  <h4>Análisis del Contexto Organizacional</h4>
-                  <p>Generado por Governex a partir de la información proporcionada</p>
-                </div>
-              </div>
-              <div className="cop-narrativo__content">
-                {datos.contextoNarrativo.split('\n').map((linea, i) => {
-                  const t = linea.trim()
-                  if (!t) return null
-                  if (t.startsWith('##') || t.startsWith('# '))
-                    return <h5 key={i} className="cop-narrativo__h5">{t.replace(/^#+\s*/,'')}</h5>
-                  if (t.startsWith('- ') || t.startsWith('• '))
-                    return <li key={i} className="cop-narrativo__li">{t.replace(/^[-•]\s*/,'')}</li>
-                  if (/^\*\*[^*]+\*\*/.test(t))
-                    return <p key={i} className="cop-narrativo__p" dangerouslySetInnerHTML={{ __html: t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>') }} />
-                  return <p key={i} className="cop-narrativo__p">{t}</p>
-                })}
-              </div>
-            </div>
-          )}
+        </section>
+      ) : (
+        <div className="ctx-ideario-empty">
+          <span>💡</span>
+          <span>
+            La Misión, Visión y Política de Calidad se generarán automáticamente al cargar el formulario PDF de la empresa.
+          </span>
         </div>
       )}
+
+      {/* ── CONTEXTO NARRATIVO (Gemini) ───────────────────────── */}
+      {tieneNarrativo && (
+        <section className="ctx-section">
+          <SectionHeader icon="📝" title="Contexto Narrativo" clause="Cláusula 4.1" />
+          <div className="ctx-narrativo">
+            <ExpandableText label="" text={datos.contextoNarrativo ?? ''} />
+          </div>
+        </section>
+      )}
+
+      {/* ── CONTEXTO OPERACIONAL ──────────────────────────────── */}
+      <section className="ctx-section">
+        <SectionHeader icon="🏭" title="Contexto Operacional" clause="Cláusulas 4.2, 4.3 y 8" />
+        <div className="ctx-operacional-grid">
+          <ExpandableText
+            label="🛒 Productos y/o Servicios"
+            text={datos.productosServicios ?? ''}
+          />
+          <ExpandableText
+            label="🎯 Mercado Objetivo"
+            text={datos.mercadoObjetivo ?? ''}
+          />
+          <ExpandableText
+            label="🤝 Partes Interesadas"
+            text={datos.parteInteresadas ?? ''}
+          />
+          <ExpandableText
+            label="🔭 Alcance del SGC"
+            text={datos.alcanceSGC ?? ''}
+          />
+        </div>
+      </section>
+
     </div>
   )
 }

@@ -1,0 +1,394 @@
+/* PlantillaOrganizacion.css – Governex · ISO 9001:2015 */
+
+.plantilla-org {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* ── Header ────────────────────────────────────────────────── */
+.plantilla-org__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.plantilla-org__header-icon {
+  font-size: 2.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.plantilla-org__header h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f2b4b;
+}
+.plantilla-org__header p {
+  margin: 0;
+  font-size: 0.83rem;
+  color: #6b7280;
+  line-height: 1.55;
+}
+
+/* ── Steps ─────────────────────────────────────────────────── */
+.plantilla-org__steps {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  background: #f0f6ff;
+  border: 1px solid #c7d9f5;
+  border-radius: 0.75rem;
+  padding: 1rem 0.9rem;
+  flex-wrap: wrap;
+}
+.plantilla-org__step {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+.plantilla-org__step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #0f2b4b;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.plantilla-org__step-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #0f2b4b;
+  margin-bottom: 0.12rem;
+}
+.plantilla-org__step-desc {
+  font-size: 0.74rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+.plantilla-org__step-arrow {
+  font-size: 1.1rem;
+  color: #94a3b8;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* ── Nota IA ───────────────────────────────────────────────── */
+.plantilla-org__ia-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 3px solid #1a6ebd;
+  border-radius: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.8rem;
+  color: #1e40af;
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+.plantilla-org__ia-note span:first-child {
+  font-size: 1.05rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Botón descargar ───────────────────────────────────────── */
+.plantilla-org__btn-download {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.2rem;
+  background: linear-gradient(135deg, #0f2b4b 0%, #1a6ebd 100%);
+  color: #fff;
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  margin-bottom: 1.25rem;
+  text-align: left;
+  transition: opacity 0.15s, transform 0.12s;
+  box-shadow: 0 2px 10px rgba(15, 43, 75, 0.28);
+}
+.plantilla-org__btn-download:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.plantilla-org__btn-download:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+.plantilla-org__btn-icon {
+  font-size: 1.65rem;
+  flex-shrink: 0;
+}
+.plantilla-org__btn-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin-bottom: 0.1rem;
+}
+.plantilla-org__btn-sub {
+  font-size: 0.74rem;
+  opacity: 0.75;
+  font-family: monospace;
+}
+
+/* ── Upload label ──────────────────────────────────────────── */
+.plantilla-org__upload-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f2b4b;
+  margin-bottom: 0.4rem;
+}
+.plantilla-org__upload-label-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #1a6ebd;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── Dropzone ──────────────────────────────────────────────── */
+.plantilla-org__dropzone {
+  width: 100%;
+  border: 2px dashed #c5d5ea;
+  border-radius: 0.75rem;
+  padding: 1.6rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  background: #f8fafc;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 1.2rem;
+  text-align: center;
+  box-sizing: border-box;
+}
+.plantilla-org__dropzone:hover {
+  border-color: #1a6ebd;
+  background: #eff6ff;
+}
+.plantilla-org__dropzone--loaded {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+.plantilla-org__drop-icon { font-size: 1.85rem; margin-bottom: 0.2rem; }
+.plantilla-org__drop-title { font-size: 0.87rem; font-weight: 600; color: #0f2b4b; }
+.plantilla-org__drop-sub   { font-size: 0.75rem; color: #6b7280; }
+
+/* ═══════════════════════════════════════════════════════════
+   IDEARIO GENERADO POR IA — Añadir a PlantillaOrganizacion.css
+   ═══════════════════════════════════════════════════════════ */
+
+/* Contenedor principal */
+.plantilla-org__ideario {
+  margin: 16px 0;
+  border: 1.5px solid #1a6ebd33;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f0f6ff 0%, #fafcff 100%);
+  overflow: hidden;
+}
+
+/* Cabecera del panel */
+.plantilla-org__ideario-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: linear-gradient(90deg, #0f2b4b 0%, #1a6ebd 100%);
+}
+
+.plantilla-org__ideario-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.plantilla-org__ideario-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.2);
+  color: #c8e0ff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 2px 7px;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+}
+
+.plantilla-org__ideario-badge-iso {
+  font-size: 0.64rem;
+  font-weight: 600;
+  background: #1a6ebd18;
+  color: #1a6ebd;
+  border: 1px solid #1a6ebd40;
+  padding: 1px 6px;
+  border-radius: 20px;
+}
+
+/* Botón regenerar */
+.plantilla-org__ideario-regen {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #c8e0ff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.plantilla-org__ideario-regen:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.plantilla-org__ideario-regen:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Estado de carga */
+.plantilla-org__ideario-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 14px;
+  font-size: 0.8rem;
+  color: #4b6a8a;
+}
+
+.plantilla-org__ideario-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid #c3d9f0;
+  border-top-color: #1a6ebd;
+  border-radius: 50%;
+  animation: ideario-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes ideario-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Campos editables */
+.plantilla-org__ideario-fields {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.plantilla-org__ideario-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.plantilla-org__ideario-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #0f2b4b;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.plantilla-org__ideario-label-icon {
+  font-size: 0.9rem;
+}
+
+.plantilla-org__ideario-editable-hint {
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: #6b9cc4;
+  background: #e8f1fb;
+  border: 1px solid #c3d9f0;
+  padding: 1px 6px;
+  border-radius: 20px;
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.plantilla-org__ideario-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: #1e3a5a;
+  background: #ffffff;
+  border: 1.5px solid #c3d9f0;
+  border-radius: 6px;
+  resize: vertical;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+
+.plantilla-org__ideario-textarea:focus {
+  outline: none;
+  border-color: #1a6ebd;
+  box-shadow: 0 0 0 3px #1a6ebd1a;
+}
+
+.plantilla-org__ideario-textarea::placeholder {
+  color: #a0bcd6;
+  font-style: italic;
+}
+
+/* Nota al pie del ideario */
+.plantilla-org__ideario-hint {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 0.73rem;
+  color: #4b6a8a;
+  background: #e8f4ff;
+  border: 1px solid #c3d9f0;
+  border-radius: 6px;
+}
+
+/* ── Footer ────────────────────────────────────────────────── */
+.plantilla-org__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .plantilla-org__steps  { flex-direction: column; }
+  .plantilla-org__step-arrow { transform: rotate(90deg); align-self: flex-start; margin-left: 13px; }
+}

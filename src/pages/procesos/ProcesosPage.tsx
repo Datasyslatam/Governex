@@ -14,10 +14,11 @@ import { procesosService } from '../../services'
 import { useAIAnalysis, DatosEmpresa } from '../../context/AIAnalysisContext'
 import EmpresaFormModal            from './EmpresaFormModal'
 import ContextoOrganizacionalPanel from './ContextoOrganizacionalPanel'
+import PlantillaOrganizacion       from './PlantillaOrganizacion'
 
 /* ─────────────────────────── TIPOS ─────────────────────────── */
 type Tab     = 'mapa' | 'contexto' | 'caracterizacion'
-type MapMode = 'empty' | 'manual' | 'ai'
+type MapMode = 'empty' | 'manual' | 'ai' | 'plantilla'
 
 export interface ProcesoItem { nombre: string }
 
@@ -314,7 +315,7 @@ const UploadAI: React.FC<{ onSave: (m: MapaData) => void; onCancel: () => void }
 
   return (
     <div className="upload-ai panel">
-      <div className="upload-ai__header"><h3>🤖 Generar Mapa con IA</h3><p>Sube tu organigrama, descripción de la empresa o cualquier documento con la estructura organizacional.</p></div>
+      <div className="upload-ai__header"><h3>🤖 Generar Mapa con Governex IA</h3><p>Sube tu organigrama, descripción de la empresa o cualquier documento con la estructura organizacional.</p></div>
       <div className={`upload-ai__dropzone ${file ? 'has-file' : ''}`} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) setFile(f) }} onClick={() => fileRef.current?.click()}>
         <input ref={fileRef} type="file" accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg" style={{ display:'none' }} onChange={e => e.target.files?.[0] && setFile(e.target.files[0])} />
         {file ? (<><span className="upload-ai__file-icon">📄</span><span className="upload-ai__file-name">{file.name}</span><span className="upload-ai__file-size">{(file.size/1024).toFixed(1)} KB · Listo para analizar</span></>) : (<><span className="upload-ai__drop-icon">☁️</span><span className="upload-ai__drop-title">Arrastra tu archivo aquí</span><span className="upload-ai__drop-sub">o haz clic para seleccionar · PDF, DOCX, TXT, Imagen</span></>)}
@@ -449,6 +450,54 @@ const ProcesosPage: React.FC = () => {
     setShowEmpresaForm(true)
   }, [mapa])
 
+  /* ── Plantilla: datos empresa + organigrama listos ───── */
+  const handlePlantillaListos = useCallback(async (
+    datos: DatosEmpresa,
+    orgBase64: string,
+    orgMime:   string,
+    orgNombre: string,
+  ) => {
+    setMapMode('empty')
+    setShowMap(true)
+
+    if (orgBase64) {
+      // Hay organigrama: extraer procesos con la misma ruta que UploadAI imagen
+      setGeminiLoading(true)
+      try {
+        const token = localStorage.getItem('governex_token')
+        const BASE  = import.meta.env.VITE_API_URL || ''
+        const res   = await fetch(`${BASE}/api/gemini/extraer-procesos-imagen`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body:    JSON.stringify({ base64: orgBase64, mimeType: orgMime, fileName: orgNombre }),
+        })
+        if (!res.ok) throw new Error(`Error ${res.status}`)
+        const generatedMapa: MapaData = await res.json()
+        injectAIDetails(generatedMapa)
+        setMapa(generatedMapa)
+        setGeminiLoading(false)
+        await callGemini(generatedMapa, datos)
+      } catch {
+        // Fallback: analizar con mapa actual si falla la extracción
+        setGeminiLoading(false)
+        const fallbackMapa: MapaData = {
+          cliente: 'Requisitos del Cliente y Contexto',
+          satisfaccion: 'Satisfacción del Cliente',
+          estrategicos: [{ nombre: 'Gestión Directiva' }, { nombre: 'Planificación Estratégica' }, { nombre: 'Gestión de Calidad' }],
+          misionales:   [{ nombre: 'Desarrollo de Producto' }, { nombre: 'Producción / Operaciones' }, { nombre: 'Ventas y Comercial' }],
+          apoyo:        [{ nombre: 'Talento Humano' }, { nombre: 'Finanzas' }, { nombre: 'TI e Infraestructura' }, { nombre: 'Compras y Logística' }],
+        }
+        injectAIDetails(fallbackMapa)
+        setMapa(fallbackMapa)
+        await callGemini(fallbackMapa, datos)
+      }
+    } else {
+      // Sin organigrama: analizar directamente con los datos de empresa
+      const mapaActual = mapa
+      await callGemini(mapaActual, datos)
+    }
+  }, [mapa, callGemini])
+
   const total = mapa.estrategicos.length + mapa.misionales.length + mapa.apoyo.length
   const pestelData: PestelRow[] = aiAnalysis?.pestel ?? []
 
@@ -517,9 +566,9 @@ const ProcesosPage: React.FC = () => {
                   <span className="iso-action-btn__icon">✏️</span>
                   <div><div className="iso-action-btn__title">Construir Manualmente</div><div className="iso-action-btn__desc">Ingresa los procesos de tu empresa uno a uno</div></div>
                 </button>
-                <button className="iso-action-btn iso-action-btn--ai" onClick={() => { setShowMap(false); setMapMode('ai') }}>
+                <button className="iso-action-btn iso-action-btn--ai" onClick={() => { setShowMap(false); setMapMode('plantilla') }}>
                   <span className="iso-action-btn__icon">🤖</span>
-                  <div><div className="iso-action-btn__title">Generar con IA</div><div className="iso-action-btn__desc">Sube tu organigrama y Governex construye el análisis completo</div></div>
+                  <div><div className="iso-action-btn__title">Generar con IA</div><div className="iso-action-btn__desc">Descarga la plantilla, añade tu organigrama y datos de empresa, y Governex construye el análisis completo</div></div>
                 </button>
               </div>
               {showMap && (
@@ -539,8 +588,9 @@ const ProcesosPage: React.FC = () => {
               )}
             </>
           )}
-          {mapMode === 'manual' && <ManualForm onSave={handleSave} onCancel={() => { setMapMode('empty'); setShowMap(true) }} />}
-          {mapMode === 'ai'     && <UploadAI   onSave={handleSave} onCancel={() => { setMapMode('empty'); setShowMap(true) }} />}
+          {mapMode === 'manual'    && <ManualForm         onSave={handleSave}  onCancel={() => { setMapMode('empty'); setShowMap(true) }} />}
+          {mapMode === 'ai'        && <UploadAI            onSave={handleSave}  onCancel={() => { setMapMode('empty'); setShowMap(true) }} />}
+          {mapMode === 'plantilla' && <PlantillaOrganizacion onDatosYOrganigramaListos={handlePlantillaListos} onCancel={() => { setMapMode('empty'); setShowMap(true) }} />}
         </div>
       )}
 

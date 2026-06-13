@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { authService } from '../../services'
 import './LoginPage.css'
+import logoGovernex from '../../assets/logo-governex.png'
+import logoDatasys from '../../assets/logo-datasys.png'
 
 const LoginPage: React.FC = () => {
   const { login }   = useAuth()
@@ -34,25 +36,23 @@ const LoginPage: React.FC = () => {
       <div className="login__left">
         <div className="login__brand">
           <div className="login__brand-icon" aria-hidden="true">
-            <svg width="56" height="56" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 16H46L54 32L46 48H18L10 32L18 16Z"
-                stroke="currentColor" strokeWidth="4" strokeLinejoin="round" />
-            </svg>
+            <div className="login__brand-icon" aria-hidden="true">
+              <img src={logoGovernex}/>
+            </div>
           </div>
-          <h1>Governex</h1>
-          <p>Sistema de Gestión de Calidad</p>
+          <p>Impulsamos la Gobernanza Digital</p>
           <div className="login__divider" />
           <ul>
-            <li>Trazabilidad total del SGC</li>
-            <li>Control documental versionado</li>
-            <li>Auditoría interna integrada</li>
-            <li>Dashboard ejecutivo en tiempo real</li>
+            <li>Gestiona procesos bajo estándares ISO con seguimiento inteligente de indicadores</li>
+            <li>Automatiza tareas con IA para optimizar tiempos y reducir errores</li>
+            <li>Impulsa la transformación digital con análisis de datos y mejora contínua</li>
           </ul>
           <div className="login__brand-footer">© 2026 Governex · Barranquilla, Colombia</div>
         </div>
       </div>
 
       <div className="login__right">
+        <img src={logoDatasys} alt="Datasys" className="login__datasys-logo" />
         <form className="login__card" onSubmit={handleSubmit}>
           <h2>Iniciar Sesión</h2>
 
