@@ -58,11 +58,37 @@ export interface FilaMatriz {
   clausula:    string
 }
 
+export interface FilaMatrizRecursos {
+  proceso:             string
+  nPersonas:           string
+  infraestructura:     string
+  hardwareSoftware:    string
+  transporte:          string
+  ambienteSocial:      string
+  ambientePsicologico: string
+  ambienteFisico:      string
+  varSocial:           number
+  varPsicologica:      number
+  varFisica:           number
+  calificacionPromedio:number
+  nivelRiesgoVerde:    string
+  accionRequerida:     string
+  recursoEvaluado:     string
+  hallazgo:            string
+  riesgo:              string
+  impacto:             string
+  probabilidad:        string
+  nivelRiesgoAzul:     string
+  oportunidad:         string
+  accion:              string
+}
+
 export interface AIAnalysis {
   pestel:           PestelRow[]
   dofa:             DofaRow[]
   caracterizacion:  CaracterizacionRow[]
   matrizRoles?:     FilaMatriz[]
+  matrizRecursos?:  FilaMatrizRecursos[]
   nombreEmpresa?:   string
   sector?:          string
   datosEmpresa?:    DatosEmpresa
@@ -73,7 +99,7 @@ export interface RiesgoDerivado {
   codigo:       string
   descripcion:  string
   tipo:         'Riesgo' | 'Oportunidad'
-  fuente:       'PESTEL' | 'DOFA'
+  fuente:       'PESTEL' | 'DOFA' | 'Recursos'
   categoria:    string
   probabilidad: number
   impacto:      number
@@ -173,6 +199,20 @@ export function derivarRiesgos(analysis: AIAnalysis): RiesgoDerivado[] {
     const esR = row.tipo === 'Debilidad' || row.tipo === 'Amenaza'
     const prob = esR ? 3 : 2; const imp = esR ? 3 : 2; const nivel = prob * imp
     riesgos.push({ codigo: `${esR ? 'R' : 'OP'}-${String(idx).padStart(3,'0')}`, descripcion: row.descripcion, tipo: esR ? 'Riesgo' : 'Oportunidad', fuente: 'DOFA', categoria: row.tipo, probabilidad: prob, impacto: imp, nivel, estado: estadoDesdeNivel(nivel), responsable: 'Director de Calidad' }); idx++
+  }
+  if (analysis.matrizRecursos) {
+    for (const row of analysis.matrizRecursos) {
+      if (row.riesgo && row.riesgo.trim() !== '' && row.riesgo.toLowerCase() !== 'ninguno' && row.riesgo.toLowerCase() !== 'n/a') {
+        const prob = row.probabilidad ? impactoToNum(row.probabilidad) : 3
+        const imp = row.impacto ? impactoToNum(row.impacto) : 3
+        const nivel = prob * imp
+        riesgos.push({ codigo: `R-${String(idx).padStart(3,'0')}`, descripcion: row.riesgo + (row.hallazgo ? ` (Hallazgo: ${row.hallazgo})` : ''), tipo: 'Riesgo', fuente: 'Recursos', categoria: `Recursos - ${row.proceso}`, probabilidad: prob, impacto: imp, nivel, estado: estadoDesdeNivel(nivel), responsable: 'Director de Calidad' }); idx++
+      }
+      if (row.oportunidad && row.oportunidad.trim() !== '' && row.oportunidad.toLowerCase() !== 'ninguna' && row.oportunidad.toLowerCase() !== 'n/a') {
+        const prob = 2; const imp = 2; const nivel = prob * imp
+        riesgos.push({ codigo: `OP-${String(idx).padStart(3,'0')}`, descripcion: row.oportunidad + (row.accion ? ` (Acción: ${row.accion})` : ''), tipo: 'Oportunidad', fuente: 'Recursos', categoria: `Recursos - ${row.proceso}`, probabilidad: prob, impacto: imp, nivel, estado: estadoDesdeNivel(nivel), responsable: 'Director de Calidad' }); idx++
+      }
+    }
   }
   return riesgos
 }

@@ -59,6 +59,7 @@ interface AiAnalysis {
   dofa:               DofaRow[]
   caracterizacion:    CaracterizacionRow[]
   matrizRoles?:       any[]
+  matrizRecursos?:    any[]
   contextoNarrativo?: string
 }
 
@@ -398,6 +399,7 @@ const ProcesosPage: React.FC = () => {
         dofa:            Array.isArray(data.dofa)            ? data.dofa            as any : [],
         caracterizacion: Array.isArray(data.caracterizacion) ? data.caracterizacion as any : [],
         matrizRoles:     Array.isArray(data.matrizRoles) && data.matrizRoles.length > 0 ? data.matrizRoles as any : undefined,
+        matrizRecursos:  Array.isArray(data.matrizRecursos) && data.matrizRecursos.length > 0 ? data.matrizRecursos as any : undefined,
         datosEmpresa:    datosConNarrativo,
       })
 
@@ -408,6 +410,8 @@ const ProcesosPage: React.FC = () => {
           ✅ <b>${data.pestel?.length ?? 0}</b> factores PESTEL<br>
           ✅ <b>${data.dofa?.length ?? 0}</b> elementos DOFA<br>
           ✅ <b>${data.caracterizacion?.length ?? 0}</b> fichas de caracterización<br>
+          ✅ <b>${data.matrizRoles?.length ?? 0}</b> roles en matriz<br>
+          ✅ <b>${data.matrizRecursos?.length ?? 0}</b> evaluaciones de recursos y ambiente<br>
           ✅ Contexto organizacional narrativo</p>`,
         confirmButtonText: 'Ver resultados', confirmButtonColor: '#1a6ebd',
       }).then(() => setActiveTab('contexto'))
@@ -626,7 +630,7 @@ const ProcesosPage: React.FC = () => {
                   <tbody>
                     {pestelData.map((row: PestelRow, i: number) => (
                       <tr key={i}>
-                        <td><span className={`pestel-factor pestel-factor--${row.factor.toLowerCase()}`}>{row.factor}</span></td>
+                        <td><span className={`pestel-factor pestel-factor--${row.factor.charAt(0).toLowerCase()}`}>{row.factor.charAt(0).toUpperCase()}</span></td>
                         <td className="pestel-categoria">{row.categoria}</td>
                         <td className="pestel-desc">{row.descripcion}</td>
                         <td><span className={`pill ${row.impacto==='Alto'?'pill--danger':row.impacto==='Medio'?'pill--warning':'pill--muted'}`}>{row.impacto}</span></td>

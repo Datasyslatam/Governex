@@ -19,10 +19,16 @@ export interface DofaRow      { tipo:'Fortaleza'|'Oportunidad'|'Debilidad'|'Amen
 export interface CaracterizacionRow { codigo:string; proceso:string; objetivo:string; entradas:string; salidas:string; indicador:string; responsable:string; estado:string }
 export type TipoProceso = 'estrategico'|'misional'|'apoyo'
 export interface FilaMatriz   { id:number; proceso:string; tipo:TipoProceso; responsable:string; autoridad:string; funciones:string; recursos:string; rendicion:string; clausula:string }
+export interface FilaMatrizRecursos { 
+  proceso:string; nPersonas:string; infraestructura:string; hardwareSoftware:string; transporte:string; 
+  ambienteSocial:string; ambientePsicologico:string; ambienteFisico:string; 
+  varSocial:number; varPsicologica:number; varFisica:number; calificacionPromedio:number; nivelRiesgoVerde:string; accionRequerida:string;
+  recursoEvaluado:string; hallazgo:string; riesgo:string; impacto:string; probabilidad:string; nivelRiesgoAzul:string; oportunidad:string; accion:string;
+}
 
 export interface GeminiAnalysis {
   pestel: PestelRow[]; dofa: DofaRow[]
-  caracterizacion: CaracterizacionRow[]; matrizRoles: FilaMatriz[]
+  caracterizacion: CaracterizacionRow[]; matrizRoles: FilaMatriz[]; matrizRecursos: FilaMatrizRecursos[]
   contextoNarrativo?: string
 }
 
@@ -84,6 +90,14 @@ Responde ÚNICAMENTE con JSON válido sin texto adicional.
   ],
   "matrizRoles": [
     { "id":1, "proceso":"nombre", "tipo":"estrategico", "responsable":"cargo", "autoridad":"quien autoriza", "funciones":"funciones principales", "recursos":"recursos necesarios", "rendicion":"a quien rinde cuentas", "clausula":"§5.1, §5.3" }
+  ],
+  "matrizRecursos": [
+    { 
+      "proceso":"nombre", "nPersonas":"...", "infraestructura":"...", "hardwareSoftware":"...", "transporte":"...", 
+      "ambienteSocial":"- viñeta...", "ambientePsicologico":"- viñeta...", "ambienteFisico":"- viñeta...",
+      "varSocial":4, "varPsicologica":3, "varFisica":5, "calificacionPromedio":4.0, "nivelRiesgoVerde":"Bajo", "accionRequerida":"Mantener",
+      "recursoEvaluado":"Equipos", "hallazgo":"obsoletos", "riesgo":"Paradas", "impacto":"Alto", "probabilidad":"Alto", "nivelRiesgoAzul":"Crítico", "oportunidad":"Renovar", "accion":"Comprar"
+    }
   ]
 }
 
@@ -91,7 +105,16 @@ REGLAS:
 - pestel: exactamente 12 factores, mínimo 2 por letra PESTEL, mínimo 5 oportunidades y 5 amenazas. TODO específico para la empresa.
 - dofa: exactamente 4 Fortalezas, 4 Oportunidades, 4 Debilidades, 4 Amenazas. Basadas en los procesos y datos reales.
 - caracterizacion: una fila por cada proceso del mapa (estratégicos PE-xx, misionales PO-xx, apoyo PA-xx).
-- matrizRoles: una fila por proceso con cargos reales de la empresa.
+- matrizRoles y matrizRecursos: una fila por cada proceso. En matrizRecursos:
+  * Evalúa el ambiente (Social, Psicológico, Físico) respondiendo con viñetas (-) a estos aspectos específicos:
+    - ambienteSocial: Trabajo en equipo, Comunicación, Liderazgo, Resolución de conflictos, Participación.
+    - ambientePsicologico: Estrés laboral, Motivación, Reconocimiento, Bienestar emocional, Claridad de funciones.
+    - ambienteFisico: Iluminación, Temperatura, Ruido, Ergonomía, Orden y limpieza, Seguridad.
+  * Variables cuantitativas (varSocial, varPsicologica, varFisica): califica de 1 a 5 (1=Deficiente, 5=Excelente).
+  * calificacionPromedio: promedio matemático de las 3 anteriores.
+  * nivelRiesgoVerde: "Bajo", "Medio", "Alto", "Crítico" según el promedio (menor promedio = mayor riesgo).
+  * accionRequerida: Ej. "Plan de clima laboral" o "Mantener".
+  * Evaluación Azul: recursoEvaluado, hallazgo, riesgo (descripción detallada y profesional de 1-2 oraciones, no básico), impacto (Alto/Medio/Bajo), probabilidad (Alto/Medio/Bajo), nivelRiesgoAzul (Crítico/Alto/Medio/Bajo), oportunidad (descripción detallada equivalente al PESTEL/DOFA) y accion.
 - impacto: "Alto" | "Medio" | "Bajo"
 - estado: "Activo" | "Revisión" | "Inactivo"
 - tipo en matrizRoles: "estrategico" | "misional" | "apoyo"
@@ -124,12 +147,16 @@ export async function analyzeWithGemini(mapa: MapaData): Promise<GeminiAnalysis>
         const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
         const cleaned = rawText.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim()
         const parsed  = JSON.parse(cleaned)
-        if (!parsed.matrizRoles?.length && attempt < 3) { console.warn(`[${model}] matrizRoles vacío, reintentando...`); continue }
+        if ((!parsed.matrizRoles?.length || !parsed.matrizRecursos?.length || !parsed.pestel?.length || !parsed.dofa?.length || !parsed.caracterizacion?.length) && attempt < 3) { 
+          console.warn(`[${model}] JSON incompleto (faltan matrices), reintentando...`); 
+          continue 
+        }
         return {
           pestel:            Array.isArray(parsed.pestel)          ? parsed.pestel          : [],
           dofa:              Array.isArray(parsed.dofa)            ? parsed.dofa            : [],
           caracterizacion:   Array.isArray(parsed.caracterizacion) ? parsed.caracterizacion : [],
           matrizRoles:       Array.isArray(parsed.matrizRoles)     ? parsed.matrizRoles     : [],
+          matrizRecursos:    Array.isArray(parsed.matrizRecursos)  ? parsed.matrizRecursos  : [],
           contextoNarrativo: typeof parsed.contextoNarrativo === 'string' ? parsed.contextoNarrativo : '',
         }
       } catch (error) {

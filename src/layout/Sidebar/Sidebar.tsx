@@ -43,10 +43,11 @@ const SECTIONS: Section[] = [
     id: "s7",
     label: "7 · Apoyo",
     items: [
-      { to: "/competencias",     icon: "🔋", text: "Competencias y Recursos" },
-      { to: "/documentos",       icon: "🔋", text: "Información Documentada" },
+      { to: "/recursos",         icon: "🔋", text: "Recursos" },
+      { to: "/competencias",     icon: "🔋", text: "Competencia" },
       { to: "/toma-consciencia", icon: "🔋", text: "Toma de Consciencia" },
       { to: "/comunicacion",     icon: "🔋", text: "Comunicación" },
+      { to: "/documentos",       icon: "🔋", text: "Información Documentada" },
     ],
   },
   {

@@ -18,6 +18,7 @@ import ProcesosPage                from "../pages/procesos/ProcesosPage";
 import RevDireccionPage            from "../pages/rev-direccion/RevDireccionPage";
 import IndicadoresPage             from "../pages/indicadores/IndicadoresPage";
 import PoliticaPage                from "../pages/politica/PoliticaPage";
+import RecursosPage                from "../pages/recursos/RecursosPage"; // ← NUEVO
 import CompetenciasPage            from "../pages/competencias/CompetenciasPage";
 import ProveedoresPage             from "../pages/proveedores/ProveedoresPage";
 import RolesPage                   from "../pages/roles/RolesPage";
@@ -63,6 +64,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="planificacion-cambios"   element={<PlanificacionCambiosPage />} /> {/* ← NUEVO */}
 
         {/* §7 */}
+        <Route path="recursos"                element={<RecursosPage />} />
         <Route path="competencias"            element={<CompetenciasPage />} />
         <Route path="documentos"             element={<DocumentosPage />} />
         <Route path="toma-consciencia"        element={<TomaConscienciaPage />} />
