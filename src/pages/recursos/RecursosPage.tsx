@@ -172,9 +172,17 @@ const RecursosPage: React.FC = () => {
                                 <button className="btn-icon" onClick={cancelEdit} title="Cancelar (Esc)">✕</button>
                               </div>
                             </div>
-                          ) : val
-                            ? <span className="recursos-cell-text">{val}</span>
-                            : <span className="recursos-cell-empty">— clic para editar</span>}
+                          ) : !val ? (
+                            <span className="recursos-cell-empty">— clic para editar</span>
+                          ) : val.includes(',') ? (
+                            <ul style={{ margin: 0, paddingLeft: '1.2rem', listStyleType: 'disc', textAlign: 'left' }}>
+                              {val.split(',').map(s => s.trim()).filter(Boolean).map((item, i) => (
+                                <li key={i} className="recursos-cell-text">{item}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <span className="recursos-cell-text">{val}</span>
+                          )}
                         </td>
                       )
                     })}

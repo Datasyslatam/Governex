@@ -363,14 +363,18 @@ const ProcesosPage: React.FC = () => {
   const [mapa,      setMapa]      = useState<MapaData>(defaultMapa)
   const [showMap,   setShowMap]   = useState(true)
 
-  const [aiAnalysis,    setAiAnalysis]    = useState<AiAnalysis | null>(null)
+  const { analysis: globalAnalysis, setAnalysis: setGlobalAnalysis, setDatosEmpresa, datosEmpresa } = useAIAnalysis()
+
+  const [aiAnalysis,    setAiAnalysis]    = useState<AiAnalysis | null>(globalAnalysis as any)
   const [geminiLoading, setGeminiLoading] = useState(false)
   const [showEmpresaForm, setShowEmpresaForm] = useState(false)
 
+  React.useEffect(() => {
+    if (globalAnalysis) setAiAnalysis(globalAnalysis as any)
+  }, [globalAnalysis])
+
   // Ref para el mapa pendiente — evita incluirlo en deps de useCallback
   const pendingMapaRef = useRef<MapaData | null>(null)
-
-  const { setAnalysis: setGlobalAnalysis, setDatosEmpresa, datosEmpresa } = useAIAnalysis()
 
   const { data: procesosDB, loading: lProc }  = useFetch(procesosService.getAll,   [])
   const { data: pestelDB,   loading: lPestel } = useFetch(procesosService.getPestel, [])

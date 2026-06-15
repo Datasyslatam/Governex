@@ -1,7 +1,7 @@
 import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
-import { analyzeWithGemini, MapaData, DatosEmpresa } from '../services/geminiService'
+import { analyzeWithGemini, generateResourcesOnly, MapaData, DatosEmpresa } from '../services/geminiService'
 
 const router = Router()
 router.use(authMiddleware)
@@ -25,7 +25,18 @@ router.post('/analizar-organigrama', async (req: AuthRequest, res: Response) => 
   }
 
   try {
-    const analysis = await analyzeWithGemini(mapaConInfo)
+    console.log('[Gemini] Iniciando análisis concurrente (Principal + Recursos)...');
+    const [analysis, matrizRecursos] = await Promise.all([
+      analyzeWithGemini(mapaConInfo),
+      generateResourcesOnly(mapaConInfo).catch(e => {
+        console.error('[Gemini] Error al generar matriz de recursos separada:', e);
+        return [];
+      })
+    ]);
+
+    // Combinar el resultado
+    analysis.matrizRecursos = matrizRecursos;
+    console.log(`[Gemini] Análisis completado. Roles: ${analysis.matrizRoles?.length}, Recursos: ${analysis.matrizRecursos?.length}`);
 
     if (guardarEnBD) {
       const client = await pool.connect()
@@ -35,9 +46,10 @@ router.post('/analizar-organigrama', async (req: AuthRequest, res: Response) => 
         await client.query('DELETE FROM dofa')
 
         for (const row of analysis.pestel) {
+          const factorChar = row.factor ? row.factor.charAt(0).toUpperCase() : 'P';
           await client.query(
             `INSERT INTO pestel (factor, categoria, descripcion, impacto, oportunidad) VALUES ($1,$2,$3,$4,$5)`,
-            [row.factor, row.categoria, row.descripcion, row.impacto, row.oportunidad]
+            [factorChar, row.categoria, row.descripcion, row.impacto, row.oportunidad]
           )
         }
 
