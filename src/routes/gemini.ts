@@ -3,6 +3,45 @@ import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { analyzeWithGemini, generateResourcesOnly, MapaData, DatosEmpresa } from '../services/geminiService'
 
+/** Allowed PESTEL factor codes as required by the DB constraint. */
+const VALID_PESTEL_FACTORS = new Set(['P', 'E', 'S', 'T', 'A', 'L'])
+
+/**
+ * Maps a raw factor value returned by Gemini to a valid single-letter
+ * PESTEL code.  Handles both already-correct single letters and full
+ * Spanish/English category names, case-insensitively.
+ * Falls back to 'P' when the value cannot be resolved.
+ */
+function mapPestelFactor(raw: string | undefined | null): 'P' | 'E' | 'S' | 'T' | 'A' | 'L' {
+  if (!raw) return 'P'
+
+  const normalised = raw.trim().toUpperCase()
+
+  // Already a valid single-letter code
+  if (VALID_PESTEL_FACTORS.has(normalised)) {
+    return normalised as 'P' | 'E' | 'S' | 'T' | 'A' | 'L'
+  }
+
+  // Map full category names (Spanish & English) to their codes
+  const lower = raw.trim().toLowerCase()
+  if (lower.startsWith('pol'))  return 'P'   // Político / Political
+  if (lower.startsWith('eco'))  return 'E'   // Económico / Economic
+  if (lower.startsWith('soc'))  return 'S'   // Social
+  if (lower.startsWith('tec'))  return 'T'   // Tecnológico / Technological
+  if (lower.startsWith('amb') || lower.startsWith('env')) return 'A'  // Ambiental / Environmental
+  if (lower.startsWith('leg'))  return 'L'   // Legal
+
+  // Last-resort: try the first character if it happens to be valid
+  const firstChar = normalised.charAt(0)
+  if (VALID_PESTEL_FACTORS.has(firstChar)) {
+    return firstChar as 'P' | 'E' | 'S' | 'T' | 'A' | 'L'
+  }
+
+  // Fallback — default to 'P' to satisfy the DB constraint
+  console.warn(`[Gemini] mapPestelFactor: unrecognised factor "${raw}", defaulting to 'P'`)
+  return 'P'
+}
+
 const router = Router()
 router.use(authMiddleware)
 
@@ -46,7 +85,7 @@ router.post('/analizar-organigrama', async (req: AuthRequest, res: Response) => 
         await client.query('DELETE FROM dofa')
 
         for (const row of analysis.pestel) {
-          const factorChar = row.factor ? row.factor.charAt(0).toUpperCase() : 'P';
+          const factorChar = mapPestelFactor(row.factor)
           await client.query(
             `INSERT INTO pestel (factor, categoria, descripcion, impacto, oportunidad) VALUES ($1,$2,$3,$4,$5)`,
             [factorChar, row.categoria, row.descripcion, row.impacto, row.oportunidad]
