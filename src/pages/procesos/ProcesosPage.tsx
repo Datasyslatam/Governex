@@ -634,7 +634,14 @@ const ProcesosPage: React.FC = () => {
                   <tbody>
                     {pestelData.map((row: PestelRow, i: number) => (
                       <tr key={i}>
-                        <td><span className={`pestel-factor pestel-factor--${row.factor.charAt(0).toLowerCase()}`}>{row.factor.charAt(0).toUpperCase()}</span></td>
+                        <td>
+                          {(() => {
+                            const letter = (row.categoria || row.factor || 'P').charAt(0).toUpperCase();
+                            return (
+                              <span className={`pestel-factor pestel-factor--${letter.toLowerCase()}`}>{letter}</span>
+                            );
+                          })()}
+                        </td>
                         <td className="pestel-categoria">{row.categoria}</td>
                         <td className="pestel-desc">{row.descripcion}</td>
                         <td><span className={`pill ${row.impacto==='Alto'?'pill--danger':row.impacto==='Medio'?'pill--warning':'pill--muted'}`}>{row.impacto}</span></td>
