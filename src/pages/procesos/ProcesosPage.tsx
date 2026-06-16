@@ -60,6 +60,7 @@ interface AiAnalysis {
   caracterizacion:    CaracterizacionRow[]
   matrizRoles?:       any[]
   matrizRecursos?:    any[]
+  indicadores?:       any[]
   contextoNarrativo?: string
 }
 
@@ -404,6 +405,7 @@ const ProcesosPage: React.FC = () => {
         caracterizacion: Array.isArray(data.caracterizacion) ? data.caracterizacion as any : [],
         matrizRoles:     Array.isArray(data.matrizRoles) && data.matrizRoles.length > 0 ? data.matrizRoles as any : undefined,
         matrizRecursos:  Array.isArray(data.matrizRecursos) && data.matrizRecursos.length > 0 ? data.matrizRecursos as any : undefined,
+        indicadores:     Array.isArray(data.indicadores) && data.indicadores.length > 0 ? data.indicadores as any : undefined,
         datosEmpresa:    datosConNarrativo,
       })
 
@@ -416,6 +418,7 @@ const ProcesosPage: React.FC = () => {
           ✅ <b>${data.caracterizacion?.length ?? 0}</b> fichas de caracterización<br>
           ✅ <b>${data.matrizRoles?.length ?? 0}</b> roles en matriz<br>
           ✅ <b>${data.matrizRecursos?.length ?? 0}</b> evaluaciones de recursos y ambiente<br>
+          ✅ <b>${data.indicadores?.length ?? 0}</b> indicadores de proceso y desempeño<br>
           ✅ Contexto organizacional narrativo</p>`,
         confirmButtonText: 'Ver resultados', confirmButtonColor: '#1a6ebd',
       }).then(() => setActiveTab('contexto'))

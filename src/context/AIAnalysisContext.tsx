@@ -89,6 +89,7 @@ export interface AIAnalysis {
   caracterizacion:  CaracterizacionRow[]
   matrizRoles?:     FilaMatriz[]
   matrizRecursos?:  FilaMatrizRecursos[]
+  indicadores?:     any[]
   nombreEmpresa?:   string
   sector?:          string
   datosEmpresa?:    DatosEmpresa

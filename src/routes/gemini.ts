@@ -100,22 +100,47 @@ router.post('/analizar-organigrama', async (req: AuthRequest, res: Response) => 
         const tipoMap: Record<string, number> = {}
         for (const t of tipos) tipoMap[t.nombre.toLowerCase()] = t.id
 
+        const procesoIdMap: Record<string, number> = {}
+
         for (const row of analysis.caracterizacion) {
           let tipo_id: number
           if      (row.codigo.startsWith('PE')) tipo_id = tipoMap['estratégico'] ?? tipoMap['estrategico'] ?? 1
           else if (row.codigo.startsWith('PO')) tipo_id = tipoMap['misional']    ?? tipoMap['operacional']  ?? 2
           else                                  tipo_id = tipoMap['apoyo']       ?? tipoMap['soporte']      ?? 3
 
-          await client.query(
+          const procRes = await client.query(
             `INSERT INTO procesos (codigo, nombre, objetivo, entradas, salidas, indicador_kpi, responsable, tipo_id, estado)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
              ON CONFLICT (codigo) DO UPDATE SET
                nombre=EXCLUDED.nombre, objetivo=EXCLUDED.objetivo, entradas=EXCLUDED.entradas,
                salidas=EXCLUDED.salidas, indicador_kpi=EXCLUDED.indicador_kpi,
-               responsable=EXCLUDED.responsable, tipo_id=EXCLUDED.tipo_id, estado=EXCLUDED.estado`,
+               responsable=EXCLUDED.responsable, tipo_id=EXCLUDED.tipo_id, estado=EXCLUDED.estado
+             RETURNING id`,
             [row.codigo, row.proceso, row.objetivo, row.entradas, row.salidas,
              row.indicador, row.responsable, tipo_id, row.estado ?? 'Activo']
           )
+          procesoIdMap[row.proceso.toLowerCase()] = procRes.rows[0].id
+        }
+
+        if (analysis.indicadores && analysis.indicadores.length > 0) {
+          // Eliminar todos los indicadores anteriores antes de generar los nuevos
+          await client.query('DELETE FROM indicador_mediciones');
+          await client.query('DELETE FROM indicadores');
+
+          for (const ind of analysis.indicadores) {
+            const procId = procesoIdMap[(ind.proceso || '').toLowerCase()] || null
+            const validFreqs = ['Diaria','Semanal','Mensual','Trimestral','Semestral','Anual']
+            let freq = ind.frecuencia;
+            if (!validFreqs.includes(freq)) {
+              freq = 'Mensual'; // Fallback
+            }
+
+            await client.query(
+              `INSERT INTO indicadores (codigo, titulo, proceso_id, frecuencia, meta, activo)
+               VALUES ($1,$2,$3,$4,$5,$6)`,
+              [ind.codigo, ind.titulo, procId, freq, ind.meta, true]
+            )
+          }
         }
         await client.query('COMMIT')
       } catch (dbErr) {

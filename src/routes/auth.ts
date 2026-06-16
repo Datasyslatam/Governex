@@ -30,6 +30,15 @@ router.post('/login', async (req: Request, res: Response) => {
       process.env.JWT_SECRET!,
       { expiresIn: '8h' }
     )
+
+    // Limpiar indicadores al iniciar sesión (igual que los demás módulos que usan sessionStorage)
+    try {
+      await pool.query('DELETE FROM indicador_mediciones')
+      await pool.query('DELETE FROM indicadores')
+    } catch (cleanErr) {
+      console.error('[Auth] Error al limpiar indicadores:', cleanErr)
+    }
+
     res.json({ token, user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol } })
   } catch (err) {
     console.error(err)

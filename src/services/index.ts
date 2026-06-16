@@ -138,6 +138,8 @@ export const indicadoresService = {
   getAll:          ()                                         => api.get<Indicador[]>('/api/indicadores'),
   create:          (body: Partial<Indicador>)                 => api.post<Indicador>('/api/indicadores', body),
   update:          (id: number, body: Partial<Indicador>)     => api.put<Indicador>(`/api/indicadores/${id}`, body),
+  delete:          (id: number)                               => api.delete<void>(`/api/indicadores/${id}`),
+  deleteAll:       ()                                         => api.delete<void>('/api/indicadores'),
   getMediciones:   (id: number)                               => api.get<any[]>(`/api/indicadores/${id}/mediciones`),
   addMedicion:     (id: number, body: any)                    => api.post<any>(`/api/indicadores/${id}/mediciones`, body),
 }

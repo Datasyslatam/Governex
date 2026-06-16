@@ -85,6 +85,35 @@ const IndicadoresPage: React.FC = () => {
     }
   }, [medicionIndId, formMed, refetch])
 
+  const handleDeleteInd = useCallback(async () => {
+    if (!editingId) return
+    if (!window.confirm('¿Estás seguro de eliminar este indicador? Esta acción no se puede deshacer.')) return
+    setSaving(true)
+    try {
+      await indicadoresService.delete(editingId)
+      await refetch()
+      setShowModalInd(false)
+      setForm(emptyForm)
+    } catch (e: any) {
+      alert(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }, [editingId, refetch])
+
+  const handleDeleteAll = useCallback(async () => {
+    if (!window.confirm('¿Estás seguro de eliminar TODOS los indicadores? Esta acción borrará todas las métricas y no se puede deshacer.')) return
+    setSaving(true)
+    try {
+      await indicadoresService.deleteAll()
+      await refetch()
+    } catch (e: any) {
+      alert(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }, [refetch])
+
   return (
     <div className="page ind-page">
       <header className="page__header ind-page__header">
@@ -99,7 +128,10 @@ const IndicadoresPage: React.FC = () => {
           <h2>Indicadores de Proceso y Desempeño</h2>
           <p className="ind-page__subtitle">Medición, análisis y evaluación de resultados del SGC</p>
         </div>
-        <div className="ind-page__actions">
+        <div className="ind-page__actions" style={{ display: 'flex', gap: '1rem' }}>
+          <button className="btn btn--danger" onClick={handleDeleteAll} disabled={saving || kpiData.length === 0} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none' }}>
+            🗑️ Eliminar Todos
+          </button>
           <button className="btn btn--primary" onClick={openCreate}>+ Crear Indicador (Ficha Técnica)</button>
         </div>
       </header>
@@ -231,12 +263,21 @@ const IndicadoresPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
-              <button className="btn btn--secondary" onClick={() => setShowModalInd(false)}>Cancelar</button>
-              <button className="btn btn--primary" onClick={handleSaveInd}
-                disabled={saving || !form.titulo || !form.meta}>
-                {saving ? 'Guardando...' : editingId ? 'Guardar Cambios' : 'Crear Indicador'}
-              </button>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+              <div>
+                {editingId && (
+                  <button className="btn btn--danger" onClick={handleDeleteInd} disabled={saving} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>
+                    🗑️ Eliminar
+                  </button>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="btn btn--secondary" onClick={() => setShowModalInd(false)}>Cancelar</button>
+                <button className="btn btn--primary" onClick={handleSaveInd}
+                  disabled={saving || !form.titulo || !form.meta}>
+                  {saving ? 'Guardando...' : editingId ? 'Guardar Cambios' : 'Crear Indicador'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

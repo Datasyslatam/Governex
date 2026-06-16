@@ -26,9 +26,14 @@ export interface FilaMatrizRecursos {
   recursoEvaluado:string; hallazgo:string; riesgo:string; impacto:string; probabilidad:string; nivelRiesgoAzul:string; oportunidad:string; accion:string;
 }
 
+export interface IndicadorGenerado {
+  codigo: string; titulo: string; proceso: string; frecuencia: string; meta: string;
+}
+
 export interface GeminiAnalysis {
   pestel: PestelRow[]; dofa: DofaRow[]
   caracterizacion: CaracterizacionRow[]; matrizRoles: FilaMatriz[]; matrizRecursos: FilaMatrizRecursos[]
+  indicadores: IndicadorGenerado[]
   contextoNarrativo?: string
 }
 
@@ -91,6 +96,9 @@ La estructura JSON debe ser:
   ],
   "matrizRoles": [
     { "id":1, "proceso":"nombre", "tipo":"estrategico", "responsable":"cargo", "autoridad":"quien autoriza", "funciones":"funciones principales", "recursos":"recursos necesarios", "rendicion":"a quien rinde cuentas", "clausula":"§5.1, §5.3" }
+  ],
+  "indicadores": [
+    { "codigo":"IND-XX-01", "titulo":"Nombre del indicador", "proceso":"nombre del proceso", "frecuencia":"Mensual", "meta":"≥90%" }
   ]
 }
 
@@ -99,6 +107,7 @@ REGLAS:
 - dofa: exactamente 4 Fortalezas, 4 Oportunidades, 4 Debilidades, 4 Amenazas. Basadas en los procesos y datos reales.
 - caracterizacion: una fila por cada proceso del mapa (estratégicos PE-xx, misionales PO-xx, apoyo PA-xx).
 - matrizRoles: una fila por proceso con cargos reales de la empresa.
+- indicadores: al menos un indicador por cada proceso para medir el cumplimiento del mismo y de los objetivos de calidad. "frecuencia" debe ser estrictamente una de: "Diaria", "Semanal", "Mensual", "Trimestral", "Semestral", "Anual".
 - impacto: "Alto" | "Medio" | "Bajo"
 - estado: "Activo" | "Revisión" | "Inactivo"
 - tipo en matrizRoles: "estrategico" | "misional" | "apoyo"
@@ -206,6 +215,7 @@ export async function analyzeWithGemini(mapa: MapaData): Promise<GeminiAnalysis>
           caracterizacion:   Array.isArray(parsed.caracterizacion) ? parsed.caracterizacion : [],
           matrizRoles:       Array.isArray(parsed.matrizRoles)     ? parsed.matrizRoles     : [],
           matrizRecursos:    [], // This is generated separately now
+          indicadores:       Array.isArray(parsed.indicadores)     ? parsed.indicadores     : [],
           contextoNarrativo: typeof parsed.contextoNarrativo === 'string' ? parsed.contextoNarrativo : '',
         };
       } catch (error) {

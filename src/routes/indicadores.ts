@@ -67,6 +67,33 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
   }
 })
 
+// DELETE /api/indicadores/:id
+router.delete('/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    // Delete mediciones first due to foreign key constraints
+    await pool.query('DELETE FROM indicador_mediciones WHERE indicador_id = $1', [req.params.id]);
+    const { rowCount } = await pool.query('DELETE FROM indicadores WHERE id = $1', [req.params.id]);
+    if (rowCount === 0) return res.status(404).json({ error: 'Indicador no encontrado' });
+    res.status(204).send();
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al eliminar indicador' })
+  }
+})
+
+// DELETE /api/indicadores
+router.delete('/', async (req: AuthRequest, res: Response) => {
+  try {
+    // Delete all mediciones and indicadores
+    await pool.query('DELETE FROM indicador_mediciones');
+    await pool.query('DELETE FROM indicadores');
+    res.status(204).send();
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al eliminar todos los indicadores' })
+  }
+})
+
 // POST /api/indicadores/:id/mediciones
 router.post('/:id/mediciones', async (req: AuthRequest, res: Response) => {
   const { id } = req.params
