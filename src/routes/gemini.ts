@@ -203,7 +203,7 @@ Requisitos:
 - Evita frases genéricas o clichés
 - La política de calidad debe ser apta para documentación ISO`
 
-  const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest']
+  const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest']
 
   for (const model of MODELS) {
     try {
@@ -215,12 +215,6 @@ Requisitos:
           responseMimeType: 'application/json',
         },
       }
-      // Los modelos 2.5 usan tokens de "thinking" por defecto, que pueden
-      // consumir todo el maxOutputTokens y truncar el JSON de salida.
-      if (model.startsWith('gemini-2.5')) {
-        body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
-      }
-
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
         {
@@ -325,7 +319,7 @@ Responde ÚNICAMENTE con JSON válido:
     generationConfig: { temperature:0.2, maxOutputTokens:1024, responseMimeType:'application/json' },
   }
 
-  const MODELS = ['gemini-2.5-flash','gemini-2.0-flash','gemini-flash-latest']
+  const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest']
   for (const model of MODELS) {
     try {
       const response = await fetch(
@@ -357,248 +351,269 @@ Responde ÚNICAMENTE con JSON válido:
   })
 })
 
-export default router
+/* ── POST /api/gemini/generar-revisiones-requisitos ─────────────────
+   A partir del contexto §4.1 genera la matriz completa de revisiones
+   de requisitos (productos/servicios × clientes) con sus campos ISO. */
+router.post('/generar-revisiones-requisitos', async (req: AuthRequest, res: Response) => {
+  const { datosEmpresa } = req.body as { datosEmpresa: DatosEmpresa }
 
-// ── Agregar este bloque al final de src/routes/gemini.ts ──────────────────────
-// Ubicación: justo antes de `export default router`
-// ─────────────────────────────────────────────────────────────────────────────
-
-/* ── POST /api/gemini/analizar-rev-direccion ───────────────────────────────────
-   Recibe el paquete consolidado de insumos 9.3.2 (datos de DB + datos del
-   contexto IA) y devuelve las tres salidas del requisito: oportunidades de
-   mejora, necesidades de cambio en el SGC y necesidades de recursos.
-   No persiste nada: el frontend muestra y edita los resultados, y el usuario
-   los vuelca al acta existente de REV_DIRECCION cuando cierra la revisión.     */
-router.post('/analizar-rev-direccion', async (req: AuthRequest, res: Response) => {
-  const {
-    riesgos,
-    indicadores,
-    noConformidades,
-    accionesCorrectivas,
-    auditorias,
-    hallazgos,
-    proveedores,
-    objetivosCalidad,
-    pestel,
-    dofa,
-    matrizRecursos,
-    contextoNarrativo,
-    datosEmpresa,
-  } = req.body
+  if (!datosEmpresa?.nombreEmpresa) {
+    return res.status(400).json({ error: 'Se requieren los datos de la empresa del módulo 4.1' })
+  }
 
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
 
-  // ── Resúmenes compactos para no exceder el contexto de Gemini ──────────────
-  const resRiesgos = (riesgos ?? []).map((r: any) => ({
-    codigo: r.codigo, tipo: r.tipo, estado: r.estado,
-    nivel: r.nivel, descripcion: r.descripcion?.slice(0, 120),
-  }))
+  const esEducativa = ['Educación', 'educacion', 'educativ', 'colegio', 'escuel', 'universid', 'instituc']
+    .some(k => (datosEmpresa.sector ?? '').toLowerCase().includes(k))
 
-  const resIndicadores = (indicadores ?? []).map((i: any) => ({
-    codigo: i.codigo, titulo: i.titulo, proceso: i.proceso_nombre,
-    meta: i.meta, ultima: i.ultima_medicion
-      ? `${i.ultima_medicion.valor} (${i.ultima_medicion.estado})`
-      : 'Sin medición',
-  }))
+  const prompt = `Eres un consultor ISO 9001:2015 experto en la cláusula 8.2 (Requisitos para productos y servicios).
 
-  const resNCs = (noConformidades ?? []).map((n: any) => ({
-    codigo: n.codigo, gravedad: n.gravedad, estado: n.estado,
-    origen: n.origen, proceso: n.proceso_nombre,
-  }))
+CONTEXTO DE LA ORGANIZACIÓN (módulo 4.1):
+- Nombre: ${datosEmpresa.nombreEmpresa}
+- Sector: ${datosEmpresa.sector}
+- Tipo: ${datosEmpresa.tipoEmpresa}
+- Tamaño: ${datosEmpresa.tamano}
+- Ubicación: ${datosEmpresa.ubicacion}
+- Misión: ${datosEmpresa.mision}
+- Visión: ${datosEmpresa.vision}
+- Política de calidad: ${datosEmpresa.politicaCalidad}
+- Productos / Servicios: ${datosEmpresa.productosServicios}
+- Mercado objetivo / Clientes: ${datosEmpresa.mercadoObjetivo}
+- Alcance SGC: ${datosEmpresa.alcanceSGC}
+- Partes interesadas: ${datosEmpresa.parteInteresadas}
+${datosEmpresa.contextoNarrativo ? `- Contexto adicional: ${datosEmpresa.contextoNarrativo}` : ''}
 
-  const resACs = (accionesCorrectivas ?? []).map((a: any) => ({
-    codigo: a.codigo, estado: a.estado, eficacia: a.eficacia,
-    responsable: a.responsable,
-  }))
+INSTRUCCIÓN:
+Analiza los productos y servicios de esta organización y genera la MATRIZ DE REVISIÓN DE REQUISITOS ISO 9001:2015 §8.2.
+Crea UNA FILA por cada producto o servicio identificado en el contexto (mínimo 3, máximo 8).
+${esEducativa ? 'Para instituciones educativas, cada área o asignatura es un "producto/servicio". Usa los clientes reales: estudiantes, padres de familia, MEN, etc.' : ''}
 
-  const resAuditorias = (auditorias ?? []).map((a: any) => ({
-    codigo: a.codigo, proceso: a.proceso_nombre,
-    estado: a.estado, hallazgos: a.hallazgos,
-  }))
+Para cada fila determina:
+- El cliente o segmento de mercado más relevante para ese producto/servicio
+- Los requisitos específicos que ese cliente espera
+- Los requisitos legales y reglamentarios aplicables en Colombia para ese producto/servicio
+- Los requisitos internos de la organización (plazos, estándares, garantías)
+- El cargo responsable de la revisión (según el tamaño y tipo de empresa)
+- La fecha de revisión (usa el año actual 2025, distribúyelas en los meses del año)
+- El estado inicial apropiado (la mayoría Pendiente, algunos Aprobado si son servicios consolidados)
 
-  const resHallazgos = (hallazgos ?? []).map((h: any) => ({
-    tipo: h.tipo, estado: h.estado, clausula: h.clausula,
-    descripcion: h.descripcion?.slice(0, 100),
-  }))
-
-  const resProveedores = (proveedores ?? []).map((p: any) => ({
-    razon: p.razon, estado: p.estado,
-    ultima_eval: p.ultima_evaluacion
-      ? `${p.ultima_evaluacion.total}/100`
-      : 'Sin evaluar',
-  }))
-
-  const resObjetivos = (objetivosCalidad ?? []).map((o: any) => ({
-    codigo: o.codigo, estado: o.estado, meta: o.meta,
-    ultima_medicion: o.mediciones?.[0]
-      ? `${o.mediciones[0].valor} – ${o.mediciones[0].estado}`
-      : 'Sin medición',
-  }))
-
-  const resPestel = (pestel ?? []).slice(0, 12).map((p: any) => ({
-    factor: p.factor, categoria: p.categoria,
-    impacto: p.impacto, oportunidad: p.oportunidad,
-    descripcion: p.descripcion?.slice(0, 100),
-  }))
-
-  const resDofa = (dofa ?? []).map((d: any) => ({
-    tipo: d.tipo, descripcion: d.descripcion?.slice(0, 100),
-  }))
-
-  const resRecursos = (matrizRecursos ?? []).map((m: any) => ({
-    proceso: m.proceso, nivelRiesgoAzul: m.nivelRiesgoAzul,
-    riesgo: m.riesgo?.slice(0, 80), oportunidad: m.oportunidad?.slice(0, 80),
-  }))
-
-  const empresaInfo = datosEmpresa
-    ? `Empresa: ${datosEmpresa.nombreEmpresa} | Sector: ${datosEmpresa.sector} | Tamaño: ${datosEmpresa.tamano}`
-    : 'Empresa no especificada'
-
-  const prompt = `Eres un consultor senior certificado en ISO 9001:2015. Debes actuar como facilitador de la Revisión por la Dirección (cláusula 9.3) y generar un análisis ejecutivo basado en los datos reales del Sistema de Gestión de Calidad.
-
-${empresaInfo}
-
-CONTEXTO ORGANIZACIONAL (4.1):
-${contextoNarrativo ? contextoNarrativo.slice(0, 600) : 'No disponible'}
-
-═══════ INSUMOS 9.3.2 ═══════
-
-a) RIESGOS Y OPORTUNIDADES (6.1 — derivados de 4.1 y 7.1):
-${JSON.stringify(resRiesgos, null, 0).slice(0, 2000)}
-
-b) ANÁLISIS DE CONTEXTO — PESTEL (4.1):
-${JSON.stringify(resPestel, null, 0).slice(0, 1000)}
-
-c) ANÁLISIS DE CONTEXTO — DOFA (4.1):
-${JSON.stringify(resDofa, null, 0).slice(0, 800)}
-
-d) RECURSOS — Hallazgos y Riesgos por Proceso (7.1):
-${JSON.stringify(resRecursos, null, 0).slice(0, 800)}
-
-e) OBJETIVOS DE CALIDAD — Estado y Mediciones (6.2):
-${JSON.stringify(resObjetivos, null, 0).slice(0, 800)}
-
-f) INDICADORES DE PROCESO — Última Medición (9.1):
-${JSON.stringify(resIndicadores, null, 0).slice(0, 1000)}
-
-g) NO CONFORMIDADES (10.2):
-${JSON.stringify(resNCs, null, 0).slice(0, 600)}
-
-h) ACCIONES CORRECTIVAS — Eficacia (10.2):
-${JSON.stringify(resACs, null, 0).slice(0, 600)}
-
-i) AUDITORÍAS — Hallazgos (9.2):
-${JSON.stringify(resAuditorias, null, 0).slice(0, 600)}
-${JSON.stringify(resHallazgos, null, 0).slice(0, 600)}
-
-j) DESEMPEÑO DE PROVEEDORES EXTERNOS (8.4):
-${JSON.stringify(resProveedores, null, 0).slice(0, 600)}
-
-═══════════════════════════════
-
-Con base en TODOS los datos anteriores, genera el análisis de Revisión por la Dirección. Cada conclusión DEBE estar justificada con datos concretos de los insumos (menciona códigos, cantidades, porcentajes o nombres específicos cuando existan).
-
-Responde ÚNICAMENTE con JSON válido, sin texto adicional, con esta estructura exacta:
+Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
 {
-  "resumenEjecutivo": "Párrafo de 120-180 palabras con el estado general del SGC, los logros clave del período, los principales riesgos activos y una valoración honesta de la madurez del sistema. Usa datos concretos.",
-  "oportunidadesMejora": [
+  "revisiones": [
     {
-      "titulo": "Título corto de la oportunidad",
-      "justificacion": "Explicación de 2-3 oraciones basada en datos específicos de los insumos",
-      "prioridad": "Alta",
-      "requisitoFuente": "9.3.2 f)"
+      "cliente": "Nombre del cliente o segmento",
+      "productoServicio": "Nombre exacto del producto o servicio",
+      "requisitosCliente": "Requisitos específicos que el cliente espera de este producto/servicio",
+      "requisitosLegales": "Normas legales, reglamentarias o técnicas aplicables en Colombia",
+      "requisitosOrg": "Requisitos internos: plazos, estándares de calidad, condiciones de entrega",
+      "revisadoPor": "Cargo del responsable",
+      "fechaRevision": "2025-MM-DD",
+      "estado": "Pendiente | Aprobado | Rechazado"
+    }
+  ]
+}`
+
+  const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest']
+  for (const model of MODELS) {
+    try {
+      const body: any = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 3000,
+          responseMimeType: 'application/json',
+        },
+      }
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }
+      )
+      if (!response.ok) { console.error(`[Revisiones] ${model} → ${response.status}`); continue }
+
+      const data    = await response.json()
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+      if (!rawText) continue
+
+      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+      const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+      if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+
+      const parsed = JSON.parse(cleaned)
+      if (!Array.isArray(parsed.revisiones) || parsed.revisiones.length === 0) continue
+
+      return res.json({ revisiones: parsed.revisiones })
+    } catch (err) {
+      console.error(`[Revisiones] Error ${model}:`, err)
+    }
+  }
+  return res.status(500).json({ error: 'No se pudo generar la matriz con ningún modelo disponible' })
+})
+
+/* ── POST /api/gemini/generar-ficha-tecnica ──────────────────────
+   Genera una ficha técnica de producto/servicio o una ficha educativa
+   (área/asignatura con cursos, contenido programático e intensidad
+   horaria) a partir de los datos del contexto organizacional (§4.1). */
+router.post('/generar-ficha-tecnica', async (req: AuthRequest, res: Response) => {
+  const { datosEmpresa, cliente, productoServicio, tipo } = req.body as {
+    datosEmpresa: DatosEmpresa
+    cliente: string
+    productoServicio: string
+    tipo: 'educativa' | 'general'
+  }
+
+  if (!datosEmpresa?.nombreEmpresa) {
+    return res.status(400).json({ error: 'Se requieren los datos de la empresa' })
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+  const esEducativa = tipo === 'educativa'
+
+  const promptGeneral = `Eres un consultor ISO 9001:2015 experto en elaboración de fichas técnicas de productos y servicios.
+
+DATOS DE LA ORGANIZACIÓN:
+- Nombre: ${datosEmpresa.nombreEmpresa}
+- Sector: ${datosEmpresa.sector ?? 'No especificado'}
+- Tipo: ${datosEmpresa.tipoEmpresa ?? 'No especificado'}
+- Tamaño: ${datosEmpresa.tamano ?? 'No especificado'}
+- Productos/Servicios: ${datosEmpresa.productosServicios ?? 'No especificado'}
+- Mercado objetivo: ${datosEmpresa.mercadoObjetivo ?? 'No especificado'}
+- Política de Calidad: ${datosEmpresa.politicaCalidad ?? 'No definida'}
+- Alcance SGC: ${datosEmpresa.alcanceSGC ?? 'No definido'}
+
+FICHA A GENERAR:
+- Cliente/Destinatario: ${cliente}
+- Producto o Servicio: ${productoServicio}
+
+Genera una ficha técnica profesional ISO 9001:2015 (§8.2) para este producto/servicio.
+Responde ÚNICAMENTE con JSON válido (sin backticks, sin markdown):
+{
+  "descripcion": "Descripción clara y técnica del producto/servicio (2-3 oraciones)",
+  "especificacionesTecnicas": "Especificaciones técnicas detalladas: materiales, capacidades, dimensiones, parámetros clave, rendimiento esperado. Sé específico al sector.",
+  "normasAplicables": "Normas ISO, NTC u otras regulaciones aplicables según el sector",
+  "condicionesUso": "Condiciones de uso, almacenamiento, transporte o entrega relevantes",
+  "elaboradoPor": "Cargo sugerido del responsable de elaborar la ficha",
+  "aprobadoPor": "Cargo sugerido del responsable de aprobar la ficha",
+  "observaciones": "Observaciones adicionales relevantes para el SGC"
+}`
+
+  const promptEducativo = `Eres un consultor ISO 9001:2015 especializado en instituciones educativas y diseño curricular.
+
+DATOS DE LA INSTITUCIÓN:
+- Nombre: ${datosEmpresa.nombreEmpresa}
+- Sector: ${datosEmpresa.sector ?? 'Educativo'}
+- Tipo: ${datosEmpresa.tipoEmpresa ?? 'No especificado'}
+- Tamaño: ${datosEmpresa.tamano ?? 'No especificado'}
+- Servicios educativos: ${datosEmpresa.productosServicios ?? 'No especificado'}
+- Mercado / Población: ${datosEmpresa.mercadoObjetivo ?? 'No especificado'}
+- Política de Calidad: ${datosEmpresa.politicaCalidad ?? 'No definida'}
+- Alcance SGC: ${datosEmpresa.alcanceSGC ?? 'No definido'}
+
+FICHA A GENERAR:
+- Institución/Cliente: ${cliente}
+- Área o Asignatura: ${productoServicio}
+
+Genera una ficha técnica educativa ISO 9001:2015 (§8.2) para esta área o asignatura.
+La ficha debe incluir los grados/cursos que reciben esta asignatura con su contenido programático e intensidad horaria.
+Infiere el nivel educativo (Primaria/Secundaria/Media) a partir del contexto de la institución.
+
+Responde ÚNICAMENTE con JSON válido (sin backticks, sin markdown):
+{
+  "areaAsignatura": "Nombre formal del área o asignatura",
+  "objetivoGeneral": "Objetivo general del área para toda la institución (2-3 oraciones)",
+  "competencias": "Competencias a desarrollar: interpretativa, argumentativa, propositiva y otras específicas del área",
+  "unidadesCurriculares": [
+    {
+      "nombre": "Nombre de la unidad temática o módulo",
+      "nivelCurso": "Primaria|Secundaria|Media",
+      "gradoAnio": "1° Primaria, 2° Primaria, ... 6° Primaria, 6° Secundaria, 10° Grado, 11° Grado, etc.",
+      "intensidadHoraria": 4,
+      "periodo": "Año lectivo 2025",
+      "docente": "Docente del área",
+      "contenidoProgramatico": "Tema 1: ...\\nTema 2: ...\\nTema 3: ...\\nTema 4: ...",
+      "metodologia": "Metodología de enseñanza específica para este grado",
+      "recursosMateriales": "Recursos físicos, digitales o de laboratorio necesarios",
+      "criteriosEvaluacion": "Criterios de evaluación con porcentajes",
+      "logros": "Logros esperados al finalizar el periodo para este grado"
     }
   ],
-  "necesidadesCambioSGC": [
-    {
-      "titulo": "Cambio requerido en el SGC",
-      "justificacion": "Explicación de 2-3 oraciones con evidencia de los insumos",
-      "prioridad": "Alta",
-      "requisitoFuente": "9.3.2 b)"
-    }
-  ],
-  "necesidadesRecursos": [
-    {
-      "titulo": "Recurso o capacidad requerida",
-      "justificacion": "Explicación de 2-3 oraciones con evidencia de los insumos",
-      "prioridad": "Media",
-      "requisitoFuente": "9.3.2 d)"
-    }
-  ],
-  "conclusionGeneral": "Párrafo de 60-80 palabras con la decisión estratégica y el enfoque recomendado para el próximo período del SGC."
+  "elaboradoPor": "Coordinador Académico",
+  "aprobadoPor": "Rector / Director Académico",
+  "observaciones": "Observaciones generales sobre el área en el contexto del SGC"
 }
 
-REGLAS:
-- oportunidadesMejora: entre 3 y 6 items
-- necesidadesCambioSGC: entre 2 y 5 items
-- necesidadesRecursos: entre 2 y 4 items
-- prioridad: solo "Alta", "Media" o "Baja"
-- Si no hay datos suficientes para un insumo, indícalo honestamente en la justificación
-- Conecta explícitamente los datos de un insumo con las salidas (ej: "Los 3 hallazgos abiertos en auditoría AU-001 indican...")
-- JSON completo y válido, sin truncar`
+IMPORTANTE:
+- Genera entre 3 y 6 cursos/grados apropiados para el nivel educativo de la institución
+- Si la institución es de primaria, genera los 5-6 grados de primaria
+- Si es de bachillerato/secundaria, genera los grados 6°-11°
+- Si es mixta, incluye ambos niveles
+- Adapta el contenido programático al grado: el de primaria debe ser más básico que el de secundaria
+- La intensidadHoraria debe ser un número entero (horas por semana), típicamente 2-5h/semana según la asignatura
+- El contenidoProgramatico debe ser específico y detallado para cada grado`
 
-  const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+  const prompt = esEducativa ? promptEducativo : promptGeneral
+  const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest']
 
   for (const model of MODELS) {
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        console.log(`[RevDireccion] ${model} | intento ${attempt}`)
-        const body: any = {
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.35,
-            topP: 0.9,
-            maxOutputTokens: 4096,
-            responseMimeType: 'application/json',
-          },
-        }
-        if (model.startsWith('gemini-2.5')) {
-          body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
-        }
-
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-            body: JSON.stringify(body),
-          }
-        )
-
-        if (response.status === 503) {
-          await new Promise(r => setTimeout(r, attempt * 2000))
-          continue
-        }
-        if (!response.ok) {
-          console.error(`[RevDireccion] ${model} respondió ${response.status}`)
-          break
-        }
-
-        const data = await response.json()
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-        if (!rawText) { console.warn(`[RevDireccion] ${model} devolvió texto vacío`); continue }
-
-        const cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
-        const parsed = JSON.parse(cleaned)
-
-        if (!parsed.resumenEjecutivo || !Array.isArray(parsed.oportunidadesMejora)) {
-          console.warn(`[RevDireccion] ${model} JSON incompleto, reintentando...`)
-          continue
-        }
-
-        return res.json({
-          resumenEjecutivo:      parsed.resumenEjecutivo      ?? '',
-          oportunidadesMejora:   Array.isArray(parsed.oportunidadesMejora)   ? parsed.oportunidadesMejora   : [],
-          necesidadesCambioSGC:  Array.isArray(parsed.necesidadesCambioSGC)  ? parsed.necesidadesCambioSGC  : [],
-          necesidadesRecursos:   Array.isArray(parsed.necesidadesRecursos)   ? parsed.necesidadesRecursos   : [],
-          conclusionGeneral:     parsed.conclusionGeneral     ?? '',
-        })
-      } catch (err) {
-        console.error(`[RevDireccion] Error ${model} intento ${attempt}:`, err)
+    try {
+      const body: any = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.35,
+          maxOutputTokens: esEducativa ? 4096 : 2048,
+          responseMimeType: 'application/json',
+        },
       }
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          body:    JSON.stringify(body),
+        }
+      )
+      if (!response.ok) {
+        console.error(`[FichaTecnica] ${model} respondió ${response.status}`)
+        continue
+      }
+
+      const data     = await response.json()
+      const rawText  = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+      if (!rawText) { console.error(`[FichaTecnica] ${model} devolvió vacío`); continue }
+
+      // Limpiar y parsear
+      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+      const start = cleaned.indexOf('{')
+      const end   = cleaned.lastIndexOf('}')
+      if (start !== -1 && end > start) cleaned = cleaned.slice(start, end + 1)
+
+      const parsed = JSON.parse(cleaned)
+
+      if (esEducativa) {
+        if (!parsed.areaAsignatura || !Array.isArray(parsed.unidadesCurriculares)) {
+          console.error(`[FichaTecnica] ${model} JSON educativo incompleto`)
+          continue
+        }
+        // Calcular totalHorasSemana
+        const totalHoras = parsed.unidadesCurriculares.reduce(
+          (acc: number, u: any) => acc + (Number(u.intensidadHoraria) || 0), 0
+        )
+        return res.json({ ...parsed, totalHorasSemana: totalHoras })
+      } else {
+        if (!parsed.descripcion) {
+          console.error(`[FichaTecnica] ${model} JSON general incompleto`)
+          continue
+        }
+        return res.json(parsed)
+      }
+    } catch (err) {
+      console.error(`[FichaTecnica] Error ${model}:`, err)
     }
   }
 
-  return res.status(500).json({ error: 'No se pudo generar el análisis con ningún modelo disponible' })
+  return res.status(500).json({ error: 'No se pudo generar la ficha técnica con ningún modelo disponible' })
 })
+
+export default router
