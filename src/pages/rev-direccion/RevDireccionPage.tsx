@@ -1,260 +1,621 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import './RevDireccionPage.css'
 import { useFetch } from '../../hooks/useFetch'
-import { revDireccionService } from '../../services'
+import {
+  revDireccionService,
+  objetivosCalidadService,
+  riesgosService,
+  indicadoresService,
+  ncAcService,
+  auditoriasService,
+  proveedoresService,
+  type SalidaRevision,
+  type RevDireccionAnalisis,
+} from '../../services'
+import { useAIAnalysis } from '../../context/AIAnalysisContext'
+import { api } from '../../services/api'
 
-const entradasRequeridas = [
-  { req: '9.3.2 a)',    desc: 'Estado de las acciones de revisiones previas' },
-  { req: '9.3.2 b)',    desc: 'Cambios en el contexto externo e interno (PESTEL/DOFA)' },
-  { req: '9.3.2 c.1)', desc: 'Satisfacción del cliente y retroalimentación de partes interesadas' },
-  { req: '9.3.2 c.2)', desc: 'Grado de cumplimiento de los objetivos de la calidad' },
-  { req: '9.3.2 c.3)', desc: 'Desempeño de los procesos y conformidad del producto' },
-  { req: '9.3.2 c.4)', desc: 'No conformidades y acciones correctivas' },
-  { req: '9.3.2 c.5)', desc: 'Resultados de seguimiento y medición' },
-  { req: '9.3.2 c.6)', desc: 'Resultados de las auditorías' },
-  { req: '9.3.2 c.7)', desc: 'Desempeño de los proveedores externos' },
-  { req: '9.3.2 d)',    desc: 'Adecuación de los recursos' },
-  { req: '9.3.2 e)',    desc: 'Eficacia de las acciones tomadas para abordar riesgos y oportunidades' },
-  { req: '9.3.2 f)',    desc: 'Oportunidades de mejora' },
-]
+// ── Tipos locales ──────────────────────────────────────────────────────────────
 
-const emptyForm = {
-  fecha: new Date().toISOString().slice(0, 10),
-  asistentes: '', temas: '', conclusiones: '', decisiones: '', proxima_rev: '',
+interface InsumoCard {
+  req:        string
+  clausula:   string
+  titulo:     string
+  kpis:       { label: string; value: string | number; alerta?: boolean }[]
+  detalle:    string
 }
 
+type TabSalida = 'oportunidades' | 'cambiosSGC' | 'recursos'
+
+const PRIORIDAD_CLASS: Record<string, string> = {
+  Alta:  'prioridad--alta',
+  Media: 'prioridad--media',
+  Baja:  'prioridad--baja',
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function pct(val: number, total: number) {
+  if (!total) return '0 %'
+  return `${Math.round((val / total) * 100)} %`
+}
+
+// ── Componente principal ───────────────────────────────────────────────────────
+
 const RevDireccionPage: React.FC = () => {
-  const { data: revisiones, loading, error, refetch } = useFetch(revDireccionService.getAll, [])
+  // Historial de actas
+  const { data: revisiones, loading: loadingRev, error: errorRev, refetch: refetchRev } =
+    useFetch(revDireccionService.getAll, [])
 
-  const [showModal, setShowModal]           = useState(false)
-  const [editingId, setEditingId]           = useState<number | null>(null)
-  const [form, setForm]                     = useState(emptyForm)
-  const [entradasCheck, setEntradasCheck]   = useState<boolean[]>(new Array(12).fill(false))
-  const [saving, setSaving]                 = useState(false)
+  // Insumos desde la BD
+  const { data: riesgos,          refetch: refetchRiesgos }     = useFetch(riesgosService.getAll, [])
+  const { data: indicadores,      refetch: refetchIndicadores } = useFetch(indicadoresService.getAll, [])
+  const { data: ncs,              refetch: refetchNcs }         = useFetch(ncAcService.getNCs, [])
+  const { data: acs,              refetch: refetchAcs }         = useFetch(ncAcService.getACs, [])
+  const { data: auditorias,       refetch: refetchAuditorias }  = useFetch(auditoriasService.getAll, [])
+  const { data: hallazgos,        refetch: refetchHallazgos }   = useFetch(auditoriasService.getHallazgos, [])
+  const { data: proveedores,      refetch: refetchProveedores } = useFetch(proveedoresService.getAll, [])
+  const { data: objetivosCalidad, refetch: refetchObjetivos }   = useFetch(objetivosCalidadService.getAll, [])
 
-  const completadas = entradasCheck.filter(Boolean).length
-  const bloqueado   = completadas < entradasRequeridas.length
+  // Insumos desde el contexto IA (4.1 y 7.1)
+  const { analysis, datosEmpresa } = useAIAnalysis()
 
-  const openCreate = () => {
-    setEditingId(null)
-    setForm(emptyForm)
-    setEntradasCheck(new Array(12).fill(false))
-    setShowModal(true)
-  }
+  // Estado UI
+  const [analizando, setAnalizando]             = useState(false)
+  const [errorAnalisis, setErrorAnalisis]       = useState<string | null>(null)
+  const [analisis, setAnalisis]                 = useState<RevDireccionAnalisis | null>(null)
+  const [tabActiva, setTabActiva]               = useState<TabSalida>('oportunidades')
+  const [showActaModal, setShowActaModal]       = useState(false)
+  const [editandoId, setEditandoId]             = useState<number | null>(null)
+  const [guardando, setGuardando]               = useState(false)
+  const [formActa, setFormActa]                 = useState({
+    fecha: new Date().toISOString().slice(0, 10),
+    asistentes: '', proxima_rev: '',
+  })
 
-  const openEdit = (rev: any) => {
-    setEditingId(rev.id)
-    setForm({
-      fecha: rev.fecha || emptyForm.fecha,
-      asistentes: rev.asistentes || '',
-      temas: rev.temas || '',
-      conclusiones: rev.conclusiones || '',
-      decisiones: rev.decisiones || '',
-      proxima_rev: rev.proxima_rev || '',
-    })
-    setShowModal(true)
-  }
+  // ── Refresco de insumos (manual + automático al recuperar foco) ─────────────
+  // Los insumos (riesgos, objetivos de calidad, etc.) se editan en otros módulos.
+  // Si el usuario vuelve a esta pestaña después de marcar algo como "Cumplido"
+  // u otro cambio, refrescamos automáticamente para que las tarjetas reflejen
+  // el estado real, sin necesidad de recargar toda la página.
+  const [ultimaActualizacion, setUltimaActualizacion] = useState<Date>(new Date())
+  const [refrescando, setRefrescando]                 = useState(false)
+  const lastFetchRef = useRef<number>(Date.now())
+  const REFRESH_THROTTLE_MS = 8000
 
-  const handleSave = useCallback(async () => {
-    setSaving(true)
+  const refrescarInsumos = useCallback(async (force = false) => {
+    const ahora = Date.now()
+    if (!force && ahora - lastFetchRef.current < REFRESH_THROTTLE_MS) return
+    lastFetchRef.current = ahora
+    setRefrescando(true)
     try {
-      if (editingId) {
-        await revDireccionService.update(editingId, form)
-      } else {
-        await revDireccionService.create(form)
+      await Promise.all([
+        refetchRiesgos(), refetchIndicadores(), refetchNcs(), refetchAcs(),
+        refetchAuditorias(), refetchHallazgos(), refetchProveedores(), refetchObjetivos(),
+      ])
+      setUltimaActualizacion(new Date())
+    } finally {
+      setRefrescando(false)
+    }
+  }, [refetchRiesgos, refetchIndicadores, refetchNcs, refetchAcs,
+      refetchAuditorias, refetchHallazgos, refetchProveedores, refetchObjetivos])
+
+  useEffect(() => {
+    const handleFocusOrVisible = () => {
+      if (document.visibilityState === 'visible') refrescarInsumos()
+    }
+    window.addEventListener('focus', handleFocusOrVisible)
+    document.addEventListener('visibilitychange', handleFocusOrVisible)
+    return () => {
+      window.removeEventListener('focus', handleFocusOrVisible)
+      document.removeEventListener('visibilitychange', handleFocusOrVisible)
+    }
+  }, [refrescarInsumos])
+
+  // ── Cómputos de KPIs por insumo ─────────────────────────────────────────────
+
+  const insumos: InsumoCard[] = useMemo(() => {
+    const rCriticos   = (riesgos as any[]).filter(r => r.estado === 'CRITICO').length
+    const rTotal      = (riesgos as any[]).length
+    const oportunidades = (riesgos as any[]).filter(r => r.tipo === 'Oportunidad').length
+
+    const indCumple   = (indicadores as any[]).filter(i => i.ultima_medicion?.estado === 'Cumple').length
+    const indTotal    = (indicadores as any[]).length
+
+    const ncAbiertas  = (ncs as any[]).filter(n => n.estado !== 'Cerrada').length
+    const acCerradas  = (acs as any[]).filter(a => a.estado === 'Cerrada').length
+    const acTotal     = (acs as any[]).length
+
+    const audCerradas = (auditorias as any[]).filter(a => a.estado === 'Cerrada').length
+    const audTotal    = (auditorias as any[]).length
+    const hallAbiert  = (hallazgos as any[]).filter(h => h.estado === 'Abierto').length
+
+    const provAprobados  = (proveedores as any[]).filter(p => p.estado === 'Aprobado').length
+    const provTotal      = (proveedores as any[]).length
+    const provConEval    = (proveedores as any[]).filter(p => p.ultima_evaluacion).length
+    const promedioEval   = provConEval
+      ? Math.round((proveedores as any[]).filter(p => p.ultima_evaluacion)
+          .reduce((sum: number, p: any) => sum + p.ultima_evaluacion.total, 0) / provConEval)
+      : null
+
+    const objCumplidos = (objetivosCalidad as any[]).filter(o => o.estado === 'Cumplido').length
+    const objTotal     = (objetivosCalidad as any[]).length
+
+    const pestelCount = analysis?.pestel?.length ?? 0
+    const dofaCount   = analysis?.dofa?.length ?? 0
+    const recursosNivel = analysis?.matrizRecursos
+      ? analysis.matrizRecursos.filter((m: any) =>
+          m.nivelRiesgoAzul === 'Alto' || m.nivelRiesgoAzul === 'Crítico').length
+      : 0
+
+    return [
+      {
+        req: '9.3.2 b)', clausula: '4.1 Contexto',
+        titulo: 'Cambios en el contexto externo e interno',
+        kpis: [
+          { label: 'Factores PESTEL', value: pestelCount },
+          { label: 'Items DOFA', value: dofaCount },
+          { label: 'Recursos con riesgo alto', value: recursosNivel, alerta: recursosNivel > 0 },
+        ],
+        detalle: pestelCount
+          ? `${pestelCount} factores PESTEL y ${dofaCount} items DOFA analizados. ${recursosNivel} proceso(s) con nivel de riesgo alto en recursos.`
+          : 'Sin análisis de contexto generado. Ejecuta el análisis IA en el módulo de Procesos.',
+      },
+      {
+        req: '9.3.2 e)', clausula: '6.1 Riesgos',
+        titulo: 'Eficacia de acciones sobre riesgos y oportunidades',
+        kpis: [
+          { label: 'Riesgos críticos', value: rCriticos, alerta: rCriticos > 0 },
+          { label: 'Total registrados', value: rTotal },
+          { label: 'Oportunidades', value: oportunidades },
+        ],
+        detalle: rTotal
+          ? `${rCriticos} riesgo(s) en estado CRÍTICO de ${rTotal} registrados. ${oportunidades} oportunidades identificadas.`
+          : 'Sin riesgos registrados.',
+      },
+      {
+        req: '9.3.2 c.2)', clausula: '6.2 Objetivos',
+        titulo: 'Cumplimiento de objetivos de calidad',
+        kpis: [
+          { label: 'Cumplidos', value: objCumplidos },
+          { label: 'Total', value: objTotal },
+          { label: 'Cumplimiento', value: pct(objCumplidos, objTotal), alerta: objTotal > 0 && objCumplidos / objTotal < 0.7 },
+        ],
+        detalle: objTotal
+          ? `${objCumplidos} de ${objTotal} objetivos cumplidos (${pct(objCumplidos, objTotal)}).`
+          : 'Sin objetivos de calidad registrados.',
+      },
+      {
+        req: '9.3.2 c.3)', clausula: '9.1 Indicadores',
+        titulo: 'Desempeño de procesos y conformidad del producto',
+        kpis: [
+          { label: 'Indicadores en meta', value: indCumple },
+          { label: 'Total indicadores', value: indTotal },
+          { label: 'Cumplimiento', value: pct(indCumple, indTotal), alerta: indTotal > 0 && indCumple / indTotal < 0.6 },
+        ],
+        detalle: indTotal
+          ? `${indCumple} de ${indTotal} indicadores cumplen su meta (${pct(indCumple, indTotal)}).`
+          : 'Sin indicadores registrados.',
+      },
+      {
+        req: '9.3.2 c.4)', clausula: '10.2 NC/AC',
+        titulo: 'No conformidades y acciones correctivas',
+        kpis: [
+          { label: 'NC abiertas', value: ncAbiertas, alerta: ncAbiertas > 0 },
+          { label: 'AC cerradas', value: `${acCerradas}/${acTotal}` },
+          { label: 'Eficacia AC', value: pct(acCerradas, acTotal), alerta: acTotal > 0 && acCerradas / acTotal < 0.5 },
+        ],
+        detalle: `${ncAbiertas} no conformidades pendientes de cierre. ${acCerradas} de ${acTotal} acciones correctivas cerradas.`,
+      },
+      {
+        req: '9.3.2 c.6)', clausula: '9.2 Auditorías',
+        titulo: 'Resultados de auditorías internas',
+        kpis: [
+          { label: 'Auditorías cerradas', value: `${audCerradas}/${audTotal}` },
+          { label: 'Hallazgos abiertos', value: hallAbiert, alerta: hallAbiert > 0 },
+        ],
+        detalle: audTotal
+          ? `${audCerradas} de ${audTotal} auditorías cerradas. ${hallAbiert} hallazgo(s) pendiente(s) de cierre.`
+          : 'Sin auditorías registradas.',
+      },
+      {
+        req: '9.3.2 c.7)', clausula: '8.4 Proveedores',
+        titulo: 'Desempeño de proveedores externos',
+        kpis: [
+          { label: 'Aprobados', value: `${provAprobados}/${provTotal}` },
+          { label: 'Puntaje promedio', value: promedioEval !== null ? `${promedioEval}/100` : 'N/A', alerta: promedioEval !== null && promedioEval < 70 },
+        ],
+        detalle: provTotal
+          ? `${provAprobados} proveedores aprobados. ${provConEval} con evaluación registrada.${promedioEval !== null ? ` Puntaje promedio: ${promedioEval}/100.` : ''}`
+          : 'Sin proveedores registrados.',
+      },
+    ]
+  }, [riesgos, indicadores, ncs, acs, auditorias, hallazgos, proveedores, objetivosCalidad, analysis])
+
+  // ── Disparar análisis IA ─────────────────────────────────────────────────────
+
+  const handleAnalizar = useCallback(async () => {
+    setAnalizando(true)
+    setErrorAnalisis(null)
+    setAnalisis(null)
+    try {
+      const resultado = await api.post<RevDireccionAnalisis>(
+        '/api/gemini/analizar-rev-direccion',
+        {
+          riesgos,
+          indicadores,
+          noConformidades:      ncs,
+          accionesCorrectivas:  acs,
+          auditorias,
+          hallazgos,
+          proveedores,
+          objetivosCalidad,
+          pestel:           analysis?.pestel        ?? [],
+          dofa:             analysis?.dofa          ?? [],
+          matrizRecursos:   analysis?.matrizRecursos ?? [],
+          contextoNarrativo: (analysis as any)?.contextoNarrativo ?? '',
+          datosEmpresa,
+        }
+      )
+      setAnalisis(resultado)
+    } catch (e: any) {
+      setErrorAnalisis(e.message || 'Error al analizar con IA')
+    } finally {
+      setAnalizando(false)
+    }
+  }, [riesgos, indicadores, ncs, acs, auditorias, hallazgos, proveedores,
+      objetivosCalidad, analysis, datosEmpresa])
+
+  // ── Guardar acta ─────────────────────────────────────────────────────────────
+
+  const handleGuardarActa = useCallback(async () => {
+    if (!analisis) return
+    setGuardando(true)
+    try {
+      const salidaTexto = [
+        '═══ OPORTUNIDADES DE MEJORA ═══',
+        ...analisis.oportunidadesMejora.map(s => `[${s.prioridad}] ${s.titulo}\n${s.justificacion}`),
+        '\n═══ NECESIDADES DE CAMBIO EN EL SGC ═══',
+        ...analisis.necesidadesCambioSGC.map(s => `[${s.prioridad}] ${s.titulo}\n${s.justificacion}`),
+        '\n═══ NECESIDADES DE RECURSOS ═══',
+        ...analisis.necesidadesRecursos.map(s => `[${s.prioridad}] ${s.titulo}\n${s.justificacion}`),
+      ].join('\n')
+
+      const body = {
+        ...formActa,
+        temas:        insumos.map(i => `${i.req} — ${i.titulo}`).join('\n'),
+        conclusiones: `${analisis.resumenEjecutivo}\n\n${analisis.conclusionGeneral}`,
+        decisiones:   salidaTexto,
       }
-      await refetch()
-      setShowModal(false)
-      setEditingId(null)
-      setForm(emptyForm)
+
+      if (editandoId) {
+        await revDireccionService.update(editandoId, body)
+      } else {
+        await revDireccionService.create(body)
+      }
+      await refetchRev()
+      setShowActaModal(false)
+      setEditandoId(null)
     } catch (e: any) {
       alert(e.message)
     } finally {
-      setSaving(false)
+      setGuardando(false)
     }
-  }, [form, editingId, refetch])
+  }, [analisis, formActa, editandoId, insumos, refetchRev])
 
-  const toggleEntrada = (i: number) => {
-    setEntradasCheck(prev => prev.map((v, idx) => idx === i ? !v : v))
-  }
+  // ── Salidas tabuladas ────────────────────────────────────────────────────────
 
-  // Revisión en borrador (la más reciente que no tenga un estado cerrado)
-  const revActual = revisiones[0] || null
+  const salidaActiva: SalidaRevision[] = analisis
+    ? tabActiva === 'oportunidades' ? analisis.oportunidadesMejora
+    : tabActiva === 'cambiosSGC'   ? analisis.necesidadesCambioSGC
+    :                                analisis.necesidadesRecursos
+    : []
+
+  const alertCount = insumos.reduce((n, i) =>
+    n + i.kpis.filter(k => k.alerta).length, 0)
+
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="page rev-page">
-      <header className="page__header rev-page__header">
-        <div className="rev-page__header-left">
-          <nav className="rev-page__breadcrumb">
+    <div className="page rev9-page">
+
+      {/* ── Header ──────────────────────────────────────────── */}
+      <header className="page__header rev9-header">
+        <div className="rev9-header-left">
+          <nav className="rev9-breadcrumb">
             <span>Governex</span>
-            <span className="rev-page__bc-sep">›</span>
-            <span>Cap. 9.3</span>
-            <span className="rev-page__bc-sep">›</span>
-            <span className="rev-page__bc-active">Revisión por la Dirección</span>
+            <span className="rev9-bc-sep">›</span>
+            <span>Cap. 9</span>
+            <span className="rev9-bc-sep">›</span>
+            <span className="rev9-bc-active">9.3 Revisión por la Dirección</span>
           </nav>
           <h2>Revisión por la Dirección</h2>
-          <p className="rev-page__subtitle">Evaluación estratégica del desempeño y eficacia del SGC por la Alta Dirección</p>
+          <p className="rev9-subtitle">
+            Evaluación estratégica del desempeño y eficacia del SGC · ISO 9001:2015 §9.3
+          </p>
         </div>
-        <div className="rev-page__actions">
-          <button className="btn btn--primary" onClick={openCreate}>+ Planificar Nueva Revisión</button>
+        <div className="rev9-header-actions">
+          {alertCount > 0 && (
+            <span className="rev9-alert-badge">⚠ {alertCount} alerta{alertCount > 1 ? 's' : ''}</span>
+          )}
+          <button
+            className={`btn btn--primary rev9-btn-analizar ${analizando ? 'rev9-btn-analizar--loading' : ''}`}
+            onClick={handleAnalizar}
+            disabled={analizando}
+          >
+            {analizando
+              ? <><span className="rev9-spinner" />Analizando…</>
+              : <><span className="rev9-icon-ai">✦</span>Analizar con IA</>
+            }
+          </button>
         </div>
       </header>
 
-      <div className="rev-layout">
-        {/* Panel principal: checklist de entradas */}
-        <div className="rev-main-col panel">
-          <div className="rev-section-header">
-            <h3>Preparación de Acta — Entradas Obligatorias § 9.3.2</h3>
-            <span className={`pill ${bloqueado ? 'pill--warning' : 'pill--success'}`}>
-              {completadas}/{entradasRequeridas.length} completadas
-            </span>
-          </div>
+      <div className="rev9-layout">
 
-          <p className="rev-desc">
-            Para el desempeño eficaz del SGC, la revisión por la dirección requiere que se analicen
-            obligatoriamente las siguientes entradas documentadas.
-          </p>
+        {/* ── Columna principal ────────────────────────────── */}
+        <div className="rev9-main">
 
-          <div className="rev-inputs-grid">
-            {entradasRequeridas.map((entrada, idx) => (
-              <div key={idx} className={`rev-input-card ${entradasCheck[idx] ? 'rev-input-card--done' : ''}`}>
-                <div className="rev-input-top">
-                  <span className="rev-input-req">{entrada.req}</span>
-                  {entradasCheck[idx] ? (
-                    <span className="rev-check icon-success">✅ Completado</span>
-                  ) : (
-                    <span className="rev-check icon-pending">⚠️ Pendiente</span>
-                  )}
-                </div>
-                <p className="rev-input-desc">{entrada.desc}</p>
+          {/* Insumos §9.3.2 */}
+          <section className="rev9-section">
+            <div className="rev9-section-title">
+              <span className="rev9-section-num">§9.3.2</span>
+              <h3>Insumos de la Revisión</h3>
+              <span className="rev9-section-sub">Datos en tiempo real del SGC</span>
+              <div className="rev9-refresh-group">
+                <span className="rev9-refresh-time">
+                  Actualizado {ultimaActualizacion.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                </span>
                 <button
-                  className={`rev-btn-small ${entradasCheck[idx] ? 'btn-view' : 'btn-action'}`}
-                  onClick={() => toggleEntrada(idx)}
+                  className={`rev9-refresh-btn ${refrescando ? 'rev9-refresh-btn--spinning' : ''}`}
+                  onClick={() => refrescarInsumos(true)}
+                  disabled={refrescando}
+                  title="Actualizar insumos"
+                  aria-label="Actualizar insumos"
                 >
-                  {entradasCheck[idx] ? 'Ver Informe Adjunto' : '+ Adjuntar Evidencia'}
+                  ↻
                 </button>
               </div>
-            ))}
-          </div>
+            </div>
 
-          <div className="rev-footer-action">
-            <p className="rev-lock-msg">
-              <span className="lock-icon">🔒</span>
-              {bloqueado
-                ? ` No se puede cerrar el acta hasta que el 100% de las entradas estén documentadas. Faltan ${entradasRequeridas.length - completadas}.`
-                : ' Todas las entradas documentadas. El acta puede cerrarse y firmarse.'}
-            </p>
-            <button
-              className={`btn ${bloqueado ? 'btn--muted' : 'btn--primary'}`}
-              disabled={bloqueado}
-              onClick={() => !bloqueado && handleSave()}
-            >
-              {bloqueado ? `Bloqueado: Faltan ${entradasRequeridas.length - completadas} Entradas` : '✅ Cerrar y Firmar Acta'}
-            </button>
-          </div>
-        </div>
+            <div className="rev9-insumos-grid">
+              {insumos.map((ins, i) => (
+                <div key={i} className={`rev9-insumo-card ${ins.kpis.some(k => k.alerta) ? 'rev9-insumo-card--alerta' : ''}`}>
+                  <div className="rev9-insumo-head">
+                    <span className="rev9-insumo-req">{ins.req}</span>
+                    <span className="rev9-insumo-clausula">{ins.clausula}</span>
+                  </div>
+                  <p className="rev9-insumo-titulo">{ins.titulo}</p>
+                  <div className="rev9-insumo-kpis">
+                    {ins.kpis.map((kpi, j) => (
+                      <div key={j} className={`rev9-kpi ${kpi.alerta ? 'rev9-kpi--alerta' : ''}`}>
+                        <span className="rev9-kpi-value">{kpi.value}</span>
+                        <span className="rev9-kpi-label">{kpi.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="rev9-insumo-detalle">{ins.detalle}</p>
+                </div>
+              ))}
+            </div>
+          </section>
 
-        {/* Panel lateral: historial */}
-        <div className="rev-side-col">
-          <div className="panel rev-hist-panel">
-            <h3>Historial de Revisiones</h3>
-            {loading ? (
-              <div style={{ padding: '1rem', opacity: 0.5 }}>Cargando...</div>
-            ) : error ? (
-              <div style={{ padding: '1rem', color: 'red' }}>Error: {error}</div>
-            ) : (
-              <div className="rev-hist-list">
-                {revisiones.map((rev: any, i: number) => (
-                  <div key={rev.id} className="rev-hist-item">
-                    <div className="rev-hist-item-header">
-                      <strong>RD-{new Date(rev.fecha).getFullYear()}-{String(i + 1).padStart(2, '0')}</strong>
-                      <span className="rev-hist-date">{rev.fecha}</span>
+          {/* Error análisis */}
+          {errorAnalisis && (
+            <div className="rev9-error-banner">
+              <span>⚠</span>
+              <div>
+                <strong>Error al analizar</strong>
+                <p>{errorAnalisis}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Placeholder vacío */}
+          {!analisis && !analizando && !errorAnalisis && (
+            <section className="rev9-empty-analisis">
+              <div className="rev9-empty-icon">✦</div>
+              <h3>Listo para analizar</h3>
+              <p>
+                Haz clic en <strong>Analizar con IA</strong> para que el sistema consolide
+                todos los insumos anteriores y genere las salidas de la revisión según §9.3.3.
+              </p>
+            </section>
+          )}
+
+          {/* Skeleton mientras carga */}
+          {analizando && (
+            <section className="rev9-skeleton">
+              <div className="rev9-skeleton-bar rev9-skeleton-bar--wide" />
+              <div className="rev9-skeleton-bar" />
+              <div className="rev9-skeleton-bar rev9-skeleton-bar--short" />
+              <div className="rev9-skeleton-cards">
+                {[1,2,3].map(n => <div key={n} className="rev9-skeleton-card" />)}
+              </div>
+            </section>
+          )}
+
+          {/* ── Resultados IA ──────────────────────────────── */}
+          {analisis && (
+            <section className="rev9-resultados">
+              <div className="rev9-section-title">
+                <span className="rev9-section-num">§9.3.3</span>
+                <h3>Salidas de la Revisión</h3>
+                <span className="rev9-section-sub">Generado por análisis IA · editable antes de cerrar acta</span>
+              </div>
+
+              {/* Resumen ejecutivo */}
+              <div className="rev9-resumen-card">
+                <div className="rev9-resumen-header">
+                  <span className="rev9-resumen-label">Resumen Ejecutivo</span>
+                </div>
+                <p className="rev9-resumen-texto">{analisis.resumenEjecutivo}</p>
+              </div>
+
+              {/* Tabs de salidas */}
+              <div className="rev9-tabs">
+                {([
+                  { key: 'oportunidades', label: 'Oportunidades de Mejora',    count: analisis.oportunidadesMejora.length },
+                  { key: 'cambiosSGC',    label: 'Cambios en el SGC',          count: analisis.necesidadesCambioSGC.length },
+                  { key: 'recursos',      label: 'Necesidades de Recursos',    count: analisis.necesidadesRecursos.length },
+                ] as const).map(tab => (
+                  <button
+                    key={tab.key}
+                    className={`rev9-tab ${tabActiva === tab.key ? 'rev9-tab--active' : ''}`}
+                    onClick={() => setTabActiva(tab.key)}
+                  >
+                    {tab.label}
+                    <span className="rev9-tab-count">{tab.count}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="rev9-salidas-lista">
+                {salidaActiva.map((s, i) => (
+                  <div key={i} className="rev9-salida-item">
+                    <div className="rev9-salida-head">
+                      <span className={`rev9-prioridad ${PRIORIDAD_CLASS[s.prioridad]}`}>
+                        {s.prioridad}
+                      </span>
+                      <span className="rev9-salida-req">{s.requisitoFuente}</span>
                     </div>
-                    <div className="rev-hist-item-body">
-                      <span className="rev-hist-type">{rev.temas ? 'Con temas' : 'Borrador'}</span>
-                      <span className="pill pill--success">Registrada</span>
-                    </div>
-                    <button className="rev-hist-btn" onClick={() => openEdit(rev)}>✏️ Editar</button>
+                    <p className="rev9-salida-titulo">{s.titulo}</p>
+                    <p className="rev9-salida-just">{s.justificacion}</p>
                   </div>
                 ))}
-                {revisiones.length === 0 && (
-                  <div style={{ opacity: 0.4, padding: '1rem 0' }}>No hay revisiones registradas</div>
-                )}
+              </div>
+
+              {/* Conclusión */}
+              <div className="rev9-conclusion">
+                <span className="rev9-conclusion-label">Conclusión y Enfoque Estratégico</span>
+                <p>{analisis.conclusionGeneral}</p>
+              </div>
+
+              {/* Botón cerrar acta */}
+              <div className="rev9-acta-action">
+                <button
+                  className="btn btn--primary rev9-btn-acta"
+                  onClick={() => setShowActaModal(true)}
+                >
+                  📋 Registrar Acta de Revisión
+                </button>
+                <p className="rev9-acta-hint">
+                  El acta incluirá todos los insumos, el resumen y las salidas generadas.
+                </p>
+              </div>
+            </section>
+          )}
+        </div>
+
+        {/* ── Columna lateral: historial ───────────────────── */}
+        <aside className="rev9-sidebar">
+          <div className="rev9-hist-panel">
+            <h3>Historial de Actas</h3>
+
+            {loadingRev ? (
+              <div className="rev9-hist-loading">Cargando…</div>
+            ) : errorRev ? (
+              <div className="rev9-hist-error">Error: {errorRev}</div>
+            ) : revisiones.length === 0 ? (
+              <div className="rev9-hist-empty">
+                <p>Aún no hay actas registradas.</p>
+                <p>Ejecuta el análisis IA y registra la primera revisión.</p>
+              </div>
+            ) : (
+              <div className="rev9-hist-list">
+                {(revisiones as any[]).map((rev: any, i: number) => (
+                  <div key={rev.id} className="rev9-hist-item">
+                    <div className="rev9-hist-item-top">
+                      <strong>RD-{new Date(rev.fecha).getFullYear()}-{String(i + 1).padStart(2, '0')}</strong>
+                      <span className="rev9-hist-fecha">
+                        {new Date(rev.fecha).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })}
+                      </span>
+                    </div>
+                    {rev.proxima_rev && (
+                      <p className="rev9-hist-prox">
+                        Próxima: {new Date(rev.proxima_rev).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })}
+                      </p>
+                    )}
+                    <span className="rev9-hist-badge">Registrada</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
-          {revActual && revActual.decisiones && (
-            <div className="panel rev-hist-panel">
-              <h3>Salidas de Revisión (Compromisos)</h3>
-              <ul className="rev-commit-list">
-                {revActual.decisiones.split('\n').filter((d: string) => d.trim()).map((decision: string, i: number) => (
-                  <li key={i}>
-                    <div className="rev-commit-header">
-                      <span className="pill pill--warning">Compromiso</span>
-                      <span className="rev-commit-date">{revActual.fecha}</span>
-                    </div>
-                    <p>{decision}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+          {/* Guía rápida */}
+          <div className="rev9-guide-panel">
+            <h4>Flujo de la Revisión</h4>
+            <ol className="rev9-guide-steps">
+              <li><strong>Insumos</strong> — El sistema carga automáticamente los datos del SGC</li>
+              <li><strong>Análisis IA</strong> — Gemini consolida y genera las salidas §9.3.3</li>
+              <li><strong>Revisión</strong> — La dirección evalúa y edita las recomendaciones</li>
+              <li><strong>Acta</strong> — Se registra formalmente con fecha y asistentes</li>
+            </ol>
+          </div>
+        </aside>
       </div>
 
-      {/* Modal nueva/editar revisión */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-card" style={{ maxWidth: '640px' }} onClick={e => e.stopPropagation()}>
+      {/* ── Modal: registrar acta ────────────────────────────── */}
+      {showActaModal && (
+        <div className="modal-overlay" onClick={() => setShowActaModal(false)}>
+          <div
+            className="modal-card rev9-modal"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="modal-header">
-              <h3>{editingId ? '✏️ Editar Revisión' : '📋 Nueva Revisión por la Dirección'}</h3>
-              <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+              <h3>📋 Registrar Acta de Revisión</h3>
+              <button className="modal-close" onClick={() => setShowActaModal(false)}>✕</button>
             </div>
             <div className="modal-body">
               <div className="form-row">
                 <div className="form-group">
-                  <label>Fecha de revisión</label>
-                  <input type="date" className="filter-input form-control"
-                    value={form.fecha}
-                    onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))} />
+                  <label>Fecha de la revisión</label>
+                  <input
+                    type="date" className="filter-input form-control"
+                    value={formActa.fecha}
+                    onChange={e => setFormActa(f => ({ ...f, fecha: e.target.value }))}
+                  />
                 </div>
                 <div className="form-group">
                   <label>Próxima revisión</label>
-                  <input type="date" className="filter-input form-control"
-                    value={form.proxima_rev}
-                    onChange={e => setForm(f => ({ ...f, proxima_rev: e.target.value }))} />
+                  <input
+                    type="date" className="filter-input form-control"
+                    value={formActa.proxima_rev}
+                    onChange={e => setFormActa(f => ({ ...f, proxima_rev: e.target.value }))}
+                  />
                 </div>
               </div>
               <div className="form-group">
                 <label>Asistentes</label>
-                <input type="text" className="filter-input form-control"
-                  value={form.asistentes} placeholder="Ej: Gerente General, Dir. de Calidad..."
-                  onChange={e => setForm(f => ({ ...f, asistentes: e.target.value }))} />
+                <input
+                  type="text" className="filter-input form-control"
+                  placeholder="Ej: Gerente General, Director de Calidad…"
+                  value={formActa.asistentes}
+                  onChange={e => setFormActa(f => ({ ...f, asistentes: e.target.value }))}
+                />
               </div>
-              <div className="form-group">
-                <label>Temas tratados</label>
-                <textarea className="filter-input form-control" rows={3}
-                  value={form.temas} placeholder="Resumen de los temas de la agenda..."
-                  onChange={e => setForm(f => ({ ...f, temas: e.target.value }))} />
-              </div>
-              <div className="form-group">
-                <label>Conclusiones</label>
-                <textarea className="filter-input form-control" rows={3}
-                  value={form.conclusiones} placeholder="Conclusiones de la revisión..."
-                  onChange={e => setForm(f => ({ ...f, conclusiones: e.target.value }))} />
-              </div>
-              <div className="form-group">
-                <label>Decisiones y compromisos (una por línea)</label>
-                <textarea className="filter-input form-control" rows={3}
-                  value={form.decisiones} placeholder="Ej: Presupuestar nuevo software ERP para el Q3..."
-                  onChange={e => setForm(f => ({ ...f, decisiones: e.target.value }))} />
-              </div>
+              {analisis && (
+                <div className="rev9-modal-preview">
+                  <p className="rev9-modal-preview-label">Vista previa de salidas incluidas:</p>
+                  <ul>
+                    <li>✅ {analisis.oportunidadesMejora.length} oportunidades de mejora</li>
+                    <li>✅ {analisis.necesidadesCambioSGC.length} necesidades de cambio en el SGC</li>
+                    <li>✅ {analisis.necesidadesRecursos.length} necesidades de recursos</li>
+                  </ul>
+                </div>
+              )}
             </div>
             <div className="modal-footer">
-              <button className="btn btn--secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="btn btn--primary" onClick={handleSave} disabled={saving}>
-                {saving ? 'Guardando...' : editingId ? 'Guardar Cambios' : 'Registrar Revisión'}
+              <button className="btn btn--secondary" onClick={() => setShowActaModal(false)}>
+                Cancelar
+              </button>
+              <button
+                className="btn btn--primary"
+                onClick={handleGuardarActa}
+                disabled={guardando || !formActa.asistentes.trim()}
+              >
+                {guardando ? 'Guardando…' : 'Registrar Acta'}
               </button>
             </div>
           </div>

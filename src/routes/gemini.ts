@@ -358,3 +358,247 @@ Responde ÚNICAMENTE con JSON válido:
 })
 
 export default router
+
+// ── Agregar este bloque al final de src/routes/gemini.ts ──────────────────────
+// Ubicación: justo antes de `export default router`
+// ─────────────────────────────────────────────────────────────────────────────
+
+/* ── POST /api/gemini/analizar-rev-direccion ───────────────────────────────────
+   Recibe el paquete consolidado de insumos 9.3.2 (datos de DB + datos del
+   contexto IA) y devuelve las tres salidas del requisito: oportunidades de
+   mejora, necesidades de cambio en el SGC y necesidades de recursos.
+   No persiste nada: el frontend muestra y edita los resultados, y el usuario
+   los vuelca al acta existente de REV_DIRECCION cuando cierra la revisión.     */
+router.post('/analizar-rev-direccion', async (req: AuthRequest, res: Response) => {
+  const {
+    riesgos,
+    indicadores,
+    noConformidades,
+    accionesCorrectivas,
+    auditorias,
+    hallazgos,
+    proveedores,
+    objetivosCalidad,
+    pestel,
+    dofa,
+    matrizRecursos,
+    contextoNarrativo,
+    datosEmpresa,
+  } = req.body
+
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+  // ── Resúmenes compactos para no exceder el contexto de Gemini ──────────────
+  const resRiesgos = (riesgos ?? []).map((r: any) => ({
+    codigo: r.codigo, tipo: r.tipo, estado: r.estado,
+    nivel: r.nivel, descripcion: r.descripcion?.slice(0, 120),
+  }))
+
+  const resIndicadores = (indicadores ?? []).map((i: any) => ({
+    codigo: i.codigo, titulo: i.titulo, proceso: i.proceso_nombre,
+    meta: i.meta, ultima: i.ultima_medicion
+      ? `${i.ultima_medicion.valor} (${i.ultima_medicion.estado})`
+      : 'Sin medición',
+  }))
+
+  const resNCs = (noConformidades ?? []).map((n: any) => ({
+    codigo: n.codigo, gravedad: n.gravedad, estado: n.estado,
+    origen: n.origen, proceso: n.proceso_nombre,
+  }))
+
+  const resACs = (accionesCorrectivas ?? []).map((a: any) => ({
+    codigo: a.codigo, estado: a.estado, eficacia: a.eficacia,
+    responsable: a.responsable,
+  }))
+
+  const resAuditorias = (auditorias ?? []).map((a: any) => ({
+    codigo: a.codigo, proceso: a.proceso_nombre,
+    estado: a.estado, hallazgos: a.hallazgos,
+  }))
+
+  const resHallazgos = (hallazgos ?? []).map((h: any) => ({
+    tipo: h.tipo, estado: h.estado, clausula: h.clausula,
+    descripcion: h.descripcion?.slice(0, 100),
+  }))
+
+  const resProveedores = (proveedores ?? []).map((p: any) => ({
+    razon: p.razon, estado: p.estado,
+    ultima_eval: p.ultima_evaluacion
+      ? `${p.ultima_evaluacion.total}/100`
+      : 'Sin evaluar',
+  }))
+
+  const resObjetivos = (objetivosCalidad ?? []).map((o: any) => ({
+    codigo: o.codigo, estado: o.estado, meta: o.meta,
+    ultima_medicion: o.mediciones?.[0]
+      ? `${o.mediciones[0].valor} – ${o.mediciones[0].estado}`
+      : 'Sin medición',
+  }))
+
+  const resPestel = (pestel ?? []).slice(0, 12).map((p: any) => ({
+    factor: p.factor, categoria: p.categoria,
+    impacto: p.impacto, oportunidad: p.oportunidad,
+    descripcion: p.descripcion?.slice(0, 100),
+  }))
+
+  const resDofa = (dofa ?? []).map((d: any) => ({
+    tipo: d.tipo, descripcion: d.descripcion?.slice(0, 100),
+  }))
+
+  const resRecursos = (matrizRecursos ?? []).map((m: any) => ({
+    proceso: m.proceso, nivelRiesgoAzul: m.nivelRiesgoAzul,
+    riesgo: m.riesgo?.slice(0, 80), oportunidad: m.oportunidad?.slice(0, 80),
+  }))
+
+  const empresaInfo = datosEmpresa
+    ? `Empresa: ${datosEmpresa.nombreEmpresa} | Sector: ${datosEmpresa.sector} | Tamaño: ${datosEmpresa.tamano}`
+    : 'Empresa no especificada'
+
+  const prompt = `Eres un consultor senior certificado en ISO 9001:2015. Debes actuar como facilitador de la Revisión por la Dirección (cláusula 9.3) y generar un análisis ejecutivo basado en los datos reales del Sistema de Gestión de Calidad.
+
+${empresaInfo}
+
+CONTEXTO ORGANIZACIONAL (4.1):
+${contextoNarrativo ? contextoNarrativo.slice(0, 600) : 'No disponible'}
+
+═══════ INSUMOS 9.3.2 ═══════
+
+a) RIESGOS Y OPORTUNIDADES (6.1 — derivados de 4.1 y 7.1):
+${JSON.stringify(resRiesgos, null, 0).slice(0, 2000)}
+
+b) ANÁLISIS DE CONTEXTO — PESTEL (4.1):
+${JSON.stringify(resPestel, null, 0).slice(0, 1000)}
+
+c) ANÁLISIS DE CONTEXTO — DOFA (4.1):
+${JSON.stringify(resDofa, null, 0).slice(0, 800)}
+
+d) RECURSOS — Hallazgos y Riesgos por Proceso (7.1):
+${JSON.stringify(resRecursos, null, 0).slice(0, 800)}
+
+e) OBJETIVOS DE CALIDAD — Estado y Mediciones (6.2):
+${JSON.stringify(resObjetivos, null, 0).slice(0, 800)}
+
+f) INDICADORES DE PROCESO — Última Medición (9.1):
+${JSON.stringify(resIndicadores, null, 0).slice(0, 1000)}
+
+g) NO CONFORMIDADES (10.2):
+${JSON.stringify(resNCs, null, 0).slice(0, 600)}
+
+h) ACCIONES CORRECTIVAS — Eficacia (10.2):
+${JSON.stringify(resACs, null, 0).slice(0, 600)}
+
+i) AUDITORÍAS — Hallazgos (9.2):
+${JSON.stringify(resAuditorias, null, 0).slice(0, 600)}
+${JSON.stringify(resHallazgos, null, 0).slice(0, 600)}
+
+j) DESEMPEÑO DE PROVEEDORES EXTERNOS (8.4):
+${JSON.stringify(resProveedores, null, 0).slice(0, 600)}
+
+═══════════════════════════════
+
+Con base en TODOS los datos anteriores, genera el análisis de Revisión por la Dirección. Cada conclusión DEBE estar justificada con datos concretos de los insumos (menciona códigos, cantidades, porcentajes o nombres específicos cuando existan).
+
+Responde ÚNICAMENTE con JSON válido, sin texto adicional, con esta estructura exacta:
+{
+  "resumenEjecutivo": "Párrafo de 120-180 palabras con el estado general del SGC, los logros clave del período, los principales riesgos activos y una valoración honesta de la madurez del sistema. Usa datos concretos.",
+  "oportunidadesMejora": [
+    {
+      "titulo": "Título corto de la oportunidad",
+      "justificacion": "Explicación de 2-3 oraciones basada en datos específicos de los insumos",
+      "prioridad": "Alta",
+      "requisitoFuente": "9.3.2 f)"
+    }
+  ],
+  "necesidadesCambioSGC": [
+    {
+      "titulo": "Cambio requerido en el SGC",
+      "justificacion": "Explicación de 2-3 oraciones con evidencia de los insumos",
+      "prioridad": "Alta",
+      "requisitoFuente": "9.3.2 b)"
+    }
+  ],
+  "necesidadesRecursos": [
+    {
+      "titulo": "Recurso o capacidad requerida",
+      "justificacion": "Explicación de 2-3 oraciones con evidencia de los insumos",
+      "prioridad": "Media",
+      "requisitoFuente": "9.3.2 d)"
+    }
+  ],
+  "conclusionGeneral": "Párrafo de 60-80 palabras con la decisión estratégica y el enfoque recomendado para el próximo período del SGC."
+}
+
+REGLAS:
+- oportunidadesMejora: entre 3 y 6 items
+- necesidadesCambioSGC: entre 2 y 5 items
+- necesidadesRecursos: entre 2 y 4 items
+- prioridad: solo "Alta", "Media" o "Baja"
+- Si no hay datos suficientes para un insumo, indícalo honestamente en la justificación
+- Conecta explícitamente los datos de un insumo con las salidas (ej: "Los 3 hallazgos abiertos en auditoría AU-001 indican...")
+- JSON completo y válido, sin truncar`
+
+  const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+
+  for (const model of MODELS) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        console.log(`[RevDireccion] ${model} | intento ${attempt}`)
+        const body: any = {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.35,
+            topP: 0.9,
+            maxOutputTokens: 4096,
+            responseMimeType: 'application/json',
+          },
+        }
+        if (model.startsWith('gemini-2.5')) {
+          body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+        }
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+            body: JSON.stringify(body),
+          }
+        )
+
+        if (response.status === 503) {
+          await new Promise(r => setTimeout(r, attempt * 2000))
+          continue
+        }
+        if (!response.ok) {
+          console.error(`[RevDireccion] ${model} respondió ${response.status}`)
+          break
+        }
+
+        const data = await response.json()
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+        if (!rawText) { console.warn(`[RevDireccion] ${model} devolvió texto vacío`); continue }
+
+        const cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+        const parsed = JSON.parse(cleaned)
+
+        if (!parsed.resumenEjecutivo || !Array.isArray(parsed.oportunidadesMejora)) {
+          console.warn(`[RevDireccion] ${model} JSON incompleto, reintentando...`)
+          continue
+        }
+
+        return res.json({
+          resumenEjecutivo:      parsed.resumenEjecutivo      ?? '',
+          oportunidadesMejora:   Array.isArray(parsed.oportunidadesMejora)   ? parsed.oportunidadesMejora   : [],
+          necesidadesCambioSGC:  Array.isArray(parsed.necesidadesCambioSGC)  ? parsed.necesidadesCambioSGC  : [],
+          necesidadesRecursos:   Array.isArray(parsed.necesidadesRecursos)   ? parsed.necesidadesRecursos   : [],
+          conclusionGeneral:     parsed.conclusionGeneral     ?? '',
+        })
+      } catch (err) {
+        console.error(`[RevDireccion] Error ${model} intento ${attempt}:`, err)
+      }
+    }
+  }
+
+  return res.status(500).json({ error: 'No se pudo generar el análisis con ningún modelo disponible' })
+})

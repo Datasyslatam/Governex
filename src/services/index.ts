@@ -187,10 +187,35 @@ export const politicaService = {
   addLectura:   (body: any)  => api.post<any>('/api/politica/lecturas', body),
 }
 
-// ── REVISIÓN POR LA DIRECCIÓN ──────────────────────────────
-
+// ── ANÁLISIS IA — REVISIÓN POR LA DIRECCIÓN ────────────────
+// Extiende revDireccionService con el método de análisis IA
+ 
+// Reemplaza el bloque revDireccionService existente con este:
 export const revDireccionService = {
-  getAll:  ()                         => api.get<any[]>('/api/rev-direccion'),
-  create:  (body: any)                => api.post<any>('/api/rev-direccion', body),
-  update:  (id: number, body: any)    => api.put<any>(`/api/rev-direccion/${id}`, body),
+  getAll:    ()                      => api.get<any[]>('/api/rev-direccion'),
+  create:    (body: any)             => api.post<any>('/api/rev-direccion', body),
+  update:    (id: number, body: any) => api.put<any>(`/api/rev-direccion/${id}`, body),
+  analizar:  (payload: any)          => api.post<RevDireccionAnalisis>('/api/gemini/analizar-rev-direccion', payload),
+}
+
+
+// ── OBJETIVOS DE CALIDAD ───────────────────────────────────
+ 
+export const objetivosCalidadService = {
+  getAll: () => api.get<any[]>('/api/objetivos-calidad'),
+}
+
+export interface SalidaRevision {
+  titulo:          string
+  justificacion:   string
+  prioridad:       'Alta' | 'Media' | 'Baja'
+  requisitoFuente: string
+}
+ 
+export interface RevDireccionAnalisis {
+  resumenEjecutivo:     string
+  oportunidadesMejora:  SalidaRevision[]
+  necesidadesCambioSGC: SalidaRevision[]
+  necesidadesRecursos:  SalidaRevision[]
+  conclusionGeneral:    string
 }
