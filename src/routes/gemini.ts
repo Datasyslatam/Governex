@@ -1,7 +1,7 @@
 import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
-import { analyzeWithGemini, generateResourcesOnly, MapaData, DatosEmpresa } from '../services/geminiService'
+import { analyzeWithGemini, generateResourcesOnly, MapaData, DatosEmpresa, FilaMatrizCargos } from '../services/geminiService'
 
 /** Allowed PESTEL factor codes as required by the DB constraint. */
 const VALID_PESTEL_FACTORS = new Set(['P', 'E', 'S', 'T', 'A', 'L'])

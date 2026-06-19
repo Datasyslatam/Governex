@@ -19,6 +19,10 @@ export interface DofaRow      { tipo:'Fortaleza'|'Oportunidad'|'Debilidad'|'Amen
 export interface CaracterizacionRow { codigo:string; proceso:string; objetivo:string; entradas:string; salidas:string; indicador:string; responsable:string; estado:string }
 export type TipoProceso = 'estrategico'|'misional'|'apoyo'
 export interface FilaMatriz   { id:number; proceso:string; tipo:TipoProceso; responsable:string; autoridad:string; funciones:string; recursos:string; rendicion:string; clausula:string }
+export interface FilaMatrizCargos {
+  id:number; proceso:string; tipo:TipoProceso; actividades:string[];
+  responsable:string; funciones:string; clausula:string; clausulaDetalle:string;
+}
 export interface FilaMatrizRecursos {
   proceso:string; nPersonas:string; infraestructura:string; hardwareSoftware:string; transporte:string;
   ambienteSocial:string; ambientePsicologico:string; ambienteFisico:string;
@@ -32,7 +36,7 @@ export interface IndicadorGenerado {
 
 export interface GeminiAnalysis {
   pestel: PestelRow[]; dofa: DofaRow[]
-  caracterizacion: CaracterizacionRow[]; matrizRoles: FilaMatriz[]; matrizRecursos: FilaMatrizRecursos[]
+  caracterizacion: CaracterizacionRow[]; matrizRoles: FilaMatriz[]; matrizCargos: FilaMatrizCargos[]; matrizRecursos: FilaMatrizRecursos[]
   indicadores: IndicadorGenerado[]
   contextoNarrativo?: string
 }
@@ -97,6 +101,9 @@ La estructura JSON debe ser:
   "matrizRoles": [
     { "id":1, "proceso":"nombre", "tipo":"estrategico", "responsable":"cargo", "autoridad":"quien autoriza", "funciones":"funciones principales", "recursos":"recursos necesarios", "rendicion":"a quien rinde cuentas", "clausula":"§5.1, §5.3" }
   ],
+  "matrizCargos": [
+    { "id":1, "proceso":"nombre del proceso", "tipo":"estrategico", "actividades":["Actividad concreta 1 del proceso","Actividad concreta 2","Actividad concreta 3"], "responsable":"cargo del responsable", "funciones":"funciones y responsabilidades del cargo frente al proceso", "clausula":"§5.3", "clausulaDetalle":"§5.3 – Roles, responsabilidades y autoridades en la organización" }
+  ],
   "indicadores": [
     { "codigo":"IND-XX-01", "titulo":"Nombre del indicador", "proceso":"nombre del proceso", "frecuencia":"Mensual", "meta":"≥90%" }
   ]
@@ -107,10 +114,11 @@ REGLAS:
 - dofa: exactamente 4 Fortalezas, 4 Oportunidades, 4 Debilidades, 4 Amenazas. Basadas en los procesos y datos reales.
 - caracterizacion: una fila por cada proceso del mapa (estratégicos PE-xx, misionales PO-xx, apoyo PA-xx).
 - matrizRoles: una fila por proceso con cargos reales de la empresa.
+- matrizCargos: una fila por proceso. El campo "actividades" debe contener un array de 3 a 5 actividades concretas y específicas que se realizan en ese proceso. El campo "clausula" debe ser el código de la cláusula ISO 9001:2015 más relevante (ej: "§4.1", "§5.3", "§7.1", "§8.1"). El campo "clausulaDetalle" debe incluir el código y el nombre completo de la cláusula (ej: "§8.4 – Control de los procesos, productos y servicios suministrados externamente"). Usa las cláusulas reales de ISO 9001:2015.
 - indicadores: al menos un indicador por cada proceso para medir el cumplimiento del mismo y de los objetivos de calidad. "frecuencia" debe ser estrictamente una de: "Diaria", "Semanal", "Mensual", "Trimestral", "Semestral", "Anual".
 - impacto: "Alto" | "Medio" | "Bajo"
 - estado: "Activo" | "Revisión" | "Inactivo"
-- tipo en matrizRoles: "estrategico" | "misional" | "apoyo"
+- tipo en matrizRoles y matrizCargos: "estrategico" | "misional" | "apoyo"
 - JSON completo y válido sin truncar.`;
 }
 
@@ -180,19 +188,31 @@ REGLAS:
 
 const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest'];
 
+/**
+ * Helper: builds the request body for a Gemini model, applying the
+ * thinkingBudget: 0 fix for gemini-2.5-* models to prevent JSON truncation.
+ */
+function buildGeminiBody(model: string, prompt: string, maxOutputTokens: number) {
+  const body: any = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature:0.4, topP:0.9, maxOutputTokens, responseMimeType:'application/json' },
+  };
+  // Disable thinking tokens for gemini-2.5 models to avoid truncated JSON
+  if (model.startsWith('gemini-2.5')) {
+    body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  }
+  return body;
+}
+
 export async function analyzeWithGemini(mapa: MapaData): Promise<GeminiAnalysis> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY no está configurada');
-
-  const body = {
-    contents: [{ parts: [{ text: buildPrompt(mapa) }] }],
-    generationConfig: { temperature:0.4, topP:0.9, maxOutputTokens:8192, responseMimeType:'application/json' },
-  };
 
   for (const model of MODELS) {
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         console.log(`[Gemini] ${model} | intento ${attempt}`);
+        const body = buildGeminiBody(model, buildPrompt(mapa), 8192);
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
           method:'POST',
           headers:{ 'Content-Type':'application/json', 'x-goog-api-key':apiKey },
@@ -214,6 +234,7 @@ export async function analyzeWithGemini(mapa: MapaData): Promise<GeminiAnalysis>
           dofa:              Array.isArray(parsed.dofa)            ? parsed.dofa            : [],
           caracterizacion:   Array.isArray(parsed.caracterizacion) ? parsed.caracterizacion : [],
           matrizRoles:       Array.isArray(parsed.matrizRoles)     ? parsed.matrizRoles     : [],
+          matrizCargos:      Array.isArray(parsed.matrizCargos)    ? parsed.matrizCargos    : [],
           matrizRecursos:    [], // This is generated separately now
           indicadores:       Array.isArray(parsed.indicadores)     ? parsed.indicadores     : [],
           contextoNarrativo: typeof parsed.contextoNarrativo === 'string' ? parsed.contextoNarrativo : '',
@@ -230,12 +251,9 @@ export async function analyzeWithGemini(mapa: MapaData): Promise<GeminiAnalysis>
 export async function generateResourcesOnly(mapa: MapaData): Promise<FilaMatrizRecursos[]> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY no está configurada');
-  const body = {
-    contents: [{ parts: [{ text: buildResourcesPrompt(mapa) }] }],
-    generationConfig: { temperature:0.4, topP:0.9, maxOutputTokens:4096, responseMimeType:'application/json' },
-  };
   for (const model of MODELS) {
     try {
+      const body = buildGeminiBody(model, buildResourcesPrompt(mapa), 8192);
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method:'POST',
         headers:{ 'Content-Type':'application/json', 'x-goog-api-key':apiKey },

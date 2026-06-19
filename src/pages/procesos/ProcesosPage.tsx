@@ -404,6 +404,7 @@ const ProcesosPage: React.FC = () => {
         dofa:            Array.isArray(data.dofa)            ? data.dofa            as any : [],
         caracterizacion: Array.isArray(data.caracterizacion) ? data.caracterizacion as any : [],
         matrizRoles:     Array.isArray(data.matrizRoles) && data.matrizRoles.length > 0 ? data.matrizRoles as any : undefined,
+        matrizCargos:    Array.isArray(data.matrizCargos) && data.matrizCargos.length > 0 ? data.matrizCargos as any : undefined,
         matrizRecursos:  Array.isArray(data.matrizRecursos) && data.matrizRecursos.length > 0 ? data.matrizRecursos as any : undefined,
         indicadores:     Array.isArray(data.indicadores) && data.indicadores.length > 0 ? data.indicadores as any : undefined,
         datosEmpresa:    datosConNarrativo,

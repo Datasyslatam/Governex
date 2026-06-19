@@ -26,8 +26,8 @@ const SECTIONS: Section[] = [
     id: "s5",
     label: "5 · Liderazgo",
     items: [
-      { to: "/politica", icon: "⚓", text: "Liderazgo y Política" },
-      { to: "/roles",    icon: "⚓", text: "Roles, Responsabilidades y Autoridad" },
+      { to: "/politica",            icon: "⚓", text: "Liderazgo y Política" },
+      { to: "/roles",               icon: "⚓", text: "Roles, Responsabilidades y Autoridad" },
     ],
   },
   {

@@ -58,6 +58,17 @@ export interface FilaMatriz {
   clausula:    string
 }
 
+export interface FilaMatrizCargos {
+  id:              number
+  proceso:         string
+  tipo:            TipoProceso
+  actividades:     string[]
+  responsable:     string
+  funciones:       string
+  clausula:        string
+  clausulaDetalle: string
+}
+
 export interface FilaMatrizRecursos {
   proceso:             string
   nPersonas:           string
@@ -88,6 +99,7 @@ export interface AIAnalysis {
   dofa:             DofaRow[]
   caracterizacion:  CaracterizacionRow[]
   matrizRoles?:     FilaMatriz[]
+  matrizCargos?:    FilaMatrizCargos[]
   matrizRecursos?:  FilaMatrizRecursos[]
   indicadores?:     any[]
   nombreEmpresa?:   string
