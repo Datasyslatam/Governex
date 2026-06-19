@@ -219,3 +219,75 @@ export interface RevDireccionAnalisis {
   necesidadesRecursos:  SalidaRevision[]
   conclusionGeneral:    string
 }
+
+// ── ENFOQUE AL CLIENTE — ENCUESTAS DE SATISFACCIÓN (IA, sin persistencia) ──
+
+export interface PreguntaEncuesta {
+  id:    string
+  texto: string
+  tipo:  'escala' | 'abierta'
+}
+
+export interface CategoriaEncuesta {
+  categoria:    string
+  descripcion?: string
+  preguntas:    PreguntaEncuesta[]
+}
+
+export interface EncuestaGenerada {
+  titulo:        string
+  introduccion:  string
+  categorias:    CategoriaEncuesta[]
+}
+
+export interface EncuestasSatisfaccion {
+  clientes:    EncuestaGenerada
+  proveedores: EncuestaGenerada
+}
+
+// ── ENFOQUE AL CLIENTE — ENCUESTAS DE SATISFACCIÓN (IA, sin persistencia) ──
+
+export interface PreguntaEncuesta {
+  id:    string
+  texto: string
+  tipo:  'escala' | 'abierta'
+}
+
+export interface CategoriaEncuesta {
+  categoria:    string
+  descripcion?: string
+  preguntas:    PreguntaEncuesta[]
+}
+
+export interface EncuestaGenerada {
+  titulo:        string
+  introduccion:  string
+  categorias:    CategoriaEncuesta[]
+}
+
+export interface EncuestasSatisfaccion {
+  clientes:    EncuestaGenerada
+  proveedores: EncuestaGenerada
+}
+
+export interface DofaEncuestaItem {
+  tipo:        'Fortaleza' | 'Oportunidad' | 'Debilidad' | 'Amenaza'
+  descripcion: string
+}
+
+export interface AnalisisEncuestasResult {
+  resumenEjecutivo: string
+  dofa:             DofaEncuestaItem[]
+}
+
+export const enfoqueClienteService = {
+  generarEncuestas: (datosEmpresa: any) =>
+    api.post<EncuestasSatisfaccion>('/api/gemini/generar-encuestas-satisfaccion', { datosEmpresa }),
+
+  analizarEncuestas: (payload: {
+    datosEmpresa: any
+    resumenClientes: any
+    resumenProveedores: any
+    pqrs: { tipo: string; descripcion: string; estado: string }[]
+  }) => api.post<AnalisisEncuestasResult>('/api/gemini/analizar-encuestas-cliente', payload),
+}

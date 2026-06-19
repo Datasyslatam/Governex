@@ -291,6 +291,216 @@ function parsearIdearioJSON(rawText: string): { mision?: string; vision?: string
   }
 }
 
+/* ── POST /api/gemini/generar-encuestas-satisfaccion ─────────────
+   Genera DOS encuestas distintas (5.1.2 Enfoque al Cliente):
+   - Clientes:    sobre el producto/servicio entregado
+   - Proveedores: sobre la relación y cumplimiento contractual    */
+router.post('/generar-encuestas-satisfaccion', async (req: AuthRequest, res: Response) => {
+  const { datosEmpresa } = req.body as { datosEmpresa: DatosEmpresa }
+
+  if (!datosEmpresa?.nombreEmpresa) {
+    return res.status(400).json({ error: 'Se requieren los datos de la empresa (módulo 4.1)' })
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+  const prompt = `Eres un consultor experto en ISO 9001:2015, cláusula 5.1.2 (Enfoque al cliente) y diseño de encuestas de satisfacción.
+
+DATOS DE LA EMPRESA:
+- Nombre: ${datosEmpresa.nombreEmpresa}
+- Sector: ${datosEmpresa.sector ?? 'No especificado'}
+- Tipo de empresa: ${datosEmpresa.tipoEmpresa ?? 'No especificado'}
+- Productos / Servicios: ${datosEmpresa.productosServicios ?? 'No especificado'}
+- Mercado objetivo / Clientes: ${datosEmpresa.mercadoObjetivo ?? 'No especificado'}
+- Partes interesadas: ${datosEmpresa.parteInteresadas ?? 'No especificado'}
+- Política de Calidad: ${datosEmpresa.politicaCalidad ?? 'No definida'}
+- Alcance SGC: ${datosEmpresa.alcanceSGC ?? 'No definido'}
+
+INSTRUCCIÓN:
+Genera DOS encuestas de satisfacción DIFERENTES y específicas para esta empresa:
+
+1. "clientes": Encuesta dirigida a CLIENTES, enfocada en el PRODUCTO Y/O SERVICIO recibido.
+   Debe tener EXACTAMENTE estas 6 categorías, en este orden:
+   - "Oportunidad" (tiempos de respuesta y entrega)
+   - "Calidad" (del producto/servicio)
+   - "Capacidad de Entrega" (cantidad, disponibilidad, cumplimiento de volumen solicitado)
+   - "Cumplimiento" (de lo pactado/ofrecido)
+   - "Precios" (percepción de precio-valor)
+   - "Aspectos a Mejorar" (preguntas abiertas)
+
+2. "proveedores": Encuesta dirigida a PROVEEDORES, enfocada en la RELACIÓN COMERCIAL y el
+   CUMPLIMIENTO DE LA EMPRESA frente a su responsabilidad contractual con ellos (no sobre el
+   producto que el proveedor entrega, sino sobre cómo la empresa cumple como cliente del proveedor:
+   pagos, comunicación, condiciones pactadas, planificación de pedidos, trato).
+   Debe tener EXACTAMENTE estas 6 categorías, en este orden:
+   - "Relación Comercial"
+   - "Cumplimiento Contractual" (pagos, plazos, condiciones pactadas)
+   - "Comunicación y Coordinación"
+   - "Planificación de Pedidos y Requerimientos"
+   - "Trato y Profesionalismo"
+   - "Aspectos a Mejorar" (preguntas abiertas)
+
+Cada categoría debe tener entre 2 y 4 preguntas. Las preguntas de tipo "escala" se responden en escala
+1-5 (deben tener una redacción que permita calificar, ej: "¿Cómo califica...?"). La categoría
+"Aspectos a Mejorar" debe ser de tipo "abierta" exclusivamente.
+
+Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown, con esta estructura exacta:
+{
+  "clientes": {
+    "titulo": "Encuesta de Satisfacción del Cliente — ${datosEmpresa.nombreEmpresa}",
+    "introduccion": "1-2 oraciones explicando el propósito de la encuesta al cliente",
+    "categorias": [
+      { "categoria":"Oportunidad", "preguntas":[ { "id":"c1","texto":"...", "tipo":"escala" } ] }
+    ]
+  },
+  "proveedores": {
+    "titulo": "Encuesta de Evaluación de Relación Comercial — ${datosEmpresa.nombreEmpresa}",
+    "introduccion": "1-2 oraciones explicando el propósito de la encuesta al proveedor",
+    "categorias": [
+      { "categoria":"Relación Comercial", "preguntas":[ { "id":"p1","texto":"...", "tipo":"escala" } ] }
+    ]
+  }
+}
+
+REGLAS:
+- Los "id" de preguntas deben ser únicos dentro de cada encuesta (c1, c2... para clientes; p1, p2... para proveedores).
+- Las preguntas deben ser específicas al sector/productos/servicios de la empresa, no genéricas.
+- JSON completo y válido, sin truncar.`
+
+  const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest']
+
+  for (const model of MODELS) {
+    try {
+      const body: any = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.4, maxOutputTokens: 4096, responseMimeType: 'application/json' },
+      }
+      if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }
+      )
+      if (!response.ok) { console.error(`[Encuestas] ${model} → ${response.status}`); continue }
+
+      const data    = await response.json()
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+      if (!rawText) continue
+
+      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+      const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+      if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+
+      const parsed = JSON.parse(cleaned)
+      if (!parsed.clientes?.categorias?.length || !parsed.proveedores?.categorias?.length) {
+        console.warn(`[Encuestas] ${model} JSON incompleto, reintentando con siguiente modelo...`)
+        continue
+      }
+
+      return res.json({ clientes: parsed.clientes, proveedores: parsed.proveedores })
+    } catch (err) {
+      console.error(`[Encuestas] Error ${model}:`, err)
+    }
+  }
+
+  return res.status(500).json({ error: 'No se pudieron generar las encuestas con ningún modelo disponible' })
+})
+
+/* ── POST /api/gemini/analizar-encuestas-cliente ──────────────────
+   Analiza las respuestas agregadas de las encuestas (clientes y/o
+   proveedores) junto con los registros de PQRS, y genera un DOFA
+   específico basado en evidencia real (§5.1.2, §9.1.2, §6.1).      */
+router.post('/analizar-encuestas-cliente', async (req: AuthRequest, res: Response) => {
+  const { datosEmpresa, resumenClientes, resumenProveedores, pqrs } = req.body as {
+    datosEmpresa?: DatosEmpresa
+    resumenClientes?: any
+    resumenProveedores?: any
+    pqrs?: { tipo: string; descripcion: string; estado: string }[]
+  }
+
+  const sinDatos =
+    (!resumenClientes || resumenClientes.totalEncuestas === 0) &&
+    (!resumenProveedores || resumenProveedores.totalEncuestas === 0) &&
+    (!pqrs || pqrs.length === 0)
+
+  if (sinDatos) {
+    return res.status(400).json({ error: 'No hay encuestas respondidas ni PQRS registradas para analizar' })
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+  const prompt = `Eres un consultor ISO 9001:2015 experto en análisis de la voz del cliente y análisis DOFA (cláusulas 5.1.2, 9.1.2 y 6.1).
+
+EMPRESA: ${datosEmpresa?.nombreEmpresa ?? 'No especificada'} — Sector: ${datosEmpresa?.sector ?? 'No especificado'}
+
+RESULTADOS DE ENCUESTAS A CLIENTES (sobre el producto/servicio entregado):
+${resumenClientes ? JSON.stringify(resumenClientes, null, 2) : 'Sin datos disponibles'}
+
+RESULTADOS DE ENCUESTAS A PROVEEDORES (sobre la relación comercial y cumplimiento contractual de la empresa hacia ellos):
+${resumenProveedores ? JSON.stringify(resumenProveedores, null, 2) : 'Sin datos disponibles'}
+
+PQRS REGISTRADAS POR LA ORGANIZACIÓN:
+${pqrs && pqrs.length ? JSON.stringify(pqrs, null, 2) : 'Sin registros'}
+
+INSTRUCCIÓN:
+Analiza TODA esta información (promedios por categoría, respuestas abiertas y PQRS) y genera un análisis DOFA
+específico, basado ÚNICAMENTE en la evidencia entregada (no genérico ni inventado).
+
+Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
+{
+  "resumenEjecutivo": "200-300 palabras resumiendo los hallazgos principales de las encuestas y PQRS, mencionando qué fuentes de información tuviste disponibles",
+  "dofa": [
+    { "tipo":"Fortaleza",   "descripcion":"basada en evidencia concreta, ej: alta calificación promedio en X categoría" },
+    { "tipo":"Oportunidad", "descripcion":"..." },
+    { "tipo":"Debilidad",   "descripcion":"basada en baja calificación o quejas/PQRS recurrentes" },
+    { "tipo":"Amenaza",     "descripcion":"..." }
+  ]
+}
+
+REGLAS:
+- Genera entre 3 y 6 elementos por cada tipo (Fortaleza, Oportunidad, Debilidad, Amenaza), priorizando los más respaldados por los datos.
+- Si falta información de alguna fuente (ej. no hay encuestas a proveedores), básate en lo disponible y acláralo en el resumen ejecutivo.
+- Sé específico: cita categorías, calificaciones promedio o quejas concretas cuando sea posible.
+- JSON completo y válido, sin truncar.`
+
+  const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+
+  for (const model of MODELS) {
+    try {
+      const body: any = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.4, maxOutputTokens: 3000, responseMimeType: 'application/json' },
+      }
+      if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }
+      )
+      if (!response.ok) { console.error(`[AnalisisEncuestas] ${model} → ${response.status}`); continue }
+
+      const data    = await response.json()
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+      if (!rawText) continue
+
+      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+      const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+      if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+
+      const parsed = JSON.parse(cleaned)
+      if (!Array.isArray(parsed.dofa) || parsed.dofa.length === 0) continue
+
+      return res.json({ resumenEjecutivo: parsed.resumenEjecutivo ?? '', dofa: parsed.dofa })
+    } catch (err) {
+      console.error(`[AnalisisEncuestas] Error ${model}:`, err)
+    }
+  }
+
+  return res.status(500).json({ error: 'No se pudo generar el análisis con ningún modelo disponible' })
+})
+
 /* POST /api/gemini/extraer-procesos-imagen */
 router.post('/extraer-procesos-imagen', async (req: AuthRequest, res: Response) => {
   const { base64, mimeType } = req.body as { base64:string; mimeType:string; fileName:string }
@@ -614,6 +824,152 @@ IMPORTANTE:
   }
 
   return res.status(500).json({ error: 'No se pudo generar la ficha técnica con ningún modelo disponible' })
+})
+
+/* ── POST /api/gemini/analizar-rev-direccion ──────────────────────
+   Consolida todos los insumos del SGC y genera las salidas de la
+   Revisión por la Dirección según ISO 9001:2015 §9.3.3            */
+router.post('/analizar-rev-direccion', async (req: AuthRequest, res: Response) => {
+  const {
+    riesgos, indicadores, noConformidades, accionesCorrectivas,
+    auditorias, hallazgos, proveedores, objetivosCalidad,
+    pestel, dofa, matrizRecursos, contextoNarrativo, datosEmpresa,
+  } = req.body
+
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+  const prompt = `Eres un consultor experto en ISO 9001:2015, especialista en la cláusula 9.3 (Revisión por la Dirección).
+Analiza los siguientes datos reales del Sistema de Gestión de Calidad y genera las SALIDAS de la revisión según §9.3.3.
+
+EMPRESA: ${datosEmpresa?.nombreEmpresa ?? 'No especificada'} — Sector: ${datosEmpresa?.sector ?? 'No especificado'}
+
+CONTEXTO EXTERNO E INTERNO (§4.1):
+- Factores PESTEL: ${JSON.stringify(pestel ?? [])}
+- Análisis DOFA: ${JSON.stringify(dofa ?? [])}
+- Matriz de Recursos: ${JSON.stringify(matrizRecursos ?? [])}
+- Contexto narrativo: ${contextoNarrativo ?? 'No disponible'}
+
+RIESGOS Y OPORTUNIDADES (§6.1):
+${JSON.stringify(riesgos ?? [])}
+
+OBJETIVOS DE CALIDAD (§6.2):
+${JSON.stringify(objetivosCalidad ?? [])}
+
+INDICADORES DE DESEMPEÑO (§9.1):
+${JSON.stringify(indicadores ?? [])}
+
+NO CONFORMIDADES (§10.2):
+${JSON.stringify(noConformidades ?? [])}
+
+ACCIONES CORRECTIVAS (§10.2):
+${JSON.stringify(accionesCorrectivas ?? [])}
+
+AUDITORÍAS INTERNAS (§9.2):
+${JSON.stringify(auditorias ?? [])}
+
+HALLAZGOS DE AUDITORÍA:
+${JSON.stringify(hallazgos ?? [])}
+
+PROVEEDORES EXTERNOS (§8.4):
+${JSON.stringify(proveedores ?? [])}
+
+INSTRUCCIÓN:
+Con base en TODA la información anterior, genera las tres salidas obligatorias de §9.3.3 de forma específica y basada en evidencia real.
+No inventes datos: si un campo está vacío, indícalo en la justificación.
+
+Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
+{
+  "resumenEjecutivo": "200-300 palabras resumiendo el estado general del SGC, los hallazgos más críticos y la tendencia de desempeño",
+  "oportunidadesMejora": [
+    {
+      "titulo": "Título corto de la oportunidad",
+      "justificacion": "Justificación basada en los datos entregados (qué dato específico la sustenta)",
+      "prioridad": "Alta | Media | Baja",
+      "requisitoFuente": "§X.X ISO 9001:2015"
+    }
+  ],
+  "necesidadesCambioSGC": [
+    {
+      "titulo": "Cambio necesario en el SGC",
+      "justificacion": "Justificación basada en evidencia",
+      "prioridad": "Alta | Media | Baja",
+      "requisitoFuente": "§X.X ISO 9001:2015"
+    }
+  ],
+  "necesidadesRecursos": [
+    {
+      "titulo": "Recurso necesario (humano, tecnológico, infraestructura, etc.)",
+      "justificacion": "Justificación basada en evidencia",
+      "prioridad": "Alta | Media | Baja",
+      "requisitoFuente": "§X.X ISO 9001:2015"
+    }
+  ],
+  "conclusionGeneral": "2-3 oraciones con la conclusión estratégica y el enfoque de la próxima revisión"
+}
+
+REGLAS:
+- Genera entre 3 y 6 items por cada sección.
+- Prioridad "Alta" solo para hallazgos críticos con evidencia directa.
+- Sé específico: menciona datos concretos (porcentajes, cantidades, nombres de indicadores).
+- JSON completo y válido, sin truncar.`
+
+  const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+
+  for (const model of MODELS) {
+    try {
+      const body: any = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.35,
+          maxOutputTokens: 4096,
+          responseMimeType: 'application/json',
+        },
+      }
+      if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          body:    JSON.stringify(body),
+        }
+      )
+      if (!response.ok) { console.error(`[RevDireccion] ${model} → ${response.status}`); continue }
+
+      const data    = await response.json()
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+      if (!rawText) { console.error(`[RevDireccion] ${model} devolvió texto vacío`); continue }
+
+      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+      const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+      if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+
+      const parsed = JSON.parse(cleaned)
+
+      if (
+        !Array.isArray(parsed.oportunidadesMejora)    || !parsed.oportunidadesMejora.length ||
+        !Array.isArray(parsed.necesidadesCambioSGC)   || !parsed.necesidadesCambioSGC.length ||
+        !Array.isArray(parsed.necesidadesRecursos)    || !parsed.necesidadesRecursos.length
+      ) {
+        console.warn(`[RevDireccion] ${model} JSON incompleto, probando siguiente modelo...`)
+        continue
+      }
+
+      return res.json({
+        resumenEjecutivo:      parsed.resumenEjecutivo      ?? '',
+        oportunidadesMejora:   parsed.oportunidadesMejora,
+        necesidadesCambioSGC:  parsed.necesidadesCambioSGC,
+        necesidadesRecursos:   parsed.necesidadesRecursos,
+        conclusionGeneral:     parsed.conclusionGeneral     ?? '',
+      })
+    } catch (err) {
+      console.error(`[RevDireccion] Error ${model}:`, err)
+    }
+  }
+
+  return res.status(500).json({ error: 'No se pudo generar el análisis con ningún modelo disponible' })
 })
 
 export default router

@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { useAuth } from "../hooks/useAuth";
+import EnfoqueClientePage from "../pages/enfoque-cliente/EnfoqueClientePage"; // ← NUEVO
 
 import AuthLayout from "../layout/AuthLayout";
 import MainLayout from "../layout/MainLayout";
@@ -57,6 +58,7 @@ export const AppRoutes: React.FC = () => {
         {/* §5 */}
         <Route path="politica"                element={<PoliticaPage />} />
         <Route path="roles"                   element={<RolesPage />} />
+        <Route path="enfoque-cliente"         element={<EnfoqueClientePage />} /> {/* ← NUEVO */}
 
         {/* §6 */}
         <Route path="riesgos"                 element={<RiesgosPage />} />

@@ -28,6 +28,7 @@ const SECTIONS: Section[] = [
     items: [
       { to: "/politica",            icon: "⚓", text: "Liderazgo y Política" },
       { to: "/roles",               icon: "⚓", text: "Roles, Responsabilidades y Autoridad" },
+      { to: "/enfoque-cliente",  icon: "🤝", text: "Enfoque al Cliente" }, // ← NUEVO
     ],
   },
   {
