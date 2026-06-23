@@ -247,3 +247,59 @@
     gap: 1rem;
   }
 }
+
+/* ── Banner política generada por IA ── */
+.pol-ia-banner {
+  border-left: 3px solid #1a6ebd;
+  background: #f0f7ff;
+  border-radius: 0 0.5rem 0.5rem 0;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.pol-ia-banner__header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.pol-ia-banner__badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 2px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
+}
+
+.pol-ia-banner__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1a2b45;
+}
+
+.pol-ia-banner__text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: #1e3a5f;
+  font-family: serif;
+  white-space: pre-wrap;
+}
+
+.pol-ia-banner__hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #4a6080;
+  font-style: italic;
+}
+
+.pol-ia-banner__copy {
+  align-self: flex-start;
+  font-size: 0.82rem;
+}

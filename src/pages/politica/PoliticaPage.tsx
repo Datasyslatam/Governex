@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react'
 import './PoliticaPage.css'
 import { useFetch } from '../../hooks/useFetch'
 import { politicaService } from '../../services'
+import { useAIAnalysis } from '../../context/AIAnalysisContext'
 
 const PoliticaPage: React.FC = () => {
   const { data: politicas, loading: lPol, refetch: refetchPol }
@@ -10,15 +11,18 @@ const PoliticaPage: React.FC = () => {
   const { data: lecturas, loading: lLec, refetch: refetchLec }
     = useFetch(politicaService.getLecturas, [])
 
+  const { datosEmpresa } = useAIAnalysis()
+  const politicaIA = datosEmpresa?.politicaCalidad?.trim() || null
+
   const [showModalEditar, setShowModalEditar] = useState(false)
   const [saving, setSaving] = useState(false)
   const [formPol, setFormPol] = useState({ version: '', contenido: '' })
 
   const politicaVigente = politicas.find(p => p.estado === 'Vigente') || null
 
-  const aceptadas   = lecturas.filter(l => l.estado === 'Leído y Aceptado').length
-  const total       = lecturas.length
-  const porcentaje  = total > 0 ? Math.round((aceptadas / total) * 100) : 0
+  const aceptadas  = lecturas.filter(l => l.estado === 'Leído y Aceptado').length
+  const total      = lecturas.length
+  const porcentaje = total > 0 ? Math.round((aceptadas / total) * 100) : 0
 
   const openEditar = () => {
     if (politicaVigente) {
@@ -85,6 +89,31 @@ const PoliticaPage: React.FC = () => {
 
       <div className="pol-layout">
         <div className="pol-main-col panel">
+
+          {/* ── Banner política generada por IA en módulo 4.1 ── */}
+          {politicaIA && (
+            <div className="pol-ia-banner">
+              <div className="pol-ia-banner__header">
+                <span className="pol-ia-banner__badge">✨ Generado por IA · Cap. 4.1</span>
+                <span className="pol-ia-banner__label">Política de Calidad sugerida</span>
+              </div>
+              <p className="pol-ia-banner__text">{politicaIA}</p>
+              <p className="pol-ia-banner__hint">
+                Texto generado en Contexto de la Organización (4.1). Puedes usarlo como base para publicar la política oficial.
+              </p>
+              <button
+                className="btn btn--secondary pol-ia-banner__copy"
+                onClick={() => {
+                  setFormPol(f => ({ ...f, contenido: politicaIA }))
+                  setShowModalEditar(true)
+                }}
+              >
+                Usar como base →
+              </button>
+            </div>
+          )}
+
+          {/* ── Política vigente ── */}
           {lPol ? (
             <div style={{ padding: '2rem', opacity: 0.5 }}>Cargando política...</div>
           ) : !politicaVigente ? (
@@ -152,8 +181,13 @@ const PoliticaPage: React.FC = () => {
                       </span>
                       <span className="pol-lec-date">{reg.fecha_lectura || '—'}</span>
                       {reg.estado === 'Pendiente' && (
-                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem' }}
-                          title="Marcar como leído" onClick={() => marcarLectura(reg)}>✅</button>
+                        <button
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem' }}
+                          title="Marcar como leído"
+                          onClick={() => marcarLectura(reg)}
+                        >
+                          ✅
+                        </button>
                       )}
                     </div>
                   </div>
@@ -169,7 +203,7 @@ const PoliticaPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal editar política */}
+      {/* ── Modal editar política ── */}
       {showModalEditar && (
         <div className="modal-overlay" onClick={() => setShowModalEditar(false)}>
           <div className="modal-card" style={{ maxWidth: '700px' }} onClick={e => e.stopPropagation()}>
@@ -180,22 +214,32 @@ const PoliticaPage: React.FC = () => {
             <div className="modal-body">
               <div className="form-group">
                 <label>Versión</label>
-                <input type="text" className="filter-input form-control"
-                  value={formPol.version} placeholder="Ej: v2.1"
-                  onChange={e => setFormPol(f => ({ ...f, version: e.target.value }))} />
+                <input
+                  type="text"
+                  className="filter-input form-control"
+                  value={formPol.version}
+                  placeholder="Ej: v2.1"
+                  onChange={e => setFormPol(f => ({ ...f, version: e.target.value }))}
+                />
               </div>
               <div className="form-group">
                 <label>Contenido de la política</label>
-                <textarea className="filter-input form-control" rows={10}
+                <textarea
+                  className="filter-input form-control"
+                  rows={10}
                   value={formPol.contenido}
                   placeholder="Escribe el contenido completo de la política de calidad..."
-                  onChange={e => setFormPol(f => ({ ...f, contenido: e.target.value }))} />
+                  onChange={e => setFormPol(f => ({ ...f, contenido: e.target.value }))}
+                />
               </div>
             </div>
             <div className="modal-footer">
               <button className="btn btn--secondary" onClick={() => setShowModalEditar(false)}>Cancelar</button>
-              <button className="btn btn--primary" onClick={guardarPolitica}
-                disabled={saving || !formPol.version || !formPol.contenido}>
+              <button
+                className="btn btn--primary"
+                onClick={guardarPolitica}
+                disabled={saving || !formPol.version || !formPol.contenido}
+              >
                 {saving ? 'Guardando...' : 'Publicar Política'}
               </button>
             </div>
