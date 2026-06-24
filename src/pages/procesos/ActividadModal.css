@@ -1,0 +1,416 @@
+/* ═══════════════════════════════════════════════════
+   ActividadModal.css — Governex · §4.1 Caracterización
+   ═══════════════════════════════════════════════════ */
+
+/* Overlay */
+.act-modal__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+}
+
+/* Dialog */
+.act-modal__dialog {
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.22);
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Header ───────────────────────────────────────── */
+.act-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e8edf4;
+  background: linear-gradient(135deg, #f8faff 0%, #f0f6ff 100%);
+  flex-shrink: 0;
+}
+
+.act-modal__header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.act-modal__header-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.act-modal__title {
+  margin: 0 0 0.2rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a2b45;
+}
+
+.act-modal__subtitle {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.act-modal__close {
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.4rem;
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.act-modal__close:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+/* ── Body ─────────────────────────────────────────── */
+.act-modal__body {
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  flex: 1;
+}
+
+/* Info box */
+.act-modal__info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 4px solid #2563eb;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem;
+  color: #1e40af;
+  line-height: 1.55;
+}
+
+/* Campos */
+.act-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.act-modal__label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.act-modal__required {
+  color: #dc2626;
+  margin-left: 0.15rem;
+}
+
+.act-modal__optional {
+  color: #9ca3af;
+  font-weight: 400;
+  margin-left: 0.25rem;
+  font-size: 0.76rem;
+}
+
+.act-modal__input,
+.act-modal__select {
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.88rem;
+  color: #1a2b45;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.act-modal__input:focus,
+.act-modal__select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.act-modal__input::placeholder {
+  color: #9ca3af;
+  font-size: 0.82rem;
+}
+
+/* ── IO Grid ──────────────────────────────────────── */
+.act-modal__io-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+/* Columna */
+.act-modal__io-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+}
+
+.act-modal__io-col--entradas {
+  background: rgba(239, 246, 255, 0.7);
+  border: 1.5px solid #bfdbfe;
+}
+
+.act-modal__io-col--salidas {
+  background: rgba(240, 253, 244, 0.7);
+  border: 1.5px solid #bbf7d0;
+}
+
+/* IO header */
+.act-modal__io-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.act-modal__io-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.act-modal__io-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1a2b45;
+}
+
+.act-modal__io-desc {
+  font-size: 0.74rem;
+  color: #6b7280;
+  margin-top: 0.1rem;
+  line-height: 1.4;
+}
+
+/* Items list */
+.act-modal__items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+/* Item row */
+.act-modal__item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.act-modal__item-input {
+  flex: 1;
+  padding: 0.45rem 0.75rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 0.4rem;
+  font-size: 0.83rem;
+  color: #1a2b45;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+.act-modal__item-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+.act-modal__item-input::placeholder {
+  color: #9ca3af;
+  font-size: 0.78rem;
+}
+
+.act-modal__item-del {
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.35rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.act-modal__item-del:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+/* Add buttons */
+.act-modal__add-btn {
+  background: none;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  align-self: flex-start;
+  font-family: inherit;
+}
+
+.act-modal__add-btn--entrada {
+  color: #1d4ed8;
+  border-color: #93c5fd;
+}
+.act-modal__add-btn--entrada:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
+}
+
+.act-modal__add-btn--salida {
+  color: #166534;
+  border-color: #86efac;
+}
+.act-modal__add-btn--salida:hover {
+  background: #f0fdf4;
+  border-color: #16a34a;
+}
+
+/* IO Divider */
+.act-modal__io-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding-top: 3.5rem;
+  color: #94a3b8;
+}
+
+.act-modal__io-divider-line {
+  width: 1px;
+  flex: 1;
+  background: #e2e8f0;
+  min-height: 1.5rem;
+}
+
+.act-modal__io-divider-icon {
+  font-size: 1.1rem;
+  color: #94a3b8;
+}
+
+/* Error */
+.act-modal__error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+  border-radius: 0.4rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.83rem;
+  color: #991b1b;
+}
+
+/* ── Footer ───────────────────────────────────────── */
+.act-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e8edf4;
+  background: #fafcff;
+  flex-shrink: 0;
+}
+
+.act-modal__btn-cancel {
+  background: #fff;
+  border: 1.5px solid #d1d5db;
+  color: #374151;
+  border-radius: 0.5rem;
+  padding: 0.55rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.act-modal__btn-cancel:hover {
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.act-modal__btn-save {
+  background: linear-gradient(135deg, #1a6ebd, #1a5a9e);
+  border: none;
+  color: #fff;
+  border-radius: 0.5rem;
+  padding: 0.55rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(26, 110, 189, 0.3);
+}
+.act-modal__btn-save:hover {
+  background: linear-gradient(135deg, #1558a0, #154d8a);
+  box-shadow: 0 4px 14px rgba(26, 110, 189, 0.4);
+  transform: translateY(-1px);
+}
+.act-modal__btn-save:active {
+  transform: translateY(0);
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 680px) {
+  .act-modal__dialog {
+    max-height: 100vh;
+    border-radius: 0.75rem 0.75rem 0 0;
+    align-self: flex-end;
+    max-width: 100%;
+  }
+
+  .act-modal__io-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .act-modal__io-divider {
+    flex-direction: row;
+    padding-top: 0;
+    justify-content: center;
+  }
+
+  .act-modal__io-divider-line {
+    width: 1.5rem;
+    height: 1px;
+    flex: unset;
+    min-height: unset;
+  }
+
+  .act-modal__io-divider-icon {
+    transform: rotate(90deg);
+  }
+}

@@ -15,6 +15,8 @@ import { useAIAnalysis, DatosEmpresa } from '../../context/AIAnalysisContext'
 import EmpresaFormModal            from './EmpresaFormModal'
 import ContextoOrganizacionalPanel from './ContextoOrganizacionalPanel'
 import PlantillaOrganizacion       from './PlantillaOrganizacion'
+import ActividadModal from './ActividadModal'
+import { ActividadEmpresa } from '../../context/AIAnalysisContext'
 
 /* ─────────────────────────── TIPOS ─────────────────────────── */
 type Tab     = 'mapa' | 'contexto' | 'caracterizacion'
@@ -364,11 +366,20 @@ const ProcesosPage: React.FC = () => {
   const [mapa,      setMapa]      = useState<MapaData>(defaultMapa)
   const [showMap,   setShowMap]   = useState(true)
 
-  const { analysis: globalAnalysis, setAnalysis: setGlobalAnalysis, setDatosEmpresa, datosEmpresa } = useAIAnalysis()
+  const {
+    analysis: globalAnalysis,
+    setAnalysis: setGlobalAnalysis,
+    setDatosEmpresa,
+    datosEmpresa,
+    actividades,
+    addActividad,
+    removeActividad,
+  } = useAIAnalysis()
 
   const [aiAnalysis,    setAiAnalysis]    = useState<AiAnalysis | null>(globalAnalysis as any)
   const [geminiLoading, setGeminiLoading] = useState(false)
   const [showEmpresaForm, setShowEmpresaForm] = useState(false)
+  const [showActividadModal, setShowActividadModal] = useState(false)
 
   React.useEffect(() => {
     if (globalAnalysis) setAiAnalysis(globalAnalysis as any)
@@ -456,6 +467,12 @@ const ProcesosPage: React.FC = () => {
     pendingMapaRef.current = null
   }, [])
 
+  /* ── Handler para guardar actividad ─────────────────── */
+  const handleGuardarActividad = useCallback((act: ActividadEmpresa) => {
+    addActividad(act)
+    setShowActividadModal(false)
+  }, [addActividad])
+
   /* ── Re-analizar desde el panel de contexto ─────────── */
   const handleReanalizar = useCallback(() => {
     pendingMapaRef.current = mapa
@@ -510,6 +527,15 @@ const ProcesosPage: React.FC = () => {
     }
   }, [mapa, callGemini])
 
+  /* ── Lista de procesos para el modal de actividad ────── */
+  const procesosParaModal = React.useMemo(() => {
+    return [
+      ...mapa.estrategicos.map(p => p.nombre),
+      ...mapa.misionales.map(p => p.nombre),
+      ...mapa.apoyo.map(p => p.nombre),
+    ].filter(Boolean)
+  }, [mapa])
+
   const total = mapa.estrategicos.length + mapa.misionales.length + mapa.apoyo.length
   const pestelData: PestelRow[] = aiAnalysis?.pestel ?? []
 
@@ -535,6 +561,15 @@ const ProcesosPage: React.FC = () => {
           initial={datosEmpresa ?? {}}
           onConfirm={handleEmpresaConfirm}
           onCancel={handleEmpresaCancel}
+        />
+      )}
+
+      {/* Modal de actividad */}
+      {showActividadModal && (
+        <ActividadModal
+          procesosDisponibles={procesosParaModal}
+          onGuardar={handleGuardarActividad}
+          onCerrar={() => setShowActividadModal(false)}
         />
       )}
 
@@ -683,22 +718,49 @@ const ProcesosPage: React.FC = () => {
           <div className="procesos-section-header">
             <div>
               <h3 className="procesos-section-title">Caracterización de Procesos</h3>
-              <p className="procesos-section-desc">Fichas de entradas, salidas e indicadores · Cláusula 4.4{aiAnalysis && <span style={{ marginLeft:8,color:'#1a6ebd',fontWeight:600 }}>— Generado por Governex IA ✓</span>}</p>
+              <p className="procesos-section-desc">
+                Fichas de entradas, salidas e indicadores · Cláusula 4.4
+                {aiAnalysis && (
+                  <span style={{ marginLeft: 8, color: '#1a6ebd', fontWeight: 600 }}>
+                    — Generado por Governex IA ✓
+                  </span>
+                )}
+              </p>
             </div>
-            <span className="pill pill--muted">{caracterizacionData.length} procesos</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span className="pill pill--muted">{caracterizacionData.length} procesos</span>
+              {/* ── BOTÓN NUEVO ── */}
+              <button
+                className="btn btn--primary"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}
+                onClick={() => setShowActividadModal(true)}
+              >
+                <span>⚙️</span> Registrar Actividad
+              </button>
+            </div>
           </div>
+
           {!aiAnalysis && !lProc && procesosDB.length === 0 && (
-            <div style={{ padding:'1.5rem',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'0.75rem',marginBottom:'1.5rem',color:'#92400e',fontSize:'0.875rem' }}>
+            <div style={{ padding:'1.5rem', background:'#fffbeb', border:'1px solid #fde68a', borderRadius:'0.75rem', marginBottom:'1.5rem', color:'#92400e', fontSize:'0.875rem' }}>
               ⚠️ <strong>Sin caracterización personalizada.</strong> Construye tu organigrama para que Governex genere las fichas.
             </div>
           )}
-          {lProc && !aiAnalysis ? <div style={{ padding:'1rem',opacity:0.5 }}>Cargando procesos...</div> : (
+
+          {lProc && !aiAnalysis ? (
+            <div style={{ padding:'1rem', opacity: 0.5 }}>Cargando procesos...</div>
+          ) : (
             <div className="procesos-char__table-wrap">
               <table className="procesos-char__table">
-                <thead><tr><th>Código</th><th>Proceso</th><th>Objetivo</th><th>Entradas</th><th>Salidas</th><th>Indicador</th><th>Responsable</th><th>Estado</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Código</th><th>Proceso</th><th>Objetivo</th>
+                    <th>Entradas</th><th>Salidas</th>
+                    <th>Indicador</th><th>Responsable</th><th>Estado</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {caracterizacionData.map((row: CaracterizacionRow, i: number) => (
-                    <tr key={row.codigo} className={i%2===1?'procesos-char__row--alt':''}>
+                    <tr key={row.codigo} className={i % 2 === 1 ? 'procesos-char__row--alt' : ''}>
                       <td className="procesos-char__code">{row.codigo}</td>
                       <td className="procesos-char__name">{row.proceso}</td>
                       <td className="procesos-char__objetivo">{row.objetivo}</td>
@@ -706,11 +768,171 @@ const ProcesosPage: React.FC = () => {
                       <td className="procesos-char__io">{row.salidas}</td>
                       <td className="procesos-char__indicador">{row.indicador}</td>
                       <td className="procesos-char__resp">{row.responsable}</td>
-                      <td><span className={`pill ${row.estado==='Activo'?'pill--success':row.estado==='Revisión'?'pill--warning':'pill--muted'}`}>{row.estado}</span></td>
+                      <td>
+                        <span className={`pill ${row.estado === 'Activo' ? 'pill--success' : row.estado === 'Revisión' ? 'pill--warning' : 'pill--muted'}`}>
+                          {row.estado}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* ── ACTIVIDADES REGISTRADAS ── */}
+          {actividades.length > 0 && (
+            <div style={{ marginTop: '1.5rem' }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                marginBottom: '0.85rem', paddingBottom: '0.6rem',
+                borderTop: '2px solid #e8edf4', paddingTop: '1rem',
+              }}>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#1a2b45' }}>
+                    ⚙️ Actividades de la Empresa
+                  </h4>
+                  <p style={{ margin: '0.15rem 0 0', fontSize: '0.78rem', color: '#7a8fa6' }}>
+                    {actividades.length} actividad{actividades.length !== 1 ? 'es' : ''} registrada{actividades.length !== 1 ? 's' : ''} ·
+                    Sus entradas y salidas se reflejan en §6.1 y §8.1
+                  </p>
+                </div>
+                <span className="pill pill--success">{actividades.length} activ.</span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {actividades.map(act => (
+                  <div
+                    key={act.id}
+                    style={{
+                      border: '1px solid #e2e8f0', borderRadius: '0.65rem',
+                      overflow: 'hidden', background: '#fafcff',
+                    }}
+                  >
+                    {/* Encabezado de actividad */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '0.7rem 1rem',
+                      background: 'linear-gradient(135deg, #eff6ff, #f8faff)',
+                      borderBottom: '1px solid #e2e8f0',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <span style={{ fontSize: '1.1rem' }}>⚙️</span>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1a2b45' }}>
+                            {act.nombre}
+                          </div>
+                          {act.proceso && (
+                            <div style={{ fontSize: '0.73rem', color: '#7a8fa6', marginTop: 1 }}>
+                              Proceso: {act.proceso}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeActividad(act.id)}
+                        style={{
+                          background: 'none', border: '1px solid #e2e8f0',
+                          borderRadius: '0.35rem', padding: '0.25rem 0.6rem',
+                          fontSize: '0.75rem', color: '#9ca3af', cursor: 'pointer',
+                          transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={e => {
+                          (e.target as HTMLButtonElement).style.background = '#fee2e2'
+                          ;(e.target as HTMLButtonElement).style.color = '#dc2626'
+                          ;(e.target as HTMLButtonElement).style.borderColor = '#fca5a5'
+                        }}
+                        onMouseLeave={e => {
+                          (e.target as HTMLButtonElement).style.background = 'none'
+                          ;(e.target as HTMLButtonElement).style.color = '#9ca3af'
+                          ;(e.target as HTMLButtonElement).style.borderColor = '#e2e8f0'
+                        }}
+                        title="Eliminar actividad"
+                      >
+                        ✕ Eliminar
+                      </button>
+                    </div>
+
+                    {/* Entradas / Salidas */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
+                      {/* Entradas */}
+                      <div style={{ padding: '0.75rem 1rem', borderRight: '1px solid #e2e8f0' }}>
+                        <div style={{
+                          fontSize: '0.7rem', fontWeight: 700, color: '#1d4ed8',
+                          textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem',
+                          display: 'flex', alignItems: 'center', gap: '0.35rem',
+                        }}>
+                          <span>📥</span> Entradas
+                          <span style={{
+                            background: '#eff6ff', color: '#1d4ed8', fontSize: '0.65rem',
+                            padding: '0.05rem 0.4rem', borderRadius: 999, fontWeight: 700,
+                          }}>{act.entradas.length}</span>
+                        </div>
+                        {act.entradas.length === 0 ? (
+                          <span style={{ fontSize: '0.78rem', color: '#9ca3af', fontStyle: 'italic' }}>Sin entradas</span>
+                        ) : (
+                          <ul style={{ margin: 0, paddingLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                            {act.entradas.map(e => (
+                              <li key={e.id} style={{ fontSize: '0.82rem', color: '#374151', lineHeight: 1.45 }}>
+                                {e.valor}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+
+                      {/* Salidas */}
+                      <div style={{ padding: '0.75rem 1rem' }}>
+                        <div style={{
+                          fontSize: '0.7rem', fontWeight: 700, color: '#166534',
+                          textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem',
+                          display: 'flex', alignItems: 'center', gap: '0.35rem',
+                        }}>
+                          <span>📤</span> Salidas
+                          <span style={{
+                            background: '#f0fdf4', color: '#166534', fontSize: '0.65rem',
+                            padding: '0.05rem 0.4rem', borderRadius: 999, fontWeight: 700,
+                          }}>{act.salidas.length}</span>
+                        </div>
+                        {act.salidas.length === 0 ? (
+                          <span style={{ fontSize: '0.78rem', color: '#9ca3af', fontStyle: 'italic' }}>Sin salidas</span>
+                        ) : (
+                          <ul style={{ margin: 0, paddingLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                            {act.salidas.map(s => (
+                              <li key={s.id} style={{ fontSize: '0.82rem', color: '#374151', lineHeight: 1.45 }}>
+                                {s.valor}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Footer de la actividad: KPIs generados */}
+                    <div style={{
+                      display: 'flex', gap: '0.5rem', padding: '0.55rem 1rem',
+                      background: '#f8fafc', borderTop: '1px solid #e2e8f0',
+                      fontSize: '0.73rem', color: '#7a8fa6',
+                    }}>
+                      <span style={{
+                        background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca',
+                        borderRadius: 999, padding: '0.1rem 0.55rem', fontWeight: 700,
+                      }}>
+                        ⚠️ {act.entradas.filter(e => e.valor.trim()).length} riesgo{act.entradas.filter(e => e.valor.trim()).length !== 1 ? 's' : ''} generado{act.entradas.filter(e => e.valor.trim()).length !== 1 ? 's' : ''}
+                      </span>
+                      <span style={{
+                        background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0',
+                        borderRadius: 999, padding: '0.1rem 0.55rem', fontWeight: 700,
+                      }}>
+                        🚀 {act.salidas.filter(s => s.valor.trim()).length} oportunidad{act.salidas.filter(s => s.valor.trim()).length !== 1 ? 'es' : ''} generada{act.salidas.filter(s => s.valor.trim()).length !== 1 ? 's' : ''}
+                      </span>
+                      <span style={{ marginLeft: 'auto', color: '#b0bdcc' }}>
+                        Registrada {new Date(act.creadaEn).toLocaleDateString('es-CO')}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

@@ -94,6 +94,24 @@ export interface FilaMatrizRecursos {
   accion:              string
 }
 
+/* ── Actividades propias de la empresa (§4.1 / §8.1) ─────────── */
+export interface EntradaSalida {
+  id:    string
+  valor: string
+}
+
+export interface ActividadEmpresa {
+  id:           string
+  nombre:       string
+  proceso:      string
+  responsable:  string
+  objetivo:     string
+  indicador:    string
+  entradas:     EntradaSalida[]
+  salidas:      EntradaSalida[]
+  creadaEn:     string
+}
+
 export interface AIAnalysis {
   pestel:           PestelRow[]
   dofa:             DofaRow[]
@@ -109,17 +127,22 @@ export interface AIAnalysis {
 
 /* ── Tipos derivados §6.1 ────────────────────────────────────── */
 export interface RiesgoDerivado {
-  codigo:       string
-  descripcion:  string
-  tipo:         'Riesgo' | 'Oportunidad'
-  fuente:       'PESTEL' | 'DOFA' | 'Recursos'
-  categoria:    string
-  probabilidad: number
-  impacto:      number
-  nivel:        number
-  estado:       'CRITICO' | 'TRATAMIENTO' | 'MONITOREO'
-  responsable:  string
-  acciones:     string   // ← generado por IA según tipo/fuente/categoría
+  codigo:          string
+  descripcion:     string
+  tipo:            'Riesgo' | 'Oportunidad'
+  fuente:          'PESTEL' | 'DOFA' | 'Recursos' | 'ACTIVIDAD'
+  /** Categoría visible en la matriz — para actividades usa etiqueta "Actividad Propia" */
+  categoria:       string
+  /** Nombre completo de la actividad de origen (solo para fuente ACTIVIDAD) */
+  actividadNombre?: string
+  /** ID de la actividad de origen (solo para fuente ACTIVIDAD) */
+  actividadId?:    string
+  probabilidad:    number
+  impacto:         number
+  nivel:           number
+  estado:          'CRITICO' | 'TRATAMIENTO' | 'MONITOREO'
+  responsable:     string
+  acciones:        string
 }
 
 export type FrecuenciaMedicion =
@@ -150,8 +173,12 @@ export interface ObjetivoDerivado {
 interface AIAnalysisContextValue {
   analysis:        AIAnalysis | null
   datosEmpresa:    DatosEmpresa | null
+  actividades:     ActividadEmpresa[]
   setAnalysis:     (a: AIAnalysis) => void
   setDatosEmpresa: (d: DatosEmpresa) => void
+  setActividades:  (list: ActividadEmpresa[]) => void
+  addActividad:    (a: ActividadEmpresa) => void
+  removeActividad: (id: string) => void
   clearAnalysis:   () => void
 }
 
@@ -168,6 +195,11 @@ export const AIAnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     catch { return null }
   })
 
+  const [actividades, setActividadesState] = useState<ActividadEmpresa[]>(() => {
+    try { const s = sessionStorage.getItem('governex_actividades'); return s ? JSON.parse(s) : [] }
+    catch { return [] }
+  })
+
   const setAnalysis = (a: AIAnalysis) => {
     setAnalysisState(a)
     try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(a)) } catch {}
@@ -178,13 +210,29 @@ export const AIAnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try { sessionStorage.setItem('governex_datos_empresa', JSON.stringify(d)) } catch {}
   }
 
+  const setActividades = (list: ActividadEmpresa[]) => {
+    setActividadesState(list)
+    try { sessionStorage.setItem('governex_actividades', JSON.stringify(list)) } catch {}
+  }
+
+  const addActividad    = (a: ActividadEmpresa) => setActividades([...actividades, a])
+  const removeActividad = (id: string) => setActividades(actividades.filter(a => a.id !== id))
+
   const clearAnalysis = () => {
-    setAnalysisState(null); setDatosEmpresaState(null)
-    try { sessionStorage.removeItem('governex_ai_analysis'); sessionStorage.removeItem('governex_datos_empresa') } catch {}
+    setAnalysisState(null); setDatosEmpresaState(null); setActividadesState([])
+    try {
+      sessionStorage.removeItem('governex_ai_analysis')
+      sessionStorage.removeItem('governex_datos_empresa')
+      sessionStorage.removeItem('governex_actividades')
+    } catch {}
   }
 
   return (
-    <AIAnalysisContext.Provider value={{ analysis, datosEmpresa, setAnalysis, setDatosEmpresa, clearAnalysis }}>
+    <AIAnalysisContext.Provider value={{
+      analysis, datosEmpresa, actividades,
+      setAnalysis, setDatosEmpresa, setActividades,
+      addActividad, removeActividad, clearAnalysis,
+    }}>
       {children}
     </AIAnalysisContext.Provider>
   )
@@ -198,17 +246,16 @@ export const useAIAnalysis = (): AIAnalysisContextValue => {
 
 /* ── Generador de acciones por tipo/fuente/categoría ─────────── */
 function generarAccion(
-  tipo: 'Riesgo' | 'Oportunidad',
-  categoria: string,
-  fuente: 'PESTEL' | 'DOFA' | 'Recursos',
-  nivel: number,
+  tipo:        'Riesgo' | 'Oportunidad',
+  categoria:   string,
+  fuente:      'PESTEL' | 'DOFA' | 'Recursos' | 'ACTIVIDAD',
+  nivel:       number,
   descripcion: string
 ): string {
-  const cat = categoria.toLowerCase()
+  const cat  = categoria.toLowerCase()
   const desc = descripcion.toLowerCase()
 
   if (tipo === 'Oportunidad') {
-    // Acciones de aprovechamiento según categoría PESTEL / DOFA
     if (cat.includes('tecnol') || desc.includes('tecnol') || desc.includes('digital') || desc.includes('software'))
       return 'Diseñar e implementar un plan de adopción tecnológica; asignar presupuesto para pilotos y formación del equipo en las nuevas herramientas.'
     if (cat.includes('mercado') || cat.includes('comercial') || desc.includes('mercado') || desc.includes('client'))
@@ -221,31 +268,30 @@ function generarAccion(
       return 'Elaborar propuesta de inversión para capturar la oportunidad financiera; evaluar alianzas estratégicas o acceso a líneas de crédito para su aprovechamiento.'
     if (cat.includes('ambiental') || desc.includes('sostenib') || desc.includes('verde'))
       return 'Implementar prácticas de producción sostenible; certificar procesos bajo estándares ambientales y comunicar la ventaja a clientes con enfoque ESG.'
+    if (fuente === 'ACTIVIDAD')
+      return 'Capitalizar los resultados del proceso para generar nuevo valor; revisar si alguna salida puede convertirse en un producto o servicio diferenciador para el cliente.'
     if (fuente === 'DOFA')
       return 'Diseñar plan de aprovechamiento con responsable, fechas e indicadores; alinear la oportunidad con los objetivos estratégicos de la organización.'
     return 'Formular plan de acción para capitalizar la oportunidad; definir responsable, recursos, cronograma e indicador de seguimiento.'
   }
 
-  // Riesgos: acciones de mitigación según nivel y categoría
-  const prefijo = nivel >= 15
-    ? 'ACCIÓN INMEDIATA: '
-    : nivel >= 9
-      ? 'PRIORITARIO: '
-      : ''
+  const prefijo = nivel >= 15 ? 'ACCIÓN INMEDIATA: ' : nivel >= 9 ? 'PRIORITARIO: ' : ''
 
-  if (cat.includes('tecnol') || desc.includes('sistema') || desc.includes('software') || desc.includes('ti ') || desc.includes(' ti'))
+  if (fuente === 'ACTIVIDAD')
+    return `${prefijo}Establecer controles preventivos sobre el proceso completo para garantizar la continuidad de las operaciones y la calidad de las salidas; documentar criterios de aceptación y verificación en cada etapa.`
+  if (cat.includes('tecnol') || desc.includes('sistema') || desc.includes('software'))
     return `${prefijo}Establecer plan de continuidad tecnológica; implementar copias de seguridad, redundancia y protocolo de recuperación ante fallos de sistemas.`
-  if (cat.includes('legal') || cat.includes('regulat') || cat.includes('normativ') || desc.includes('normativ') || desc.includes('legal'))
+  if (cat.includes('legal') || cat.includes('regulat') || cat.includes('normativ') || desc.includes('normativ'))
     return `${prefijo}Revisar y actualizar procedimientos para asegurar cumplimiento normativo; designar responsable de seguimiento regulatorio y programar auditorías internas periódicas.`
-  if (cat.includes('económi') || desc.includes('financ') || desc.includes('costo') || desc.includes('precio'))
+  if (cat.includes('económi') || desc.includes('financ') || desc.includes('costo'))
     return `${prefijo}Diversificar proveedores y fuentes de ingresos; establecer reserva financiera de contingencia y monitorear indicadores económicos mensualmente.`
-  if (cat.includes('social') || desc.includes('personal') || desc.includes('talento') || desc.includes('rotaci'))
+  if (cat.includes('social') || desc.includes('personal') || desc.includes('talento'))
     return `${prefijo}Implementar plan de retención y desarrollo del talento humano; documentar conocimiento crítico y diseñar programa de sucesión para roles clave.`
-  if (cat.includes('ambiental') || desc.includes('ambiental') || desc.includes('clima') || desc.includes('desastre'))
+  if (cat.includes('ambiental') || desc.includes('ambiental') || desc.includes('clima'))
     return `${prefijo}Desarrollar plan de gestión ambiental y protocolo de respuesta ante emergencias; asegurar cumplimiento de requisitos legales ambientales aplicables.`
-  if (cat.includes('político') || desc.includes('político') || desc.includes('gobierno') || desc.includes('estabilidad'))
+  if (cat.includes('político') || desc.includes('político') || desc.includes('gobierno'))
     return `${prefijo}Monitorear el entorno político-legal; establecer planes de contingencia operativa y diversificar mercados para reducir dependencia del contexto local.`
-  if (fuente === 'DOFA' && (cat === 'debilidad' || cat === 'amenaza'))
+  if (fuente === 'DOFA')
     return `${prefijo}Elaborar plan de mejora con acciones correctivas específicas; asignar responsable, recursos y fechas de verificación para eliminar o reducir la debilidad/amenaza.`
   if (fuente === 'Recursos')
     return `${prefijo}Implementar controles operativos sobre el recurso afectado; definir protocolo de inspección periódica y criterios de aceptación para reducir la probabilidad de ocurrencia.`
@@ -253,13 +299,117 @@ function generarAccion(
   return `${prefijo}Definir e implementar plan de tratamiento del riesgo con acciones preventivas y correctivas; asignar responsable y fecha límite de ejecución.`
 }
 
-/* ── derivarRiesgos ──────────────────────────────────────────── */
+/* ── Helpers ─────────────────────────────────────────────────── */
 function impactoToNum(i: string) { return i === 'Alto' ? 4 : i === 'Medio' ? 3 : 2 }
 function estadoDesdeNivel(n: number): 'CRITICO' | 'TRATAMIENTO' | 'MONITOREO' {
   return n >= 15 ? 'CRITICO' : n >= 8 ? 'TRATAMIENTO' : 'MONITOREO'
 }
 
-export function derivarRiesgos(analysis: AIAnalysis): RiesgoDerivado[] {
+/* ── derivarRiesgosDeActividades ─────────────────────────────────
+   Genera EXACTAMENTE 1 Riesgo + 1 Oportunidad por actividad.
+
+   • El Riesgo consolida TODAS las entradas en una sola descripción
+     (riesgo de fallo/indisponibilidad de los insumos del proceso).
+   • La Oportunidad consolida TODAS las salidas en una sola descripción
+     (potencial de mejora/escala de los resultados generados).
+   • Si una actividad no tiene entradas registradas, no se genera Riesgo.
+   • Si una actividad no tiene salidas registradas, no se genera Oportunidad.
+   • Las descripciones aprovechan el campo `objetivo` e `indicador`
+     guardados en la actividad para enriquecer el contexto.            */
+export function derivarRiesgosDeActividades(
+  actividades: ActividadEmpresa[],
+  startIdx = 1
+): RiesgoDerivado[] {
+  const resultado: RiesgoDerivado[] = []
+  let idx = startIdx
+
+  for (const act of actividades) {
+    const categoria = 'Actividad Propia'
+    const proc      = act.proceso ? ` en el proceso "${act.proceso}"` : ''
+    const resp      = act.responsable || 'Responsable del proceso'
+
+    /* ── 1 RIESGO por actividad (consolida todas las entradas) ── */
+    const entradasValidas = act.entradas.filter(e => e.valor.trim())
+    if (entradasValidas.length > 0) {
+      const listaEntradas =
+        entradasValidas.length === 1
+          ? `"${entradasValidas[0].valor}"`
+          : entradasValidas.map(e => `"${e.valor}"`).join(', ')
+
+      const descripcion =
+        `Riesgo de fallo, retraso o indisponibilidad de los insumos (${listaEntradas}) ` +
+        `requeridos por la actividad "${act.nombre}"${proc}. ` +
+        `Su ausencia o deficiencia puede comprometer la continuidad del proceso ` +
+        `y el cumplimiento del objetivo: ${act.objetivo || 'no definido'}.`
+
+      const prob  = 3
+      const imp   = 3
+      const nivel = prob * imp
+
+      resultado.push({
+        codigo:          `ACT-R-${String(idx).padStart(3, '0')}`,
+        descripcion,
+        tipo:            'Riesgo',
+        fuente:          'ACTIVIDAD',
+        categoria,
+        actividadNombre: act.nombre,
+        actividadId:     act.id,
+        probabilidad:    prob,
+        impacto:         imp,
+        nivel,
+        estado:          estadoDesdeNivel(nivel),
+        responsable:     resp,
+        acciones:        generarAccion('Riesgo', categoria, 'ACTIVIDAD', nivel, descripcion),
+      })
+      idx++
+    }
+
+    /* ── 1 OPORTUNIDAD por actividad (consolida todas las salidas) ── */
+    const salidasValidas = act.salidas.filter(s => s.valor.trim())
+    if (salidasValidas.length > 0) {
+      const listaSalidas =
+        salidasValidas.length === 1
+          ? `"${salidasValidas[0].valor}"`
+          : salidasValidas.map(s => `"${s.valor}"`).join(', ')
+
+      const descripcion =
+        `Oportunidad de optimización y aprovechamiento de los resultados (${listaSalidas}) ` +
+        `generados por la actividad "${act.nombre}"${proc}. ` +
+        `Escalar, reutilizar o mejorar estas salidas puede incrementar el valor ` +
+        `entregado al cliente y fortalecer la competitividad del proceso. ` +
+        `Indicador de referencia: ${act.indicador || 'no definido'}.`
+
+      const prob  = 2
+      const imp   = 2
+      const nivel = prob * imp
+
+      resultado.push({
+        codigo:          `ACT-OP-${String(idx).padStart(3, '0')}`,
+        descripcion,
+        tipo:            'Oportunidad',
+        fuente:          'ACTIVIDAD',
+        categoria,
+        actividadNombre: act.nombre,
+        actividadId:     act.id,
+        probabilidad:    prob,
+        impacto:         imp,
+        nivel,
+        estado:          estadoDesdeNivel(nivel),
+        responsable:     resp,
+        acciones:        generarAccion('Oportunidad', categoria, 'ACTIVIDAD', nivel, descripcion),
+      })
+      idx++
+    }
+  }
+
+  return resultado
+}
+
+/* ── derivarRiesgos ──────────────────────────────────────────── */
+export function derivarRiesgos(
+  analysis:    AIAnalysis,
+  actividades: ActividadEmpresa[] = []
+): RiesgoDerivado[] {
   const riesgos: RiesgoDerivado[] = []; let idx = 1
 
   for (const row of analysis.pestel) {
@@ -268,7 +418,7 @@ export function derivarRiesgos(analysis: AIAnalysis): RiesgoDerivado[] {
     const nivel = prob * imp
     const tipo: 'Riesgo' | 'Oportunidad' = row.oportunidad ? 'Oportunidad' : 'Riesgo'
     riesgos.push({
-      codigo:       `${tipo === 'Oportunidad' ? 'OP' : 'R'}-${String(idx).padStart(3,'0')}`,
+      codigo:       `${tipo === 'Oportunidad' ? 'OP' : 'R'}-${String(idx).padStart(3, '0')}`,
       descripcion:  row.descripcion,
       tipo,
       fuente:       'PESTEL',
@@ -289,7 +439,7 @@ export function derivarRiesgos(analysis: AIAnalysis): RiesgoDerivado[] {
     const imp   = esR ? 3 : 2
     const nivel = prob * imp
     riesgos.push({
-      codigo:       `${esR ? 'R' : 'OP'}-${String(idx).padStart(3,'0')}`,
+      codigo:       `${esR ? 'R' : 'OP'}-${String(idx).padStart(3, '0')}`,
       descripcion:  row.descripcion,
       tipo,
       fuente:       'DOFA',
@@ -307,10 +457,10 @@ export function derivarRiesgos(analysis: AIAnalysis): RiesgoDerivado[] {
     for (const row of analysis.matrizRecursos) {
       if (row.riesgo && row.riesgo.trim() !== '' && row.riesgo.toLowerCase() !== 'ninguno' && row.riesgo.toLowerCase() !== 'n/a') {
         const prob  = row.probabilidad ? impactoToNum(row.probabilidad) : 3
-        const imp   = row.impacto     ? impactoToNum(row.impacto)      : 3
+        const imp   = row.impacto      ? impactoToNum(row.impacto)      : 3
         const nivel = prob * imp
         riesgos.push({
-          codigo:       `R-${String(idx).padStart(3,'0')}`,
+          codigo:       `R-${String(idx).padStart(3, '0')}`,
           descripcion:  row.riesgo + (row.hallazgo ? ` (Hallazgo: ${row.hallazgo})` : ''),
           tipo:         'Riesgo',
           fuente:       'Recursos',
@@ -326,7 +476,7 @@ export function derivarRiesgos(analysis: AIAnalysis): RiesgoDerivado[] {
       if (row.oportunidad && row.oportunidad.trim() !== '' && row.oportunidad.toLowerCase() !== 'ninguna' && row.oportunidad.toLowerCase() !== 'n/a') {
         const prob = 2; const imp = 2; const nivel = prob * imp
         riesgos.push({
-          codigo:       `OP-${String(idx).padStart(3,'0')}`,
+          codigo:       `OP-${String(idx).padStart(3, '0')}`,
           descripcion:  row.oportunidad + (row.accion ? ` (Acción: ${row.accion})` : ''),
           tipo:         'Oportunidad',
           fuente:       'Recursos',
@@ -342,6 +492,11 @@ export function derivarRiesgos(analysis: AIAnalysis): RiesgoDerivado[] {
     }
   }
 
+  if (actividades.length > 0) {
+    const fromActividades = derivarRiesgosDeActividades(actividades, idx)
+    riesgos.push(...fromActividades)
+  }
+
   return riesgos
 }
 
@@ -350,8 +505,11 @@ function frecDesdeNivel(n: number): FrecuenciaMedicion {
   return n >= 15 ? 'Mensual' : n >= 9 ? 'Trimestral' : n >= 4 ? 'Semestral' : 'Anual'
 }
 
-export function derivarObjetivos(analysis: AIAnalysis): ObjetivoDerivado[] {
-  const riesgos = derivarRiesgos(analysis)
+export function derivarObjetivos(
+  analysis:    AIAnalysis,
+  actividades: ActividadEmpresa[] = []
+): ObjetivoDerivado[] {
+  const riesgos = derivarRiesgos(analysis, actividades)
   const objetivos: ObjetivoDerivado[] = []; let idx = 1
   const ordenados = [...riesgos].sort((a, b) => {
     if (a.tipo === 'Riesgo' && b.tipo === 'Oportunidad') return -1
@@ -364,10 +522,10 @@ export function derivarObjetivos(analysis: AIAnalysis): ObjetivoDerivado[] {
     const hoy = new Date(); const fin = new Date(hoy)
     const meses: Record<FrecuenciaMedicion, number> = { Mensual:1,Bimestral:2,Trimestral:3,Cuatrimestral:4,Semestral:6,Anual:12 }
     fin.setMonth(fin.getMonth() + meses[frecuencia])
-    const fmt = (d: Date) => d.toISOString().slice(0,10)
-    const desc = r.descripcion.length > 120 ? r.descripcion.slice(0,117)+'...' : r.descripcion
+    const fmt = (d: Date) => d.toISOString().slice(0, 10)
+    const desc = r.descripcion.length > 120 ? r.descripcion.slice(0, 117) + '...' : r.descripcion
     objetivos.push({
-      codigo: `OC-${String(idx).padStart(3,'0')}`,
+      codigo: `OC-${String(idx).padStart(3, '0')}`,
       objetivo: r.tipo === 'Oportunidad'
         ? `Aprovechar la oportunidad en ${r.categoria.toLowerCase()}: ${desc}`
         : `Reducir el riesgo en ${r.categoria.toLowerCase()}: ${desc}`,

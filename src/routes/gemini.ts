@@ -972,4 +972,82 @@ REGLAS:
   return res.status(500).json({ error: 'No se pudo generar el análisis con ningún modelo disponible' })
 })
 
+/* ── POST /api/gemini/generar-objetivo-indicador ─────────────────
+   Genera Objetivo e Indicador de una actividad empresarial (§4.1/§8.1)
+   Sustituye la llamada directa a Anthropic que hacía ActividadModal.tsx  */
+router.post('/generar-objetivo-indicador', async (req: AuthRequest, res: Response) => {
+  const { nombre, proceso, responsable, entradas, salidas } = req.body as {
+    nombre:      string
+    proceso?:    string
+    responsable: string
+    entradas:    string[]
+    salidas:     string[]
+  }
+
+  if (!nombre?.trim())      return res.status(400).json({ error: 'Se requiere el nombre de la actividad' })
+  if (!responsable?.trim()) return res.status(400).json({ error: 'Se requiere el responsable' })
+
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+  const prompt = `Eres un experto en ISO 9001:2015. Dado el siguiente registro de actividad empresarial, genera:
+1. Un OBJETIVO claro y medible para la actividad (máximo 2 oraciones).
+2. Un INDICADOR de desempeño concreto con fórmula o criterio de medición (máximo 1 oración).
+
+Actividad: "${nombre}"
+Proceso asociado: "${proceso || 'No especificado'}"
+Responsable: "${responsable}"
+Entradas: ${entradas.length > 0 ? entradas.map(e => `"${e}"`).join(', ') : 'No especificadas'}
+Salidas:  ${salidas.length  > 0 ? salidas.map(s  => `"${s}"`).join(', ') : 'No especificadas'}
+
+Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
+{"objetivo":"...","indicador":"..."}`
+
+  const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+
+  for (const model of MODELS) {
+    try {
+      const body: any = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature:      0.35,
+          maxOutputTokens:  512,
+          responseMimeType: 'application/json',
+        },
+      }
+      if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          body:    JSON.stringify(body),
+        }
+      )
+      if (!response.ok) { console.error(`[ObjetivoIndicador] ${model} → ${response.status}`); continue }
+
+      const data    = await response.json()
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+      if (!rawText) { console.error(`[ObjetivoIndicador] ${model} devolvió texto vacío`); continue }
+
+      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+      const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+      if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+
+      const parsed = JSON.parse(cleaned)
+      if (!parsed.objetivo || !parsed.indicador) {
+        console.warn(`[ObjetivoIndicador] ${model} JSON incompleto`)
+        continue
+      }
+
+      return res.json({ objetivo: parsed.objetivo, indicador: parsed.indicador })
+    } catch (err) {
+      console.error(`[ObjetivoIndicador] Error ${model}:`, err)
+    }
+  }
+
+  return res.status(500).json({ error: 'No se pudo generar el objetivo e indicador con ningún modelo disponible' })
+})
+
 export default router

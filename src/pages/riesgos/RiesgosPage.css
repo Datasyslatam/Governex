@@ -295,6 +295,52 @@
 }
 .riesgos-empty-cta:hover { background: #1558a0; }
 
+/* ── Descripción desplegable ─────────────────────────────────
+   Agregar a RiesgosPage.css (o al CSS donde viva .risk-table__desc)
+   ──────────────────────────────────────────────────────────── */
+
+/* La celda de descripción tiene ancho fijo para no inflar la tabla */
+.risk-table__desc {
+  min-width: 160px;
+  max-width: 220px;
+  vertical-align: top;
+}
+
+/* Contenedor interno del componente DescripcionCell */
+.risk-table__desc-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Texto: corta palabras largas si las hay */
+.risk-table__desc-text {
+  font-size: 0.82rem;
+  color: #374151;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+/* Botón "Ver más / Ver menos" */
+.risk-table__desc-toggle {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #2563eb;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.risk-table__desc-toggle:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 1100px) {
   .riesgos-kpis { grid-template-columns: repeat(2,1fr); }

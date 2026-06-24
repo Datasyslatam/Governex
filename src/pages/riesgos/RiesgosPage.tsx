@@ -1,3 +1,7 @@
+/**
+ * RiesgosPage.tsx — Governex · ISO 9001:2015 §6.1
+ */
+
 import React, { useState, useCallback, useMemo, useRef } from 'react'
 import RiskHeatmap    from './components/RiskHeatmap'
 import RiskSummaryBars from './components/RiskSummaryBars'
@@ -23,8 +27,8 @@ export interface EvidenciaFile {
   id:       string
   name:     string
   size:     number
-  type:     string          // MIME
-  dataUrl:  string          // para preview de imágenes
+  type:     string
+  dataUrl:  string
   uploadedAt: string
 }
 
@@ -33,7 +37,7 @@ interface RiesgoOverride {
   estado?:      RiesgoDerivado['estado']
   acciones?:    string
   evidencias?:  EvidenciaFile[]
-  eficacia?:    number        // 0–100 %
+  eficacia?:    number
 }
 
 /* ── Pantalla vacía ─────────────────────────────────────────── */
@@ -56,6 +60,37 @@ const EmptyState: React.FC = () => (
     </a>
   </div>
 )
+
+/* ── Columna: Descripción desplegable ────────────────────────── */
+const MAX_CHARS = 60  // caracteres visibles antes del "Ver más"
+
+interface DescripcionCellProps {
+  texto: string
+}
+
+const DescripcionCell: React.FC<DescripcionCellProps> = ({ texto }) => {
+  const [expanded, setExpanded] = useState(false)
+  const needsTruncation = texto.length > MAX_CHARS
+
+  if (!needsTruncation) {
+    return <span className="risk-table__desc-text">{texto}</span>
+  }
+
+  return (
+    <div className="risk-table__desc-wrap">
+      <span className="risk-table__desc-text">
+        {expanded ? texto : `${texto.slice(0, MAX_CHARS)}…`}
+      </span>
+      <button
+        className="risk-table__desc-toggle"
+        onClick={() => setExpanded(prev => !prev)}
+        title={expanded ? 'Colapsar' : 'Ver descripción completa'}
+      >
+        {expanded ? '▲ Ver menos' : '▼ Ver más'}
+      </button>
+    </div>
+  )
+}
 
 /* ── Columna: Acciones (read-only, generada por IA) ─────────── */
 interface AccionesCellProps {
@@ -127,7 +162,6 @@ const EvidenciasCell: React.FC<EvidenciasCellProps> = ({ evidencias, onChange })
 
   return (
     <div className="ev-cell">
-      {/* Drop zone / botón */}
       <div
         className="ev-dropzone"
         onClick={() => inputRef.current?.click()}
@@ -153,7 +187,6 @@ const EvidenciasCell: React.FC<EvidenciasCellProps> = ({ evidencias, onChange })
         onChange={e => handleFiles(e.target.files)}
       />
 
-      {/* Lista de archivos adjuntos */}
       {evidencias.length > 0 && (
         <ul className="ev-list">
           {evidencias.map(f => (
@@ -179,7 +212,6 @@ const EvidenciasCell: React.FC<EvidenciasCellProps> = ({ evidencias, onChange })
         </ul>
       )}
 
-      {/* Modal de preview imagen */}
       {preview && (
         <div className="ev-preview-overlay" onClick={() => setPreview(null)}>
           <div className="ev-preview-modal" onClick={e => e.stopPropagation()}>
@@ -193,9 +225,9 @@ const EvidenciasCell: React.FC<EvidenciasCellProps> = ({ evidencias, onChange })
   )
 }
 
-/* ── Columna: Eficacia del control (barra de progreso) ────────── */
+/* ── Columna: Eficacia del control ────────────────────────────── */
 interface EficaciaCellProps {
-  value:    number   // 0-100
+  value:    number
   onChange: (v: number) => void
 }
 
@@ -263,20 +295,18 @@ const EficaciaCell: React.FC<EficaciaCellProps> = ({ value, onChange }) => {
 
 /* ── Componente principal ────────────────────────────────────── */
 const RiesgosPage: React.FC = () => {
-  const { analysis } = useAIAnalysis()
+  const { analysis, actividades } = useAIAnalysis()
 
   const riesgos: RiesgoDerivado[] = useMemo(
-    () => (analysis ? derivarRiesgos(analysis) : []),
-    [analysis]
+    () => (analysis ? derivarRiesgos(analysis, actividades) : []),
+    [analysis, actividades]
   )
 
-  /* Filtros */
   const [filterTipo,   setFilterTipo]   = useState<'todos' | 'Riesgo' | 'Oportunidad'>('todos')
   const [filterNivel,  setFilterNivel]  = useState<'todos' | 'CRITICO' | 'TRATAMIENTO' | 'MONITOREO'>('todos')
-  const [filterFuente, setFilterFuente] = useState<'todos' | 'PESTEL' | 'DOFA'>('todos')
+  const [filterFuente, setFilterFuente] = useState<'todos' | 'PESTEL' | 'DOFA' | 'ACTIVIDAD'>('todos')
   const [search,       setSearch]       = useState('')
 
-  /* Overrides (sin persistencia aún) */
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [overrides, setOverrides] = useState<Record<string, RiesgoOverride>>({})
@@ -308,7 +338,6 @@ const RiesgosPage: React.FC = () => {
     setOverride(codigo, { estado })
   }, [setOverride])
 
-  /* KPIs */
   const totalRiesgos       = riesgosFinal.filter(r => r.tipo === 'Riesgo').length
   const totalOportunidades = riesgosFinal.filter(r => r.tipo === 'Oportunidad').length
   const criticos           = riesgosFinal.filter(r => r.tipo === 'Riesgo' && r.nivel >= 15).length
@@ -364,6 +393,14 @@ const RiesgosPage: React.FC = () => {
           <span className="riesgos-kpi__value">{totalOportunidades}</span>
           <span className="riesgos-kpi__label">Oportunidades</span>
         </div>
+        {actividades.length > 0 && (
+          <div className="riesgos-kpi" style={{ borderLeft: '3px solid #7c3aed' }}>
+            <span className="riesgos-kpi__value" style={{ color: '#7c3aed' }}>
+              {riesgosFinal.filter(r => r.fuente === 'ACTIVIDAD').length}
+            </span>
+            <span className="riesgos-kpi__label">De Actividades §4.1</span>
+          </div>
+        )}
       </div>
 
       <main className="riesgos-page__main">
@@ -412,9 +449,10 @@ const RiesgosPage: React.FC = () => {
               <option value="MONITOREO">Monitoreo</option>
             </select>
             <select className="riesgos-filter-select" value={filterFuente} onChange={e => setFilterFuente(e.target.value as any)}>
-              <option value="todos">PESTEL + DOFA</option>
+              <option value="todos">Todas las fuentes</option>
               <option value="PESTEL">Solo PESTEL</option>
               <option value="DOFA">Solo DOFA</option>
+              <option value="ACTIVIDAD">Solo Actividades (§4.1)</option>
             </select>
           </div>
 
@@ -462,7 +500,12 @@ const RiesgosPage: React.FC = () => {
                           {r.fuente}
                         </span>
                       </td>
-                      <td className="risk-table__desc">{r.descripcion}</td>
+
+                      {/* ── Descripción desplegable ── */}
+                      <td className="risk-table__desc">
+                        <DescripcionCell texto={r.descripcion} />
+                      </td>
+
                       <td className="risk-table__cat">{r.categoria}</td>
                       <td style={{ textAlign: 'center', fontWeight: 600 }}>{r.probabilidad}</td>
                       <td style={{ textAlign: 'center', fontWeight: 600 }}>{r.impacto}</td>
@@ -508,20 +551,15 @@ const RiesgosPage: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Acciones — generadas por IA, solo lectura */}
                       <td className="risk-table__td--acciones">
                         <AccionesCell acciones={r.acciones} tipo={r.tipo} />
                       </td>
-
-                      {/* Indicador de seguimiento — evidencias adjuntas */}
                       <td className="risk-table__td--evidencias">
                         <EvidenciasCell
                           evidencias={ov.evidencias ?? []}
                           onChange={files => setOverride(r.codigo, { evidencias: files })}
                         />
                       </td>
-
-                      {/* Eficacia del control — barra de progreso */}
                       <td className="risk-table__td--eficacia">
                         <EficaciaCell
                           value={ov.eficacia ?? 0}
