@@ -729,7 +729,6 @@ const ProcesosPage: React.FC = () => {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <span className="pill pill--muted">{caracterizacionData.length} procesos</span>
-              {/* ── BOTÓN NUEVO ── */}
               <button
                 className="btn btn--primary"
                 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}
@@ -809,7 +808,7 @@ const ProcesosPage: React.FC = () => {
                       overflow: 'hidden', background: '#fafcff',
                     }}
                   >
-                    {/* Encabezado de actividad */}
+                    {/* ── Encabezado de actividad ── */}
                     <div style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '0.7rem 1rem',
@@ -853,7 +852,87 @@ const ProcesosPage: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Entradas / Salidas */}
+                    {/* ── NUEVO: Objetivo e Indicador generados por IA ── */}
+                    {(act.objetivo || act.indicador) && (
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: act.objetivo && act.indicador ? '1fr 1fr' : '1fr',
+                        gap: 0,
+                        borderBottom: '1px solid #e2e8f0',
+                        background: 'linear-gradient(135deg, #f8fbff, #f0f7ff)',
+                      }}>
+                        {act.objetivo && (
+                          <div style={{
+                            padding: '0.65rem 1rem',
+                            borderRight: act.indicador ? '1px solid #e2e8f0' : 'none',
+                          }}>
+                            <div style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              color: '#1e40af',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                              marginBottom: '0.3rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                            }}>
+                              🎯 Objetivo
+                              <span style={{
+                                background: '#eff6ff',
+                                color: '#1e40af',
+                                fontSize: '0.6rem',
+                                padding: '0.05rem 0.35rem',
+                                borderRadius: 999,
+                                fontWeight: 700,
+                              }}>✨ IA</span>
+                            </div>
+                            <div style={{
+                              fontSize: '0.82rem',
+                              color: '#1e3a5f',
+                              lineHeight: 1.5,
+                            }}>
+                              {act.objetivo}
+                            </div>
+                          </div>
+                        )}
+                        {act.indicador && (
+                          <div style={{ padding: '0.65rem 1rem' }}>
+                            <div style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              color: '#166534',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                              marginBottom: '0.3rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                            }}>
+                              📊 Indicador de desempeño
+                              <span style={{
+                                background: '#f0fdf4',
+                                color: '#166534',
+                                fontSize: '0.6rem',
+                                padding: '0.05rem 0.35rem',
+                                borderRadius: 999,
+                                fontWeight: 700,
+                              }}>✨ IA</span>
+                            </div>
+                            <div style={{
+                              fontSize: '0.82rem',
+                              color: '#14532d',
+                              lineHeight: 1.5,
+                              fontWeight: 600,
+                            }}>
+                              {act.indicador}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── Entradas / Salidas ── */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
                       {/* Entradas */}
                       <div style={{ padding: '0.75rem 1rem', borderRight: '1px solid #e2e8f0' }}>
@@ -908,7 +987,7 @@ const ProcesosPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Footer de la actividad: KPIs generados */}
+                    {/* ── Footer de la actividad: KPIs generados ── */}
                     <div style={{
                       display: 'flex', gap: '0.5rem', padding: '0.55rem 1rem',
                       background: '#f8fafc', borderTop: '1px solid #e2e8f0',
