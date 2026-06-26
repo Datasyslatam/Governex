@@ -16,6 +16,7 @@ const PoliticaPage: React.FC = () => {
 
   const [showModalEditar, setShowModalEditar] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [generandoIA, setGenerandoIA] = useState(false)
   const [formPol, setFormPol] = useState({ version: '', contenido: '' })
 
   const politicaVigente = politicas.find(p => p.estado === 'Vigente') || null
@@ -89,29 +90,6 @@ const PoliticaPage: React.FC = () => {
 
       <div className="pol-layout">
         <div className="pol-main-col panel">
-
-          {/* ── Banner política generada por IA en módulo 4.1 ── */}
-          {politicaIA && (
-            <div className="pol-ia-banner">
-              <div className="pol-ia-banner__header">
-                <span className="pol-ia-banner__badge">✨ Generado por IA · Cap. 4.1</span>
-                <span className="pol-ia-banner__label">Política de Calidad sugerida</span>
-              </div>
-              <p className="pol-ia-banner__text">{politicaIA}</p>
-              <p className="pol-ia-banner__hint">
-                Texto generado en Contexto de la Organización (4.1). Puedes usarlo como base para publicar la política oficial.
-              </p>
-              <button
-                className="btn btn--secondary pol-ia-banner__copy"
-                onClick={() => {
-                  setFormPol(f => ({ ...f, contenido: politicaIA }))
-                  setShowModalEditar(true)
-                }}
-              >
-                Usar como base →
-              </button>
-            </div>
-          )}
 
           {/* ── Política vigente ── */}
           {lPol ? (
@@ -223,7 +201,41 @@ const PoliticaPage: React.FC = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Contenido de la política</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <label style={{ margin: 0 }}>Contenido de la política</label>
+                  <button
+                    type="button"
+                    className="btn btn--secondary"
+                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                    disabled={generandoIA}
+                    onClick={async () => {
+                      setGenerandoIA(true)
+                      try {
+                        const token = localStorage.getItem('governex_token')
+                        const BASE  = import.meta.env.VITE_API_URL || ''
+                        const response = await fetch(`${BASE}/api/gemini/generar-ideario`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                          },
+                          body: JSON.stringify({ datosEmpresa }),
+                        })
+                        if (!response.ok) throw new Error('Error al generar')
+                        const result = await response.json()
+                        if (result.politicaCalidad) {
+                          setFormPol(f => ({ ...f, contenido: result.politicaCalidad }))
+                        }
+                      } catch (e: any) {
+                        alert('No se pudo generar la política: ' + (e.message || e))
+                      } finally {
+                        setGenerandoIA(false)
+                      }
+                    }}
+                  >
+                    {generandoIA ? '⏳ Generando...' : '✨ Generar con IA'}
+                  </button>
+                </div>
                 <textarea
                   className="filter-input form-control"
                   rows={10}

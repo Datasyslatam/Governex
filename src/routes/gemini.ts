@@ -142,6 +142,17 @@ router.post('/analizar-organigrama', async (req: AuthRequest, res: Response) => 
             )
           }
         }
+
+        // Auto-publicar Política de Calidad si está presente en datosEmpresa
+        if (datosEmpresa && datosEmpresa.politicaCalidad) {
+          await client.query(`UPDATE politica_calidad SET estado='Obsoleto' WHERE estado='Vigente'`);
+          await client.query(
+            `INSERT INTO politica_calidad (version, contenido, estado, fecha_vigencia, aprobado_por)
+             VALUES ($1, $2, $3, CURRENT_DATE, NULL)`,
+            ['v1.0', datosEmpresa.politicaCalidad, 'Vigente']
+          );
+        }
+
         await client.query('COMMIT')
       } catch (dbErr) {
         await client.query('ROLLBACK')
@@ -193,7 +204,7 @@ Genera exactamente el siguiente JSON (sin backticks, sin markdown, solo el objet
 {
   "mision": "2-3 oraciones: qué hace la empresa, para quién, cómo y con qué propósito",
   "vision": "1-2 oraciones: qué quiere ser en 5-10 años, ambiciosa pero realista",
-  "politicaCalidad": "3-4 oraciones ISO 9001:2015: compromiso con el cliente, mejora continua, cumplimiento de requisitos y objetivos medibles"
+  "politicaCalidad": "Redacta una política de calidad larga, robusta y detallada (al menos 2 o 3 párrafos, 6-8 oraciones). Debe incluir explícitamente el compromiso con la satisfacción del cliente, el cumplimiento de requisitos legales y aplicables, la mejora continua del Sistema de Gestión de la Calidad, y debe proporcionar el marco de referencia para los objetivos de calidad. Hazla extensa y muy específica a la naturaleza de la organización."
 }
 
 Requisitos:
@@ -201,7 +212,8 @@ Requisitos:
 - Sé específico al sector y tipo de empresa
 - Tono formal y profesional
 - Evita frases genéricas o clichés
-- La política de calidad debe ser apta para documentación ISO`
+- La política de calidad debe ser detallada, extensa y apta para publicarse oficialmente como la Política Institucional ISO 9001.
+- IMPORTANTE: Estás generando un JSON estricto. NO USES saltos de línea reales (Enter) en los textos. Si necesitas separar párrafos, usa explícitamente el separador || (dos barras verticales). Todo el texto debe ser continuo.`
 
   const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest']
 
@@ -211,7 +223,7 @@ Requisitos:
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.4,
-          maxOutputTokens: 2048,
+          maxOutputTokens: 8192,
           responseMimeType: 'application/json',
         },
       }
@@ -241,9 +253,9 @@ Requisitos:
 
       if (parsed?.mision && parsed?.vision && parsed?.politicaCalidad) {
         return res.json({
-          mision:          parsed.mision,
-          vision:          parsed.vision,
-          politicaCalidad: parsed.politicaCalidad,
+          mision:          parsed.mision.replace(/\|\|/g, '\n\n'),
+          vision:          parsed.vision.replace(/\|\|/g, '\n\n'),
+          politicaCalidad: parsed.politicaCalidad.replace(/\|\|/g, '\n\n'),
         })
       }
 
