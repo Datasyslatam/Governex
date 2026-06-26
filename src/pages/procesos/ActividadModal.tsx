@@ -167,7 +167,6 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
         style={{
           display:       'flex',
           flexDirection: 'column',
-          maxHeight:     '90vh',   /* ← limita la altura al viewport */
         }}
       >
         {/* Encabezado — fijo, no hace scroll */}
@@ -187,10 +186,7 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
         </div>
 
         {/* Cuerpo — scrolleable */}
-        <div
-          className="act-modal__body"
-          style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}
-        >
+        <div className="act-modal__body">
           {/* Info box */}
           <div className="act-modal__info-box">
             <span>💡</span>

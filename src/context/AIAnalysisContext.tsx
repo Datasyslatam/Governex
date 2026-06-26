@@ -112,6 +112,19 @@ export interface ActividadEmpresa {
   creadaEn:     string
 }
 
+export interface ProyectoDiseno {
+  id:           string
+  actividadId?: string
+  entradas:     string
+  desarrollo:   string
+  control:      string
+  responsable:  string
+  fechaInicio:  string
+  fechaEntrega: string
+  etapa:        'Planificación' | 'Desarrollo' | 'Verificación' | 'Validación' | 'Completado'
+  estado:       'En tiempo' | 'En riesgo' | 'Retrasado'
+}
+
 export interface AIAnalysis {
   pestel:           PestelRow[]
   dofa:             DofaRow[]
@@ -174,11 +187,16 @@ interface AIAnalysisContextValue {
   analysis:        AIAnalysis | null
   datosEmpresa:    DatosEmpresa | null
   actividades:     ActividadEmpresa[]
+  proyectosDiseno: ProyectoDiseno[]
   setAnalysis:     (a: AIAnalysis) => void
   setDatosEmpresa: (d: DatosEmpresa) => void
   setActividades:  (list: ActividadEmpresa[]) => void
+  setProyectosDiseno: (list: ProyectoDiseno[]) => void
   addActividad:    (a: ActividadEmpresa) => void
   removeActividad: (id: string) => void
+  addProyectoDiseno: (p: ProyectoDiseno) => void
+  updateProyectoDiseno: (id: string, p: ProyectoDiseno) => void
+  removeProyectoDiseno: (id: string) => void
   clearAnalysis:   () => void
 }
 
@@ -200,6 +218,11 @@ export const AIAnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     catch { return [] }
   })
 
+  const [proyectosDiseno, setProyectosDisenoState] = useState<ProyectoDiseno[]>(() => {
+    try { const s = sessionStorage.getItem('governex_proyectos_diseno'); return s ? JSON.parse(s) : [] }
+    catch { return [] }
+  })
+
   const setAnalysis = (a: AIAnalysis) => {
     setAnalysisState(a)
     try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(a)) } catch {}
@@ -215,23 +238,35 @@ export const AIAnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try { sessionStorage.setItem('governex_actividades', JSON.stringify(list)) } catch {}
   }
 
+  const setProyectosDiseno = (list: ProyectoDiseno[]) => {
+    setProyectosDisenoState(list)
+    try { sessionStorage.setItem('governex_proyectos_diseno', JSON.stringify(list)) } catch {}
+  }
+
   const addActividad    = (a: ActividadEmpresa) => setActividades([...actividades, a])
   const removeActividad = (id: string) => setActividades(actividades.filter(a => a.id !== id))
 
+  const addProyectoDiseno    = (p: ProyectoDiseno) => setProyectosDiseno([...proyectosDiseno, p])
+  const updateProyectoDiseno = (id: string, updated: ProyectoDiseno) => setProyectosDiseno(proyectosDiseno.map(p => p.id === id ? updated : p))
+  const removeProyectoDiseno = (id: string) => setProyectosDiseno(proyectosDiseno.filter(p => p.id !== id))
+
   const clearAnalysis = () => {
-    setAnalysisState(null); setDatosEmpresaState(null); setActividadesState([])
+    setAnalysisState(null); setDatosEmpresaState(null); setActividadesState([]); setProyectosDisenoState([])
     try {
       sessionStorage.removeItem('governex_ai_analysis')
       sessionStorage.removeItem('governex_datos_empresa')
       sessionStorage.removeItem('governex_actividades')
+      sessionStorage.removeItem('governex_proyectos_diseno')
     } catch {}
   }
 
   return (
     <AIAnalysisContext.Provider value={{
-      analysis, datosEmpresa, actividades,
-      setAnalysis, setDatosEmpresa, setActividades,
-      addActividad, removeActividad, clearAnalysis,
+      analysis, datosEmpresa, actividades, proyectosDiseno,
+      setAnalysis, setDatosEmpresa, setActividades, setProyectosDiseno,
+      addActividad, removeActividad,
+      addProyectoDiseno, updateProyectoDiseno, removeProyectoDiseno,
+      clearAnalysis,
     }}>
       {children}
     </AIAnalysisContext.Provider>

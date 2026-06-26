@@ -315,8 +315,22 @@ const RequerimientosPSPage: React.FC = () => {
   const { datosEmpresa } = useAIAnalysis()
   const esEducativo = esSectorEducativo(datosEmpresa?.sector)
 
-  const [items, setItems]   = useState<Requisito[]>([])
-  const [fichas, setFichas] = useState<Record<string, FichaTecnica>>({})
+  const [items, setItems] = useState<Requisito[]>(() => {
+    const saved = sessionStorage.getItem('governex_reqs_items')
+    return saved ? JSON.parse(saved) : []
+  })
+  const [fichas, setFichas] = useState<Record<string, FichaTecnica>>(() => {
+    const saved = sessionStorage.getItem('governex_reqs_fichas')
+    return saved ? JSON.parse(saved) : {}
+  })
+
+  React.useEffect(() => {
+    sessionStorage.setItem('governex_reqs_items', JSON.stringify(items))
+  }, [items])
+
+  React.useEffect(() => {
+    sessionStorage.setItem('governex_reqs_fichas', JSON.stringify(fichas))
+  }, [fichas])
 
   // Modal nueva revisión manual
   const [showReqModal, setShowReqModal] = useState(false)

@@ -268,6 +268,71 @@ Requisitos:
   return res.status(500).json({ error: 'No se pudo generar el ideario con ningún modelo disponible' })
 })
 
+/* ── POST /api/gemini/generar-control-diseno ──────────────────
+   Genera el control y verificación de diseño a partir de la
+   actividad (Cláusula 8.3).                                     */
+router.post('/generar-control-diseno', async (req: AuthRequest, res: Response) => {
+  const { nombre, proceso, entradas, salidas } = req.body
+
+  if (!nombre || !entradas || !salidas) {
+    return res.status(400).json({ error: 'Se requiere nombre, entradas y salidas de la actividad.' })
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+  const prompt = `Eres un consultor experto en ISO 9001:2015, especializado en la Cláusula 8.3 (Diseño y desarrollo de los productos y servicios).
+
+Se ha identificado la siguiente actividad que requiere diseño/desarrollo:
+- Actividad: ${nombre}
+- Proceso asociado: ${proceso || 'No especificado'}
+- Entradas del diseño: ${entradas}
+- Salidas esperadas: ${salidas}
+
+Genera los "Controles de Diseño" (verificación y validación) adecuados para asegurar que las salidas cumplan con los requisitos de entrada. 
+El texto debe ser un solo párrafo técnico, concreto, accionable, y sin viñetas ni saltos de línea. (Ej: "Revisión de prototipos contra especificaciones iniciales, pruebas de estrés en laboratorio, y validación final con el cliente antes del lanzamiento.")
+
+Responde ÚNICAMENTE con JSON válido:
+{
+  "control": "El texto del control aquí"
+}`
+
+  const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest']
+
+  for (const model of MODELS) {
+    try {
+      const body: any = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 1024, responseMimeType: 'application/json' },
+      }
+      if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }
+      )
+      if (!response.ok) { console.error(`[ControlDiseno] ${model} → ${response.status}`); continue }
+
+      const data    = await response.json()
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+      if (!rawText) continue
+
+      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+      const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+      if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+
+      const parsed = JSON.parse(cleaned)
+      if (!parsed.control) continue
+
+      return res.json({ control: parsed.control })
+    } catch (err) {
+      console.error(`[ControlDiseno] Error ${model}:`, err)
+    }
+  }
+
+  return res.status(500).json({ error: 'No se pudo generar el control con ningún modelo' })
+})
+
 /* ── Parser tolerante para la respuesta JSON del ideario ──────
    Limpia markdown, recorta al primer/último brace y, si el JSON
    viene truncado (string sin cerrar), intenta repararlo cerrando
