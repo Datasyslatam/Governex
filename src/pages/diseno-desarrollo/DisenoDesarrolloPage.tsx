@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import '../iso-module.css'
 import { useAIAnalysis, ProyectoDiseno, CaracterizacionRow } from '../../context/AIAnalysisContext'
 import { api } from '../../services/api'
@@ -32,6 +32,7 @@ const DisenoDesarrolloPage: React.FC = () => {
   const {
     analysis,
     proyectosDiseno,
+    actividades,
     addProyectoDiseno,
     updateProyectoDiseno,
     removeProyectoDiseno,
@@ -48,47 +49,134 @@ const DisenoDesarrolloPage: React.FC = () => {
     [analysis],
   )
 
-  /** Procesos de la caracterización que todavía NO se han confirmado como proyecto de diseño y son Desarrollo de Producto */
-  const procesosPendientes = useMemo(
-    () => caracterizacion.filter(
-      row => 
-        row.proceso.toLowerCase().includes('desarrollo de producto') &&
-        !proyectosDiseno.some(p => p.actividadId === row.codigo),
-    ),
-    [caracterizacion, proyectosDiseno],
-  )
-
-  /* ── Confirmar un proceso de la caracterización ─────────────── */
-  const handleConfirmProceso = async (row: CaracterizacionRow) => {
-    setForm({
-      actividadId: row.codigo,
-      entradas: row.entradas,
-      desarrollo: row.proceso,
-      responsable: row.responsable || '',
-      control: '',
-      fechaInicio: '',
-      fechaEntrega: '',
-      etapa: 'Planificación',
-      estado: 'En tiempo',
-    })
-
-    setShowModal(true)
-    setIsGeneratingControl(true)
-    setErrorControl('')
-
-    try {
-      const res = await api.post<{ control: string }>('/api/gemini/generar-control-diseno', {
-        nombre: row.proceso,
+  /** Procesos y actividades que todavía NO se han confirmado como proyecto de diseño y son Desarrollo de Producto */
+  const procesosPendientes = useMemo(() => {
+    const fromCaracterizacion = caracterizacion
+      .filter(row => 
+        (row.proceso.toLowerCase().includes('desarrollo de producto') || row.proceso.toLowerCase().includes('diseño y desarrollo')) &&
+        !proyectosDiseno.some(p => p.actividadId === row.codigo)
+      )
+      .map(row => ({
+        codigo: row.codigo,
         proceso: row.proceso,
         entradas: row.entradas,
-        salidas: row.salidas,
+        responsable: row.responsable,
+        salidas: row.salidas
+      }));
+
+    const fromActividades = actividades
+      .filter(act => 
+        (act.proceso.toLowerCase().includes('desarrollo de producto') || act.proceso.toLowerCase().includes('diseño y desarrollo')) &&
+        !proyectosDiseno.some(p => p.actividadId === act.id)
+      )
+      .map(act => ({
+        codigo: act.id,
+        proceso: act.nombre,
+        entradas: act.entradas.map(e => e.valor).join(', '),
+        responsable: act.responsable,
+        salidas: act.salidas.map(s => s.valor).join(', ')
+      }));
+
+    return [...fromCaracterizacion, ...fromActividades];
+  }, [caracterizacion, actividades, proyectosDiseno]);
+
+  const [generatingRows, setGeneratingRows] = useState<Set<string>>(new Set())
+
+  /* ── Sincronizar eliminación ──────────────────────────────────── */
+  useEffect(() => {
+    proyectosDiseno.forEach(p => {
+      if (p.actividadId) {
+        const enCaracterizacion = caracterizacion.some(c => c.codigo === p.actividadId);
+        const enActividades = actividades.some(a => a.id === p.actividadId);
+        if (!enCaracterizacion && !enActividades) {
+          removeProyectoDiseno(p.id);
+        }
+      }
+    });
+  }, [caracterizacion, actividades, proyectosDiseno, removeProyectoDiseno]);
+
+  /* ── Auto-Confirmar procesos de la caracterización ──────────── */
+  const procesadosRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (procesosPendientes.length === 0) return;
+
+    procesosPendientes.forEach(row => {
+      if (procesadosRef.current.has(row.codigo)) return;
+      procesadosRef.current.add(row.codigo);
+
+      const newId = `PD-${row.codigo}-${Date.now()}`;
+      const newProyecto: ProyectoDiseno = {
+        id: newId,
+        actividadId: row.codigo,
+        entradas: row.entradas,
+        desarrollo: row.proceso,
+        responsable: row.responsable || '',
+        control: '',
+        fechaInicio: '',
+        fechaEntrega: '',
+        etapa: 'Planificación',
+        estado: 'En tiempo',
+      };
+      
+      // Se añade a la tabla inmediatamente pero con control vacío
+      addProyectoDiseno(newProyecto);
+    });
+  }, [procesosPendientes, addProyectoDiseno]);
+
+  /* ── Generar Control Manualmente (Tabla y Modal) ────────────── */
+  const handleGenerateTableRow = async (p: ProyectoDiseno) => {
+    setGeneratingRows(prev => new Set(prev).add(p.id))
+    try {
+      const actRow = caracterizacion.find(r => r.codigo === p.actividadId)
+      const actEmp = actividades.find(a => a.id === p.actividadId)
+      const salidas = actRow ? actRow.salidas : (actEmp ? actEmp.salidas.map(s => s.valor).join(', ') : 'Salidas del diseño')
+      
+      const res = await api.post<{ control: string }>('/api/gemini/generar-control-diseno', {
+        nombre: p.desarrollo,
+        proceso: p.desarrollo,
+        entradas: p.entradas,
+        salidas: salidas,
+      })
+      if (res.control) {
+        updateProyectoDiseno(p.id, { ...p, control: res.control })
+      } else {
+        alert('No se pudo generar el control')
+      }
+    } catch (e) {
+      console.error(e)
+      alert('Error al generar el control')
+    } finally {
+      setGeneratingRows(prev => {
+        const next = new Set(prev)
+        next.delete(p.id)
+        return next
+      })
+    }
+  }
+
+  const handleGenerateModal = async () => {
+    setIsGeneratingControl(true)
+    setErrorControl('')
+    try {
+      const actRow = caracterizacion.find(r => r.codigo === form.actividadId)
+      const actEmp = actividades.find(a => a.id === form.actividadId)
+      const salidas = actRow ? actRow.salidas : (actEmp ? actEmp.salidas.map(s => s.valor).join(', ') : 'Salidas del diseño')
+      
+      const res = await api.post<{ control: string }>('/api/gemini/generar-control-diseno', {
+        nombre: form.desarrollo,
+        proceso: form.desarrollo,
+        entradas: form.entradas,
+        salidas: salidas,
       })
       if (res.control) {
         setForm(prev => ({ ...prev, control: res.control }))
+      } else {
+        setErrorControl('No se pudo generar el control')
       }
     } catch (e: any) {
       console.error(e)
-      setErrorControl('No se pudo generar el control automáticamente. Puedes redactarlo manualmente.')
+      setErrorControl('Error al generar el control')
     } finally {
       setIsGeneratingControl(false)
     }
@@ -149,49 +237,7 @@ const DisenoDesarrolloPage: React.FC = () => {
         </span>
       </div>
 
-      {/* ── Procesos pendientes desde Caracterización ── */}
-      {procesosPendientes.length > 0 && (
-        <div style={{ marginBottom: '2rem' }}>
-          <h3 style={{
-            color: '#1b3a6b', marginBottom: '1rem',
-            display: 'flex', alignItems: 'center', gap: '0.5rem',
-          }}>
-            <span style={{ fontSize: '1.2rem' }}>✨</span>
-            Procesos de Caracterización — Pendientes de Diseño
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {procesosPendientes.map(row => (
-              <div key={row.codigo} style={{
-                background: '#f8fbff', border: '1px solid #dbeafe',
-                padding: '1rem 1.25rem', borderRadius: '0.6rem',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
-                    <code style={{
-                      background: '#eff6ff', color: '#1e40af',
-                      padding: '0.12rem 0.5rem', borderRadius: 4,
-                      fontSize: '0.78rem', fontWeight: 700,
-                    }}>{row.codigo}</code>
-                    <h4 style={{ margin: 0, color: '#1e40af', fontSize: '0.95rem' }}>{row.proceso}</h4>
-                  </div>
-                  <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b' }}>
-                    Responsable: <strong>{row.responsable}</strong> &nbsp;·&nbsp;
-                    Entradas: <em>{row.entradas.slice(0, 60)}{row.entradas.length > 60 ? '…' : ''}</em>
-                  </p>
-                </div>
-                <button
-                  className="iso-btn-primary"
-                  style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
-                  onClick={() => handleConfirmProceso(row)}
-                >
-                  Confirmar Diseño →
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* ── Barra superior ── */}
       <div className="iso-topbar">
@@ -224,7 +270,18 @@ const DisenoDesarrolloPage: React.FC = () => {
                 <td style={{ color: '#9ca3af' }}>{i + 1}</td>
                 <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>{p.entradas}</td>
                 <td style={{ fontWeight: 600, color: '#1b3a6b' }}>{p.desarrollo}</td>
-                <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>{p.control}</td>
+                <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>
+                  {p.control ? p.control : (
+                    <button
+                      className="iso-btn-primary"
+                      style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', background: generatingRows.has(p.id) ? '#9ca3af' : '#1b3a6b' }}
+                      onClick={() => handleGenerateTableRow(p)}
+                      disabled={generatingRows.has(p.id)}
+                    >
+                      {generatingRows.has(p.id) ? '⏳ Generando...' : '✨ Generar'}
+                    </button>
+                  )}
+                </td>
                 <td>{p.responsable}</td>
                 <td>{p.fechaInicio || <em style={{ color: '#d1d5db' }}>—</em>}</td>
                 <td>{p.fechaEntrega || <em style={{ color: '#d1d5db' }}>—</em>}</td>
@@ -275,13 +332,17 @@ const DisenoDesarrolloPage: React.FC = () => {
             </div>
 
             <div className="iso-field">
-              <label>
-                Control (Verificación y Validación)
-                {isGeneratingControl && (
-                  <span style={{ color: '#1a6ebd', fontSize: '0.8rem', marginLeft: '0.5rem' }}>
-                    ✨ Generando con IA...
-                  </span>
-                )}
+              <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Control (Verificación y Validación)</span>
+                <button
+                  type="button"
+                  className="iso-btn-secondary"
+                  style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', borderColor: '#dbeafe', color: '#1e40af', background: '#eff6ff' }}
+                  onClick={handleGenerateModal}
+                  disabled={isGeneratingControl || !form.desarrollo || !form.entradas}
+                >
+                  {isGeneratingControl ? '⏳ Generando...' : '✨ Generar con IA'}
+                </button>
               </label>
               <textarea
                 rows={3}

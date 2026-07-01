@@ -238,17 +238,20 @@ export const AIAnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try { sessionStorage.setItem('governex_actividades', JSON.stringify(list)) } catch {}
   }
 
-  const setProyectosDiseno = (list: ProyectoDiseno[]) => {
-    setProyectosDisenoState(list)
-    try { sessionStorage.setItem('governex_proyectos_diseno', JSON.stringify(list)) } catch {}
+  const setProyectosDiseno = (value: ProyectoDiseno[] | ((prev: ProyectoDiseno[]) => ProyectoDiseno[])) => {
+    setProyectosDisenoState(prev => {
+      const newList = typeof value === 'function' ? value(prev) : value
+      try { sessionStorage.setItem('governex_proyectos_diseno', JSON.stringify(newList)) } catch {}
+      return newList
+    })
   }
 
   const addActividad    = (a: ActividadEmpresa) => setActividades([...actividades, a])
   const removeActividad = (id: string) => setActividades(actividades.filter(a => a.id !== id))
 
-  const addProyectoDiseno    = (p: ProyectoDiseno) => setProyectosDiseno([...proyectosDiseno, p])
-  const updateProyectoDiseno = (id: string, updated: ProyectoDiseno) => setProyectosDiseno(proyectosDiseno.map(p => p.id === id ? updated : p))
-  const removeProyectoDiseno = (id: string) => setProyectosDiseno(proyectosDiseno.filter(p => p.id !== id))
+  const addProyectoDiseno    = (p: ProyectoDiseno) => setProyectosDiseno(prev => [...prev, p])
+  const updateProyectoDiseno = (id: string, p: ProyectoDiseno) => setProyectosDiseno(prev => prev.map(x => x.id === id ? p : x))
+  const removeProyectoDiseno = (id: string) => setProyectosDiseno(prev => prev.filter(x => x.id !== id))
 
   const clearAnalysis = () => {
     setAnalysisState(null); setDatosEmpresaState(null); setActividadesState([]); setProyectosDisenoState([])
