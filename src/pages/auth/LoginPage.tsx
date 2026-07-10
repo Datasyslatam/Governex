@@ -1,99 +1,98 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../hooks/useAuth'
-import { authService } from '../../services'
-import './LoginPage.css'
-import logoGovernex from '../../assets/logo-governex.png'
-import logoDatasys from '../../assets/logo-datasys.png'
+  import React, { useState } from 'react'
+  import { useNavigate } from 'react-router-dom'
+  import { useAuth } from '../../hooks/useAuth'
+  import { authService } from '../../services'
+  import './LoginPage.css'
+  import logoGovernex from '../../assets/logo-governex.png'
 
-const LoginPage: React.FC = () => {
-  const { login }   = useAuth()
-  const navigate    = useNavigate()
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState('')
+  const LoginPage: React.FC = () => {
+    const { login }   = useAuth()
+    const navigate    = useNavigate()
+    const [email, setEmail]       = useState('')
+    const [password, setPassword] = useState('')
+    const [loading, setLoading]   = useState(false)
+    const [error, setError]       = useState('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email || !password) { setError('Completa el correo y la contraseña'); return }
-    setLoading(true)
-    setError('')
-    try {
-      const user = await authService.login(email, password)
-      // Adaptar al formato que espera el AuthContext existente
-      login({ name: user.nombre, role: user.rol as any })
-      navigate('/dashboard')
-    } catch (e: any) {
-      setError(e.message || 'Credenciales incorrectas')
-    } finally {
-      setLoading(false)
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault()
+      if (!email || !password) { setError('Completa el correo y la contraseña'); return }
+      setLoading(true)
+      setError('')
+      try {
+        const user = await authService.login(email, password)
+        // Adaptar al formato que espera el AuthContext existente
+        login({ name: user.nombre, role: user.rol as any })
+        navigate('/dashboard')
+      } catch (e: any) {
+        setError(e.message || 'Credenciales incorrectas')
+      } finally {
+        setLoading(false)
+      }
     }
-  }
 
-  return (
-    <div className="login">
-      <div className="login__left">
-        <div className="login__brand">
-          <div className="login__brand-icon" aria-hidden="true">
+    return (
+      <div className="login">
+        <div className="login__left">
+          <div className="login__brand">
             <div className="login__brand-icon" aria-hidden="true">
-              <img src={logoGovernex}/>
+              <div className="login__brand-icon" aria-hidden="true">
+                <img src={logoGovernex}/>
+              </div>
             </div>
+            <p>Impulsamos la Gobernanza Digital</p>
+            <div className="login__divider" />
+            <ul>
+              <li>Gestiona procesos bajo estándares ISO con seguimiento inteligente de indicadores</li>
+              <li>Automatiza tareas con IA para optimizar tiempos y reducir errores</li>
+              <li>Impulsa la transformación digital con análisis de datos y mejora contínua</li>
+            </ul>
+            <div className="login__brand-footer">© 2026 Governex · Barranquilla, Colombia</div>
           </div>
-          <p>Impulsamos la Gobernanza Digital</p>
-          <div className="login__divider" />
-          <ul>
-            <li>Gestiona procesos bajo estándares ISO con seguimiento inteligente de indicadores</li>
-            <li>Automatiza tareas con IA para optimizar tiempos y reducir errores</li>
-            <li>Impulsa la transformación digital con análisis de datos y mejora contínua</li>
-          </ul>
-          <div className="login__brand-footer">© 2026 Governex · Barranquilla, Colombia</div>
+        </div>
+
+        <div className="login__right">
+          <div className="login__powered-by">Powered by Datasys · Latam Group</div>
+          <form className="login__card" onSubmit={handleSubmit}>
+            <h2>Iniciar Sesión</h2>
+
+            {error && (
+              <div style={{
+                background: 'var(--color-background-danger)',
+                color: 'var(--color-text-danger)',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                fontSize: '0.875rem',
+              }}>{error}</div>
+            )}
+
+            <label>
+              Correo electrónico
+              <input type="email" value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="usuario@empresa.com"
+                disabled={loading} />
+            </label>
+
+            <label>
+              Contraseña
+              <input type="password" value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                disabled={loading} />
+            </label>
+
+            <button type="submit" className="login__submit" disabled={loading}>
+              {loading ? 'Ingresando...' : 'INGRESAR A GOVERNEX'}
+            </button>
+
+            <p className="login__helper">
+              Autenticación segura con JWT · Sesión de 8 horas
+            </p>
+          </form>
         </div>
       </div>
+    )
+  }
 
-      <div className="login__right">
-        <img src={logoDatasys} alt="Datasys" className="login__datasys-logo" />
-        <form className="login__card" onSubmit={handleSubmit}>
-          <h2>Iniciar Sesión</h2>
-
-          {error && (
-            <div style={{
-              background: 'var(--color-background-danger)',
-              color: 'var(--color-text-danger)',
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              marginBottom: '1rem',
-              fontSize: '0.875rem',
-            }}>{error}</div>
-          )}
-
-          <label>
-            Correo electrónico
-            <input type="email" value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="usuario@empresa.com"
-              disabled={loading} />
-          </label>
-
-          <label>
-            Contraseña
-            <input type="password" value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-              disabled={loading} />
-          </label>
-
-          <button type="submit" className="login__submit" disabled={loading}>
-            {loading ? 'Ingresando...' : 'INGRESAR A GOVERNEX'}
-          </button>
-
-          <p className="login__helper">
-            Autenticación segura con JWT · Sesión de 8 horas
-          </p>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-export default LoginPage
+  export default LoginPage

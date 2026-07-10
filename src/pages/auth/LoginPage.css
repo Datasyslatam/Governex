@@ -12,12 +12,15 @@
   position: relative; /* necesario para que el logo se posicione respecto a este panel */
 }
 
-.login__datasys-logo {
+.login__powered-by {
   position: absolute;
-  top: 24px;
-  right: 24px;
-  height: 80px;
-  width: auto;
+  bottom: 1rem;
+  right: 1.25rem;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary, #7a8fa6);
+  opacity: 0.75;
+  letter-spacing: 0.02em;
+  pointer-events: none;
 }
 
 .login__left {
