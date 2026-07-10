@@ -26,8 +26,13 @@ import salidasNCRouter          from './routes/salidasNC'
 import tomaConscienciaRouter    from './routes/tomaConsciencia'
 import comunicacionRouter       from './routes/comunicacion'
 import mejoraContinuaRouter     from './routes/mejoraContinua'
-import objetivosCalidadRouter   from './routes/objetivosCalidad'    // §6.2
-import planificacionCambiosRouter from './routes/planificacionCambios' // §6.3 ← NUEVO
+import objetivosCalidadRouter   from './routes/objetivosCalidad'
+import planificacionCambiosRouter from './routes/planificacionCambios'
+import contextoEmpresaRouter    from './routes/contextoEmpresa'
+import riesgoEvidenciasRouter   from './routes/riesgoEvidencias'
+import uploadsRouter from './routes/uploads'
+import enfoqueClienteRouter from './routes/enfoqueCliente'
+
 
 // ── IA: Gemini ──────────────────────────────────────────────
 import geminiRouter from './routes/gemini'
@@ -63,8 +68,12 @@ app.use('/api/salidas-nc',            salidasNCRouter)
 app.use('/api/toma-consciencia',      tomaConscienciaRouter)
 app.use('/api/comunicacion',          comunicacionRouter)
 app.use('/api/mejora-continua',       mejoraContinuaRouter)
-app.use('/api/objetivos-calidad',     objetivosCalidadRouter)     // §6.2
-app.use('/api/planificacion-cambios', planificacionCambiosRouter)  // §6.3 ← NUEVO
+app.use('/api/objetivos-calidad',     objetivosCalidadRouter)
+app.use('/api/planificacion-cambios', planificacionCambiosRouter)
+app.use('/api/contexto-empresa',      contextoEmpresaRouter)
+app.use('/api/riesgo-evidencias',     riesgoEvidenciasRouter)
+app.use('/api/uploads', uploadsRouter)
+app.use('/api/enfoque-cliente', enfoqueClienteRouter)
 
 // ── IA ──────────────────────────────────────────────────────
 app.use('/api/gemini',                geminiRouter)

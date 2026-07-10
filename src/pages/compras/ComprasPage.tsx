@@ -2,6 +2,9 @@ import { useState, useRef } from 'react'
 import '../iso-module.css'
 import './ComprasPage.css' // Nuevos estilos específicos
 import Swal from 'sweetalert2'
+import { useFetch } from '../../hooks/useFetch'
+import { fichasTecnicasService, evaluacionesOrdenCompraService, uploadsService } from '../../services'
+import { ordenesCompraService } from '../../services'
 
 /* ══════════════════════════════════════════════════════════════
    TIPOS
@@ -74,9 +77,31 @@ const ComprasPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ordenes' | 'fichas' | 'evaluaciones'>('ordenes')
 
   // Estados de datos
-  const [ordenes, setOrdenes] = useState<OrdenCompra[]>(initOrdenes)
-  const [fichas, setFichas] = useState<FichaTecnica[]>(initFichas)
-  const [evaluaciones, setEvaluaciones] = useState<EvaluacionProveedor[]>(initEvaluaciones)
+  const { data: ordenesDB, refetch: refetchOrdenes } = useFetch(ordenesCompraService.getAll, [])
+  const ordenes: OrdenCompra[] = ordenesDB.map((r: any) => ({
+    id: r.id, proveedor: r.proveedor, producto: r.producto, cantidad: r.cantidad ?? '',
+    unidad: r.unidad ?? '', precioUnit: r.precio_unit ?? '', total: r.total ?? '',
+    fechaEmision: r.fecha_emision ?? '', fechaEntrega: r.fecha_entrega ?? '',
+    requisitos: r.requisitos ?? '', responsable: r.responsable ?? '', estado: r.estado,
+  }))
+  const { data: fichasDB, refetch: refetchFichas } = useFetch(fichasTecnicasService.getAll, [])
+  const { data: evaluacionesDB, refetch: refetchEvaluaciones } = useFetch(evaluacionesOrdenCompraService.getAll, [])
+
+  const fichas: FichaTecnica[] = fichasDB.map(f => ({
+    id: f.id, nombre: f.nombre, descripcion: f.descripcion ?? '',
+    especificaciones: f.especificaciones ?? '', unidadMedida: f.unidad_medida ?? '',
+    cantidadMinima: f.cantidad_minima ?? '',
+    documentosRequeridos: (f.documentos_requeridos ?? []).map(d => d.nombre),
+    responsable: f.responsable ?? '', fechaCreacion: f.fecha_creacion,
+  }))
+
+  const evaluaciones: EvaluacionProveedor[] = evaluacionesDB.map((e: any) => ({
+    id: e.id, ordenId: e.orden_id, proveedor: e.proveedor, producto: e.producto,
+    calidad: e.calidad, tiempoEntrega: e.tiempo_entrega, diasRetraso: e.dias_retraso,
+    precio: e.precio, capacidadRespuesta: e.capacidad_respuesta,
+    puntajeGlobal: e.puntaje_global, observaciones: e.observaciones ?? '',
+    fechaEvaluacion: e.fecha_evaluacion,
+  }))
 
   // Estados de modales
   const [showOrdenModal, setShowOrdenModal] = useState(false)
@@ -87,7 +112,7 @@ const ComprasPage: React.FC = () => {
   const emptyOrden = { proveedor: '', producto: '', cantidad: '', unidad: '', precioUnit: '', total: '', fechaEmision: '', fechaEntrega: '', requisitos: '', responsable: '', estado: 'Pendiente' as const }
   const [formOrden, setFormOrden] = useState({ ...emptyOrden })
 
-  const emptyFicha = { nombre: '', descripcion: '', especificaciones: '', unidadMedida: '', cantidadMinima: '', documentosRequeridos: [] as string[], responsable: '', fechaCreacion: new Date().toISOString().split('T')[0] }
+  const emptyFicha = { nombre: '', descripcion: '', especificaciones: '', unidadMedida: '', cantidadMinima: '', documentosRequeridos: [] as { nombre: string; url: string }[], responsable: '', fechaCreacion: new Date().toISOString().split('T')[0] }
   const [formFicha, setFormFicha] = useState({ ...emptyFicha })
 
   const emptyEval = { calidad: 5, tiempoEntrega: 'Cumplió' as 'Cumplió' | 'No cumplió', diasRetraso: 0, precio: 'Igual' as 'Igual' | 'Mayor' | 'Menor', capacidadRespuesta: 5, observaciones: '' }
@@ -98,64 +123,80 @@ const ComprasPage: React.FC = () => {
   /* ── Órdenes de Compra ─────────────────────────────────── */
   const ordenesFiltradas = filtroEstado === 'todos' ? ordenes : ordenes.filter(o => o.estado === filtroEstado)
 
-  const guardarOrden = () => {
+  const guardarOrden = async () => {
     if (!formOrden.proveedor || !formOrden.producto) return
-    const id = Math.max(0, ...ordenes.map(o => o.id)) + 1
-    setOrdenes(prev => [...prev, { id, ...formOrden }])
-    setShowOrdenModal(false)
-    setFormOrden({ ...emptyOrden })
+    try {
+      await ordenesCompraService.create({
+        proveedor: formOrden.proveedor, producto: formOrden.producto, cantidad: formOrden.cantidad,
+        unidad: formOrden.unidad, precio_unit: formOrden.precioUnit, total: formOrden.total,
+        fecha_emision: formOrden.fechaEmision, fecha_entrega: formOrden.fechaEntrega,
+        requisitos: formOrden.requisitos, responsable: formOrden.responsable, estado: formOrden.estado,
+      })
+      await refetchOrdenes()
+      setShowOrdenModal(false); setFormOrden({ ...emptyOrden })
+    } catch (e: any) { alert(e.message) }
   }
   const eliminarOrden = (id: number) => {
     Swal.fire({
-      title: '¿Eliminar orden?',
-      text: "Esta acción no se puede deshacer.",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#6e7d88',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
+      title: '¿Eliminar orden?', text: 'Esta acción no se puede deshacer.', icon: 'warning',
+      showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6e7d88',
+      confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar',
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        setOrdenes(prev => prev.filter(o => o.id !== id))
+        try { await ordenesCompraService.delete(id) } catch {}
+        await refetchOrdenes()
       }
     })
   }
 
-  const setEstadoOrden = (orden: OrdenCompra, estado: EstadoOrden) => {
-    setOrdenes(prev => prev.map(o => o.id === orden.id ? { ...o, estado } : o))
-    
-    // Si es conforme, abrir modal de evaluación
+  const setEstadoOrden = async (orden: OrdenCompra, estado: EstadoOrden) => {
+    try {
+      await ordenesCompraService.update(orden.id, {
+        proveedor: orden.proveedor, producto: orden.producto, cantidad: orden.cantidad,
+        unidad: orden.unidad, precio_unit: orden.precioUnit, total: orden.total,
+        fecha_emision: orden.fechaEmision, fecha_entrega: orden.fechaEntrega,
+        requisitos: orden.requisitos, responsable: orden.responsable, estado,
+      })
+      await refetchOrdenes()
+    } catch (e: any) {
+      alert(e.message); return
+    }
+
     if (estado === 'Recibido conforme') {
       Swal.fire({
-        title: '¡Orden recibida conforme!',
-        text: '¿Desea realizar la evaluación del proveedor ahora?',
-        icon: 'success',
-        showCancelButton: true,
-        confirmButtonColor: '#1b3a6b',
-        cancelButtonColor: '#6e7d88',
-        confirmButtonText: 'Sí, evaluar ahora',
-        cancelButtonText: 'Más tarde'
+        title: '¡Orden recibida conforme!', text: '¿Desea realizar la evaluación del proveedor ahora?',
+        icon: 'success', showCancelButton: true, confirmButtonColor: '#1b3a6b', cancelButtonColor: '#6e7d88',
+        confirmButtonText: 'Sí, evaluar ahora', cancelButtonText: 'Más tarde',
       }).then((result) => {
-        if (result.isConfirmed) {
-          setShowEvalModal({ visible: true, orden })
-        }
+        if (result.isConfirmed) setShowEvalModal({ visible: true, orden })
       })
     } else if (estado === 'Recibido no conforme') {
       Swal.fire({
-        title: 'Orden No Conforme',
-        text: 'La orden ha sido marcada como no conforme. Recuerde generar una salida no conforme.',
-        icon: 'error',
-        confirmButtonColor: '#1b3a6b'
+        title: 'Orden No Conforme', text: 'La orden ha sido marcada como no conforme. Recuerde generar una salida no conforme.',
+        icon: 'error', confirmButtonColor: '#1b3a6b',
       })
     }
   }
 
   /* ── Fichas Técnicas ───────────────────────────────────── */
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files).map(f => f.name)
-      setFormFicha(p => ({ ...p, documentosRequeridos: [...p.documentosRequeridos, ...files] }))
+  const [subiendoArchivo, setSubiendoArchivo] = useState(false)
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return
+    setSubiendoArchivo(true)
+    try {
+      const files = Array.from(e.target.files)
+      const subidos: { nombre: string; url: string }[] = []
+      for (const f of files) {
+        const uploaded = await uploadsService.upload(f)
+        subidos.push({ nombre: uploaded.nombre, url: uploaded.url })
+      }
+      setFormFicha(p => ({ ...p, documentosRequeridos: [...p.documentosRequeridos, ...subidos] }))
+    } catch (err: any) {
+      alert('No se pudo subir el archivo: ' + (err.message || err))
+    } finally {
+      setSubiendoArchivo(false)
+      e.target.value = ''
     }
   }
 
@@ -163,26 +204,26 @@ const ComprasPage: React.FC = () => {
     setFormFicha(p => ({ ...p, documentosRequeridos: p.documentosRequeridos.filter((_, i) => i !== index) }))
   }
 
-  const guardarFicha = () => {
+  const guardarFicha = async () => {
     if (!formFicha.nombre) return
-    const id = Math.max(0, ...fichas.map(f => f.id)) + 1
-    setFichas(prev => [...prev, { id, ...formFicha }])
-    setShowFichaModal(false)
-    setFormFicha({ ...emptyFicha })
+    try {
+      await fichasTecnicasService.create(formFicha)
+      await refetchFichas()
+      setShowFichaModal(false)
+      setFormFicha({ ...emptyFicha })
+    } catch (e: any) {
+      alert('No se pudo guardar la ficha: ' + (e.message || e))
+    }
   }
   const eliminarFicha = (id: number) => {
     Swal.fire({
-      title: '¿Eliminar ficha técnica?',
-      text: "Esta acción no se puede deshacer.",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#6e7d88',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
+      title: '¿Eliminar ficha técnica?', text: 'Esta acción no se puede deshacer.', icon: 'warning',
+      showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6e7d88',
+      confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar',
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        setFichas(prev => prev.filter(f => f.id !== id))
+        try { await fichasTecnicasService.delete(id) } catch {}
+        await refetchFichas()
       }
     })
   }
@@ -201,25 +242,23 @@ const ComprasPage: React.FC = () => {
     return Math.round(calidadScore + tiempoScore + precioScore + resScore)
   }
 
-  const guardarEvaluacion = () => {
+  const guardarEvaluacion = async () => {
     const orden = showEvalModal.orden
     if (!orden) return
-    
     const puntaje = calcularPuntaje(formEval)
-    const id = Math.max(0, ...evaluaciones.map(e => e.id)) + 1
-    
-    setEvaluaciones(prev => [...prev, {
-      id,
-      ordenId: orden.id,
-      proveedor: orden.proveedor,
-      producto: orden.producto,
-      ...formEval,
-      puntajeGlobal: puntaje,
-      fechaEvaluacion: new Date().toISOString().split('T')[0]
-    }])
-    
-    setShowEvalModal({ visible: false })
-    setFormEval({ ...emptyEval })
+    try {
+      await evaluacionesOrdenCompraService.create({
+        ordenId: orden.id, proveedor: orden.proveedor, producto: orden.producto,
+        calidad: formEval.calidad, tiempoEntrega: formEval.tiempoEntrega, diasRetraso: formEval.diasRetraso,
+        precio: formEval.precio, capacidadRespuesta: formEval.capacidadRespuesta,
+        puntajeGlobal: puntaje, observaciones: formEval.observaciones,
+      })
+      await refetchEvaluaciones()
+      setShowEvalModal({ visible: false })
+      setFormEval({ ...emptyEval })
+    } catch (e: any) {
+      alert('No se pudo guardar la evaluación: ' + (e.message || e))
+    }
   }
 
   const getScoreClass = (score: number) => {
@@ -434,7 +473,7 @@ const ComprasPage: React.FC = () => {
 
                 <div className="eval-card__footer">
                   <span>📅 Eval: {e.fechaEvaluacion}</span>
-                  <button className="iso-btn-icon danger" onClick={() => setEvaluaciones(prev => prev.filter(x => x.id !== e.id))} title="Eliminar">🗑️</button>
+                  <button className="iso-btn-icon danger" onClick={async () => { try { await evaluacionesOrdenCompraService.delete(e.id) } catch {}; await refetchEvaluaciones() }} title="Eliminar">🗑️</button>
                 </div>
               </div>
             ))}
@@ -497,7 +536,7 @@ const ComprasPage: React.FC = () => {
               <label>Documentos requeridos al proveedor (Certificados, MSDS)</label>
               <div className="file-upload-wrapper">
                 <div className="file-upload-box">
-                  <input type="file" multiple onChange={handleFileUpload} accept=".pdf,.doc,.docx,.jpg,.png" />
+                  <input type="file" multiple onChange={handleFileUpload} accept=".pdf,.doc,.docx,.jpg,.png" disabled={subiendoArchivo} />
                   <div className="file-upload-box__content">
                     <span className="file-upload-box__icon">📁</span>
                     <span className="file-upload-box__text">Haz clic o arrastra los certificados aquí</span>
@@ -508,7 +547,7 @@ const ComprasPage: React.FC = () => {
                   <div className="uploaded-files-list">
                     {formFicha.documentosRequeridos.map((doc, idx) => (
                       <div key={idx} className="uploaded-file-item">
-                        <span>📎 {doc}</span>
+                        <span>📎 {doc.nombre}</span>
                         <button className="iso-btn-icon danger" onClick={() => removeFile(idx)} style={{ padding: '0.1rem 0.3rem', fontSize: '0.7rem' }}>✕</button>
                       </div>
                     ))}

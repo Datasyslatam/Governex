@@ -8,6 +8,8 @@ import {
 import {
   generarEncuestaPDF, leerRespuestasPDF, generarPqrsPDF, descargarBytes,
 } from '../../utils/surveyPdf'
+import { useFetch } from '../../hooks/useFetch'
+import { pqrsBackendService, archivosEnfoqueService, respuestasEncuestaService, uploadsService } from '../../services'
 
 /* ══════════════════════════════════════════════════════════════
    TIPOS LOCALES (sin persistencia en BD — solo estado en memoria)
@@ -153,8 +155,20 @@ const EnfoqueClientePage: React.FC = () => {
 
   /* ── Carga manual de archivos (encuestas respondidas / PQRS) ─
      NOTA: solo se guarda en memoria del navegador, sin persistencia. */
-  const [archivos, setArchivos]                     = useState<ArchivoSubido[]>([])
-  const [respuestasEncuestas, setRespuestasEncuestas] = useState<RespuestaEncuesta[]>([])
+  const { data: archivosDB, refetch: refetchArchivos } = useFetch(archivosEnfoqueService.getAll, [])
+  const { data: respuestasDB, refetch: refetchRespuestas } = useFetch(respuestasEncuestaService.getAll, [])
+
+  const archivos: ArchivoSubido[] = archivosDB.map((a: any) => ({
+    id: a.id, nombre: a.nombre, tipo: a.tipo,
+    sizeKB: Math.round((a.tamano_bytes ?? 0) / 1024),
+    fecha: new Date(a.subido_en).toISOString().slice(0, 10),
+  }))
+
+  const respuestasEncuestas: RespuestaEncuesta[] = respuestasDB.map((r: any) => ({
+    id: r.id, archivoNombre: r.archivo_nombre, tipo: r.tipo,
+    campos: r.campos, nombreEncuestado: r.nombre_encuestado ?? '', fecha: r.fecha ?? '',
+  }))
+
   const [tipoSubida, setTipoSubida]                 = useState<TipoArchivo>('Encuesta Cliente')
   const [procesandoArchivos, setProcesandoArchivos] = useState(false)
 
@@ -164,49 +178,53 @@ const EnfoqueClientePage: React.FC = () => {
     setProcesandoArchivos(true)
 
     const fileArray = Array.from(files)
-    const nuevosArchivos: ArchivoSubido[] = []
-    const nuevasRespuestas: RespuestaEncuesta[] = []
 
-    for (let i = 0; i < fileArray.length; i++) {
-      const f = fileArray[i]
-      const archivo: ArchivoSubido = {
-        id: Date.now() + i, nombre: f.name, tipo: tipoSubida,
-        sizeKB: Math.round(f.size / 1024), fecha: new Date().toISOString().slice(0, 10),
-      }
-      nuevosArchivos.push(archivo)
+    for (const f of fileArray) {
+      try {
+        const uploaded = await uploadsService.upload(f)
+        const archivoDB = await archivosEnfoqueService.create({
+          nombre: uploaded.nombre, tipo: tipoSubida, url: uploaded.url,
+          tipoMime: uploaded.tipoMime, tamanoBytes: uploaded.tamanoBytes,
+        })
 
-      const esEncuesta = tipoSubida === 'Encuesta Cliente' || tipoSubida === 'Encuesta Proveedor'
-      if (esEncuesta && f.type === 'application/pdf') {
-        try {
-          const { campos, nombre, fecha } = await leerRespuestasPDF(f)
-          const detectado = detectarTipoRespuesta(campos, encuestas)
-          nuevasRespuestas.push({
-            id: archivo.id,
-            archivoNombre: f.name,
-            tipo: detectado !== 'desconocido' ? detectado : (tipoSubida === 'Encuesta Cliente' ? 'cliente' : 'proveedor'),
-            campos,
-            nombreEncuestado: nombre,
-            fecha,
-          })
-        } catch (err) {
-          console.error('No se pudieron leer las respuestas del PDF:', err)
+        const esEncuesta = tipoSubida === 'Encuesta Cliente' || tipoSubida === 'Encuesta Proveedor'
+        if (esEncuesta && f.type === 'application/pdf') {
+          try {
+            const { campos, nombre, fecha } = await leerRespuestasPDF(f)
+            const detectado = detectarTipoRespuesta(campos, encuestas)
+            await respuestasEncuestaService.create({
+              archivoId: archivoDB.id,
+              archivoNombre: f.name,
+              tipo: detectado !== 'desconocido' ? detectado : (tipoSubida === 'Encuesta Cliente' ? 'cliente' : 'proveedor'),
+              campos,
+              nombreEncuestado: nombre,
+              fecha,
+            })
+          } catch (err) {
+            console.error('No se pudieron leer las respuestas del PDF:', err)
+          }
         }
+      } catch (err: any) {
+        alert(`No se pudo subir "${f.name}": ${err.message || err}`)
       }
     }
 
-    setArchivos(prev => [...nuevosArchivos, ...prev])
-    setRespuestasEncuestas(prev => [...nuevasRespuestas, ...prev])
+    await Promise.all([refetchArchivos(), refetchRespuestas()])
     setProcesandoArchivos(false)
     e.target.value = ''
   }
 
-  const eliminarArchivo = (id: number) => {
-    setArchivos(prev => prev.filter(a => a.id !== id))
-    setRespuestasEncuestas(prev => prev.filter(r => r.id !== id))
+  const eliminarArchivo = async (id: number) => {
+    try { await archivosEnfoqueService.delete(id) } catch {}
+    await Promise.all([refetchArchivos(), refetchRespuestas()])
   }
 
   /* ── PQRS manual ──────────────────────────────────────────── */
-  const [pqrsList, setPqrsList]           = useState<PqrsItem[]>([])
+  const { data: pqrsDB, refetch: refetchPqrs } = useFetch(pqrsBackendService.getAll, [])
+  const pqrsList: PqrsItem[] = pqrsDB.map((p: any) => ({
+    id: p.id, tipo: p.tipo, origen: p.origen, fecha: p.fecha,
+    descripcion: p.descripcion, estado: p.estado,
+  }))
   const [showPqrsModal, setShowPqrsModal] = useState(false)
   const [pqrsGuardada, setPqrsGuardada]   = useState<PqrsItem | null>(null)
   const [newPqrs, setNewPqrs] = useState<Omit<PqrsItem, 'id'>>({
@@ -217,12 +235,16 @@ const EnfoqueClientePage: React.FC = () => {
   const abrirModalPqrs = () => { setPqrsGuardada(null); setShowPqrsModal(true) }
   const cerrarModalPqrs = () => { setShowPqrsModal(false); setPqrsGuardada(null) }
 
-  const agregarPqrs = () => {
+  const agregarPqrs = async () => {
     if (!newPqrs.origen.trim() || !newPqrs.descripcion.trim()) return
-    const nueva: PqrsItem = { id: Date.now(), ...newPqrs }
-    setPqrsList(prev => [nueva, ...prev])
-    setPqrsGuardada(nueva)
-    setNewPqrs({ tipo: 'Petición', origen: '', fecha: new Date().toISOString().slice(0, 10), descripcion: '', estado: 'Abierta' })
+    try {
+      const creada = await pqrsBackendService.create(newPqrs)
+      await refetchPqrs()
+      setPqrsGuardada({ id: creada.id, ...newPqrs })
+      setNewPqrs({ tipo: 'Petición', origen: '', fecha: new Date().toISOString().slice(0, 10), descripcion: '', estado: 'Abierta' })
+    } catch (e: any) {
+      alert('No se pudo guardar la PQRS: ' + (e.message || e))
+    }
   }
 
   const descargarPqrsPDF = async (pqrs: PqrsItem) => {
@@ -234,10 +256,21 @@ const EnfoqueClientePage: React.FC = () => {
     }
   }
 
-  const cambiarEstadoPqrs = (id: number, estado: EstadoPqrs) =>
-    setPqrsList(prev => prev.map(p => p.id === id ? { ...p, estado } : p))
+  const cambiarEstadoPqrs = async (id: number, estado: EstadoPqrs) => {
+    const item = pqrsList.find(p => p.id === id)
+    if (!item) return
+    try {
+      await pqrsBackendService.update(id, { ...item, estado })
+      await refetchPqrs()
+    } catch (e: any) {
+      alert('No se pudo actualizar la PQRS: ' + (e.message || e))
+    }
+  }
 
-  const eliminarPqrs = (id: number) => setPqrsList(prev => prev.filter(p => p.id !== id))
+  const eliminarPqrs = async (id: number) => {
+    try { await pqrsBackendService.delete(id) } catch {}
+    await refetchPqrs()
+  }
 
   /* ── Análisis DOFA generado por IA a partir de encuestas + PQRS ─ */
   const [analisis, setAnalisis]           = useState<AnalisisEncuestasResult | null>(null)

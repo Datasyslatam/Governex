@@ -2,11 +2,14 @@
  * RiesgosPage.tsx — Governex · ISO 9001:2015 §6.1
  */
 
-import React, { useState, useCallback, useMemo, useRef } from 'react'
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import RiskHeatmap    from './components/RiskHeatmap'
 import RiskSummaryBars from './components/RiskSummaryBars'
 import './RiesgosPage.css'
 import { useAIAnalysis, derivarRiesgos, RiesgoDerivado } from '../../context/AIAnalysisContext'
+import { riesgoEvidenciasService, uploadsService, riesgosService } from '../../services'
+import { ACCEPTED } from '../../constants/uploads'
+
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 function getLevelVariant(nivel: number): string {
@@ -114,36 +117,51 @@ const AccionesCell: React.FC<AccionesCellProps> = ({ acciones, tipo }) => {
 
 /* ── Columna: Indicador de seguimiento (uploader de evidencias) ─ */
 interface EvidenciasCellProps {
-  evidencias: EvidenciaFile[]
-  onChange:   (files: EvidenciaFile[]) => void
+  riesgoCodigo: string
+  evidencias:   EvidenciaFile[]
+  onChange:     (files: EvidenciaFile[]) => void
 }
 
-const ACCEPTED = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.gif,.webp,.mp4,.zip'
-
-const EvidenciasCell: React.FC<EvidenciasCellProps> = ({ evidencias, onChange }) => {
-  const inputRef        = useRef<HTMLInputElement>(null)
+const EvidenciasCell: React.FC<EvidenciasCellProps> = ({ riesgoCodigo, evidencias, onChange }) => {
+  const inputRef              = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState<EvidenciaFile | null>(null)
+  const [uploading, setUploading] = useState(false)
 
-  const handleFiles = (fileList: FileList | null) => {
-    if (!fileList) return
-    const readers: Promise<EvidenciaFile>[] = Array.from(fileList).map(file =>
-      new Promise(resolve => {
-        const reader = new FileReader()
-        reader.onload = e => resolve({
-          id:         `ev-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
-          name:       file.name,
-          size:       file.size,
-          type:       file.type,
-          dataUrl:    (e.target?.result as string) ?? '',
-          uploadedAt: new Date().toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short' }),
+  const handleFiles = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return
+    setUploading(true)
+    try {
+      const nuevos: EvidenciaFile[] = []
+      for (const file of Array.from(fileList)) {
+        const uploaded = await uploadsService.upload(file)
+        const saved = await riesgoEvidenciasService.create({
+          riesgoCodigo,
+          nombreArchivo: uploaded.nombre,
+          url: uploaded.url,
+          tipoMime: uploaded.tipoMime,
+          tamanoBytes: uploaded.tamanoBytes,
         })
-        reader.readAsDataURL(file)
-      })
-    )
-    Promise.all(readers).then(newFiles => onChange([...evidencias, ...newFiles]))
+        nuevos.push({
+          id: String(saved.id),
+          name: saved.nombre_archivo,
+          size: saved.tamano_bytes ?? 0,
+          type: saved.tipo_mime ?? '',
+          dataUrl: saved.url,
+          uploadedAt: new Date(saved.subido_en).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }),
+        })
+      }
+      onChange([...evidencias, ...nuevos])
+    } catch (e: any) {
+      alert('No se pudo subir el archivo: ' + (e.message || e))
+    } finally {
+      setUploading(false)
+    }
   }
 
-  const removeFile = (id: string) => onChange(evidencias.filter(f => f.id !== id))
+  const removeFile = async (id: string) => {
+    try { await riesgoEvidenciasService.delete(Number(id)) } catch {}
+    onChange(evidencias.filter(f => f.id !== id))
+  }
 
   const isImage = (f: EvidenciaFile) => f.type.startsWith('image/')
 
@@ -164,7 +182,7 @@ const EvidenciasCell: React.FC<EvidenciasCellProps> = ({ evidencias, onChange })
     <div className="ev-cell">
       <div
         className="ev-dropzone"
-        onClick={() => inputRef.current?.click()}
+        onClick={() => !uploading && inputRef.current?.click()}
         onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('ev-dropzone--over') }}
         onDragLeave={e => e.currentTarget.classList.remove('ev-dropzone--over')}
         onDrop={e => {
@@ -173,9 +191,9 @@ const EvidenciasCell: React.FC<EvidenciasCellProps> = ({ evidencias, onChange })
           handleFiles(e.dataTransfer.files)
         }}
       >
-        <span className="ev-dropzone__icon">📎</span>
+        <span className="ev-dropzone__icon">{uploading ? '⏳' : '📎'}</span>
         <span className="ev-dropzone__label">
-          {evidencias.length === 0 ? 'Adjuntar evidencias' : `+  Añadir más`}
+          {uploading ? 'Subiendo...' : evidencias.length === 0 ? 'Adjuntar evidencias' : '+  Añadir más'}
         </span>
       </div>
       <input
@@ -192,15 +210,9 @@ const EvidenciasCell: React.FC<EvidenciasCellProps> = ({ evidencias, onChange })
           {evidencias.map(f => (
             <li key={f.id} className="ev-item">
               {isImage(f) ? (
-                <img
-                  src={f.dataUrl}
-                  alt={f.name}
-                  className="ev-item__thumb"
-                  onClick={() => setPreview(f)}
-                  title="Ver imagen"
-                />
+                <img src={f.dataUrl} alt={f.name} className="ev-item__thumb" onClick={() => setPreview(f)} title="Ver imagen" />
               ) : (
-                <span className="ev-item__icon" title={f.name}>{fileIcon(f)}</span>
+                <a href={f.dataUrl} target="_blank" rel="noreferrer" className="ev-item__icon" title={f.name}>{fileIcon(f)}</a>
               )}
               <div className="ev-item__meta">
                 <span className="ev-item__name" title={f.name}>{f.name}</span>
@@ -311,8 +323,75 @@ const RiesgosPage: React.FC = () => {
   const [editValue, setEditValue] = useState('')
   const [overrides, setOverrides] = useState<Record<string, RiesgoOverride>>({})
 
+  /* ── Persistencia en BD (tabla `riesgos`) — patrón borrador/confirmado ── */
+  const [confirmados, setConfirmados] = useState<Record<string, number>>({}) // codigo -> id en BD
+  const [guardando,   setGuardando]   = useState<Record<string, boolean>>({})
+  const [confirmandoTodos, setConfirmandoTodos] = useState(false)
+
+  const cargarConfirmados = useCallback(() => {
+    riesgosService.getAll()
+      .then(rows => {
+        const map: Record<string, number> = {}
+        for (const row of rows) if (row.codigo) map[row.codigo] = row.id
+        setConfirmados(map)
+      })
+      .catch(e => console.warn('No se pudieron cargar los riesgos confirmados en BD:', e))
+  }, [])
+
+  useEffect(() => { cargarConfirmados() }, [cargarConfirmados])
+
+  /* ── Cargar eficacia/responsable/estado guardados + evidencias por riesgo visible ── */
+  useEffect(() => {
+    riesgoEvidenciasService.getEficaciaTodos()
+      .then(rows => {
+        const initial: Record<string, RiesgoOverride> = {}
+        for (const r of rows) {
+          initial[r.riesgo_codigo] = {
+            eficacia: r.eficacia_pct,
+            responsable: r.responsable_override ?? undefined,
+            estado: r.estado_override ?? undefined,
+          }
+        }
+        setOverrides(prev => ({ ...initial, ...prev }))
+      })
+      .catch(e => console.warn('No se pudo cargar eficacia de riesgos:', e))
+  }, [])
+
+  useEffect(() => {
+    if (riesgos.length === 0) return
+    Promise.all(riesgos.map(r =>
+      riesgoEvidenciasService.getByCodigo(r.codigo)
+        .then(rows => [r.codigo, rows] as const)
+        .catch(() => [r.codigo, []] as const)
+    )).then(pairs => {
+      setOverrides(prev => {
+        const next = { ...prev }
+        for (const [codigo, rows] of pairs) {
+          if (!rows.length) continue
+          next[codigo] = {
+            ...next[codigo],
+            evidencias: rows.map((f: any) => ({
+              id: String(f.id), name: f.nombre_archivo, size: f.tamano_bytes ?? 0,
+              type: f.tipo_mime ?? '', dataUrl: f.url,
+              uploadedAt: new Date(f.subido_en).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }),
+            })),
+          }
+        }
+        return next
+      })
+    })
+  }, [riesgos])
+
   const setOverride = useCallback((codigo: string, patch: Partial<RiesgoOverride>) => {
     setOverrides(prev => ({ ...prev, [codigo]: { ...prev[codigo], ...patch } }))
+
+    if (patch.eficacia !== undefined || patch.responsable !== undefined || patch.estado !== undefined) {
+      riesgoEvidenciasService.putEficacia(codigo, {
+        eficaciaPct: patch.eficacia,
+        responsableOverride: patch.responsable,
+        estadoOverride: patch.estado,
+      }).catch(e => console.warn('No se pudo guardar override de riesgo:', e))
+    }
   }, [])
 
   const riesgosFinal: RiesgoDerivado[] = useMemo(
@@ -337,6 +416,44 @@ const RiesgosPage: React.FC = () => {
   const changeEstado = useCallback((codigo: string, estado: RiesgoDerivado['estado']) => {
     setOverride(codigo, { estado })
   }, [setOverride])
+
+  /* ── Confirmar (guardar/actualizar en BD) un riesgo derivado ───────── */
+  const confirmarRiesgo = useCallback(async (r: RiesgoDerivado) => {
+    setGuardando(prev => ({ ...prev, [r.codigo]: true }))
+    try {
+      const saved = await riesgosService.upsert({
+        codigo:       r.codigo,
+        descripcion:  r.descripcion,
+        tipo:         r.tipo,
+        fuente:       r.fuente,
+        categoria:    r.categoria,
+        actividad_id: r.actividadId,
+        probabilidad: r.probabilidad,
+        impacto:      r.impacto,
+        estado:       r.estado,
+        responsable:  r.responsable,
+        tratamiento:  r.acciones,
+      })
+      setConfirmados(prev => ({ ...prev, [r.codigo]: saved.id }))
+    } catch (e: any) {
+      alert(`No se pudo guardar ${r.codigo} en la base de datos: ${e.message || e}`)
+    } finally {
+      setGuardando(prev => ({ ...prev, [r.codigo]: false }))
+    }
+  }, [])
+
+  /* ── Confirmar todos los borradores visibles de una vez ─────────────── */
+  const confirmarTodos = useCallback(async () => {
+    const borradores = riesgosFinal.filter(r => !confirmados[r.codigo])
+    if (borradores.length === 0) return
+    if (!confirm(`¿Confirmar y guardar en la base de datos los ${borradores.length} elementos generados automáticamente?`)) return
+    setConfirmandoTodos(true)
+    try {
+      await Promise.all(borradores.map(r => confirmarRiesgo(r)))
+    } finally {
+      setConfirmandoTodos(false)
+    }
+  }, [riesgosFinal, confirmados, confirmarRiesgo])
 
   const totalRiesgos       = riesgosFinal.filter(r => r.tipo === 'Riesgo').length
   const totalOportunidades = riesgosFinal.filter(r => r.tipo === 'Oportunidad').length
@@ -425,7 +542,19 @@ const RiesgosPage: React.FC = () => {
         {/* Panel der: Tabla */}
         <div className="riesgos-page__panel riesgos-page__panel--right">
           <div className="riesgos-page__section-header">
-            <h3 className="riesgos-page__section-title">Registro de Riesgos y Oportunidades</h3>
+            <div>
+              <h3 className="riesgos-page__section-title">Registro de Riesgos y Oportunidades</h3>
+              <span className="riesgos-page__section-subtitle">
+                {riesgosFinal.filter(r => confirmados[r.codigo]).length} confirmados en BD · {riesgosFinal.filter(r => !confirmados[r.codigo]).length} borradores
+              </span>
+            </div>
+            <button
+              className="iso-btn-secondary"
+              disabled={confirmandoTodos || riesgosFinal.every(r => confirmados[r.codigo])}
+              onClick={confirmarTodos}
+            >
+              {confirmandoTodos ? 'Guardando...' : '✅ Confirmar todos los borradores'}
+            </button>
           </div>
 
           {/* Filtros */}
@@ -482,13 +611,17 @@ const RiesgosPage: React.FC = () => {
                     Eficacia del control
                     <span className="risk-table__th-sub">% de avance</span>
                   </th>
+                  <th className="risk-table__th--bd">BD</th>
                 </tr>
               </thead>
               <tbody>
                 {riesgosFiltrados.map(r => {
                   const ov = overrides[r.codigo] ?? {}
+                  const estaConfirmado = !!confirmados[r.codigo]
+                  const estaGuardando  = !!guardando[r.codigo]
                   return (
-                    <tr key={r.codigo}>
+                    <tr key={r.codigo} className={!estaConfirmado ? 'risk-table__row--borrador' : undefined}
+                        title={!estaConfirmado ? 'Generado automáticamente — aún no se ha guardado en la base de datos' : undefined}>
                       <td className="risk-table__code">{r.codigo}</td>
                       <td>
                         <span className={`risk-table__tipo risk-table__tipo--${r.tipo === 'Riesgo' ? 'riesgo' : 'oportunidad'}`}>
@@ -556,6 +689,7 @@ const RiesgosPage: React.FC = () => {
                       </td>
                       <td className="risk-table__td--evidencias">
                         <EvidenciasCell
+                          riesgoCodigo={r.codigo}
                           evidencias={ov.evidencias ?? []}
                           onChange={files => setOverride(r.codigo, { evidencias: files })}
                         />
@@ -566,12 +700,28 @@ const RiesgosPage: React.FC = () => {
                           onChange={v => setOverride(r.codigo, { eficacia: v })}
                         />
                       </td>
+                      <td className="risk-table__td--bd" style={{ textAlign: 'center' }}>
+                        {estaConfirmado ? (
+                          <span className="risk-table__bd-badge risk-table__bd-badge--ok" title="Guardado en la base de datos">
+                            ✅ Confirmado
+                          </span>
+                        ) : (
+                          <button
+                            className="risk-table__bd-confirm-btn"
+                            disabled={estaGuardando}
+                            onClick={() => confirmarRiesgo(r)}
+                            title="Guardar este riesgo/oportunidad en la base de datos"
+                          >
+                            {estaGuardando ? '⏳' : '💾 Confirmar'}
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   )
                 })}
                 {riesgosFiltrados.length === 0 && (
                   <tr>
-                    <td colSpan={13} style={{ textAlign: 'center', padding: '2rem', opacity: 0.5 }}>
+                    <td colSpan={14} style={{ textAlign: 'center', padding: '2rem', opacity: 0.5 }}>
                       No hay elementos que coincidan con los filtros
                     </td>
                   </tr>

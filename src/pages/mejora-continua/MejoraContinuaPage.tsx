@@ -1,44 +1,44 @@
 import React, { useState } from 'react'
 import '../iso-module.css'
+import { useFetch } from '../../hooks/useFetch'
+import { mejoraContinuaService } from '../../services'
 
-interface IniciativaMejora {
-  id: number
-  codigo: string
-  titulo: string
-  origen: 'Auditoría' | 'Indicador' | 'Revisión dirección' | 'Sugerencia' | 'Análisis de datos' | 'Quejas cliente'
-  proceso: string
-  descripcion: string
-  beneficioEsperado: string
-  responsable: string
-  fechaInicio: string
-  fechaCierre: string
-  avancePct: number
-  estado: 'Propuesta' | 'Aprobada' | 'En ejecución' | 'Completada' | 'Cancelada'
-}
-
-const datosIniciales: IniciativaMejora[] = [
-  { id: 1, codigo: 'MC-2025-001', titulo: 'Digitalización del proceso de control de documentos', origen: 'Análisis de datos', proceso: 'Control de Documentos', descripcion: 'Implementar un sistema digital de gestión documental para eliminar documentos físicos y reducir errores de versión.', beneficioEsperado: 'Reducción 80% en tiempo de búsqueda de documentos. Eliminación de documentos obsoletos en circulación.', responsable: 'Coordinador de Calidad', fechaInicio: '2025-02-01', fechaCierre: '2025-06-30', avancePct: 65, estado: 'En ejecución' },
-  { id: 2, codigo: 'MC-2025-002', titulo: 'Programa de reconocimiento a la calidad', origen: 'Revisión dirección', proceso: 'Gestión del Talento Humano', descripcion: 'Crear un programa de incentivos para colaboradores que aporten ideas de mejora al SGC o logren cero defectos en su proceso.', beneficioEsperado: 'Incrementar el compromiso con el SGC. Reducir no conformidades internas en 30%.', responsable: 'Director de RRHH', fechaInicio: '2025-03-15', fechaCierre: '2025-05-15', avancePct: 20, estado: 'Aprobada' },
-  { id: 3, codigo: 'MC-2025-003', titulo: 'Optimización del tiempo de ciclo en producción', origen: 'Indicador', proceso: 'Producción', descripcion: 'Aplicar metodología LEAN para identificar y eliminar desperdicios en la línea de producción.', beneficioEsperado: 'Reducir tiempo de ciclo en 25%. Aumentar capacidad productiva sin inversión en equipos.', responsable: 'Jefe de Producción', fechaInicio: '2025-01-10', fechaCierre: '2025-04-10', avancePct: 100, estado: 'Completada' },
-]
-
-const empty: Omit<IniciativaMejora, 'id'> = { codigo: '', titulo: '', origen: 'Sugerencia', proceso: '', descripcion: '', beneficioEsperado: '', responsable: '', fechaInicio: '', fechaCierre: '', avancePct: 0, estado: 'Propuesta' }
+const empty = { codigo: '', titulo: '', origen: 'Sugerencia' as const, proceso: '', descripcion: '', beneficioEsperado: '', responsable: '', fechaInicio: '', fechaCierre: '', avancePct: 0, estado: 'Propuesta' as const }
 
 const MejoraContinuaPage: React.FC = () => {
-  const [items, setItems] = useState<IniciativaMejora[]>(datosIniciales)
+  const { data: itemsDB, loading, refetch } = useFetch(mejoraContinuaService.getAll, [])
+  const items = itemsDB.map((r: any) => ({
+    id: r.id, codigo: r.codigo, titulo: r.titulo, origen: r.origen, proceso: r.proceso ?? '',
+    descripcion: r.descripcion ?? '', beneficioEsperado: r.beneficio_esperado ?? '',
+    responsable: r.responsable ?? '', fechaInicio: r.fecha_inicio ?? '', fechaCierre: r.fecha_cierre ?? '',
+    avancePct: r.avance_pct, estado: r.estado,
+  }))
+
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ ...empty })
   const [filtro, setFiltro] = useState('todos')
 
   const filtrados = filtro === 'todos' ? items : items.filter(i => i.estado === filtro)
 
-  const guardar = () => {
+  const guardar = async () => {
     if (!form.titulo) return
-    const id = Math.max(0, ...items.map(i => i.id)) + 1
-    setItems(prev => [...prev, { id, ...form }])
-    setShowModal(false); setForm({ ...empty })
+    try {
+      await mejoraContinuaService.create({
+        codigo: form.codigo, titulo: form.titulo, origen: form.origen, proceso: form.proceso,
+        descripcion: form.descripcion, beneficio_esperado: form.beneficioEsperado,
+        responsable: form.responsable, fecha_inicio: form.fechaInicio, fecha_cierre: form.fechaCierre,
+        avance_pct: form.avancePct, estado: form.estado,
+      })
+      await refetch()
+      setShowModal(false); setForm({ ...empty })
+    } catch (e: any) { alert(e.message) }
   }
-  const eliminar = (id: number) => { if (window.confirm('¿Eliminar?')) setItems(prev => prev.filter(i => i.id !== id)) }
+
+  const eliminar = async (id: number) => {
+    if (!window.confirm('¿Eliminar?')) return
+    try { await mejoraContinuaService.delete(id) } catch {}
+    await refetch()
+  }
 
   const completadas = items.filter(i => i.estado === 'Completada').length
   const enEjecucion = items.filter(i => i.estado === 'En ejecución').length

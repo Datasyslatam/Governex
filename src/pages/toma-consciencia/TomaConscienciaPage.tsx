@@ -1,45 +1,37 @@
 import React, { useState } from 'react'
 import '../iso-module.css'
-
-interface Registro {
-  id: number
-  colaborador: string
-  cargo: string
-  proceso: string
-  tema: string
-  fecha: string
-  modalidad: 'Capacitación' | 'Comunicado' | 'Taller' | 'Inducción' | 'E-learning'
-  evidencia: string
-  estado: 'Pendiente' | 'Completado' | 'Vencido'
-}
-
-const datosIniciales: Registro[] = [
-  { id: 1, colaborador: 'Ana Martínez', cargo: 'Coordinadora de Calidad', proceso: 'Gestión de la Dirección', tema: 'Política y objetivos de calidad', fecha: '2025-02-10', modalidad: 'Capacitación', evidencia: 'Acta de reunión firmada', estado: 'Completado' },
-  { id: 2, colaborador: 'Luis Herrera', cargo: 'Jefe de Producción', proceso: 'Producción / Prestación del Servicio', tema: 'Importancia de la conformidad del producto', fecha: '2025-03-05', modalidad: 'Taller', evidencia: 'Lista de asistencia', estado: 'Completado' },
-  { id: 3, colaborador: 'Carla Gómez', cargo: 'Vendedora Senior', proceso: 'Ventas y Gestión Comercial', tema: 'Consecuencias del incumplimiento al SGC', fecha: '2025-04-15', modalidad: 'E-learning', evidencia: 'Certificado plataforma', estado: 'Pendiente' },
-  { id: 4, colaborador: 'Pedro Ruiz', cargo: 'Técnico de Mantenimiento', proceso: 'Gestión de Infraestructura', tema: 'Contribución a la eficacia del SGC', fecha: '2025-01-20', modalidad: 'Inducción', evidencia: 'Formato de inducción firmado', estado: 'Vencido' },
-]
+import { useFetch } from '../../hooks/useFetch'
+import { tomaConscienciaService } from '../../services'
 
 const empty = { colaborador: '', cargo: '', proceso: '', tema: '', fecha: '', modalidad: 'Capacitación' as const, evidencia: '', estado: 'Pendiente' as const }
 
 const TomaConscienciaPage: React.FC = () => {
-  const [registros, setRegistros] = useState<Registro[]>(datosIniciales)
+  const { data: registrosDB, loading, refetch } = useFetch(tomaConscienciaService.getAll, [])
+  const registros = registrosDB.map((r: any) => ({
+    id: r.id, colaborador: r.colaborador, cargo: r.cargo ?? '', proceso: r.proceso ?? '',
+    tema: r.tema, fecha: r.fecha ?? '', modalidad: r.modalidad, evidencia: r.evidencia ?? '',
+    estado: r.estado,
+  }))
+
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ ...empty })
   const [filtroEstado, setFiltroEstado] = useState('todos')
 
   const filtrados = filtroEstado === 'todos' ? registros : registros.filter(r => r.estado === filtroEstado)
 
-  const guardar = () => {
+  const guardar = async () => {
     if (!form.colaborador || !form.tema) return
-    const id = Math.max(0, ...registros.map(r => r.id)) + 1
-    setRegistros(prev => [...prev, { id, ...form }])
-    setShowModal(false)
-    setForm({ ...empty })
+    try {
+      await tomaConscienciaService.create(form)
+      await refetch()
+      setShowModal(false); setForm({ ...empty })
+    } catch (e: any) { alert(e.message) }
   }
 
-  const eliminar = (id: number) => {
-    if (window.confirm('¿Eliminar este registro?')) setRegistros(prev => prev.filter(r => r.id !== id))
+  const eliminar = async (id: number) => {
+    if (!window.confirm('¿Eliminar este registro?')) return
+    try { await tomaConscienciaService.delete(id) } catch {}
+    await refetch()
   }
 
   const completados = registros.filter(r => r.estado === 'Completado').length

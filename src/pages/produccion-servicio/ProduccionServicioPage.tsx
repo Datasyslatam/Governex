@@ -1,40 +1,41 @@
 import React, { useState } from 'react'
 import '../iso-module.css'
-
-interface OrdenProduccion {
-  id: number
-  codigo: string
-  productoServicio: string
-  cliente: string
-  cantidad: string
-  instruccionTrabajo: string
-  equipos: string
-  responsable: string
-  fechaInicio: string
-  fechaEntrega: string
-  etapa: 'Programado' | 'En proceso' | 'Control de calidad' | 'Entregado'
-  conformidad: 'Conforme' | 'No conforme' | 'Pendiente inspección'
-}
-
-const datosIniciales: OrdenProduccion[] = [
-  { id: 1, codigo: 'OP-2025-001', productoServicio: 'Fabricación estructura metálica', cliente: 'Constructora del Norte', cantidad: '10 unidades', instruccionTrabajo: 'IT-PRO-001 v2.0', equipos: 'Soldadora MIG, cortadora plasma, dobladora', responsable: 'Jefe de Producción', fechaInicio: '2025-03-01', fechaEntrega: '2025-03-20', etapa: 'Control de calidad', conformidad: 'Conforme' },
-  { id: 2, codigo: 'OP-2025-002', productoServicio: 'Servicio de consultoría de calidad', cliente: 'Alimentos del Valle S.A.', cantidad: '1 proyecto', instruccionTrabajo: 'IT-SER-003 v1.0', equipos: 'Computador, software de gestión documental', responsable: 'Director de Calidad', fechaInicio: '2025-03-10', fechaEntrega: '2025-09-10', etapa: 'En proceso', conformidad: 'Pendiente inspección' },
-]
+import { useFetch } from '../../hooks/useFetch'
+import { produccionService } from '../../services'
 
 const empty = { codigo: '', productoServicio: '', cliente: '', cantidad: '', instruccionTrabajo: '', equipos: '', responsable: '', fechaInicio: '', fechaEntrega: '', etapa: 'Programado' as const, conformidad: 'Pendiente inspección' as const }
 
 const ProduccionServicioPage: React.FC = () => {
-  const [ordenes, setOrdenes] = useState<OrdenProduccion[]>(datosIniciales)
+  const { data: ordenesDB, loading, refetch } = useFetch(produccionService.getAll, [])
+  const ordenes = ordenesDB.map((r: any) => ({
+    id: r.id, codigo: r.codigo, productoServicio: r.producto_servicio, cliente: r.cliente ?? '',
+    cantidad: r.cantidad ?? '', instruccionTrabajo: r.instruccion_trabajo ?? '', equipos: r.equipos ?? '',
+    responsable: r.responsable ?? '', fechaInicio: r.fecha_inicio ?? '', fechaEntrega: r.fecha_entrega ?? '',
+    etapa: r.etapa, conformidad: r.conformidad,
+  }))
+
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ ...empty })
 
-  const guardar = () => {
+  const guardar = async () => {
     if (!form.productoServicio) return
-    const id = Math.max(0, ...ordenes.map(o => o.id)) + 1
-    setOrdenes(prev => [...prev, { id, ...form }])
-    setShowModal(false); setForm({ ...empty })
+    try {
+      await produccionService.create({
+        codigo: form.codigo, producto_servicio: form.productoServicio, cliente: form.cliente,
+        cantidad: form.cantidad, instruccion_trabajo: form.instruccionTrabajo, equipos: form.equipos,
+        responsable: form.responsable, fecha_inicio: form.fechaInicio, fecha_entrega: form.fechaEntrega,
+        etapa: form.etapa, conformidad: form.conformidad,
+      })
+      await refetch()
+      setShowModal(false); setForm({ ...empty })
+    } catch (e: any) { alert(e.message) }
   }
-  const eliminar = (id: number) => { if (window.confirm('¿Eliminar?')) setOrdenes(prev => prev.filter(o => o.id !== id)) }
+
+  const eliminar = async (id: number) => {
+    if (!window.confirm('¿Eliminar?')) return
+    try { await produccionService.delete(id) } catch {}
+    await refetch()
+  }
 
   const etapaColor: Record<string, string> = { 'Programado': 'gris', 'En proceso': 'azul', 'Control de calidad': 'amarillo', 'Entregado': 'verde' }
 

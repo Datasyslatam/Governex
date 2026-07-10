@@ -13,6 +13,7 @@ import {
   ObjetivoDerivado,
   FrecuenciaMedicion,
 } from '../../context/AIAnalysisContext'
+import { objetivosCalidadService } from '../../services'
 
 /* ─── Tipos locales ──────────────────────────────────────────── */
 type EstadoObjetivo = 'Pendiente' | 'En Progreso' | 'Cumplido' | 'No Cumplido'
@@ -39,7 +40,6 @@ interface ObjetivoCalidad extends Omit<ObjetivoDerivado, 'estado' | 'mediciones'
 const FRECUENCIAS: FrecuenciaMedicion[] = [
   'Mensual', 'Bimestral', 'Trimestral', 'Cuatrimestral', 'Semestral', 'Anual',
 ]
-const API = '/api/objetivos-calidad'
 
 /* ─── Helpers visuales ───────────────────────────────────────── */
 function estadoBadge(estado: string) {
@@ -434,8 +434,7 @@ const ObjetivosCalidadPage: React.FC = () => {
   const cargarDesdeBD = useCallback(async () => {
     setLoadingBD(true)
     try {
-      const res  = await fetch(API, { credentials: 'include' })
-      const data = await res.json()
+      const data = await objetivosCalidadService.getAll()
       if (Array.isArray(data) && data.length > 0) {
         const fromBD: ObjetivoCalidad[] = data.map((r: any) => ({
           id:                        r.id,
@@ -460,8 +459,8 @@ const ObjetivosCalidadPage: React.FC = () => {
         }))
         setObjetivos(fromBD)
       }
-    } catch {
-      /* sin BD disponible: se usará solo estado local */
+    } catch (e) {
+      console.warn('No se pudieron cargar los objetivos de calidad guardados en BD:', e)
     } finally {
       setLoadingBD(false)
     }
@@ -533,33 +532,28 @@ const ObjetivosCalidadPage: React.FC = () => {
       }
 
       if (obj.id) {
-        const res     = await fetch(`${API}/${obj.id}`, {
-          method: 'PUT', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-        const updated = await res.json()
+        const updated = await objetivosCalidadService.update(obj.id, payload)
         return { ...obj, ...updated, mediciones: obj.mediciones, _guardado: true }
       } else {
-        const res     = await fetch(API, {
-          method: 'POST', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-        const created = await res.json()
+        const created = await objetivosCalidadService.create(payload)
         return { ...obj, id: created.id, _guardado: true }
       }
-    } catch {
-      /* sin BD: marcar como guardado solo en memoria */
-      return { ...obj, _guardado: true }
+    } catch (e: any) {
+      /* Re-lanzamos el error: NUNCA marcamos _guardado:true si el
+         guardado en BD falló (antes esto quedaba oculto al usuario). */
+      throw new Error(`No se pudo guardar "${obj.codigo}" en la base de datos: ${e.message || e}`)
     }
   }, [])
 
   /* ── Confirmar / editar objetivo ───────────────────────────── */
   const handleSave = useCallback(async (form: ObjetivoCalidad) => {
-    const saved = await guardarEnBD(form)
-    setObjetivos(prev => prev.map(o => o.codigo === saved.codigo ? saved : o))
-    setEditItem(null)
+    try {
+      const saved = await guardarEnBD(form)
+      setObjetivos(prev => prev.map(o => o.codigo === saved.codigo ? saved : o))
+      setEditItem(null)
+    } catch (e: any) {
+      alert(e.message || 'No se pudo guardar el objetivo.')
+    }
   }, [guardarEnBD])
 
   /* ── Confirmar TODOS los borradores de una vez ─────────────── */
@@ -568,15 +562,24 @@ const ObjetivosCalidadPage: React.FC = () => {
     if (borradores.length === 0) return
     if (!confirm(`¿Confirmar y guardar los ${borradores.length} objetivos generados automáticamente?`)) return
 
-    const actualizados = await Promise.all(
+    const resultados = await Promise.allSettled(
       borradores.map(b => guardarEnBD({ ...b, _guardado: true }))
     )
+    const actualizados = resultados
+      .filter((r): r is PromiseFulfilledResult<ObjetivoCalidad> => r.status === 'fulfilled')
+      .map(r => r.value)
+    const fallidos = resultados.filter(r => r.status === 'rejected') as PromiseRejectedResult[]
+
     setObjetivos(prev =>
       prev.map(o => {
         const upd = actualizados.find(u => u.codigo === o.codigo)
         return upd ?? o
       })
     )
+    if (fallidos.length > 0) {
+      alert(`${fallidos.length} de ${borradores.length} objetivos no se pudieron guardar:\n` +
+        fallidos.map(f => f.reason?.message || f.reason).join('\n'))
+    }
   }, [objetivos, guardarEnBD])
 
   /* ── Eliminar objetivo ─────────────────────────────────────── */
@@ -584,7 +587,12 @@ const ObjetivosCalidadPage: React.FC = () => {
     const obj = objetivos.find(o => o.codigo === codigo)
     if (!confirm(`¿Eliminar el objetivo ${codigo}?`)) return
     if (obj?.id) {
-      try { await fetch(`${API}/${obj.id}`, { method: 'DELETE', credentials: 'include' }) } catch {}
+      try {
+        await objetivosCalidadService.delete(obj.id)
+      } catch (e: any) {
+        alert(`No se pudo eliminar "${codigo}" de la base de datos: ${e.message || e}`)
+        return  // no lo quitamos localmente si el backend no lo eliminó
+      }
     }
     setObjetivos(prev => prev.filter(o => o.codigo !== codigo))
   }, [objetivos])
@@ -594,13 +602,14 @@ const ObjetivosCalidadPage: React.FC = () => {
     let saved: Medicion = medicion
     if (objetivo.id) {
       try {
-        const res = await fetch(`${API}/${objetivo.id}/mediciones`, {
-          method: 'POST', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(medicion),
-        })
-        saved = await res.json()
-      } catch {}
+        saved = await objetivosCalidadService.addMedicion(objetivo.id, medicion)
+      } catch (e: any) {
+        alert(`No se pudo guardar la medición en la base de datos: ${e.message || e}`)
+        return
+      }
+    } else {
+      alert('Este objetivo aún es un borrador (no está confirmado en BD). ' +
+            'La medición se guardará solo en esta sesión hasta que confirmes el objetivo.')
     }
     setObjetivos(prev => prev.map(o =>
       o.codigo === objetivo.codigo

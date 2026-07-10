@@ -15,7 +15,8 @@
     "src/index.ts",
     "src/db.ts",
     "src/middleware/**/*",
-    "src/routes/**/*"
+    "src/routes/**/*",
+    "src/constants/**/*"
   ],
   "exclude": [
     "src/main.tsx",

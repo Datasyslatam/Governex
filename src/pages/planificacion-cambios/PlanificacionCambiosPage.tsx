@@ -9,6 +9,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import '../iso-module.css'
 import './PlanificacionCambiosPage.css'
+import { planificacionCambiosService } from '../../services'
 
 /* ═══════════════════════════════════════════════════════════════
    TIPOS
@@ -40,6 +41,10 @@ interface Cambio {
   documentos_afectados: string
   aprobado_por:         string
   observaciones:        string
+  /** true una vez confirmado que existe en BD con este id (no viaja al backend) */
+  _persisted?:          boolean
+  /** true si el último intento de guardar/actualizar en BD falló (no viaja al backend) */
+  _sinGuardar?:         boolean
 }
 
 type FormData = Omit<Cambio, 'id'> & { id?: number }
@@ -73,8 +78,6 @@ const EMPTY_FORM: FormData = {
   fecha_inicio: '', fecha_fin: '', impacto: 'Medio', estado: 'Planificado',
   procesos_afectados: '', documentos_afectados: '', aprobado_por: '', observaciones: '',
 }
-
-const API = '/api/planificacion-cambios'
 
 /* ═══════════════════════════════════════════════════════════════
    HELPERS
@@ -327,9 +330,10 @@ interface MatrizRowProps {
   cambio:   Cambio
   onEdit:   (c: Cambio) => void
   onDelete: (id: number) => void
+  onRetry:  (c: Cambio) => void
 }
 
-const MatrizRow: React.FC<MatrizRowProps> = ({ cambio, onEdit, onDelete }) => {
+const MatrizRow: React.FC<MatrizRowProps> = ({ cambio, onEdit, onDelete, onRetry }) => {
   const [expanded, setExpanded] = useState(false)
 
   const diasRestantes = (() => {
@@ -341,7 +345,14 @@ const MatrizRow: React.FC<MatrizRowProps> = ({ cambio, onEdit, onDelete }) => {
   return (
     <>
       <tr className="pc-matrix-row" onClick={() => setExpanded(v => !v)}>
-        <td><span className="pc-matrix__code">{cambio.codigo}</span></td>
+        <td>
+          <span className="pc-matrix__code">{cambio.codigo}</span>
+          {cambio._sinGuardar && (
+            <span className="pc-badge-singuardar" title="No se pudo guardar en la base de datos — usa 'Reintentar guardado'">
+              ⚠️ Sin guardar
+            </span>
+          )}
+        </td>
         <td>
           <span className="pc-categoria">
             {categoriaIcon(cambio.categoria)} {cambio.categoria}
@@ -371,6 +382,10 @@ const MatrizRow: React.FC<MatrizRowProps> = ({ cambio, onEdit, onDelete }) => {
         <td><span className={`pc-badge ${estadoClass(cambio.estado)}`}>{cambio.estado}</span></td>
         <td onClick={e => e.stopPropagation()}>
           <div className="pc-matrix__actions">
+            {cambio._sinGuardar && (
+              <button className="iso-btn-icon" title="Reintentar guardado en la base de datos"
+                onClick={() => onRetry(cambio)}>🔄</button>
+            )}
             <button className="iso-btn-icon" title="Editar" onClick={() => onEdit(cambio)}>✏️</button>
             <button className="iso-btn-icon danger" title="Eliminar" onClick={() => onDelete(cambio.id)}>🗑️</button>
           </div>
@@ -452,69 +467,93 @@ const PlanificacionCambiosPage: React.FC = () => {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    fetch(API, { credentials: 'include' })
-      .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(data => { if (!cancelled && Array.isArray(data)) setCambios(data) })
-      .catch(() => { /* sin BD: empezar vacío, no es un error */ })
+    planificacionCambiosService.getAll()
+      .then(data => {
+        if (!cancelled && Array.isArray(data)) {
+          setCambios(data.map((c: any) => ({ ...c, _persisted: true, _sinGuardar: false })))
+        }
+      })
+      .catch(e => console.warn('No se pudieron cargar los cambios planificados guardados en BD:', e))
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [])
 
-  /* ── Guardar (con persistencia optimista) ─────────────── */
+  /** Quita los campos internos (no existen como columnas en BD) antes de enviar. */
+  const toPayload = (c: FormData | Cambio) => {
+    const { id: _id, _persisted, _sinGuardar, ...payload } = c as Cambio
+    return payload
+  }
+
+  /* ── Guardar (con persistencia optimista + reintento en caso de fallo) ── */
   const handleSave = useCallback(async (form: FormData) => {
     if (form.id) {
       /* ── EDITAR: actualizar inmediatamente en UI ── */
-      const actualizado: Cambio = form as Cambio
+      const actualizado: Cambio = { ...(form as Cambio), _sinGuardar: false }
       setCambios(prev => prev.map(c => c.id === form.id ? actualizado : c))
       setShowForm(false)
       setEditItem(null)
 
-      /* Intentar persistir en BD en segundo plano */
       try {
-        await fetch(`${API}/${form.id}`, {
-          method: 'PUT', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        })
-      } catch { /* sin BD, el estado local ya está actualizado */ }
+        await planificacionCambiosService.update(form.id, toPayload(form))
+        setCambios(prev => prev.map(c => c.id === form.id ? { ...c, _persisted: true, _sinGuardar: false } : c))
+      } catch (e: any) {
+        setCambios(prev => prev.map(c => c.id === form.id ? { ...c, _sinGuardar: true } : c))
+        alert(`El cambio se muestra en pantalla, pero no se pudo guardar en la base de datos: ${e.message || e}\n` +
+              'Usa el botón "🔄 Reintentar guardado" en la fila, o se perderá al recargar la página.')
+      }
 
     } else {
-      /* ── CREAR: guardar en UI de inmediato con ID temporal ── */
+      /* ── CREAR: mostrar en UI de inmediato con ID temporal ── */
       const tempId   = Date.now()
-      const tempItem: Cambio = { ...form, id: tempId } as Cambio
-      setCambios(prev => [tempItem, ...prev])   // ← agrega al inicio para verlo de inmediato
+      const tempItem: Cambio = { ...form, id: tempId, _persisted: false, _sinGuardar: false } as Cambio
+      setCambios(prev => [tempItem, ...prev])
       setShowForm(false)
       setEditItem(null)
 
-      /* Intentar persistir en BD y reemplazar ID temporal por el real */
       try {
-        const res  = await fetch(API, {
-          method: 'POST', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        })
-        if (res.ok) {
-          const creado = await res.json()
-          /* Reemplazar ID temporal por el real de la BD */
-          setCambios(prev => prev.map(c => c.id === tempId ? { ...creado, id: creado.id } : c))
-        }
-      } catch { /* sin BD: el item ya está visible con ID temporal */ }
+        const creado = await planificacionCambiosService.create(toPayload(form))
+        setCambios(prev => prev.map(c => c.id === tempId ? { ...creado, _persisted: true, _sinGuardar: false } : c))
+      } catch (e: any) {
+        setCambios(prev => prev.map(c => c.id === tempId ? { ...c, _sinGuardar: true } : c))
+        alert(`El cambio se muestra en pantalla, pero no se pudo guardar en la base de datos: ${e.message || e}\n` +
+              'Usa el botón "🔄 Reintentar guardado" en la fila, o se perderá al recargar la página.')
+      }
     }
   }, [])
 
-  /* ── Eliminar ─────────────────────────────────────────── */
+  /* ── Reintentar guardado de una fila marcada como "sin guardar" ── */
+  const reintentarGuardado = useCallback(async (c: Cambio) => {
+    try {
+      if (c._persisted) {
+        await planificacionCambiosService.update(c.id, toPayload(c))
+        setCambios(prev => prev.map(x => x.id === c.id ? { ...x, _sinGuardar: false } : x))
+      } else {
+        const creado = await planificacionCambiosService.create(toPayload(c))
+        setCambios(prev => prev.map(x => x.id === c.id ? { ...creado, _persisted: true, _sinGuardar: false } : x))
+      }
+    } catch (e: any) {
+      alert(`Sigue sin poderse guardar en la base de datos: ${e.message || e}`)
+    }
+  }, [])
+
+  /* ── Eliminar (con reversión si falla en BD) ───────────── */
   const handleDelete = useCallback(async (id: number) => {
     const cambio = cambios.find(c => c.id === id)
     if (!cambio) return
     if (!confirm(`¿Eliminar "${cambio.codigo} — ${cambio.descripcion.slice(0, 60)}"?`)) return
 
-    /* Eliminar de UI de inmediato */
+    /* Quitar de la UI de inmediato */
     setCambios(prev => prev.filter(c => c.id !== id))
 
-    /* Intentar eliminar de BD en segundo plano */
+    if (!cambio._persisted) return  // nunca llegó a existir en BD, no hay nada que borrar ahí
+
     try {
-      await fetch(`${API}/${id}`, { method: 'DELETE', credentials: 'include' })
-    } catch { /* sin BD: ya se eliminó de la UI */ }
+      await planificacionCambiosService.delete(id)
+    } catch (e: any) {
+      /* Revertir: el borrado en BD falló, no ocultamos el dato */
+      setCambios(prev => [cambio, ...prev])
+      alert(`No se pudo eliminar "${cambio.codigo}" de la base de datos, se restauró en la lista: ${e.message || e}`)
+    }
   }, [cambios])
 
   /* ── Filtros ──────────────────────────────────────────── */
@@ -657,6 +696,7 @@ const PlanificacionCambiosPage: React.FC = () => {
                   cambio={cambio}
                   onEdit={c => { setEditItem(c); setShowForm(true) }}
                   onDelete={handleDelete}
+                  onRetry={reintentarGuardado}
                 />
               ))}
             </tbody>

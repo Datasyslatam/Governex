@@ -38,7 +38,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 // POST /api/diseno-desarrollo
 router.post('/', async (req: AuthRequest, res: Response) => {
   const { nombre, cliente, entradas, salidas, responsable,
-          fecha_inicio, fecha_entrega, etapa, estado } = req.body
+          fecha_inicio, fecha_entrega, etapa, estado, control, actividad_id } = req.body
   if (!nombre) {
     return res.status(400).json({ error: 'nombre es requerido' })
   }
@@ -46,8 +46,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     const { rows } = await pool.query(
       `INSERT INTO proyectos_diseno
          (nombre, cliente, entradas, salidas, responsable,
-          fecha_inicio, fecha_entrega, etapa, estado, creado_por)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+          fecha_inicio, fecha_entrega, etapa, estado, control, actividad_id, creado_por)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
       [
         nombre,
         cliente        || null,
@@ -58,6 +58,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         fecha_entrega  || null,
         etapa          || 'Planificación',
         estado         || 'En tiempo',
+        control        || null,
+        actividad_id   || null,
         req.user?.id   || null,
       ]
     )
@@ -72,16 +74,16 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { nombre, cliente, entradas, salidas, responsable,
-          fecha_inicio, fecha_entrega, etapa, estado } = req.body
+          fecha_inicio, fecha_entrega, etapa, estado, control, actividad_id } = req.body
   try {
     const { rows } = await pool.query(
       `UPDATE proyectos_diseno
        SET nombre=$1, cliente=$2, entradas=$3, salidas=$4, responsable=$5,
-           fecha_inicio=$6, fecha_entrega=$7, etapa=$8, estado=$9
-       WHERE id=$10 RETURNING *`,
+           fecha_inicio=$6, fecha_entrega=$7, etapa=$8, estado=$9, control=$10, actividad_id=$11
+       WHERE id=$12 RETURNING *`,
       [nombre, cliente || null, entradas || null, salidas || null,
        responsable || null, fecha_inicio || null, fecha_entrega || null,
-       etapa, estado, id]
+       etapa, estado, control || null, actividad_id || null, id]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Proyecto no encontrado' })
     res.json(rows[0])

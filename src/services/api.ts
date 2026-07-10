@@ -39,3 +39,25 @@ export const api = {
   put:    <T>(path: string, body: unknown)   => request<T>(path, { method: 'PUT',    body: JSON.stringify(body) }),
   delete: <T>(path: string)                  => request<T>(path, { method: 'DELETE' }),
 }
+
+export async function uploadFile(file: File): Promise<{
+  url: string; key: string; nombre: string; tipoMime: string; tamanoBytes: number
+}> {
+  const token = getToken()
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const res = await fetch(`${BASE}/api/uploads`, {
+    method: 'POST',
+    // OJO: no seteamos Content-Type manualmente — el navegador debe
+    // generar el boundary del multipart/form-data automáticamente.
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: formData,
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al subir archivo' }))
+    throw new Error(err.error || `Error ${res.status}`)
+  }
+  return res.json()
+}

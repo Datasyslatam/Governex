@@ -1,4 +1,7 @@
-import React, { createContext, useState, useContext } from 'react'
+import React, { createContext, useState, useContext, useEffect } from 'react'
+import { contextoEmpresaService, procesosService } from '../services'
+import { disenoDesarrolloService } from '../services'
+
 
 /* ── Datos del formulario de empresa ─────────────────────────── */
 export interface DatosEmpresa {
@@ -18,6 +21,10 @@ export interface DatosEmpresa {
   certificaciones:    string
   parteInteresadas:   string
   contextoNarrativo?: string
+  pdfFormularioUrl?: string
+  pdfFormularioNombre?: string
+  organigramaUrl?: string
+  organigramaNombre?: string
 }
 
 export interface PestelRow {
@@ -223,16 +230,173 @@ export const AIAnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     catch { return [] }
   })
 
+  /* ── Mapeo snake_case (BD) → camelCase (frontend) ─────────── */
+  const mapMatrizRoles = (rows: any[]): FilaMatriz[] => rows.map(r => ({
+    id: r.id, proceso: r.proceso, tipo: r.tipo, responsable: r.responsable ?? '',
+    autoridad: r.autoridad ?? '', funciones: r.funciones ?? '', recursos: r.recursos ?? '',
+    rendicion: r.rendicion ?? '', clausula: r.clausula ?? '',
+  }))
+
+  const mapPestelDB = (rows: any[]): PestelRow[] => rows.map(r => ({
+  factor: r.factor, categoria: r.categoria, descripcion: r.descripcion,
+  impacto: r.impacto, oportunidad: !!r.oportunidad,
+}))
+
+const mapDofaDB = (rows: any[]): DofaRow[] => rows.map(r => ({
+  tipo: r.tipo, descripcion: r.descripcion,
+}))
+
+const mapCaracterizacionDB = (rows: any[]): CaracterizacionRow[] => rows.map(r => ({
+  codigo: r.codigo, proceso: r.nombre, objetivo: r.objetivo ?? '',
+  entradas: r.entradas ?? '', salidas: r.salidas ?? '',
+  indicador: r.indicador_kpi ?? '', responsable: r.responsable ?? '',
+  estado: r.estado ?? 'Activo',
+}))
+
+  const mapMatrizCargos = (rows: any[]): FilaMatrizCargos[] => rows.map(r => ({
+    id: r.id, proceso: r.proceso, tipo: r.tipo,
+    actividades: Array.isArray(r.actividades) ? r.actividades : [],
+    responsable: r.responsable ?? '', funciones: r.funciones ?? '',
+    clausula: r.clausula ?? '', clausulaDetalle: r.clausula_detalle ?? '',
+  }))
+
+  const mapMatrizRecursos = (rows: any[]): FilaMatrizRecursos[] => rows.map(r => ({
+    proceso: r.proceso, nPersonas: r.n_personas ?? '', infraestructura: r.infraestructura ?? '',
+    hardwareSoftware: r.hardware_software ?? '', transporte: r.transporte ?? '',
+    ambienteSocial: r.ambiente_social ?? '', ambientePsicologico: r.ambiente_psicologico ?? '',
+    ambienteFisico: r.ambiente_fisico ?? '', varSocial: r.var_social ?? 0,
+    varPsicologica: r.var_psicologica ?? 0, varFisica: r.var_fisica ?? 0,
+    calificacionPromedio: Number(r.calificacion_promedio ?? 0), nivelRiesgoVerde: r.nivel_riesgo_verde ?? '',
+    accionRequerida: r.accion_requerida ?? '', recursoEvaluado: r.recurso_evaluado ?? '',
+    hallazgo: r.hallazgo ?? '', riesgo: r.riesgo ?? '', impacto: r.impacto ?? '',
+    probabilidad: r.probabilidad ?? '', nivelRiesgoAzul: r.nivel_riesgo_azul ?? '',
+    oportunidad: r.oportunidad ?? '', accion: r.accion ?? '',
+  }))
+
+  const mapDatosEmpresa = (r: any): DatosEmpresa => ({
+    nombreEmpresa: r.nombre_empresa ?? '', sector: r.sector ?? '', tipoEmpresa: r.tipo_empresa ?? '',
+    tamano: r.tamano ?? '', ubicacion: r.ubicacion ?? '', anoFundacion: r.ano_fundacion ?? '',
+    mision: r.mision ?? '', vision: r.vision ?? '', politicaCalidad: r.politica_calidad ?? '',
+    productosServicios: r.productos_servicios ?? '', mercadoObjetivo: r.mercado_objetivo ?? '',
+    cantidadEmpleados: r.cantidad_empleados ?? '', alcanceSGC: r.alcance_sgc ?? '',
+    certificaciones: r.certificaciones ?? '', parteInteresadas: r.parte_interesadas ?? '',
+    contextoNarrativo: r.contexto_narrativo ?? '', pdfFormularioUrl:     r.pdf_formulario_url    ?? '',
+    pdfFormularioNombre:  r.pdf_formulario_nombre ?? '',
+    organigramaUrl:       r.organigrama_url       ?? '',organigramaNombre:    r.organigrama_nombre    ?? '',
+  })
+
+  const mapActividades = (rows: any[]): ActividadEmpresa[] => rows.map(r => ({
+    id: r.id, nombre: r.nombre, proceso: r.proceso ?? '', responsable: r.responsable ?? '',
+    objetivo: r.objetivo ?? '', indicador: r.indicador ?? '',
+    entradas: Array.isArray(r.entradas) ? r.entradas : [],
+    salidas: Array.isArray(r.salidas) ? r.salidas : [],
+    creadaEn: r.creada_en,
+  }))
+
+  /* ── Carga inicial desde la API (sessionStorage solo es fallback mientras carga) ── */
+  useEffect(() => {
+    (async () => {
+      try {
+        // 1. Agregamos la nueva petición al Promise.all con un .catch(() => []) integrado 
+        // para evitar que si falla esta petición en específico, se caigan las demás.
+        const [datos, roles, cargos, recursos, acts, projs, pestelRows, dofaRows, procesosRows] = await Promise.all([
+          contextoEmpresaService.getDatos(),
+          contextoEmpresaService.getMatrizRoles(),
+          contextoEmpresaService.getMatrizCargos(),
+          contextoEmpresaService.getMatrizRecursos(),
+          contextoEmpresaService.getActividades(),
+          disenoDesarrolloService.getAll().catch(() => []),
+          procesosService.getPestel().catch(() => []),
+          procesosService.getDofa().catch(() => []),
+          procesosService.getAll().catch(() => []),
+        ])
+        
+        // datosEmpresa: BD manda siempre, incluso si está vacía (null)
+        if (datos) {
+          const mapped = mapDatosEmpresa(datos)
+          setDatosEmpresaState(mapped)
+          sessionStorage.setItem('governex_datos_empresa', JSON.stringify(mapped))
+        } else {
+          setDatosEmpresaState(null)
+          sessionStorage.removeItem('governex_datos_empresa')
+        }
+
+        // analysis: BD manda siempre, sin condicionar al length  
+        setAnalysisState(prev => {
+          const merged: AIAnalysis = {
+            pestel:          mapPestelDB(pestelRows),
+            dofa:            mapDofaDB(dofaRows),
+            caracterizacion: mapCaracterizacionDB(procesosRows),
+            matrizRoles:     mapMatrizRoles(roles),
+            matrizCargos:    mapMatrizCargos(cargos),
+            matrizRecursos:  mapMatrizRecursos(recursos),
+            indicadores:     prev?.indicadores,
+            nombreEmpresa:   prev?.nombreEmpresa,
+            sector:          prev?.sector,
+            datosEmpresa:    prev?.datosEmpresa,
+          }
+          sessionStorage.setItem('governex_ai_analysis', JSON.stringify(merged))
+          return merged
+        })
+
+        if (acts.length) {
+          const mapped = mapActividades(acts)
+          setActividadesState(mapped)
+          sessionStorage.setItem('governex_actividades', JSON.stringify(mapped))
+        }
+
+        // 2. Insertamos la lógica de mapeo y persistencia para los proyectos de diseño
+        if (projs && projs.length) {
+          const mapped: ProyectoDiseno[] = projs.map((r: any) => ({
+            id: String(r.id), 
+            actividadId: r.actividad_id ?? undefined, // <-- Incluido control y actividadId
+            entradas: r.entradas ?? '',
+            desarrollo: r.nombre, 
+            control: r.control ?? '',                  // <-- Incluido control y actividadId
+            responsable: r.responsable ?? '',
+            fechaInicio: r.fecha_inicio ?? '', 
+            fechaEntrega: r.fecha_entrega ?? '',
+            etapa: r.etapa, 
+            estado: r.estado,
+          }))
+          setProyectosDisenoState(mapped)
+          sessionStorage.setItem('governex_proyectos_diseno', JSON.stringify(mapped))
+        }
+
+      } catch (e) {
+        console.warn('[AIAnalysisContext] No se pudo cargar contexto desde la API, usando caché local.', e)
+      }
+    })()
+  }, [])
+
+  /* ── setAnalysis: guarda local + sincroniza matrices con la API ── */
   const setAnalysis = (a: AIAnalysis) => {
     setAnalysisState(a)
     try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(a)) } catch {}
+
+    if (a.matrizRoles?.length) {
+      contextoEmpresaService.postMatrizRoles(a.matrizRoles).catch(e =>
+        console.warn('No se pudo guardar matrizRoles en BD:', e))
+    }
+    if (a.matrizCargos?.length) {
+      contextoEmpresaService.postMatrizCargos(a.matrizCargos).catch(e =>
+        console.warn('No se pudo guardar matrizCargos en BD:', e))
+    }
+    if (a.matrizRecursos?.length) {
+      contextoEmpresaService.postMatrizRecursos(a.matrizRecursos).catch(e =>
+        console.warn('No se pudo guardar matrizRecursos en BD:', e))
+    }
   }
 
+  /* ── setDatosEmpresa: guarda local + PUT a la API ── */
   const setDatosEmpresa = (d: DatosEmpresa) => {
     setDatosEmpresaState(d)
     try { sessionStorage.setItem('governex_datos_empresa', JSON.stringify(d)) } catch {}
+    contextoEmpresaService.putDatos(d).catch(e =>
+      console.warn('No se pudo guardar datosEmpresa en BD:', e))
   }
 
+  /* ── setActividades: guarda local (uso interno de addActividad/removeActividad) ── */
   const setActividades = (list: ActividadEmpresa[]) => {
     setActividadesState(list)
     try { sessionStorage.setItem('governex_actividades', JSON.stringify(list)) } catch {}
@@ -246,12 +410,47 @@ export const AIAnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     })
   }
 
-  const addActividad    = (a: ActividadEmpresa) => setActividades([...actividades, a])
-  const removeActividad = (id: string) => setActividades(actividades.filter(a => a.id !== id))
+  /* ── addActividad / removeActividad: ahora persisten en BD ── */
+  const addActividad = (a: ActividadEmpresa) => {
+    setActividades([...actividades, a])
+    contextoEmpresaService.postActividad(a).catch(e =>
+      console.warn('No se pudo guardar actividad en BD:', e))
+  }
 
-  const addProyectoDiseno    = (p: ProyectoDiseno) => setProyectosDiseno(prev => [...prev, p])
-  const updateProyectoDiseno = (id: string, p: ProyectoDiseno) => setProyectosDiseno(prev => prev.map(x => x.id === id ? p : x))
-  const removeProyectoDiseno = (id: string) => setProyectosDiseno(prev => prev.filter(x => x.id !== id))
+  const removeActividad = (id: string) => {
+    setActividades(actividades.filter(a => a.id !== id))
+    contextoEmpresaService.deleteActividad(id).catch(e =>
+      console.warn('No se pudo eliminar actividad en BD:', e))
+  }
+
+  const addProyectoDiseno = (p: ProyectoDiseno) => {
+    setProyectosDiseno(prev => [...prev, p])
+    disenoDesarrolloService.create({
+      nombre: p.desarrollo, cliente: undefined, entradas: p.entradas, salidas: undefined,
+      responsable: p.responsable, fecha_inicio: p.fechaInicio, fecha_entrega: p.fechaEntrega,
+      etapa: p.etapa, estado: p.estado, control: p.control, actividad_id: p.actividadId,
+    }).then(saved => {
+      setProyectosDiseno(prev => prev.map(x => x.id === p.id ? { ...x, id: String(saved.id) } : x))
+    }).catch(e => console.warn('No se pudo guardar proyecto de diseño en BD:', e))
+  }
+
+  const updateProyectoDiseno = (id: string, p: ProyectoDiseno) => {
+    setProyectosDiseno(prev => prev.map(x => x.id === id ? p : x))
+    if (!isNaN(Number(id))) {
+      disenoDesarrolloService.update(Number(id), {
+        nombre: p.desarrollo, entradas: p.entradas, responsable: p.responsable,
+        fecha_inicio: p.fechaInicio, fecha_entrega: p.fechaEntrega, etapa: p.etapa, estado: p.estado,
+        control: p.control, actividad_id: p.actividadId,
+      }).catch(e => console.warn('No se pudo actualizar proyecto de diseño en BD:', e))
+    }
+  }
+
+  const removeProyectoDiseno = (id: string) => {
+    setProyectosDiseno(prev => prev.filter(x => x.id !== id))
+    if (!isNaN(Number(id))) {
+      disenoDesarrolloService.delete(Number(id)).catch(() => {})
+    }
+  }
 
   const clearAnalysis = () => {
     setAnalysisState(null); setDatosEmpresaState(null); setActividadesState([]); setProyectosDisenoState([])
@@ -261,6 +460,7 @@ export const AIAnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       sessionStorage.removeItem('governex_actividades')
       sessionStorage.removeItem('governex_proyectos_diseno')
     } catch {}
+    contextoEmpresaService.deleteDatos().catch(() => {})
   }
 
   return (
@@ -343,6 +543,26 @@ function estadoDesdeNivel(n: number): 'CRITICO' | 'TRATAMIENTO' | 'MONITOREO' {
   return n >= 15 ? 'CRITICO' : n >= 8 ? 'TRATAMIENTO' : 'MONITOREO'
 }
 
+/* ── codigoEstable ────────────────────────────────────────────────
+   Genera un código determinístico (hash djb2) a partir del contenido
+   de origen de un riesgo/oportunidad, en vez de su POSICIÓN en el
+   análisis. Esto evita que los códigos "se corran" (y por lo tanto
+   pierdan su vínculo con `riesgo_eficacia`, `riesgo_evidencias` y la
+   tabla `riesgos`) cuando el usuario edita o reordena filas de
+   PESTEL/DOFA/Recursos que no tienen relación con este riesgo.
+   El mismo contenido siempre produce el mismo código. Si el usuario
+   edita el texto del riesgo, el código cambiará — eso es intencional,
+   porque el contenido en sí es distinto. */
+function codigoEstable(prefijo: string, ...partes: string[]): string {
+  const contenido = partes.join('|').toLowerCase().trim()
+  let hash = 5381
+  for (let i = 0; i < contenido.length; i++) {
+    hash = ((hash << 5) + hash + contenido.charCodeAt(i)) >>> 0 // djb2
+  }
+  const sufijo = hash.toString(36).toUpperCase().padStart(5, '0').slice(-5)
+  return `${prefijo}-${sufijo}`
+}
+
 /* ── derivarRiesgosDeActividades ─────────────────────────────────
    Genera EXACTAMENTE 1 Riesgo + 1 Oportunidad por actividad.
 
@@ -355,11 +575,9 @@ function estadoDesdeNivel(n: number): 'CRITICO' | 'TRATAMIENTO' | 'MONITOREO' {
    • Las descripciones aprovechan el campo `objetivo` e `indicador`
      guardados en la actividad para enriquecer el contexto.            */
 export function derivarRiesgosDeActividades(
-  actividades: ActividadEmpresa[],
-  startIdx = 1
+  actividades: ActividadEmpresa[]
 ): RiesgoDerivado[] {
   const resultado: RiesgoDerivado[] = []
-  let idx = startIdx
 
   for (const act of actividades) {
     const categoria = 'Actividad Propia'
@@ -385,7 +603,7 @@ export function derivarRiesgosDeActividades(
       const nivel = prob * imp
 
       resultado.push({
-        codigo:          `ACT-R-${String(idx).padStart(3, '0')}`,
+        codigo:          codigoEstable('ACT-R', act.id),
         descripcion,
         tipo:            'Riesgo',
         fuente:          'ACTIVIDAD',
@@ -399,7 +617,6 @@ export function derivarRiesgosDeActividades(
         responsable:     resp,
         acciones:        generarAccion('Riesgo', categoria, 'ACTIVIDAD', nivel, descripcion),
       })
-      idx++
     }
 
     /* ── 1 OPORTUNIDAD por actividad (consolida todas las salidas) ── */
@@ -422,7 +639,7 @@ export function derivarRiesgosDeActividades(
       const nivel = prob * imp
 
       resultado.push({
-        codigo:          `ACT-OP-${String(idx).padStart(3, '0')}`,
+        codigo:          codigoEstable('ACT-OP', act.id),
         descripcion,
         tipo:            'Oportunidad',
         fuente:          'ACTIVIDAD',
@@ -436,7 +653,6 @@ export function derivarRiesgosDeActividades(
         responsable:     resp,
         acciones:        generarAccion('Oportunidad', categoria, 'ACTIVIDAD', nivel, descripcion),
       })
-      idx++
     }
   }
 
@@ -448,7 +664,7 @@ export function derivarRiesgos(
   analysis:    AIAnalysis,
   actividades: ActividadEmpresa[] = []
 ): RiesgoDerivado[] {
-  const riesgos: RiesgoDerivado[] = []; let idx = 1
+  const riesgos: RiesgoDerivado[] = []
 
   for (const row of analysis.pestel) {
     const prob  = row.oportunidad ? 2 : 3 + (row.impacto === 'Alto' ? 1 : 0)
@@ -456,7 +672,7 @@ export function derivarRiesgos(
     const nivel = prob * imp
     const tipo: 'Riesgo' | 'Oportunidad' = row.oportunidad ? 'Oportunidad' : 'Riesgo'
     riesgos.push({
-      codigo:       `${tipo === 'Oportunidad' ? 'OP' : 'R'}-${String(idx).padStart(3, '0')}`,
+      codigo:       codigoEstable(tipo === 'Oportunidad' ? 'OP' : 'R', 'PESTEL', row.categoria, row.descripcion),
       descripcion:  row.descripcion,
       tipo,
       fuente:       'PESTEL',
@@ -467,7 +683,7 @@ export function derivarRiesgos(
       estado:       estadoDesdeNivel(nivel),
       responsable:  'Director de Calidad',
       acciones:     generarAccion(tipo, row.categoria, 'PESTEL', nivel, row.descripcion),
-    }); idx++
+    })
   }
 
   for (const row of analysis.dofa) {
@@ -477,7 +693,7 @@ export function derivarRiesgos(
     const imp   = esR ? 3 : 2
     const nivel = prob * imp
     riesgos.push({
-      codigo:       `${esR ? 'R' : 'OP'}-${String(idx).padStart(3, '0')}`,
+      codigo:       codigoEstable(esR ? 'R' : 'OP', 'DOFA', row.tipo, row.descripcion),
       descripcion:  row.descripcion,
       tipo,
       fuente:       'DOFA',
@@ -488,7 +704,7 @@ export function derivarRiesgos(
       estado:       estadoDesdeNivel(nivel),
       responsable:  'Director de Calidad',
       acciones:     generarAccion(tipo, row.tipo, 'DOFA', nivel, row.descripcion),
-    }); idx++
+    })
   }
 
   if (analysis.matrizRecursos) {
@@ -498,7 +714,7 @@ export function derivarRiesgos(
         const imp   = row.impacto      ? impactoToNum(row.impacto)      : 3
         const nivel = prob * imp
         riesgos.push({
-          codigo:       `R-${String(idx).padStart(3, '0')}`,
+          codigo:       codigoEstable('R', 'Recursos', row.proceso, row.riesgo),
           descripcion:  row.riesgo + (row.hallazgo ? ` (Hallazgo: ${row.hallazgo})` : ''),
           tipo:         'Riesgo',
           fuente:       'Recursos',
@@ -509,12 +725,12 @@ export function derivarRiesgos(
           estado:       estadoDesdeNivel(nivel),
           responsable:  'Director de Calidad',
           acciones:     generarAccion('Riesgo', `Recursos - ${row.proceso}`, 'Recursos', nivel, row.riesgo),
-        }); idx++
+        })
       }
       if (row.oportunidad && row.oportunidad.trim() !== '' && row.oportunidad.toLowerCase() !== 'ninguna' && row.oportunidad.toLowerCase() !== 'n/a') {
         const prob = 2; const imp = 2; const nivel = prob * imp
         riesgos.push({
-          codigo:       `OP-${String(idx).padStart(3, '0')}`,
+          codigo:       codigoEstable('OP', 'Recursos', row.proceso, row.oportunidad),
           descripcion:  row.oportunidad + (row.accion ? ` (Acción: ${row.accion})` : ''),
           tipo:         'Oportunidad',
           fuente:       'Recursos',
@@ -525,13 +741,13 @@ export function derivarRiesgos(
           estado:       estadoDesdeNivel(nivel),
           responsable:  'Director de Calidad',
           acciones:     generarAccion('Oportunidad', `Recursos - ${row.proceso}`, 'Recursos', nivel, row.oportunidad),
-        }); idx++
+        })
       }
     }
   }
 
   if (actividades.length > 0) {
-    const fromActividades = derivarRiesgosDeActividades(actividades, idx)
+    const fromActividades = derivarRiesgosDeActividades(actividades)
     riesgos.push(...fromActividades)
   }
 
@@ -548,7 +764,7 @@ export function derivarObjetivos(
   actividades: ActividadEmpresa[] = []
 ): ObjetivoDerivado[] {
   const riesgos = derivarRiesgos(analysis, actividades)
-  const objetivos: ObjetivoDerivado[] = []; let idx = 1
+  const objetivos: ObjetivoDerivado[] = []
   const ordenados = [...riesgos].sort((a, b) => {
     if (a.tipo === 'Riesgo' && b.tipo === 'Oportunidad') return -1
     if (a.tipo === 'Oportunidad' && b.tipo === 'Riesgo') return 1
@@ -563,7 +779,10 @@ export function derivarObjetivos(
     const fmt = (d: Date) => d.toISOString().slice(0, 10)
     const desc = r.descripcion.length > 120 ? r.descripcion.slice(0, 117) + '...' : r.descripcion
     objetivos.push({
-      codigo: `OC-${String(idx).padStart(3, '0')}`,
+      /* Derivado del código YA estable del riesgo de origen (no de la
+         posición en la lista ordenada), para que no se corra si se
+         agrega/quita otro riesgo con el mismo nivel. */
+      codigo: codigoEstable('OC', r.codigo),
       objetivo: r.tipo === 'Oportunidad'
         ? `Aprovechar la oportunidad en ${r.categoria.toLowerCase()}: ${desc}`
         : `Reducir el riesgo en ${r.categoria.toLowerCase()}: ${desc}`,
@@ -586,7 +805,7 @@ export function derivarObjetivos(
       mediciones:    [],
       _riesgoCodigo: r.codigo,
       _riesgoNivel:  r.nivel,
-    }); idx++
+    })
   }
   return objetivos
 }

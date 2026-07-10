@@ -1,42 +1,44 @@
 import React, { useState } from 'react'
 import '../iso-module.css'
-
-interface SalidaNC {
-  id: number
-  codigo: string
-  descripcion: string
-  proceso: string
-  detectadoEn: 'Producción' | 'Inspección final' | 'Entrega' | 'Postventa' | 'Proveedor'
-  disposicion: 'Reparar' | 'Reprocesar' | 'Concesión al cliente' | 'Devolver al proveedor' | 'Desechar'
-  responsable: string
-  fecha: string
-  accionTomada: string
-  verificadoPor: string
-  estado: 'Abierta' | 'En tratamiento' | 'Cerrada'
-}
-
-const datosIniciales: SalidaNC[] = [
-  { id: 1, codigo: 'SNC-2025-001', descripcion: 'Pieza metálica con fisura en soldadura zona lateral', proceso: 'Producción', detectadoEn: 'Inspección final', disposicion: 'Desechar', responsable: 'Inspector de Calidad', fecha: '2025-03-05', accionTomada: 'Se descartó la pieza. Se revisó el proceso de soldadura y se recalibró la temperatura del equipo.', verificadoPor: 'Jefe de Producción', estado: 'Cerrada' },
-  { id: 2, codigo: 'SNC-2025-002', descripcion: 'Software entregado con error en módulo de reportes PDF', proceso: 'Prestación del servicio', detectadoEn: 'Postventa', disposicion: 'Reprocesar', responsable: 'Líder de Desarrollo', fecha: '2025-03-12', accionTomada: 'Se identificó error en función de exportación. Corrección en progreso versión 1.1.2.', verificadoPor: '', estado: 'En tratamiento' },
-]
+import { useFetch } from '../../hooks/useFetch'
+import { salidasNCService } from '../../services'
 
 const empty = { codigo: '', descripcion: '', proceso: '', detectadoEn: 'Inspección final' as const, disposicion: 'Reparar' as const, responsable: '', fecha: '', accionTomada: '', verificadoPor: '', estado: 'Abierta' as const }
 
 const SalidasNCPage: React.FC = () => {
-  const [items, setItems] = useState<SalidaNC[]>(datosIniciales)
+  const { data: itemsDB, loading, refetch } = useFetch(salidasNCService.getAll, [])
+  const items = itemsDB.map((r: any) => ({
+    id: r.id, codigo: r.codigo ?? '', descripcion: r.descripcion, proceso: r.proceso ?? '',
+    detectadoEn: r.detectado_en, disposicion: r.disposicion, responsable: r.responsable ?? '',
+    fecha: r.fecha, accionTomada: r.accion_tomada ?? '', verificadoPor: r.verificado_por ?? '',
+    estado: r.estado,
+  }))
+
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ ...empty })
   const [filtro, setFiltro] = useState('todos')
 
   const filtrados = filtro === 'todos' ? items : items.filter(i => i.estado === filtro)
 
-  const guardar = () => {
+  const guardar = async () => {
     if (!form.descripcion) return
-    const id = Math.max(0, ...items.map(i => i.id)) + 1
-    setItems(prev => [...prev, { id, ...form }])
-    setShowModal(false); setForm({ ...empty })
+    try {
+      await salidasNCService.create({
+        codigo: form.codigo, descripcion: form.descripcion, proceso: form.proceso,
+        detectado_en: form.detectadoEn, disposicion: form.disposicion, responsable: form.responsable,
+        fecha: form.fecha, accion_tomada: form.accionTomada, verificado_por: form.verificadoPor,
+        estado: form.estado,
+      })
+      await refetch()
+      setShowModal(false); setForm({ ...empty })
+    } catch (e: any) { alert(e.message) }
   }
-  const eliminar = (id: number) => { if (window.confirm('¿Eliminar?')) setItems(prev => prev.filter(i => i.id !== id)) }
+
+  const eliminar = async (id: number) => {
+    if (!window.confirm('¿Eliminar?')) return
+    try { await salidasNCService.delete(id) } catch {}
+    await refetch()
+  }
 
   return (
     <div className="iso-page">

@@ -42,6 +42,49 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   }
 })
 
+// POST /api/riesgos/upsert
+// Usado por la Matriz de Riesgos y Oportunidades (§6.1) para persistir
+// (crear o actualizar) un riesgo/oportunidad derivado del análisis IA,
+// identificado por su `codigo` (no por `id`, que el frontend no conoce
+// hasta que existe la fila en BD).
+router.post('/upsert', async (req: AuthRequest, res: Response) => {
+  const {
+    codigo, descripcion, probabilidad, impacto, estado, responsable, tipo,
+    fuente, categoria, actividad_id, tratamiento,
+  } = req.body
+
+  if (!codigo || !descripcion || !probabilidad || !impacto) {
+    return res.status(400).json({ error: 'codigo, descripcion, probabilidad e impacto son requeridos' })
+  }
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO riesgos
+         (codigo, descripcion, probabilidad, impacto, estado, responsable, tipo,
+          fuente, categoria, actividad_id, tratamiento)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT (codigo) DO UPDATE SET
+         descripcion  = EXCLUDED.descripcion,
+         probabilidad = EXCLUDED.probabilidad,
+         impacto      = EXCLUDED.impacto,
+         estado       = EXCLUDED.estado,
+         responsable  = EXCLUDED.responsable,
+         tipo         = EXCLUDED.tipo,
+         fuente       = EXCLUDED.fuente,
+         categoria    = EXCLUDED.categoria,
+         actividad_id = EXCLUDED.actividad_id,
+         tratamiento  = EXCLUDED.tratamiento
+       RETURNING *`,
+      [codigo, descripcion, probabilidad, impacto, estado || 'MONITOREO',
+       responsable || null, tipo || 'Riesgo', fuente || null, categoria || null,
+       actividad_id || null, tratamiento || null]
+    )
+    res.status(200).json(rows[0])
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al guardar el riesgo/oportunidad' })
+  }
+})
+
 // PUT /api/riesgos/:id
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   const { id } = req.params

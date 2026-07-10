@@ -417,6 +417,60 @@ COMMENT ON COLUMN RIESGOS.TRATAMIENTO IS 'Descripción del plan de acción / tra
 
 COMMENT ON COLUMN RIESGOS.FECHA_REVISION IS 'Próxima fecha programada de revisión del riesgo';
 
+-- ── riesgos: persistencia de la Matriz de Riesgos y Oportunidades §6.1 ──
+-- Antes, los riesgos/oportunidades derivados del análisis IA solo vivían
+-- en memoria del navegador (sessionStorage) y nunca se guardaban aquí.
+-- Estas columnas permiten confirmarlos (upsert por CODIGO) sin perder la
+-- trazabilidad a su origen (PESTEL/DOFA/Recursos/Actividad).
+ALTER TABLE RIESGOS
+ADD COLUMN IF NOT EXISTS FUENTE VARCHAR(20),
+ADD COLUMN IF NOT EXISTS CATEGORIA VARCHAR(150),
+ADD COLUMN IF NOT EXISTS ACTIVIDAD_ID VARCHAR(60),
+ALTER COLUMN CODIGO TYPE VARCHAR(30);
+
+COMMENT ON COLUMN RIESGOS.FUENTE IS 'Origen del riesgo/oportunidad derivado: PESTEL | DOFA | Recursos | ACTIVIDAD';
+COMMENT ON COLUMN RIESGOS.CATEGORIA IS 'Categoría visible en la matriz (ej. "Fortaleza", "Recursos - Producción")';
+COMMENT ON COLUMN RIESGOS.ACTIVIDAD_ID IS 'Referencia lógica a actividades_empresa.id cuando FUENTE = ACTIVIDAD (sin FK física: actividades_empresa.id es generado en el frontend)';
+
+-- ============================================================
+-- Migración Módulo 3: Planificación de los Cambios (§6.3)
+-- Esta tabla NO existía en el esquema original — reconstruida a partir
+-- de las columnas usadas por src/routes/planificacionCambios.ts y los
+-- tipos TypeScript del frontend (CategoriaCambio/EstadoCambio/ImpactoCambio).
+-- ============================================================
+CREATE TABLE IF NOT EXISTS planificacion_cambios (
+	ID SERIAL PRIMARY KEY,
+	CODIGO VARCHAR(20) UNIQUE,
+	CATEGORIA VARCHAR(30) NOT NULL DEFAULT 'Otro' CHECK (
+		CATEGORIA IN (
+			'Tecnológico', 'Proceso', 'Estructura SGC', 'Infraestructura',
+			'Recursos Humanos', 'Normativo / Legal', 'Estratégico', 'Otro'
+		)
+	),
+	DESCRIPCION TEXT NOT NULL,
+	JUSTIFICACION TEXT NOT NULL,
+	RESPONSABLE VARCHAR(100) NOT NULL,
+	RECURSOS TEXT,
+	IMPLICACIONES TEXT,
+	ACCIONES TEXT,
+	FECHA_INICIO DATE,
+	FECHA_FIN DATE,
+	IMPACTO VARCHAR(10) NOT NULL DEFAULT 'Medio' CHECK (IMPACTO IN ('Alto', 'Medio', 'Bajo')),
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Planificado' CHECK (
+		ESTADO IN ('Planificado', 'En Ejecución', 'Completado', 'Suspendido', 'Cancelado')
+	),
+	PROCESOS_AFECTADOS TEXT,
+	DOCUMENTOS_AFECTADOS TEXT,
+	APROBADO_POR VARCHAR(150),
+	OBSERVACIONES TEXT,
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE planificacion_cambios IS 'ISO 9001:2015 §6.3 — Planificación de los cambios al SGC.';
+
+CREATE INDEX IF NOT EXISTS idx_planificacion_cambios_estado    ON planificacion_cambios (ESTADO);
+CREATE INDEX IF NOT EXISTS idx_planificacion_cambios_categoria ON planificacion_cambios (CATEGORIA);
+
 -- ── acciones_correctivas: causa_raiz y fecha_implementacion ─
 ALTER TABLE ACCIONES_CORRECTIVAS
 ADD COLUMN IF NOT EXISTS CAUSA_RAIZ TEXT,
@@ -846,3 +900,339 @@ VALUES
 		'Activo'
 	)
 ON CONFLICT DO NOTHING;
+
+
+-- ============================================================
+--  GOVERNEX — Migración: Tablas faltantes para persistencia
+--  completa del análisis IA (§4.1, §5.3, §7.1) y módulos
+--  operativos que aún guardan datos solo en memoria/sessionStorage
+-- ============================================================
+
+-- ============================================================
+--  PARTE 1: CONTEXTO ORGANIZACIONAL (datosEmpresa)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS datos_empresa (
+	ID SERIAL PRIMARY KEY,
+	NOMBRE_EMPRESA VARCHAR(200),
+	SECTOR VARCHAR(100),
+	TIPO_EMPRESA VARCHAR(50),
+	TAMANO VARCHAR(50),
+	UBICACION VARCHAR(200),
+	ANO_FUNDACION VARCHAR(10),
+	MISION TEXT,
+	VISION TEXT,
+	POLITICA_CALIDAD TEXT,
+	PRODUCTOS_SERVICIOS TEXT,
+	MERCADO_OBJETIVO TEXT,
+	CANTIDAD_EMPLEADOS VARCHAR(20),
+	ALCANCE_SGC TEXT,
+	CERTIFICACIONES TEXT,
+	PARTE_INTERESADAS TEXT,
+	CONTEXTO_NARRATIVO TEXT,
+	ACTUALIZADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE datos_empresa
+  ADD COLUMN IF NOT EXISTS pdf_formulario_url TEXT,
+  ADD COLUMN IF NOT EXISTS pdf_formulario_nombre VARCHAR(300),
+  ADD COLUMN IF NOT EXISTS organigrama_url TEXT,
+  ADD COLUMN IF NOT EXISTS organigrama_nombre VARCHAR(300);
+
+COMMENT ON TABLE datos_empresa IS 'Datos organizacionales del formulario §4.1 — Contexto de la Organización. Registro único (última versión vigente).';
+
+-- ============================================================
+--  PARTE 2: MATRIZ DE ROLES, RESPONSABILIDADES Y AUTORIDAD (§5.3)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS matriz_roles (
+	ID SERIAL PRIMARY KEY,
+	PROCESO VARCHAR(200) NOT NULL,
+	TIPO VARCHAR(20) NOT NULL CHECK (TIPO IN ('estrategico', 'misional', 'apoyo')),
+	RESPONSABLE VARCHAR(150),
+	AUTORIDAD TEXT,
+	FUNCIONES TEXT,
+	RECURSOS TEXT,
+	RENDICION TEXT,
+	CLAUSULA VARCHAR(50),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE matriz_roles IS 'ISO 9001:2015 §5.3 — Matriz de roles, responsabilidades y autoridad por proceso.';
+
+-- ============================================================
+--  PARTE 3: MATRIZ DE CARGOS (RF-004)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS matriz_cargos (
+	ID SERIAL PRIMARY KEY,
+	PROCESO VARCHAR(200) NOT NULL,
+	TIPO VARCHAR(20) NOT NULL CHECK (TIPO IN ('estrategico', 'misional', 'apoyo')),
+	ACTIVIDADES JSONB NOT NULL DEFAULT '[]',
+	RESPONSABLE VARCHAR(150),
+	FUNCIONES TEXT,
+	CLAUSULA VARCHAR(20),
+	CLAUSULA_DETALLE TEXT,
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE matriz_cargos IS 'ISO 9001:2015 §5.3 — Matriz de cargos con actividades concretas por proceso, mapeadas a cláusulas.';
+COMMENT ON COLUMN matriz_cargos.ACTIVIDADES IS 'Array JSON de strings con las actividades del cargo.';
+
+-- ============================================================
+--  PARTE 4: MATRIZ DE RECURSOS Y AMBIENTE DE TRABAJO (§7.1)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS matriz_recursos (
+	ID SERIAL PRIMARY KEY,
+	PROCESO VARCHAR(200) NOT NULL,
+
+	-- Recursos
+	N_PERSONAS TEXT,
+	INFRAESTRUCTURA TEXT,
+	HARDWARE_SOFTWARE TEXT,
+	TRANSPORTE TEXT,
+
+	-- Ambiente de operación
+	AMBIENTE_SOCIAL TEXT,
+	AMBIENTE_PSICOLOGICO TEXT,
+	AMBIENTE_FISICO TEXT,
+	VAR_SOCIAL SMALLINT CHECK (VAR_SOCIAL BETWEEN 1 AND 5),
+	VAR_PSICOLOGICA SMALLINT CHECK (VAR_PSICOLOGICA BETWEEN 1 AND 5),
+	VAR_FISICA SMALLINT CHECK (VAR_FISICA BETWEEN 1 AND 5),
+	CALIFICACION_PROMEDIO NUMERIC(3,1),
+	NIVEL_RIESGO_VERDE VARCHAR(20),
+	ACCION_REQUERIDA TEXT,
+
+	-- Evaluación de riesgos/oportunidades del recurso
+	RECURSO_EVALUADO TEXT,
+	HALLAZGO TEXT,
+	RIESGO TEXT,
+	IMPACTO VARCHAR(20),
+	PROBABILIDAD VARCHAR(20),
+	NIVEL_RIESGO_AZUL VARCHAR(20),
+	OPORTUNIDAD TEXT,
+	ACCION TEXT,
+
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE matriz_recursos IS 'ISO 9001:2015 §7.1 — Matriz de recursos, ambiente de trabajo y riesgos/oportunidades derivados.';
+
+-- ============================================================
+--  PARTE 5: ACTIVIDADES PROPIAS DE LA EMPRESA (§4.1 / §8.1)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS actividades_empresa (
+	ID VARCHAR(60) PRIMARY KEY,   -- se mantiene el id generado en frontend (timestamp+random)
+	NOMBRE VARCHAR(200) NOT NULL,
+	PROCESO VARCHAR(200),
+	RESPONSABLE VARCHAR(150),
+	OBJETIVO TEXT,
+	INDICADOR TEXT,
+	ENTRADAS JSONB NOT NULL DEFAULT '[]',
+	SALIDAS JSONB NOT NULL DEFAULT '[]',
+	CREADA_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE actividades_empresa IS 'Actividades registradas manualmente por el usuario en §4.1/§8.1; cada una genera Riesgo/Oportunidad en §6.1.';
+COMMENT ON COLUMN actividades_empresa.ENTRADAS IS 'Array JSON de objetos {id, valor}.';
+COMMENT ON COLUMN actividades_empresa.SALIDAS  IS 'Array JSON de objetos {id, valor}.';
+
+-- ============================================================
+--  PARTE 6: PROYECTOS DE DISEÑO — ya existe PROYECTOS_DISENO
+--  en schema.sql; si tu BD no la tiene aún, descomenta:
+-- ============================================================
+-- CREATE TABLE IF NOT EXISTS proyectos_diseno (
+-- 	ID SERIAL PRIMARY KEY,
+-- 	NOMBRE VARCHAR(200) NOT NULL,
+-- 	CLIENTE VARCHAR(200),
+-- 	ENTRADAS TEXT,
+-- 	SALIDAS TEXT,
+-- 	RESPONSABLE VARCHAR(100),
+-- 	FECHA_INICIO DATE,
+-- 	FECHA_ENTREGA DATE,
+-- 	ETAPA VARCHAR(30) NOT NULL DEFAULT 'Planificación'
+-- 		CHECK (ETAPA IN ('Planificación','Desarrollo','Verificación','Validación','Completado')),
+-- 	ESTADO VARCHAR(20) NOT NULL DEFAULT 'En tiempo'
+-- 		CHECK (ESTADO IN ('En tiempo','En riesgo','Retrasado')),
+-- 	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+-- 	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- );
+
+-- ============================================================
+--  PARTE 7: COMPRAS — FICHAS TÉCNICAS Y EVALUACIONES DE PROVEEDOR
+--  (ComprasPage.tsx las maneja hoy 100% en memoria)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS fichas_tecnicas_compra (
+	ID SERIAL PRIMARY KEY,
+	NOMBRE VARCHAR(200) NOT NULL,
+	DESCRIPCION TEXT,
+	ESPECIFICACIONES TEXT,
+	UNIDAD_MEDIDA VARCHAR(50),
+	CANTIDAD_MINIMA VARCHAR(50),
+	DOCUMENTOS_REQUERIDOS JSONB NOT NULL DEFAULT '[]',  -- array de {nombre, url} tras subir a bucket
+	RESPONSABLE VARCHAR(150),
+	FECHA_CREACION DATE NOT NULL DEFAULT CURRENT_DATE,
+	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE fichas_tecnicas_compra IS 'Fichas técnicas de insumos/productos a comprar, con documentos requeridos al proveedor (§8.4).';
+COMMENT ON COLUMN fichas_tecnicas_compra.DOCUMENTOS_REQUERIDOS IS 'Array JSON [{ "nombre": "Certificado.pdf", "url": "https://.../key" }]. La URL apunta al bucket externo (R2/S3), no al binario en BD.';
+
+CREATE TABLE IF NOT EXISTS evaluaciones_orden_compra (
+	ID SERIAL PRIMARY KEY,
+	ORDEN_ID INTEGER NOT NULL REFERENCES ORDENES_COMPRA (ID) ON DELETE CASCADE,
+	PROVEEDOR VARCHAR(200) NOT NULL,
+	PRODUCTO VARCHAR(200) NOT NULL,
+	CALIDAD SMALLINT NOT NULL CHECK (CALIDAD BETWEEN 1 AND 5),
+	TIEMPO_ENTREGA VARCHAR(20) NOT NULL CHECK (TIEMPO_ENTREGA IN ('Cumplió', 'No cumplió')),
+	DIAS_RETRASO SMALLINT NOT NULL DEFAULT 0,
+	PRECIO VARCHAR(20) NOT NULL CHECK (PRECIO IN ('Igual', 'Mayor', 'Menor')),
+	CAPACIDAD_RESPUESTA SMALLINT NOT NULL CHECK (CAPACIDAD_RESPUESTA BETWEEN 1 AND 5),
+	PUNTAJE_GLOBAL SMALLINT NOT NULL CHECK (PUNTAJE_GLOBAL BETWEEN 0 AND 100),
+	OBSERVACIONES TEXT,
+	FECHA_EVALUACION DATE NOT NULL DEFAULT CURRENT_DATE,
+	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE evaluaciones_orden_compra IS 'Evaluación de proveedor asociada a una orden de compra específica (distinta de proveedor_evaluaciones, que es por NIT/proveedor general).';
+
+-- ============================================================
+--  PARTE 8: EVIDENCIAS DE RIESGOS (§6.1)
+--  RiesgosPage.tsx hoy guarda archivos como dataUrl en memoria
+--  React (se pierden al refrescar). Aquí solo se guarda metadata;
+--  el binario va a un bucket externo (ver sección de storage).
+-- ============================================================
+CREATE TABLE IF NOT EXISTS riesgo_evidencias (
+	ID SERIAL PRIMARY KEY,
+	RIESGO_CODIGO VARCHAR(30) NOT NULL,   -- coincide con el código derivado (R-001, ACT-R-001, etc.)
+	NOMBRE_ARCHIVO VARCHAR(300) NOT NULL,
+	URL TEXT NOT NULL,
+	TIPO_MIME VARCHAR(100),
+	TAMANO_BYTES INTEGER,
+	SUBIDO_POR INTEGER REFERENCES USUARIOS (ID),
+	SUBIDO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE riesgo_evidencias IS 'Evidencias de ejecución/tratamiento de riesgos y oportunidades. El archivo real vive en el bucket externo; aquí solo se referencia la URL.';
+
+CREATE TABLE IF NOT EXISTS riesgo_eficacia (
+	RIESGO_CODIGO VARCHAR(30) PRIMARY KEY,
+	EFICACIA_PCT SMALLINT NOT NULL DEFAULT 0 CHECK (EFICACIA_PCT BETWEEN 0 AND 100),
+	RESPONSABLE_OVERRIDE VARCHAR(150),
+	ESTADO_OVERRIDE VARCHAR(20) CHECK (ESTADO_OVERRIDE IN ('CRITICO', 'TRATAMIENTO', 'MONITOREO')),
+	ACTUALIZADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE riesgo_eficacia IS 'Overrides editables por el usuario sobre riesgos derivados dinámicamente (que no tienen fila propia en la tabla riesgos): % eficacia, responsable y estado.';
+
+-- ============================================================
+--  PARTE 9: ÍNDICES
+-- ============================================================
+CREATE INDEX IF NOT EXISTS idx_matriz_roles_proceso        ON matriz_roles (PROCESO);
+CREATE INDEX IF NOT EXISTS idx_matriz_cargos_proceso        ON matriz_cargos (PROCESO);
+CREATE INDEX IF NOT EXISTS idx_matriz_recursos_proceso      ON matriz_recursos (PROCESO);
+CREATE INDEX IF NOT EXISTS idx_actividades_empresa_proceso  ON actividades_empresa (PROCESO);
+CREATE INDEX IF NOT EXISTS idx_fichas_tecnicas_nombre       ON fichas_tecnicas_compra (NOMBRE);
+CREATE INDEX IF NOT EXISTS idx_eval_orden_compra_orden_id   ON evaluaciones_orden_compra (ORDEN_ID);
+CREATE INDEX IF NOT EXISTS idx_riesgo_evidencias_codigo     ON riesgo_evidencias (RIESGO_CODIGO);
+
+
+-- ============================================================
+--  PARTE 10: ENFOQUE AL CLIENTE — PQRS y respuestas de encuestas
+--  (EnfoqueClientePage.tsx hoy vive 100% en memoria de sesión)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS pqrs_enfoque_cliente (
+	ID SERIAL PRIMARY KEY,
+	TIPO VARCHAR(20) NOT NULL CHECK (TIPO IN ('Petición', 'Queja', 'Reclamo', 'Sugerencia')),
+	ORIGEN VARCHAR(200) NOT NULL,   -- nombre del cliente/proveedor
+	FECHA DATE NOT NULL DEFAULT CURRENT_DATE,
+	DESCRIPCION TEXT NOT NULL,
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'Abierta' CHECK (ESTADO IN ('Abierta', 'En Proceso', 'Cerrada')),
+	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE pqrs_enfoque_cliente IS 'ISO 9001:2015 §5.1.2/§9.1.2 — Registro de Peticiones, Quejas, Reclamos y Sugerencias.';
+
+CREATE TABLE IF NOT EXISTS archivos_enfoque_cliente (
+	ID SERIAL PRIMARY KEY,
+	NOMBRE VARCHAR(300) NOT NULL,
+	TIPO VARCHAR(30) NOT NULL CHECK (TIPO IN ('Encuesta Cliente', 'Encuesta Proveedor', 'PQRS', 'Otro')),
+	URL TEXT NOT NULL,
+	TIPO_MIME VARCHAR(100),
+	TAMANO_BYTES INTEGER,
+	SUBIDO_POR INTEGER REFERENCES USUARIOS (ID),
+	SUBIDO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE archivos_enfoque_cliente IS 'Metadata de archivos subidos (encuestas respondidas, PQRS en PDF). El binario vive en el bucket externo.';
+
+CREATE TABLE IF NOT EXISTS respuestas_encuesta_satisfaccion (
+	ID SERIAL PRIMARY KEY,
+	ARCHIVO_ID INTEGER REFERENCES archivos_enfoque_cliente (ID) ON DELETE SET NULL,
+	ARCHIVO_NOMBRE VARCHAR(300) NOT NULL,
+	TIPO VARCHAR(20) NOT NULL CHECK (TIPO IN ('cliente', 'proveedor')),
+	CAMPOS JSONB NOT NULL DEFAULT '{}',   -- { "c1": "5", "c2": "texto libre", ... }
+	NOMBRE_ENCUESTADO VARCHAR(200),
+	FECHA DATE,
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE respuestas_encuesta_satisfaccion IS 'Respuestas extraídas de las encuestas PDF interactivas subidas por el usuario.';
+
+CREATE INDEX IF NOT EXISTS idx_pqrs_estado           ON pqrs_enfoque_cliente (ESTADO);
+CREATE INDEX IF NOT EXISTS idx_archivos_enfoque_tipo  ON archivos_enfoque_cliente (TIPO);
+CREATE INDEX IF NOT EXISTS idx_respuestas_encuesta_tipo ON respuestas_encuesta_satisfaccion (TIPO);
+
+
+-- ============================================================
+--  PARTE 11: Columnas faltantes en PROYECTOS_DISENO
+-- ============================================================
+ALTER TABLE proyectos_diseno
+  ADD COLUMN IF NOT EXISTS control TEXT,
+  ADD COLUMN IF NOT EXISTS actividad_id VARCHAR(60);
+
+COMMENT ON COLUMN proyectos_diseno.control IS 'Texto de control/verificación de diseño, generado con IA o manual.';
+COMMENT ON COLUMN proyectos_diseno.actividad_id IS 'Referencia al código de caracterización o id de actividad que originó el proyecto.';
+
+-- ============================================================
+--  PARTE 12: FICHAS TÉCNICAS DE REQUERIMIENTOS PS (§8.2)
+--  Cubre tanto fichas generales como educativas (con cursos)
+-- ============================================================
+ALTER TABLE requerimientos_ps
+  ADD COLUMN IF NOT EXISTS ficha_tecnica_id VARCHAR(60),
+  ADD COLUMN IF NOT EXISTS generado_con_ia BOOLEAN NOT NULL DEFAULT FALSE;
+
+CREATE TABLE IF NOT EXISTS fichas_tecnicas_ps (
+	ID VARCHAR(60) PRIMARY KEY,   -- id generado en frontend (FT-timestamp)
+	TIPO VARCHAR(20) NOT NULL CHECK (TIPO IN ('educativa', 'general')),
+	GENERADA_CON_IA BOOLEAN NOT NULL DEFAULT TRUE,
+	CLIENTE VARCHAR(200),
+	PRODUCTO_SERVICIO VARCHAR(200),
+	VERSION VARCHAR(20) DEFAULT '1.0',
+	FECHA_ELABORACION DATE,
+	ELABORADO_POR VARCHAR(150),
+	APROBADO_POR VARCHAR(150),
+	ESTADO VARCHAR(20) NOT NULL DEFAULT 'En revisión' CHECK (ESTADO IN ('Vigente', 'En revisión', 'Obsoleta')),
+
+	-- Campos ficha general
+	DESCRIPCION TEXT,
+	ESPECIFICACIONES_TECNICAS TEXT,
+	NORMAS_APLICABLES TEXT,
+	CONDICIONES_USO TEXT,
+
+	-- Campos ficha educativa
+	AREA_ASIGNATURA VARCHAR(200),
+	OBJETIVO_GENERAL TEXT,
+	COMPETENCIAS TEXT,
+	UNIDADES_CURRICULARES JSONB NOT NULL DEFAULT '[]',
+	TOTAL_HORAS_SEMANA INTEGER DEFAULT 0,
+
+	OBSERVACIONES TEXT,
+	CREADO_POR INTEGER REFERENCES USUARIOS (ID),
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE fichas_tecnicas_ps IS 'ISO 9001:2015 §8.2 — Fichas técnicas de productos/servicios generales o educativas (con cursos y contenido programático).';
+COMMENT ON COLUMN fichas_tecnicas_ps.UNIDADES_CURRICULARES IS 'Array JSON de objetos {nombre, nivelCurso, gradoAnio, intensidadHoraria, periodo, docente, contenidoProgramatico, metodologia, recursosMateriales, criteriosEvaluacion, logros}. Solo aplica si tipo=educativa.';
+
+CREATE INDEX IF NOT EXISTS idx_fichas_tecnicas_ps_tipo ON fichas_tecnicas_ps (TIPO);

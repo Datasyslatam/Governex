@@ -10,6 +10,7 @@ import Swal from 'sweetalert2'
 import { DatosEmpresa } from '../../context/AIAnalysisContext'
 import './PlantillaOrganizacion.css'
 import logoGovernex from "../../assets/logo-governex.png";
+import { uploadFile } from '../../services/api'
 
 /* ── Props ─────────────────────────────────────────────────── */
 interface Props {
@@ -241,7 +242,11 @@ async function generarPlantillaPDF(): Promise<Uint8Array> {
 /* ── Descarga del PDF generado ──────────────────────────────── */
 async function descargarPlantilla() {
   const bytes = await generarPlantillaPDF()
-  const blob  = new Blob([bytes], { type: 'application/pdf' })
+  // `pdf-lib` tipa `save()` como Uint8Array<ArrayBufferLike>, que las
+  // definiciones DOM más recientes de TypeScript no aceptan como
+  // BlobPart de forma estructural. En runtime, Blob sí acepta cualquier
+  // Uint8Array sin problema — es solo un desajuste de tipos.
+  const blob  = new Blob([bytes as BlobPart], { type: 'application/pdf' })
   const url   = URL.createObjectURL(blob)
   const a     = document.createElement('a')
   a.href      = url
@@ -360,7 +365,7 @@ const PlantillaOrganizacion: React.FC<Props> = ({ onDatosYOrganigramaListos, onC
   const [parseado,    setParseado]    = useState<{ datos: DatosEmpresa } | null>(null)
   const [archivoOrg,  setArchivoOrg]  = useState<File | null>(null)
   const [cargandoOrg, setCargandoOrg] = useState(false)
-  const [organigrama, setOrganigrama] = useState<{ b64: string; mime: string; nombre: string } | null>(null)
+  const [organigrama, setOrganigrama] = useState<{ b64: string; mime: string; nombre: string; url: string } | null>(null)
 
   /* ── Estado del ideario generado por IA ─────────────────── */
   const [ideario,         setIdeario]         = useState<TextosIdeario | null>(null)
@@ -396,48 +401,61 @@ const PlantillaOrganizacion: React.FC<Props> = ({ onDatosYOrganigramaListos, onC
 
   /* ── Cargar formulario PDF ─────────────────────────────── */
   const handleArchivoSeleccionado = async (f: File) => {
-    setArchivo(f)
-    setParseado(null)
-    setIdeario(null)
-    setIdearioEditado(null)
-    setCargando(true)
+  setArchivo(f)
+  setParseado(null)
+  setIdeario(null)
+  setIdearioEditado(null)
+  setCargando(true)
 
-    let datosEmpresa: DatosEmpresa | null = null
+  let datosEmpresa: DatosEmpresa | null = null
 
-    try {
-      const campos = await leerCamposPDF(await f.arrayBuffer())
-      const parsed = parsearCampos(campos)
+  try {
+    const campos = await leerCamposPDF(await f.arrayBuffer())
+    const parsed = parsearCampos(campos)
 
-      if (!parsed._ok) {
-        Swal.fire({ icon: 'warning', title: 'Campos incompletos', text: parsed._error, confirmButtonColor: '#1a6ebd' })
-        setArchivo(null)
-        return
-      }
-
-      const { _ok, _error, ...datos } = parsed
-      datosEmpresa = datos as DatosEmpresa
-      setParseado({ datos: datosEmpresa })
-    } catch {
-      Swal.fire({ icon: 'error', title: 'Error al procesar el formulario PDF', confirmButtonColor: '#1a6ebd' })
+    if (!parsed._ok) {
+      Swal.fire({ icon: 'warning', title: 'Campos incompletos', text: parsed._error, confirmButtonColor: '#1a6ebd' })
       setArchivo(null)
       return
-    } finally {
-      setCargando(false)
     }
 
-    if (!datosEmpresa) return
+    const { _ok, _error, ...datos } = parsed
 
-    setGenerandoIdeario(true)
+    // ── NUEVO: subir el PDF a R2 ──
+    let pdfUrl = ''
+    let pdfNombre = ''
     try {
-      const textos = await generarIdearioConIA(datosEmpresa)
-      setIdeario(textos)
-      setIdearioEditado(textos)
-    } catch {
-      Swal.fire({ icon: 'error', title: 'Error al generar el ideario', confirmButtonColor: '#1a6ebd' })
-    } finally {
-      setGenerandoIdeario(false)
+      const subido = await uploadFile(f)
+      pdfUrl = subido.url
+      pdfNombre = subido.nombre
+    } catch (e) {
+      console.warn('No se pudo subir el formulario PDF a R2:', e)
+      // No bloqueamos el flujo: el análisis puede continuar sin el archivo guardado
     }
+
+    datosEmpresa = { ...(datos as DatosEmpresa), pdfFormularioUrl: pdfUrl, pdfFormularioNombre: pdfNombre }
+    setParseado({ datos: datosEmpresa })
+  } catch {
+    Swal.fire({ icon: 'error', title: 'Error al procesar el formulario PDF', confirmButtonColor: '#1a6ebd' })
+    setArchivo(null)
+    return
+  } finally {
+    setCargando(false)
   }
+
+  if (!datosEmpresa) return
+
+  setGenerandoIdeario(true)
+  try {
+    const textos = await generarIdearioConIA(datosEmpresa)
+    setIdeario(textos)
+    setIdearioEditado(textos)
+  } catch {
+    Swal.fire({ icon: 'error', title: 'Error al generar el ideario', confirmButtonColor: '#1a6ebd' })
+  } finally {
+    setGenerandoIdeario(false)
+  }
+}
 
   /* ── Regenerar ideario manualmente ────────────────────── */
   const handleRegenerarIdeario = async () => {
@@ -456,36 +474,49 @@ const PlantillaOrganizacion: React.FC<Props> = ({ onDatosYOrganigramaListos, onC
 
   /* ── Cargar organigrama ────────────────────────────────── */
   const handleOrganigramaSeleccionado = async (f: File) => {
-    const ext = `.${f.name.split('.').pop()?.toLowerCase() ?? ''}`
-    if (!TIPOS_ORGANIGRAMA_PERMITIDOS.includes(f.type) && !EXT_ORGANIGRAMA_PERMITIDAS.includes(ext)) {
-      Swal.fire({ icon: 'warning', title: 'Formato no soportado',
-        text: 'El organigrama debe ser PDF, JPG, JPEG, PNG o WEBP.', confirmButtonColor: '#1a6ebd' })
-      return
-    }
-    setArchivoOrg(f); setOrganigrama(null); setCargandoOrg(true)
-    try {
-      const b64 = await leerArchivoComoBase64(f)
-      setOrganigrama({ b64, mime: f.type || 'application/octet-stream', nombre: f.name })
-    } catch {
-      Swal.fire({ icon: 'error', title: 'Error al leer el organigrama', confirmButtonColor: '#1a6ebd' })
-      setArchivoOrg(null)
-    } finally {
-      setCargandoOrg(false)
-    }
+  const ext = `.${f.name.split('.').pop()?.toLowerCase() ?? ''}`
+  if (!TIPOS_ORGANIGRAMA_PERMITIDOS.includes(f.type) && !EXT_ORGANIGRAMA_PERMITIDAS.includes(ext)) {
+    Swal.fire({ icon: 'warning', title: 'Formato no soportado',
+      text: 'El organigrama debe ser PDF, JPG, JPEG, PNG o WEBP.', confirmButtonColor: '#1a6ebd' })
+    return
   }
+  setArchivoOrg(f); setOrganigrama(null); setCargandoOrg(true)
+  try {
+    const [b64, subido] = await Promise.all([
+      leerArchivoComoBase64(f),
+      uploadFile(f).catch(e => {
+        console.warn('No se pudo subir el organigrama a R2:', e)
+        return null // no bloquea el análisis si falla la subida
+      }),
+    ])
+    setOrganigrama({
+      b64,
+      mime: f.type || 'application/octet-stream',
+      nombre: f.name,
+      url: subido?.url ?? '',
+    })
+  } catch {
+    Swal.fire({ icon: 'error', title: 'Error al leer el organigrama', confirmButtonColor: '#1a6ebd' })
+    setArchivoOrg(null)
+  } finally {
+    setCargandoOrg(false)
+  }
+}
 
   /* ── Analizar: combina datos + ideario editado ─────────── */
   const handleAnalizar = () => {
-    if (!parseado || !organigrama) return
+  if (!parseado || !organigrama) return
 
-    const datosFinales: DatosEmpresa = {
-      ...parseado.datos,
-      mision:        idearioEditado?.mision        ?? '',
-      vision:        idearioEditado?.vision        ?? '',
-      politicaCalidad: idearioEditado?.politicaCalidad ?? '',
-    }
+  const datosFinales: DatosEmpresa = {
+    ...parseado.datos,
+    mision:           idearioEditado?.mision           ?? '',
+    vision:           idearioEditado?.vision           ?? '',
+    politicaCalidad:  idearioEditado?.politicaCalidad  ?? '',
+    organigramaUrl:    organigrama.url,
+    organigramaNombre: organigrama.nombre,
+  }
 
-    onDatosYOrganigramaListos(datosFinales, organigrama.b64, organigrama.mime, organigrama.nombre)
+  onDatosYOrganigramaListos(datosFinales, organigrama.b64, organigrama.mime, organigrama.nombre)
   }
 
   const listo = !!parseado && !!organigrama && !!ideario

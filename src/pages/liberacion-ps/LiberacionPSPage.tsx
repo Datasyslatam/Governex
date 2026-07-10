@@ -1,39 +1,43 @@
 import React, { useState } from 'react'
 import '../iso-module.css'
-
-interface Liberacion {
-  id: number
-  codigoOp: string
-  productoServicio: string
-  cliente: string
-  criteriosAceptacion: string
-  inspeccionRealizada: string
-  resultados: string
-  autorizadoPor: string
-  fecha: string
-  decision: 'Liberado' | 'Retenido' | 'Rechazado'
-  observaciones: string
-}
-
-const datosIniciales: Liberacion[] = [
-  { id: 1, codigoOp: 'OP-2025-001', productoServicio: 'Estructura metálica lote A', cliente: 'Constructora del Norte', criteriosAceptacion: 'Dimensiones según plano ±0.5mm, sin fisuras, pintura uniforme, soldadura certificada', inspeccionRealizada: 'Inspección visual 100%, medición dimensional, prueba de carga', resultados: 'Todas las unidades cumplen especificaciones. Sin observaciones.', autorizadoPor: 'Inspector de Calidad', fecha: '2025-03-20', decision: 'Liberado', observaciones: '' },
-  { id: 2, codigoOp: 'OP-2025-003', productoServicio: 'Lote de tornillos M10', cliente: 'Uso interno', criteriosAceptacion: 'Dureza HRC 32-36, longitud 50mm ±0.2mm, certificado de material', inspeccionRealizada: 'Muestreo AQL 2.5%, verificación dimensional, revisión certificado', resultados: '3 unidades fuera de tolerancia en longitud (5% del lote)', autorizadoPor: 'Coordinador de Calidad', fecha: '2025-03-18', decision: 'Retenido', observaciones: 'Se retiene lote pendiente de decisión. Se notificó al proveedor.' },
-]
+import { useFetch } from '../../hooks/useFetch'
+import { liberacionPSService } from '../../services'
 
 const empty = { codigoOp: '', productoServicio: '', cliente: '', criteriosAceptacion: '', inspeccionRealizada: '', resultados: '', autorizadoPor: '', fecha: '', decision: 'Liberado' as const, observaciones: '' }
 
 const LiberacionPSPage: React.FC = () => {
-  const [items, setItems] = useState<Liberacion[]>(datosIniciales)
+  const { data: itemsDB, loading, refetch } = useFetch(liberacionPSService.getAll, [])
+  const items = itemsDB.map((r: any) => ({
+    id: r.id, codigoOp: r.codigo_op ?? '', productoServicio: r.producto_servicio,
+    cliente: r.cliente ?? '', criteriosAceptacion: r.criterios_aceptacion ?? '',
+    inspeccionRealizada: r.inspeccion_realizada ?? '', resultados: r.resultados ?? '',
+    autorizadoPor: r.autorizado_por ?? '', fecha: r.fecha, decision: r.decision,
+    observaciones: r.observaciones ?? '',
+  }))
+
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ ...empty })
+  const [saving, setSaving] = useState(false)
 
-  const guardar = () => {
+  const guardar = async () => {
     if (!form.productoServicio) return
-    const id = Math.max(0, ...items.map(i => i.id)) + 1
-    setItems(prev => [...prev, { id, ...form }])
-    setShowModal(false); setForm({ ...empty })
+    setSaving(true)
+    try {
+      await liberacionPSService.create({
+        codigo_op: form.codigoOp, producto_servicio: form.productoServicio, cliente: form.cliente,
+        criterios_aceptacion: form.criteriosAceptacion, inspeccion_realizada: form.inspeccionRealizada,
+        resultados: form.resultados, autorizado_por: form.autorizadoPor, fecha: form.fecha,
+        decision: form.decision, observaciones: form.observaciones,
+      })
+      await refetch()
+      setShowModal(false); setForm({ ...empty })
+    } catch (e: any) { alert(e.message) } finally { setSaving(false) }
   }
-  const eliminar = (id: number) => { if (window.confirm('¿Eliminar?')) setItems(prev => prev.filter(i => i.id !== id)) }
+  const eliminar = async (id: number) => {
+    if (!window.confirm('¿Eliminar?')) return
+    try { await liberacionPSService.delete(id) } catch {}
+    await refetch()
+  }
 
   return (
     <div className="iso-page">

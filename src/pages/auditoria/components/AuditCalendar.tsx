@@ -1,10 +1,23 @@
 import React, { useState } from "react";
 import Swal from "sweetalert2";
-import type { Auditoria } from "../AuditoriaPage";
 import "./AuditCalendar.css";
 
+/** Forma que produce el adaptador `auditoriasParaCalendario` en
+ *  AuditoriaPage.tsx a partir del tipo `Auditoria` real (services/index.ts).
+ *  Deliberadamente NO es el mismo tipo que `Auditoria`: este componente
+ *  espera camelCase y algunos campos con fallback ('—') ya resueltos. */
+export interface CalendarAudit {
+  codigo:       string;
+  proceso:      string;
+  fechaInicio:  string;
+  duracionDias: number;
+  auditor:      string;
+  estado:       'Planificada' | 'En Ejecución' | 'Cerrada';
+  hallazgos:    number;
+}
+
 interface AuditCalendarProps {
-  auditorias: Auditoria[];
+  auditorias: CalendarAudit[];
 }
 
 const MONTHS = [
@@ -48,7 +61,7 @@ const STATUS_BG: Record<string, string> = {
   "Cerrada":      "#f0fdf6",
 };
 
-function showAuditDetail(aud: Auditoria) {
+function showAuditDetail(aud: CalendarAudit) {
   const color      = STATUS_COLOR[aud.estado] ?? "#64748b";
   const bgColor    = STATUS_BG[aud.estado]   ?? "#f8fafc";
   const hallBadge  = aud.hallazgos > 0
@@ -115,7 +128,7 @@ const AuditCalendar: React.FC<AuditCalendarProps> = ({ auditorias }) => {
   const daysInMonth     = new Date(currentYear, currentMonth + 1, 0).getDate();
 
   // day → list of audits active that day
-  const auditsByDay = new Map<number, { audit: Auditoria; isStart: boolean; isEnd: boolean }[]>();
+  const auditsByDay = new Map<number, { audit: CalendarAudit; isStart: boolean; isEnd: boolean }[]>();
   auditorias.forEach(aud => {
     const start = new Date(aud.fechaInicio + "T00:00:00");
     getDaysBetween(start, aud.duracionDias).forEach((date, idx) => {

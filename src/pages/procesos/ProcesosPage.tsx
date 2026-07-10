@@ -61,6 +61,7 @@ interface AiAnalysis {
   dofa:               DofaRow[]
   caracterizacion:    CaracterizacionRow[]
   matrizRoles?:       any[]
+  matrizCargos?:      any[]
   matrizRecursos?:    any[]
   indicadores?:       any[]
   contextoNarrativo?: string
@@ -73,6 +74,29 @@ const defaultMapa: MapaData = {
   estrategicos: [{ nombre: 'Gestión de la Dirección' }, { nombre: 'Planificación del SGC' }, { nombre: 'Mejora Continua' }],
   misionales:   [{ nombre: 'Ventas y Gestión Comercial' }, { nombre: 'Diseño y Desarrollo' }, { nombre: 'Producción / Prestación' }],
   apoyo:        [{ nombre: 'Gestión del Talento Humano' }, { nombre: 'Control de Documentos' }, { nombre: 'Auditorías Internas' }, { nombre: 'Gestión de Infraestructura' }, { nombre: 'Gestión de Indicadores' }],
+}
+
+function mapaDesdeCaracterizacion(rows: CaracterizacionRow[]): MapaData | null {
+  if (!rows || rows.length === 0) return null
+
+  const estrategicos: ProcesoItem[] = []
+  const misionales:   ProcesoItem[] = []
+  const apoyo:        ProcesoItem[] = []
+
+  for (const row of rows) {
+    const item = { nombre: row.proceso }
+    if      (row.codigo.startsWith('PE')) estrategicos.push(item)
+    else if (row.codigo.startsWith('PO')) misionales.push(item)
+    else                                   apoyo.push(item)
+  }
+
+  if (!estrategicos.length && !misionales.length && !apoyo.length) return null
+
+  return {
+    cliente:      'Requisitos del Cliente y Contexto',
+    satisfaccion: 'Satisfacción del Cliente y Triple Impacto',
+    estrategicos, misionales, apoyo,
+  }
 }
 
 /* ─────────────────── DETALLE DE PROCESO (popup) ─────────────────── */
@@ -383,6 +407,16 @@ const ProcesosPage: React.FC = () => {
 
   React.useEffect(() => {
     if (globalAnalysis) setAiAnalysis(globalAnalysis as any)
+  }, [globalAnalysis])
+
+  React.useEffect(() => {
+    if (globalAnalysis?.caracterizacion?.length) {
+      const reconstruido = mapaDesdeCaracterizacion(globalAnalysis.caracterizacion as CaracterizacionRow[])
+      if (reconstruido) {
+        injectAIDetails(reconstruido)
+        setMapa(reconstruido)
+      }
+    }
   }, [globalAnalysis])
 
   // Ref para el mapa pendiente — evita incluirlo en deps de useCallback

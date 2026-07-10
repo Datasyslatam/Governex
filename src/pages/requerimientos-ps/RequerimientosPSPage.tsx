@@ -1,6 +1,9 @@
 import React, { useState } from 'react'
 import '../iso-module.css'
 import { useAIAnalysis } from '../../context/AIAnalysisContext'
+import { useFetch } from '../../hooks/useFetch'
+import { requerimientosPSService, fichasTecnicasPSService } from '../../services'
+
 
 /* ─────────────────── TIPOS ─────────────────── */
 interface UnidadCurricular {
@@ -315,22 +318,31 @@ const RequerimientosPSPage: React.FC = () => {
   const { datosEmpresa } = useAIAnalysis()
   const esEducativo = esSectorEducativo(datosEmpresa?.sector)
 
-  const [items, setItems] = useState<Requisito[]>(() => {
-    const saved = sessionStorage.getItem('governex_reqs_items')
-    return saved ? JSON.parse(saved) : []
-  })
-  const [fichas, setFichas] = useState<Record<string, FichaTecnica>>(() => {
-    const saved = sessionStorage.getItem('governex_reqs_fichas')
-    return saved ? JSON.parse(saved) : {}
-  })
+  const { data: itemsDB, refetch: refetchItems } = useFetch(requerimientosPSService.getAll, [])
+  const { data: fichasDB, refetch: refetchFichas } = useFetch(fichasTecnicasPSService.getAll, [])
 
-  React.useEffect(() => {
-    sessionStorage.setItem('governex_reqs_items', JSON.stringify(items))
-  }, [items])
+  const items: Requisito[] = itemsDB.map((r: any) => ({
+    id: r.id, cliente: r.cliente, productoServicio: r.producto_servicio,
+    requisitosCliente: r.requisitos_cliente ?? '', requisitosLegales: r.requisitos_legales ?? '',
+    requisitosOrg: r.requisitos_org ?? '', fechaRevision: r.fecha_revision ?? '',
+    revisadoPor: r.revisado_por ?? '', estado: r.estado,
+    fichaTecnicaId: r.ficha_tecnica_id ?? undefined, generadoConIA: r.generado_con_ia ?? false,
+  }))
 
-  React.useEffect(() => {
-    sessionStorage.setItem('governex_reqs_fichas', JSON.stringify(fichas))
-  }, [fichas])
+  const fichas: Record<string, FichaTecnica> = Object.fromEntries(
+    fichasDB.map((f: any) => [f.id, {
+      id: f.id, tipo: f.tipo, generadaConIA: f.generada_con_ia,
+      cliente: f.cliente ?? '', productoServicio: f.producto_servicio ?? '',
+      version: f.version, fechaElaboracion: f.fecha_elaboracion ?? '',
+      elaboradoPor: f.elaborado_por ?? '', aprobadoPor: f.aprobado_por ?? '', estado: f.estado,
+      descripcion: f.descripcion ?? '', especificacionesTecnicas: f.especificaciones_tecnicas ?? '',
+      normasAplicables: f.normas_aplicables ?? '', condicionesUso: f.condiciones_uso ?? '',
+      areaAsignatura: f.area_asignatura ?? '', objetivoGeneral: f.objetivo_general ?? '',
+      competencias: f.competencias ?? '',
+      unidadesCurriculares: f.unidades_curriculares?.length ? f.unidades_curriculares : [emptyUnidad()],
+      totalHorasSemana: f.total_horas_semana ?? 0, observaciones: f.observaciones ?? '',
+    } as FichaTecnica])
+  )
 
   // Modal nueva revisión manual
   const [showReqModal, setShowReqModal] = useState(false)
@@ -353,19 +365,15 @@ const RequerimientosPSPage: React.FC = () => {
     try {
       const data = await apiPost('/api/gemini/generar-revisiones-requisitos', { datosEmpresa })
       if (!Array.isArray(data.revisiones) || data.revisiones.length === 0) throw new Error('La IA no devolvió revisiones válidas')
-      const nuevas: Requisito[] = data.revisiones.map((r: any, i: number) => ({
-        id: Date.now() + i,
-        cliente:            r.cliente            || '',
-        productoServicio:   r.productoServicio   || '',
-        requisitosCliente:  r.requisitosCliente  || '',
-        requisitosLegales:  r.requisitosLegales  || '',
-        requisitosOrg:      r.requisitosOrg      || '',
-        revisadoPor:        r.revisadoPor        || '',
-        fechaRevision:      r.fechaRevision      || '',
-        estado:             r.estado             || 'Pendiente',
-        generadoConIA: true,
+
+      const nuevas = data.revisiones.map((r: any) => ({
+        cliente: r.cliente || '', producto_servicio: r.productoServicio || '',
+        requisitos_cliente: r.requisitosCliente || '', requisitos_legales: r.requisitosLegales || '',
+        requisitos_org: r.requisitosOrg || '', revisado_por: r.revisadoPor || '',
+        fecha_revision: r.fechaRevision || null, estado: r.estado || 'Pendiente',
       }))
-      setItems(nuevas)
+      await Promise.all(nuevas.map((n: any) => requerimientosPSService.create(n)))
+      await refetchItems()
     } catch (err: any) {
       setErrorMsg(err.message ?? 'Error al generar la matriz con Governex IA')
     } finally {
@@ -374,15 +382,26 @@ const RequerimientosPSPage: React.FC = () => {
   }
 
   /* ── 2. AGREGAR REVISIÓN MANUAL ── */
-  const guardarReq = () => {
+  const guardarReq = async () => {
     if (!form.cliente || !form.productoServicio) return
-    const id = items.length > 0 ? Math.max(...items.map(r => r.id)) + 1 : 1
-    setItems(prev => [...prev, { id, ...form, generadoConIA: false }])
-    setShowReqModal(false); setForm({ ...emptyReq })
+    try {
+      await requerimientosPSService.create({
+        cliente: form.cliente, producto_servicio: form.productoServicio,
+        requisitos_cliente: form.requisitosCliente, requisitos_legales: form.requisitosLegales,
+        requisitos_org: form.requisitosOrg, revisado_por: form.revisadoPor,
+        fecha_revision: form.fechaRevision, estado: form.estado, generado_con_ia: false,
+      })
+      await refetchItems()
+      setShowReqModal(false); setForm({ ...emptyReq })
+    } catch (e: any) {
+      alert(e.message)
+    }
   }
 
-  const eliminarReq = (id: number) => {
-    if (window.confirm('¿Eliminar esta revisión?')) setItems(prev => prev.filter(r => r.id !== id))
+  const eliminarReq = async (id: number) => {
+    if (!window.confirm('¿Eliminar esta revisión?')) return
+    try { await requerimientosPSService.delete(id) } catch {}
+    await refetchItems()
   }
 
   /* ── 3. GENERAR FICHA TÉCNICA CON IA ── */
@@ -392,45 +411,40 @@ const RequerimientosPSPage: React.FC = () => {
     try {
       const tipo: 'educativa' | 'general' = esEducativo ? 'educativa' : 'general'
       const data = await apiPost('/api/gemini/generar-ficha-tecnica', {
-        datosEmpresa,
-        cliente: req.cliente,
-        productoServicio: req.productoServicio,
-        tipo,
+        datosEmpresa, cliente: req.cliente, productoServicio: req.productoServicio, tipo,
       })
       const fichaId = `FT-${Date.now()}`
-      let fichaGenerada: FichaTecnica
 
-      if (tipo === 'educativa') {
-        const unidades: UnidadCurricular[] = Array.isArray(data.unidadesCurriculares) ? data.unidadesCurriculares : [emptyUnidad()]
-        const totalHoras = unidades.reduce((a: number, u: any) => a + (Number(u.intensidadHoraria) || 0), 0)
-        fichaGenerada = {
-          id: fichaId, tipo, generadaConIA: true,
-          cliente: req.cliente, productoServicio: req.productoServicio,
-          version: '1.0', fechaElaboracion: new Date().toISOString().slice(0,10),
-          elaboradoPor: data.elaboradoPor || '', aprobadoPor: data.aprobadoPor || '',
-          estado: 'En revisión',
-          descripcion: '', especificacionesTecnicas: '', normasAplicables: '', condicionesUso: '',
-          areaAsignatura: data.areaAsignatura || req.productoServicio,
-          objetivoGeneral: data.objetivoGeneral || '', competencias: data.competencias || '',
-          observaciones: data.observaciones || '', unidadesCurriculares: unidades, totalHorasSemana: totalHoras,
-        }
-      } else {
-        fichaGenerada = {
-          id: fichaId, tipo, generadaConIA: true,
-          cliente: req.cliente, productoServicio: req.productoServicio,
-          version: '1.0', fechaElaboracion: new Date().toISOString().slice(0,10),
-          elaboradoPor: data.elaboradoPor || '', aprobadoPor: data.aprobadoPor || '',
-          estado: 'En revisión',
-          descripcion: data.descripcion || '', especificacionesTecnicas: data.especificacionesTecnicas || '',
-          normasAplicables: data.normasAplicables || '', condicionesUso: data.condicionesUso || '',
-          observaciones: data.observaciones || '',
-          areaAsignatura: '', objetivoGeneral: '', competencias: '',
-          unidadesCurriculares: [emptyUnidad()], totalHorasSemana: 0,
-        }
-      }
-      setFichas(prev => ({ ...prev, [fichaId]: fichaGenerada }))
-      setItems(prev => prev.map(r => r.id === req.id ? { ...r, fichaTecnicaId: fichaId } : r))
-      setFichaForm(fichaGenerada)
+      const payload = tipo === 'educativa'
+        ? {
+            id: fichaId, tipo, generadaConIA: true, cliente: req.cliente, productoServicio: req.productoServicio,
+            version: '1.0', fechaElaboracion: new Date().toISOString().slice(0, 10),
+            elaboradoPor: data.elaboradoPor || '', aprobadoPor: data.aprobadoPor || '', estado: 'En revisión',
+            areaAsignatura: data.areaAsignatura || req.productoServicio,
+            objetivoGeneral: data.objetivoGeneral || '', competencias: data.competencias || '',
+            observaciones: data.observaciones || '',
+            unidadesCurriculares: Array.isArray(data.unidadesCurriculares) ? data.unidadesCurriculares : [emptyUnidad()],
+            totalHorasSemana: data.totalHorasSemana ?? 0,
+          }
+        : {
+            id: fichaId, tipo, generadaConIA: true, cliente: req.cliente, productoServicio: req.productoServicio,
+            version: '1.0', fechaElaboracion: new Date().toISOString().slice(0, 10),
+            elaboradoPor: data.elaboradoPor || '', aprobadoPor: data.aprobadoPor || '', estado: 'En revisión',
+            descripcion: data.descripcion || '', especificacionesTecnicas: data.especificacionesTecnicas || '',
+            normasAplicables: data.normasAplicables || '', condicionesUso: data.condicionesUso || '',
+            observaciones: data.observaciones || '',
+          }
+
+      await fichasTecnicasPSService.create(payload)
+      await requerimientosPSService.update(req.id, {
+        cliente: req.cliente, producto_servicio: req.productoServicio,
+        requisitos_cliente: req.requisitosCliente, requisitos_legales: req.requisitosLegales,
+        requisitos_org: req.requisitosOrg, revisado_por: req.revisadoPor,
+        fecha_revision: req.fechaRevision, estado: req.estado, ficha_tecnica_id: fichaId,
+      })
+
+      await Promise.all([refetchFichas(), refetchItems()])
+      setFichaForm(fichas[fichaId] ?? null)
       setFichaModal({ mode: 'ver', fichaId, reqId: req.id })
     } catch (err: any) {
       setErrorMsg(err.message ?? 'Error al generar la ficha técnica')
@@ -441,7 +455,16 @@ const RequerimientosPSPage: React.FC = () => {
 
   const abrirVerFicha  = (fichaId: string) => { setFichaForm({ ...fichas[fichaId] }); setFichaModal({ mode:'ver', fichaId }) }
   const abrirEditarFicha = (fichaId: string, reqId?: number) => { setFichaForm({ ...fichas[fichaId] }); setFichaModal({ mode:'editar', fichaId, reqId }) }
-  const guardarFicha   = () => { if (!fichaForm) return; setFichas(prev => ({ ...prev, [fichaForm.id]: fichaForm })); setFichaModal(null); setFichaForm(null) }
+  const guardarFicha = async () => {
+    if (!fichaForm) return
+    try {
+      await fichasTecnicasPSService.update(fichaForm.id, fichaForm)
+      await refetchFichas()
+      setFichaModal(null); setFichaForm(null)
+    } catch (e: any) {
+      alert('No se pudo guardar la ficha: ' + (e.message || e))
+    }
+  }
 
   const cantFichas  = Object.keys(fichas).length
   const tieneItems  = items.length > 0

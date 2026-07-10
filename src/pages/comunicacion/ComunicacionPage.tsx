@@ -1,46 +1,39 @@
 import React, { useState } from 'react'
 import '../iso-module.css'
-
-interface Comunicacion {
-  id: number
-  que: string
-  cuando: string
-  quien: string
-  aQuien: string
-  como: string
-  tipo: 'Interna' | 'Externa'
-  estado: 'Activo' | 'Revisión' | 'Inactivo'
-}
-
-const datosIniciales: Comunicacion[] = [
-  { id: 1, que: 'Política y objetivos de calidad', cuando: 'Al ingreso y revisión anual', quien: 'Alta Dirección', aQuien: 'Todo el personal', como: 'Reunión, cartelera, intranet', tipo: 'Interna', estado: 'Activo' },
-  { id: 2, que: 'Resultados de auditorías internas', cuando: 'Al cierre de cada auditoría', quien: 'Auditor Líder', aQuien: 'Dueños de proceso auditados', como: 'Informe escrito + reunión de cierre', tipo: 'Interna', estado: 'Activo' },
-  { id: 3, que: 'Cambios en el SGC', cuando: 'Antes de implementar cambios', quien: 'Director de Calidad', aQuien: 'Personal impactado', como: 'Correo electrónico + capacitación', tipo: 'Interna', estado: 'Activo' },
-  { id: 4, que: 'Retroalimentación al cliente', cuando: 'Después de cada entrega', quien: 'Director Comercial', aQuien: 'Clientes', como: 'Encuesta de satisfacción + llamada', tipo: 'Externa', estado: 'Activo' },
-  { id: 5, que: 'Requisitos a proveedores', cuando: 'Al emitir orden de compra', quien: 'Jefe de Compras', aQuien: 'Proveedores aprobados', como: 'Orden de compra + especificaciones técnicas', tipo: 'Externa', estado: 'Activo' },
-  { id: 6, que: 'Indicadores de desempeño del SGC', cuando: 'Mensualmente', quien: 'Coordinador de Calidad', aQuien: 'Gerencia y dueños de proceso', como: 'Informe mensual + tablero de indicadores', tipo: 'Interna', estado: 'Activo' },
-]
+import { useFetch } from '../../hooks/useFetch'
+import { comunicacionService } from '../../services'
 
 const empty = { que: '', cuando: '', quien: '', aQuien: '', como: '', tipo: 'Interna' as const, estado: 'Activo' as const }
 
 const ComunicacionPage: React.FC = () => {
-  const [items, setItems] = useState<Comunicacion[]>(datosIniciales)
+  const { data: itemsDB, loading, refetch } = useFetch(comunicacionService.getAll, [])
+  const items = itemsDB.map((r: any) => ({
+    id: r.id, que: r.que, cuando: r.cuando ?? '', quien: r.quien, aQuien: r.a_quien ?? '',
+    como: r.como ?? '', tipo: r.tipo, estado: r.estado,
+  }))
+
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ ...empty })
   const [filtroTipo, setFiltroTipo] = useState('todos')
 
   const filtrados = filtroTipo === 'todos' ? items : items.filter(r => r.tipo === filtroTipo)
 
-  const guardar = () => {
+  const guardar = async () => {
     if (!form.que || !form.quien) return
-    const id = Math.max(0, ...items.map(r => r.id)) + 1
-    setItems(prev => [...prev, { id, ...form }])
-    setShowModal(false)
-    setForm({ ...empty })
+    try {
+      await comunicacionService.create({
+        que: form.que, cuando: form.cuando, quien: form.quien, a_quien: form.aQuien,
+        como: form.como, tipo: form.tipo, estado: form.estado,
+      })
+      await refetch()
+      setShowModal(false); setForm({ ...empty })
+    } catch (e: any) { alert(e.message) }
   }
 
-  const eliminar = (id: number) => {
-    if (window.confirm('¿Eliminar esta comunicación?')) setItems(prev => prev.filter(r => r.id !== id))
+  const eliminar = async (id: number) => {
+    if (!window.confirm('¿Eliminar esta comunicación?')) return
+    try { await comunicacionService.delete(id) } catch {}
+    await refetch()
   }
 
   return (
