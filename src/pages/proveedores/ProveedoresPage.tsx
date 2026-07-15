@@ -1,12 +1,12 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useRef } from 'react'
 import './ProveedoresPage.css'
 import { useFetch } from '../../hooks/useFetch'
 import { proveedoresService, Proveedor } from '../../services'
 
 const TIPOS_SUMINISTRO = ['Materia Prima', 'Tecnología / Software', 'Transporte', 'Servicios', 'Otro']
 
-const emptyForm: Partial<Proveedor> = { nit: '', razon: '', tipo: '', estado: 'Aprobado' }
-const emptyEval = { evaluador: '', calidad: 80, entrega: 80, precio: 80, servicio: 80 }
+const emptyForm: Partial<Proveedor> = { nit: '', razon: '', tipo: '', estado: 'Aprobado', periodicidad_evaluacion: 'Anual', email: '' }
+const emptyEval = { evaluador: '', calidad: 80, entrega: 80, precio: 80, servicio: 80, precio_mercado: '', precio_proveedor: '', debilidades: '', generada_con_ia: false }
 
 const ProveedoresPage: React.FC = () => {
   const { data: proveedores, loading, error, refetch } = useFetch(proveedoresService.getAll, [])
@@ -20,6 +20,12 @@ const ProveedoresPage: React.FC = () => {
   const [formData, setFormData]             = useState<Partial<Proveedor>>(emptyForm)
   const [evalData, setEvalData]             = useState(emptyEval)
   const [saving, setSaving]                 = useState(false)
+  const [generatingIA, setGeneratingIA]     = useState(false)
+  const [evalHistory, setEvalHistory]       = useState<any[]>([])
+  const [showReport, setShowReport]         = useState(false)
+  const [reportData, setReportData]         = useState<any>(null)
+  const [showModalHistorial, setShowModalHistorial] = useState(false)
+  const [historialProv, setHistorialProv]   = useState<Proveedor | null>(null)
 
   const filtrados = proveedores.filter(p =>
     (!busqueda     || p.razon.toLowerCase().includes(busqueda.toLowerCase()) || p.nit.includes(busqueda)) &&
@@ -32,10 +38,56 @@ const ProveedoresPage: React.FC = () => {
   const abrirModalNuevo = () => { setEditingId(null); setFormData(emptyForm); setShowModalNuevo(true) }
   const editarProveedor = (p: Proveedor) => {
     setEditingId(p.id)
-    setFormData({ nit: p.nit, razon: p.razon, tipo: p.tipo, estado: p.estado })
+    setFormData({ nit: p.nit, razon: p.razon, tipo: p.tipo, estado: p.estado, periodicidad_evaluacion: p.periodicidad_evaluacion || 'Anual', email: p.email || '' })
     setShowModalNuevo(true)
   }
-  const abrirModalEval  = (p: Proveedor) => { setEvalProvId(p.id); setEvalData(emptyEval); setShowModalEval(true) }
+  const abrirModalEval  = async (p: Proveedor) => {
+    setEvalProvId(p.id); setEvalData(emptyEval); setShowModalEval(true);
+    try {
+      const hist = await proveedoresService.getEvaluaciones(p.id)
+      setEvalHistory(hist)
+    } catch (e) { console.error(e) }
+  }
+
+  const abrirHistorial = async (p: Proveedor) => {
+    setHistorialProv(p)
+    try {
+      const hist = await proveedoresService.getEvaluaciones(p.id)
+      setEvalHistory(hist)
+      setShowModalHistorial(true)
+    } catch (e) { console.error(e) }
+  }
+
+  const generarEvalIA = async () => {
+    if (!evalProvId) return;
+    const prov = proveedores.find(p => p.id === evalProvId)
+    if (!prov) return;
+    setGeneratingIA(true)
+    try {
+      const res = await proveedoresService.generarEvaluacionIA({
+        proveedor: prov.razon,
+        tipoSuministro: prov.tipo,
+        historial: evalHistory,
+        precioMercado: evalData.precio_mercado ? Number(evalData.precio_mercado) : null,
+        precioProveedor: evalData.precio_proveedor ? Number(evalData.precio_proveedor) : null,
+        puntajesPrevios: {
+          calidad: evalData.calidad,
+          entrega: evalData.entrega,
+          precio: evalData.precio,
+          servicio: evalData.servicio
+        }
+      })
+      setEvalData(prev => ({
+        ...prev,
+        debilidades: res.debilidades ?? '',
+        generada_con_ia: true
+      }))
+    } catch (e: any) {
+      alert(e.message || 'Error al generar evaluación con IA')
+    } finally {
+      setGeneratingIA(false)
+    }
+  }
 
   const guardarProveedor = useCallback(async () => {
     if (!formData.nit || !formData.razon || !formData.tipo) {
@@ -59,6 +111,16 @@ const ProveedoresPage: React.FC = () => {
     }
   }, [formData, editingId, refetch])
 
+  const eliminarProveedor = async (id: number) => {
+    if (!confirm('¿Estás seguro de eliminar este proveedor? Toda su historia de evaluaciones se perderá.')) return
+    try {
+      await proveedoresService.delete(id)
+      await refetch()
+    } catch (e: any) {
+      alert(e.message || 'Error al eliminar proveedor')
+    }
+  }
+
   const guardarEvaluacion = useCallback(async () => {
     if (!evalProvId) return
     setSaving(true)
@@ -70,6 +132,10 @@ const ProveedoresPage: React.FC = () => {
         precio:    evalData.precio,
         servicio:  evalData.servicio,
         fecha:     new Date().toISOString().slice(0, 10),
+        precio_mercado: evalData.precio_mercado ? Number(evalData.precio_mercado) : null,
+        precio_proveedor: evalData.precio_proveedor ? Number(evalData.precio_proveedor) : null,
+        debilidades: evalData.debilidades || null,
+        generada_con_ia: evalData.generada_con_ia
       })
       await refetch()
       setShowModalEval(false)
@@ -161,8 +227,12 @@ const ProveedoresPage: React.FC = () => {
                       <td className="prov-table__actions">
                         <button className="prov-action-btn btn-evaluar" title="Realizar Evaluación"
                           onClick={() => abrirModalEval(prov)}>⭐ Evaluar</button>
+                        <button className="prov-action-btn" title="Historial"
+                          onClick={() => abrirHistorial(prov)}>📜</button>
                         <button className="prov-action-btn" title="Editar"
                           onClick={() => editarProveedor(prov)}>✏️</button>
+                        <button className="prov-action-btn" title="Eliminar"
+                          onClick={() => eliminarProveedor(prov.id)}>🗑️</button>
                       </td>
                     </tr>
                   )
@@ -195,6 +265,10 @@ const ProveedoresPage: React.FC = () => {
                     </div>
                     <div className="prov-eval-footer">
                       <span className="prov-eval-date">{ev.fecha}</span>
+                      <button className="btn btn--secondary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.8rem' }} onClick={() => {
+                        setReportData({ prov, ev })
+                        setShowReport(true)
+                      }}>📄 PDF</button>
                     </div>
                   </div>
                 )
@@ -241,6 +315,16 @@ const ProveedoresPage: React.FC = () => {
                 <option value="">Seleccionar</option>
                 {TIPOS_SUMINISTRO.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
+              <label>Periodicidad de Evaluación</label>
+              <select className="input" value={formData.periodicidad_evaluacion || 'Anual'}
+                onChange={e => setFormData(f => ({ ...f, periodicidad_evaluacion: e.target.value as any }))}>
+                <option value="Anual">Anual</option>
+                <option value="Semestral">Semestral</option>
+              </select>
+              <label>Email de Contacto</label>
+              <input type="email" className="input" placeholder="proveedor@ejemplo.com"
+                value={formData.email || ''}
+                onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
             </div>
             <div className="modal-footer">
               <button className="btn btn--secondary" onClick={() => setShowModalNuevo(false)}>Cancelar</button>
@@ -264,10 +348,20 @@ const ProveedoresPage: React.FC = () => {
               <p style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>
                 <strong>{evalProvNombre}</strong>
               </p>
+
               <label>Evaluador</label>
               <input type="text" className="input" placeholder="Nombre del evaluador"
                 value={evalData.evaluador}
                 onChange={e => setEvalData(f => ({ ...f, evaluador: e.target.value }))} />
+
+              <div style={{ background: 'var(--color-background-secondary)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                <p style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>Ingresa los datos para que Governex evalúe considerando historial, precios y tus puntajes preliminares.</p>
+                <label>Precio del Mercado Referencia ($)</label>
+                <input type="number" className="input" placeholder="Ej: 1500" value={evalData.precio_mercado} onChange={e => setEvalData(f => ({ ...f, precio_mercado: e.target.value }))} />
+                <label>Precio del Proveedor ($)</label>
+                <input type="number" className="input" placeholder="Ej: 1600" value={evalData.precio_proveedor} onChange={e => setEvalData(f => ({ ...f, precio_proveedor: e.target.value }))} />
+              </div>
+
               {(['calidad', 'entrega', 'precio', 'servicio'] as const).map(campo => (
                 <div key={campo}>
                   <label>{campo.charAt(0).toUpperCase() + campo.slice(1)} (0-100): {evalData[campo]}</label>
@@ -275,7 +369,17 @@ const ProveedoresPage: React.FC = () => {
                     onChange={e => setEvalData(f => ({ ...f, [campo]: parseInt(e.target.value) }))} />
                 </div>
               ))}
-              <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--color-background-secondary)', borderRadius: '8px' }}>
+              
+              <label>Debilidades / Plan de Acción</label>
+              <textarea className="input" rows={3} placeholder="Aspectos a mejorar..."
+                value={evalData.debilidades || ''}
+                onChange={e => setEvalData(f => ({ ...f, debilidades: e.target.value }))} />
+
+              <button className="btn btn--primary" style={{ width: '100%', marginTop: '0.5rem', marginBottom: '1rem', display: 'flex', justifyContent: 'center', gap: '0.5rem' }} onClick={generarEvalIA} disabled={generatingIA}>
+                {generatingIA ? 'Analizando con Governex...' : '✨ Generar Análisis Governex'}
+              </button>
+
+              <div style={{ padding: '1rem', background: 'var(--color-background-secondary)', borderRadius: '8px' }}>
                 <strong>Puntaje Total: {puntajeTotal}/100</strong>
                 <span style={{ marginLeft: '1rem' }} className={`pill ${
                   estadoSegunPuntaje === 'Aprobado' ? 'pill--success' :
@@ -290,6 +394,122 @@ const ProveedoresPage: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Modal Historial */}
+      {showModalHistorial && historialProv && (
+        <div className="modal-overlay" onClick={() => setShowModalHistorial(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h3>Historial de Evaluaciones: {historialProv.razon}</h3>
+              <button className="modal-close" onClick={() => setShowModalHistorial(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              {evalHistory.length === 0 ? (
+                <p>No hay evaluaciones previas para este proveedor.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {evalHistory.map((ev, i) => (
+                    <div key={i} style={{ border: '1px solid #d1dce8', padding: '1rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                      <div style={{ fontSize: '0.85rem', color: '#1a2b45' }}>
+                        <div style={{ marginBottom: '0.2rem' }}><strong>Fecha:</strong> {ev.fecha}</div>
+                        <div style={{ marginBottom: '0.2rem' }}><strong>Puntaje:</strong> <span style={{ color: ev.total >= 80 ? 'green' : ev.total >= 60 ? 'orange' : 'red', fontWeight: 'bold' }}>{ev.total}/100</span></div>
+                        <div><strong>Evaluador:</strong> {ev.evaluador || 'N/A'}</div>
+                      </div>
+                      <button className="btn btn--secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} onClick={() => {
+                        setReportData({ prov: historialProv, ev })
+                        setShowReport(true)
+                      }}>📄 PDF</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn--secondary" onClick={() => setShowModalHistorial(false)}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Reporte PDF */}
+      {showReport && reportData && (
+        <div className="report-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'white', zIndex: 9999, overflowY: 'auto' }}>
+          <div className="report-header no-print" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', background: '#f5f5f5', borderBottom: '1px solid #ddd' }}>
+            <h2>Vista Previa del Reporte</h2>
+            <div>
+              <button className="btn btn--secondary" onClick={() => setShowReport(false)} style={{ marginRight: '1rem' }}>Cerrar</button>
+              <button className="btn btn--primary" onClick={() => window.print()}>Imprimir / PDF</button>
+            </div>
+          </div>
+          <div className="report-content" style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', color: 'black' }}>
+            <h1 style={{ textAlign: 'center', marginBottom: '2rem', borderBottom: '2px solid #ccc', paddingBottom: '1rem' }}>REPORTE DE EVALUACIÓN DE PROVEEDOR</h1>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+              <div>
+                <p><strong>Proveedor:</strong> {reportData.prov.razon}</p>
+                <p><strong>NIT:</strong> {reportData.prov.nit}</p>
+                <p><strong>Tipo:</strong> {reportData.prov.tipo || 'N/A'}</p>
+              </div>
+              <div>
+                <p><strong>Fecha de Evaluación:</strong> {reportData.ev.fecha}</p>
+                <p><strong>Puntaje Total:</strong> {reportData.ev.total}/100</p>
+                <p><strong>Estado Resultante:</strong> {reportData.prov.estado}</p>
+              </div>
+            </div>
+            
+            <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Resultados por Variable (KPIs)</h3>
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+              {(['calidad', 'entrega', 'precio', 'servicio'] as const).map(k => (
+                <div key={k} style={{ flex: 1, minWidth: '150px', background: '#fafafa', padding: '1rem', borderRadius: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.9rem', textTransform: 'uppercase', color: '#666' }}>{k}</div>
+                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: reportData.ev[k] >= 80 ? 'green' : reportData.ev[k] >= 60 ? 'orange' : 'red' }}>
+                    {reportData.ev[k]}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Plan de Acción / Oportunidades de Mejora</h3>
+            <div style={{ background: '#fff3cd', padding: '1.5rem', borderRadius: '8px', border: '1px solid #ffe69c', whiteSpace: 'pre-wrap' }}>
+              {reportData.ev.debilidades || 'El proveedor cumple satisfactoriamente con los requisitos, se insta a mantener la mejora continua.'}
+            </div>
+
+            <div style={{ marginTop: '4rem', display: 'flex', justifyContent: 'space-between', textAlign: 'center' }}>
+              <div style={{ width: '45%', paddingTop: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <input 
+                  type="text" 
+                  className="signature-input"
+                  placeholder="Escribe tu firma aquí..." 
+                  defaultValue={reportData.ev.evaluador || ''}
+                  style={{
+                    fontFamily: '"Segoe Script", "Bradley Hand", "Lucida Handwriting", cursive',
+                    fontSize: '1.8rem',
+                    border: 'none',
+                    borderBottom: '1px dashed #ccc',
+                    background: 'transparent',
+                    textAlign: 'center',
+                    width: '100%',
+                    outline: 'none',
+                    color: '#000'
+                  }} 
+                />
+                <div style={{ borderTop: '1px solid #000', marginTop: '0.5rem', paddingTop: '0.5rem', width: '100%' }}>Firma del Evaluador</div>
+              </div>
+              <div style={{ width: '45%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingTop: '0.5rem' }}>
+                <div style={{ height: '50px' }}></div>
+                <div style={{ borderTop: '1px solid #000', marginTop: '0.5rem', paddingTop: '0.5rem' }}>Recibido por Proveedor</div>
+              </div>
+            </div>
+          </div>
+          <style>{`
+            @media print {
+              .no-print { display: none !important; }
+              body { background: white !important; }
+              .signature-input { border-bottom: none !important; }
+              .signature-input::placeholder { color: transparent !important; }
+            }
+          `}</style>
         </div>
       )}
     </div>

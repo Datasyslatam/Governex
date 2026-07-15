@@ -1127,4 +1127,86 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
   return res.status(500).json({ error: 'No se pudo generar el objetivo e indicador con ningún modelo disponible' })
 })
 
+/* ── POST /api/gemini/generar-evaluacion-proveedor ─────────────────
+   Genera evaluación de proveedor basada en 3 variables críticas
+   (adaptado a 4: calidad, entrega, precio, servicio) comparando
+   precios y resultados obtenidos anteriormente. */
+router.post('/generar-evaluacion-proveedor', async (req: AuthRequest, res: Response) => {
+  const { proveedor, tipoSuministro, historial, precioMercado, precioProveedor, puntajesPrevios } = req.body
+
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+  const prompt = `Eres un auditor experto en cadena de suministro y en ISO 9001:2015.
+Necesito que evalúes al siguiente proveedor basándote en la información histórica, los precios del mercado y en una puntuación preliminar ingresada por el evaluador interno.
+
+PROVEEDOR: ${proveedor}
+TIPO DE SUMINISTRO: ${tipoSuministro || 'No especificado'}
+PRECIO DEL MERCADO: ${precioMercado ? '$' + precioMercado : 'No especificado'}
+PRECIO DEL PROVEEDOR: ${precioProveedor ? '$' + precioProveedor : 'No especificado'}
+PUNTUACIÓN PRELIMINAR DEL EVALUADOR: ${puntajesPrevios ? JSON.stringify(puntajesPrevios) : 'No especificada'}
+HISTORIAL DE EVALUACIONES ANTERIORES: ${historial && historial.length > 0 ? JSON.stringify(historial) : 'Sin historial'}
+
+INSTRUCCIÓN:
+Con base en esta información, realiza una evaluación final del proveedor asignando una puntuación de 0 a 100 para las siguientes 4 variables. Debes tomar en cuenta fuertemente la "PUNTUACIÓN PRELIMINAR DEL EVALUADOR" como base y ajustarla:
+1. Calidad
+2. Entrega
+3. Precio (Penaliza la puntuación de Precio del evaluador si el precio del proveedor es mucho mayor al del mercado, o benefíciala si es competitivo).
+4. Servicio
+
+Genera también una lista de "debilidades a corregir" (plan de acción para el proveedor) justificando los puntajes finales (por ejemplo, si el evaluador le puso baja calidad, menciónalo).
+
+Responde ÚNICAMENTE con JSON válido, sin markdown ni backticks:
+{
+  "calidad": 90,
+  "entrega": 85,
+  "precio": 80,
+  "servicio": 90,
+  "debilidades": "Texto detallado con las debilidades y el plan de acción sugerido para el proveedor. Usa un tono formal corporativo."
+}`
+
+  const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+
+  for (const model of MODELS) {
+    try {
+      const body: any = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 1024,
+          responseMimeType: 'application/json',
+        },
+      }
+      if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          body:    JSON.stringify(body),
+        }
+      )
+      if (!response.ok) { console.error(`[EvalProveedor] ${model} → ${response.status}`); continue }
+
+      const data    = await response.json()
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+      if (!rawText) continue
+
+      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+      const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+      if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+
+      const parsed = JSON.parse(cleaned)
+      if (typeof parsed.calidad !== 'number') continue
+
+      return res.json(parsed)
+    } catch (err) {
+      console.error(`[EvalProveedor] Error ${model}:`, err)
+    }
+  }
+
+  return res.status(500).json({ error: 'No se pudo generar la evaluación con la IA' })
+})
+
 export default router
