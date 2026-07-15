@@ -9,7 +9,7 @@
   "scripts": {
     "dev:frontend": "vite",
     "dev:backend": "tsx src/index.ts",
-    "build": "node node_modules/typescript/bin/tsc -p tsconfig.server.json && node node_modules/vite/bin/vite.js build",
+    "build": "node node_modules/typescript/bin/tsc -p tsconfig.server.json && node -e \"require('fs').writeFileSync('dist-server/package.json', JSON.stringify({type:'commonjs'}))\" && node node_modules/vite/bin/vite.js build",
     "start": "node dist-server/index.js",
     "typecheck": "tsc --noEmit"
   },

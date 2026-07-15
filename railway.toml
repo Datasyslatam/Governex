@@ -1,6 +1,6 @@
 [build]
 builder = "railpack"
-buildCommand = "node node_modules/typescript/bin/tsc -p tsconfig.server.json && echo '{\"type\": \"commonjs\"}' > dist-server/package.json && node node_modules/vite/bin/vite.js build"
+buildCommand = "npm run build"
 
 [variables]
 RAILPACK_NO_SPA = "1"
