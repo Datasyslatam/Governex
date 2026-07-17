@@ -1,29 +1,16 @@
 import { Router, Response } from 'express'
 import multer from 'multer'
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { ACCEPTED_MIME_TYPES } from '../constants/uploads'
+import { uploadObject, resolveFileUrl, keyBelongsToTenant, getSignedDownloadUrl } from '../services/storageService'
 
 const router = Router()
 
-const s3 = new S3Client({
-  region: 'auto',
-  endpoint: process.env.R2_ENDPOINT || process.env.R2_ENDPOINT0,
-  credentials: {
-    accessKeyId: process.env.R2_KEY!,
-    secretAccessKey: process.env.R2_SECRET!,
-  },
-})
-
-// Endpoint público (sin authMiddleware) para ver archivos
-router.get('/view/:key', async (req, res) => {
+// Endpoint público (sin authMiddleware) para compatibilidad hacia atrás
+// con URLs antiguas de R2 y con el RequerimientosPSPage actual.
+router.get('/view/:key(*)', async (req, res) => {
   try {
-    const command = new GetObjectCommand({
-      Bucket: process.env.R2_BUCKET,
-      Key: req.params.key,
-    })
-    const url = await getSignedUrl(s3, command, { expiresIn: 3600 })
+    const url = await getSignedDownloadUrl(req.params.key)
     res.redirect(url)
   } catch (err) {
     res.status(500).send('Error al generar el enlace de visualización')
@@ -45,6 +32,11 @@ const upload = multer({
 })
 
 // POST /api/uploads
+// Sube el archivo a R2 bajo `{tenantId}/...` y devuelve la KEY (no una URL
+// pública permanente). El frontend guarda esa key en el campo correspondiente
+// (archivo_url, url, organigrama_url, etc. — el nombre de columna no cambió,
+// pero desde ahora su contenido es una key de R2, no una URL pública) y pide
+// una URL de descarga firmada bajo demanda vía GET /api/uploads/signed-url.
 router.post('/', (req: AuthRequest, res: Response) => {
   upload.single('file')(req, res, async (err) => {
     if (err instanceof multer.MulterError) {
@@ -61,17 +53,16 @@ router.post('/', (req: AuthRequest, res: Response) => {
     }
 
     try {
-      const safeName = req.file.originalname.replace(/[^\w.\-]/g, '_')
-      const key = `${Date.now()}-${safeName}`
-      await s3.send(new PutObjectCommand({
-        Bucket: process.env.R2_BUCKET,
-        Key: key,
-        Body: req.file.buffer,
-        ContentType: req.file.mimetype,
-      }))
+      const tenantId = req.user!.tenantId
+      const key = await uploadObject(tenantId, req.file.originalname, req.file.mimetype, req.file.buffer)
+      // Se firma una primera URL de cortesía para que el frontend pueda
+      // mostrar/previsualizar el archivo inmediatamente tras subirlo, sin
+      // tener que hacer una segunda llamada. Para verlo más adelante
+      // (recargar la página, etc.) hay que pedir una nueva vía signed-url.
+      const url = `/api/uploads/view/${key}` // proxy de compatibilidad
       res.json({
-        url: `/api/uploads/view/${key}`,
         key,
+        url,
         nombre: req.file.originalname,
         tipoMime: req.file.mimetype,
         tamanoBytes: req.file.size,
@@ -81,6 +72,31 @@ router.post('/', (req: AuthRequest, res: Response) => {
       res.status(500).json({ error: 'Error al subir archivo' })
     }
   })
+})
+
+// GET /api/uploads/signed-url?key=...
+// Renueva la URL de descarga de una key ya subida. Valida que la key
+// pertenezca al tenant del usuario ANTES de firmar — nunca confía en el
+// key recibido por query string sin verificarlo primero.
+router.get('/signed-url', async (req: AuthRequest, res: Response) => {
+  const key = req.query.key as string | undefined
+  if (!key) return res.status(400).json({ error: 'Se requiere el parámetro key' })
+
+  const tenantId = req.user!.tenantId
+  if (!keyBelongsToTenant(key, tenantId)) {
+    // 404 en vez de 403: no confirmamos ni siquiera que la key exista en
+    // otro tenant, para no dar información útil a un intento de enumeración.
+    return res.status(404).json({ error: 'Archivo no encontrado' })
+  }
+
+  try {
+    const url = await resolveFileUrl(key, tenantId)
+    if (!url) return res.status(404).json({ error: 'Archivo no encontrado' })
+    res.json({ url })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al generar la URL de descarga' })
+  }
 })
 
 export default router

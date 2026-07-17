@@ -56,10 +56,12 @@ interface MatrizCargosProps {
 }
 
 const MatrizCargosPage: React.FC<MatrizCargosProps> = ({ isSubTab }) => {
-  const { analysis } = useAIAnalysis()
+  const {
+    analysis,
+    updateFilaMatrizCargos, addFilaMatrizCargos, removeFilaMatrizCargos,
+  } = useAIAnalysis()
 
-  /* ── Estado de la Matriz ────────────────────────────────── */
-  const [filas, setFilas]             = useState<FilaMatrizCargos[]>([])
+  const filas = analysis?.matrizCargos ?? []         // ← sin useState local ni useEffect de sync
   const [editingCell, setEditing]     = useState<{ id: number; col: ColKey } | null>(null)
   const [editValue, setEditValue]     = useState('')
   const [editActividades, setEditActividades] = useState<string[]>([])
@@ -70,49 +72,32 @@ const MatrizCargosPage: React.FC<MatrizCargosProps> = ({ isSubTab }) => {
     funciones: '', clausula: '§5.3', clausulaDetalle: '§5.3 – Roles, responsabilidades y autoridades en la organización',
   })
 
-  /* ── Sincronizar con el análisis global de IA ──────────── */
-  useEffect(() => {
-    if (analysis?.matrizCargos && analysis.matrizCargos.length > 0) {
-      const normalized: FilaMatrizCargos[] = analysis.matrizCargos.map((f: any, i: number) => ({
-        ...f,
-        id: i + 1,
-        actividades: Array.isArray(f.actividades) ? f.actividades : [f.actividades || ''],
-      }))
-      setFilas(normalized)
-    }
-  }, [analysis?.matrizCargos])
-
-  /* ── Helpers de edición ─────────────────────────────────── */
   const filasFiltradas = filterTipo === 'todos' ? filas : filas.filter(f => f.tipo === filterTipo)
 
   const startEdit = (id: number, col: ColKey, fila: FilaMatrizCargos) => {
     setEditing({ id, col })
-    if (col === 'actividades') {
-      setEditActividades([...fila.actividades])
-    } else {
-      setEditValue(fila[col] as string)
-    }
+    if (col === 'actividades') setEditActividades([...fila.actividades])
+    else setEditValue(fila[col] as string)
   }
 
   const commitEdit = () => {
     if (!editingCell) return
     if (editingCell.col === 'actividades') {
-      setFilas(prev => prev.map(f => f.id === editingCell.id ? { ...f, actividades: editActividades.filter(a => a.trim()) } : f))
+      updateFilaMatrizCargos(editingCell.id, { actividades: editActividades.filter(a => a.trim()) })
     } else {
-      setFilas(prev => prev.map(f => f.id === editingCell.id ? { ...f, [editingCell.col]: editValue } : f))
+      updateFilaMatrizCargos(editingCell.id, { [editingCell.col]: editValue } as Partial<FilaMatrizCargos>)
     }
     setEditing(null)
   }
   const cancelEdit = () => setEditing(null)
 
   const deleteFila = (id: number) => {
-    if (window.confirm('¿Eliminar este cargo de la matriz?')) setFilas(prev => prev.filter(f => f.id !== id))
+    if (window.confirm('¿Eliminar este cargo de la matriz?')) removeFilaMatrizCargos(id)
   }
 
   const addFila = () => {
     if (!newFila.proceso.trim()) return
-    const id = Math.max(0, ...filas.map(f => f.id)) + 1
-    setFilas(prev => [...prev, { id, ...newFila, actividades: newFila.actividades.filter(a => a.trim()) }])
+    addFilaMatrizCargos({ ...newFila, actividades: newFila.actividades.filter(a => a.trim()) })
     setShowAddModal(false)
     setNewFila({
       proceso: '', tipo: 'misional', actividades: [''], responsable: '',

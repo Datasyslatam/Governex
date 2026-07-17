@@ -1,0 +1,69 @@
+.pa-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-sidebar, #1b3a6b);
+}
+
+.pa-login__card {
+  background: var(--color-panel, #fff);
+  padding: 2.5rem;
+  border-radius: 1rem;
+  width: min(90vw, 380px);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pa-login__card h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--color-text-main, #1a2b45);
+}
+
+.pa-login__subtitle {
+  margin: -0.5rem 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #7a8fa6);
+}
+
+.pa-login__error {
+  background: rgba(217, 48, 37, 0.1);
+  color: var(--color-danger, #d93025);
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.pa-login__card label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #4a5e78);
+}
+
+.pa-login__card input {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border, #d1dce8);
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.pa-login__card button {
+  margin-top: 0.5rem;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: var(--color-primary, #1a6ebd);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pa-login__card button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

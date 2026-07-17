@@ -1,20 +1,23 @@
 import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
+import { requirePermission } from '../middleware/rbac'
 
 const router = Router()
 router.use(authMiddleware)
 
+
+
 /* ══════════════════════════════════════════════════════════════
    FICHAS TÉCNICAS (generales o educativas)
-   (Ubicadas arriba para evitar colisión con /:id)
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/requerimientos-ps/fichas-tecnicas
-router.get('/fichas-tecnicas', async (_req, res: Response) => {
+router.get('/fichas-tecnicas', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM fichas_tecnicas_ps ORDER BY creado_en DESC`
+      `SELECT * FROM fichas_tecnicas_ps WHERE tenant_id = $1 ORDER BY creado_en DESC`,
+      [req.user!.tenantId]
     )
     res.json(rows)
   } catch (err) {
@@ -24,7 +27,7 @@ router.get('/fichas-tecnicas', async (_req, res: Response) => {
 })
 
 // POST /api/requerimientos-ps/fichas-tecnicas
-router.post('/fichas-tecnicas', async (req: AuthRequest, res: Response) => {
+router.post('/fichas-tecnicas', requirePermission('requerimientos_ps', 'crear'), async (req: AuthRequest, res: Response) => {
   const {
     id, tipo, generadaConIA, cliente, productoServicio, version, fechaElaboracion,
     elaboradoPor, aprobadoPor, estado, descripcion, especificacionesTecnicas,
@@ -35,13 +38,16 @@ router.post('/fichas-tecnicas', async (req: AuthRequest, res: Response) => {
   if (!id || !tipo) return res.status(400).json({ error: 'id y tipo son requeridos' })
 
   try {
+    // El id lo genera el frontend (string libre); el UNIQUE ahora es
+    // compuesto (tenant_id, id), así que dos tenants sí pueden coincidir
+    // en el mismo id sin chocar entre sí.
     const { rows } = await pool.query(
       `INSERT INTO fichas_tecnicas_ps
          (id, tipo, generada_con_ia, cliente, producto_servicio, version, fecha_elaboracion,
           elaborado_por, aprobado_por, estado, descripcion, especificaciones_tecnicas,
           normas_aplicables, condiciones_uso, area_asignatura, objetivo_general, competencias,
-          unidades_curriculares, total_horas_semana, observaciones, creado_por)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+          unidades_curriculares, total_horas_semana, observaciones, creado_por, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
        RETURNING *`,
       [
         id, tipo, generadaConIA ?? true, cliente || null, productoServicio || null,
@@ -50,7 +56,7 @@ router.post('/fichas-tecnicas', async (req: AuthRequest, res: Response) => {
         normasAplicables || null, condicionesUso || null, areaAsignatura || null,
         objetivoGeneral || null, competencias || null,
         JSON.stringify(unidadesCurriculares || []), totalHorasSemana || 0,
-        observaciones || null, req.user?.id || null,
+        observaciones || null, req.user?.id || null, req.user!.tenantId,
       ]
     )
     res.status(201).json(rows[0])
@@ -62,7 +68,7 @@ router.post('/fichas-tecnicas', async (req: AuthRequest, res: Response) => {
 })
 
 // PUT /api/requerimientos-ps/fichas-tecnicas/:id
-router.put('/fichas-tecnicas/:id', async (req: AuthRequest, res: Response) => {
+router.put('/fichas-tecnicas/:id', requirePermission('requerimientos_ps', 'editar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const {
     tipo, cliente, productoServicio, version, fechaElaboracion, elaboradoPor, aprobadoPor,
@@ -77,14 +83,14 @@ router.put('/fichas-tecnicas/:id', async (req: AuthRequest, res: Response) => {
          elaborado_por=$6, aprobado_por=$7, estado=$8, descripcion=$9, especificaciones_tecnicas=$10,
          normas_aplicables=$11, condiciones_uso=$12, area_asignatura=$13, objetivo_general=$14,
          competencias=$15, unidades_curriculares=$16, total_horas_semana=$17, observaciones=$18
-       WHERE id=$19 RETURNING *`,
+       WHERE id=$19 AND tenant_id=$20 RETURNING *`,
       [
         tipo, cliente || null, productoServicio || null, version || '1.0',
         fechaElaboracion || null, elaboradoPor || null, aprobadoPor || null, estado,
         descripcion || null, especificacionesTecnicas || null, normasAplicables || null,
         condicionesUso || null, areaAsignatura || null, objetivoGeneral || null,
         competencias || null, JSON.stringify(unidadesCurriculares || []),
-        totalHorasSemana || 0, observaciones || null, id,
+        totalHorasSemana || 0, observaciones || null, id, req.user!.tenantId,
       ]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Ficha no encontrada' })
@@ -96,9 +102,9 @@ router.put('/fichas-tecnicas/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // DELETE /api/requerimientos-ps/fichas-tecnicas/:id
-router.delete('/fichas-tecnicas/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/fichas-tecnicas/:id', requirePermission('requerimientos_ps', 'eliminar'), async (req: AuthRequest, res: Response) => {
   try {
-    const { rowCount } = await pool.query('DELETE FROM fichas_tecnicas_ps WHERE id=$1', [req.params.id])
+    const { rowCount } = await pool.query('DELETE FROM fichas_tecnicas_ps WHERE id=$1 AND tenant_id=$2', [req.params.id, req.user!.tenantId])
     if (!rowCount) return res.status(404).json({ error: 'Ficha no encontrada' })
     res.status(204).send()
   } catch (err) {
@@ -107,18 +113,16 @@ router.delete('/fichas-tecnicas/:id', async (req: AuthRequest, res: Response) =>
   }
 })
 
-/* ══════════════════════════════════════════════════════════════
-   REQUERIMIENTOS PS
-   ══════════════════════════════════════════════════════════════ */
-
 // GET /api/requerimientos-ps
-router.get('/', async (_req, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT rp.*, u.nombre AS creado_por_nombre
        FROM requerimientos_ps rp
        LEFT JOIN usuarios u ON u.id = rp.creado_por
-       ORDER BY rp.creado_en DESC`
+       WHERE rp.tenant_id = $1
+       ORDER BY rp.creado_en DESC`,
+      [req.user!.tenantId]
     )
     res.json(rows)
   } catch (err) {
@@ -131,7 +135,7 @@ router.get('/', async (_req, res: Response) => {
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM requerimientos_ps WHERE id=$1`, [req.params.id]
+      `SELECT * FROM requerimientos_ps WHERE id=$1 AND tenant_id=$2`, [req.params.id, req.user!.tenantId]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Requerimiento no encontrado' })
     res.json(rows[0])
@@ -142,10 +146,10 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // POST /api/requerimientos-ps
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', requirePermission('requerimientos_ps', 'crear'), async (req: AuthRequest, res: Response) => {
   const { cliente, producto_servicio, requisitos_cliente, requisitos_legales,
           requisitos_org, fecha_revision, revisado_por, estado,
-          ficha_tecnica_id, generado_con_ia, cotizacion, aprobacion_interna, matriz_legal, url_contrato } = req.body
+          ficha_tecnica_id, generado_con_ia } = req.body   // ← agregado
   if (!cliente || !producto_servicio) {
     return res.status(400).json({ error: 'cliente y producto_servicio son requeridos' })
   }
@@ -153,8 +157,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     const { rows } = await pool.query(
       `INSERT INTO requerimientos_ps
          (cliente, producto_servicio, requisitos_cliente, requisitos_legales,
-          requisitos_org, fecha_revision, revisado_por, estado, ficha_tecnica_id, generado_con_ia, creado_por, cotizacion, aprobacion_interna, matriz_legal, url_contrato, url_cotizacion)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+          requisitos_org, fecha_revision, revisado_por, estado, ficha_tecnica_id, generado_con_ia, creado_por, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
       [
         cliente, producto_servicio,
         requisitos_cliente  || null,
@@ -166,11 +170,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         ficha_tecnica_id    || null,
         generado_con_ia     ?? false,
         req.user?.id        || null,
-        cotizacion          || null,
-        aprobacion_interna  || null,
-        matriz_legal        || null,
-        url_contrato        || null,
-        req.body.url_cotizacion || null
+        req.user!.tenantId,
       ]
     )
     res.status(201).json(rows[0])
@@ -181,20 +181,20 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 })
 
 // PUT /api/requerimientos-ps/:id
-router.put('/:id', async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('requerimientos_ps', 'editar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { cliente, producto_servicio, requisitos_cliente, requisitos_legales,
-          requisitos_org, fecha_revision, revisado_por, estado, ficha_tecnica_id, cotizacion, aprobacion_interna, matriz_legal, url_contrato, url_cotizacion } = req.body
+          requisitos_org, fecha_revision, revisado_por, estado, ficha_tecnica_id } = req.body   // ← agregado
   try {
     const { rows } = await pool.query(
       `UPDATE requerimientos_ps
        SET cliente=$1, producto_servicio=$2, requisitos_cliente=$3,
            requisitos_legales=$4, requisitos_org=$5, fecha_revision=$6,
-           revisado_por=$7, estado=$8, ficha_tecnica_id=$9, cotizacion=$10, aprobacion_interna=$11, matriz_legal=$12, url_contrato=$13, url_cotizacion=$14
-       WHERE id=$15 RETURNING *`,
+           revisado_por=$7, estado=$8, ficha_tecnica_id=$9
+       WHERE id=$10 AND tenant_id=$11 RETURNING *`,
       [cliente, producto_servicio, requisitos_cliente || null,
        requisitos_legales || null, requisitos_org || null,
-       fecha_revision || null, revisado_por || null, estado, ficha_tecnica_id || null, cotizacion || null, aprobacion_interna || null, matriz_legal || null, url_contrato || null, url_cotizacion || null, id]
+       fecha_revision || null, revisado_por || null, estado, ficha_tecnica_id || null, id, req.user!.tenantId]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Requerimiento no encontrado' })
     res.json(rows[0])
@@ -205,24 +205,12 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // DELETE /api/requerimientos-ps/:id
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/:id', requirePermission('requerimientos_ps', 'eliminar'), async (req: AuthRequest, res: Response) => {
   try {
-    // 1. Obtener el ficha_tecnica_id antes de borrar
-    const { rows: reqRows } = await pool.query(
-      `SELECT ficha_tecnica_id FROM requerimientos_ps WHERE id=$1`, [req.params.id]
+    const { rowCount } = await pool.query(
+      `DELETE FROM requerimientos_ps WHERE id=$1 AND tenant_id=$2`, [req.params.id, req.user!.tenantId]
     )
-    if (!reqRows[0]) return res.status(404).json({ error: 'Requerimiento no encontrado' })
-
-    const fichaId = reqRows[0].ficha_tecnica_id
-
-    // 2. Borrar el requerimiento
-    await pool.query(`DELETE FROM requerimientos_ps WHERE id=$1`, [req.params.id])
-
-    // 3. Si tenía ficha vinculada, borrarla para no dejar registros huérfanos
-    if (fichaId) {
-      await pool.query(`DELETE FROM fichas_tecnicas_ps WHERE id=$1`, [fichaId])
-    }
-
+    if (!rowCount) return res.status(404).json({ error: 'Requerimiento no encontrado' })
     res.status(204).send()
   } catch (err) {
     console.error(err)

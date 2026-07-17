@@ -1,8 +1,11 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
+import { PlatformAdminProtectedRoute } from "./PlatformAdminProtectedRoute";
 import { useAuth } from "../hooks/useAuth";
-import EnfoqueClientePage from "../pages/enfoque-cliente/EnfoqueClientePage"; // ← NUEVO
+import PlatformAdminLoginPage from "../pages/platform-admin/PlatformAdminLoginPage";
+import PlatformAdminDashboardPage from "../pages/platform-admin/PlatformAdminDashboardPage";
+import EnfoqueClientePage from "../pages/enfoque-cliente/EnfoqueClientePage";
 
 import AuthLayout from "../layout/AuthLayout";
 import MainLayout from "../layout/MainLayout";
@@ -40,6 +43,17 @@ export const AppRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/login" element={<AuthLayout><LoginPage /></AuthLayout>} />
+
+      {/* Panel de super-admin de Governex — completamente aislado del resto de la app */}
+      <Route path="/platform-admin/login" element={<PlatformAdminLoginPage />} />
+      <Route
+        path="/platform-admin"
+        element={
+          <PlatformAdminProtectedRoute>
+            <PlatformAdminDashboardPage />
+          </PlatformAdminProtectedRoute>
+        }
+      />
 
       <Route
         path="/"

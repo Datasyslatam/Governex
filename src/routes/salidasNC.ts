@@ -1,12 +1,13 @@
 import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
+import { requirePermission } from '../middleware/rbac'
 
 const router = Router()
 router.use(authMiddleware)
 
 // GET /api/salidas-nc
-router.get('/', async (_req, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT snc.*,
@@ -15,7 +16,9 @@ router.get('/', async (_req, res: Response) => {
        FROM salidas_nc snc
        LEFT JOIN no_conformidades nc ON nc.id = snc.nc_id
        LEFT JOIN usuarios u          ON u.id  = snc.creado_por
-       ORDER BY snc.fecha DESC, snc.creado_en DESC`
+       WHERE snc.tenant_id = $1
+       ORDER BY snc.fecha DESC, snc.creado_en DESC`,
+      [req.user!.tenantId]
     )
     res.json(rows)
   } catch (err) {
@@ -28,7 +31,7 @@ router.get('/', async (_req, res: Response) => {
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM salidas_nc WHERE id=$1`, [req.params.id]
+      `SELECT * FROM salidas_nc WHERE id=$1 AND tenant_id=$2`, [req.params.id, req.user!.tenantId]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Salida NC no encontrada' })
     res.json(rows[0])
@@ -39,7 +42,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // POST /api/salidas-nc
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', requirePermission('salidas_nc', 'crear'), async (req: AuthRequest, res: Response) => {
   const { codigo, descripcion, proceso, detectado_en, disposicion,
           responsable, fecha, accion_tomada, verificado_por, estado, nc_id } = req.body
   if (!codigo || !descripcion || !detectado_en || !disposicion) {
@@ -51,8 +54,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     const { rows } = await pool.query(
       `INSERT INTO salidas_nc
          (codigo, descripcion, proceso, detectado_en, disposicion,
-          responsable, fecha, accion_tomada, verificado_por, estado, nc_id, creado_por)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+          responsable, fecha, accion_tomada, verificado_por, estado, nc_id, creado_por, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
       [
         codigo,
         descripcion,
@@ -66,6 +69,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         estado          || 'Abierta',
         nc_id           || null,
         req.user?.id    || null,
+        req.user!.tenantId,
       ]
     )
     res.status(201).json(rows[0])
@@ -77,7 +81,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 })
 
 // PUT /api/salidas-nc/:id
-router.put('/:id', async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('salidas_nc', 'editar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { descripcion, proceso, detectado_en, disposicion,
           responsable, fecha, accion_tomada, verificado_por, estado, nc_id } = req.body
@@ -87,10 +91,10 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
        SET descripcion=$1, proceso=$2, detectado_en=$3, disposicion=$4,
            responsable=$5, fecha=$6, accion_tomada=$7, verificado_por=$8,
            estado=$9, nc_id=$10
-       WHERE id=$11 RETURNING *`,
+       WHERE id=$11 AND tenant_id=$12 RETURNING *`,
       [descripcion, proceso || null, detectado_en, disposicion,
        responsable || null, fecha, accion_tomada || null,
-       verificado_por || null, estado, nc_id || null, id]
+       verificado_por || null, estado, nc_id || null, id, req.user!.tenantId]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Salida NC no encontrada' })
     res.json(rows[0])
@@ -101,10 +105,10 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // DELETE /api/salidas-nc/:id
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/:id', requirePermission('salidas_nc', 'eliminar'), async (req: AuthRequest, res: Response) => {
   try {
     const { rowCount } = await pool.query(
-      `DELETE FROM salidas_nc WHERE id=$1`, [req.params.id]
+      `DELETE FROM salidas_nc WHERE id=$1 AND tenant_id=$2`, [req.params.id, req.user!.tenantId]
     )
     if (!rowCount) return res.status(404).json({ error: 'Salida NC no encontrada' })
     res.status(204).send()

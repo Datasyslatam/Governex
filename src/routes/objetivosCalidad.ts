@@ -1,12 +1,13 @@
 import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
+import { requirePermission } from '../middleware/rbac'
 
 const router = Router()
 router.use(authMiddleware)
 
 // GET /api/objetivos-calidad
-router.get('/', async (_req: AuthRequest, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT oc.*,
@@ -24,9 +25,11 @@ router.get('/', async (_req: AuthRequest, res: Response) => {
                 '[]'
               ) AS mediciones
        FROM objetivos_calidad oc
-       LEFT JOIN objetivos_calidad_mediciones m ON m.objetivo_id = oc.id
+       LEFT JOIN objetivos_calidad_mediciones m ON m.objetivo_id = oc.id AND m.tenant_id = oc.tenant_id
+       WHERE oc.tenant_id = $1
        GROUP BY oc.id
-       ORDER BY oc.codigo`
+       ORDER BY oc.codigo`,
+      [req.user!.tenantId]
     )
     res.json(rows)
   } catch (err) {
@@ -36,7 +39,7 @@ router.get('/', async (_req: AuthRequest, res: Response) => {
 })
 
 // POST /api/objetivos-calidad
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', requirePermission('objetivos_calidad', 'crear'), async (req: AuthRequest, res: Response) => {
   const {
     codigo, objetivo, proceso_relacionado, fuente_riesgo_oportunidad,
     tipo_fuente, accion, responsable, recursos, frecuencia_medicion,
@@ -56,14 +59,14 @@ router.post('/', async (req: AuthRequest, res: Response) => {
          (codigo, objetivo, proceso_relacionado, fuente_riesgo_oportunidad,
           tipo_fuente, accion, responsable, recursos, frecuencia_medicion,
           meta, indicador, fecha_inicio, fecha_fin, estado,
-          _riesgo_codigo, _riesgo_nivel)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+          _riesgo_codigo, _riesgo_nivel, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
        RETURNING *`,
       [
         codigo, objetivo, proceso_relacionado || null, fuente_riesgo_oportunidad || null,
         tipo_fuente || 'Riesgo', accion, responsable, recursos || null, frecuencia_medicion,
         meta, indicador, fecha_inicio || null, fecha_fin || null, estado || 'Pendiente',
-        _riesgo_codigo || null, _riesgo_nivel || null,
+        _riesgo_codigo || null, _riesgo_nivel || null, req.user!.tenantId,
       ]
     )
     res.status(201).json(rows[0])
@@ -75,7 +78,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 })
 
 // PUT /api/objetivos-calidad/:id
-router.put('/:id', async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('objetivos_calidad', 'editar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const {
     objetivo, proceso_relacionado, fuente_riesgo_oportunidad,
@@ -92,14 +95,14 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
          frecuencia_medicion=$8, meta=$9, indicador=$10,
          fecha_inicio=$11, fecha_fin=$12, estado=$13,
          _riesgo_codigo=$14, _riesgo_nivel=$15
-       WHERE id=$16 RETURNING *`,
+       WHERE id=$16 AND tenant_id=$17 RETURNING *`,
       [
         objetivo, proceso_relacionado || null, fuente_riesgo_oportunidad || null,
         tipo_fuente || 'Riesgo', accion, responsable, recursos || null,
         frecuencia_medicion, meta, indicador,
         fecha_inicio || null, fecha_fin || null, estado,
         _riesgo_codigo || null, _riesgo_nivel || null,
-        id,
+        id, req.user!.tenantId,
       ]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Objetivo no encontrado' })
@@ -111,10 +114,11 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // DELETE /api/objetivos-calidad/:id
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/:id', requirePermission('objetivos_calidad', 'eliminar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   try {
-    await pool.query('DELETE FROM objetivos_calidad WHERE id=$1', [id])
+    const { rowCount } = await pool.query('DELETE FROM objetivos_calidad WHERE id=$1 AND tenant_id=$2', [id, req.user!.tenantId])
+    if (!rowCount) return res.status(404).json({ error: 'Objetivo no encontrado' })
     res.status(204).send()
   } catch (err) {
     console.error(err)
@@ -123,19 +127,25 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // POST /api/objetivos-calidad/:id/mediciones
-router.post('/:id/mediciones', async (req: AuthRequest, res: Response) => {
+router.post('/:id/mediciones', requirePermission('objetivos_calidad', 'crear'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { periodo, valor, estado, comentario, fecha } = req.body
   if (!periodo || valor === undefined || !estado) {
     return res.status(400).json({ error: 'periodo, valor y estado son requeridos' })
   }
   try {
+    const tenantId = req.user!.tenantId
+    const { rowCount } = await pool.query(
+      'SELECT 1 FROM objetivos_calidad WHERE id = $1 AND tenant_id = $2', [id, tenantId]
+    )
+    if (!rowCount) return res.status(404).json({ error: 'Objetivo no encontrado' })
+
     const { rows } = await pool.query(
       `INSERT INTO objetivos_calidad_mediciones
-         (objetivo_id, periodo, valor, estado, comentario, fecha, registrado_por)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+         (objetivo_id, periodo, valor, estado, comentario, fecha, registrado_por, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
       [id, periodo, valor, estado, comentario || null,
-       fecha || new Date().toISOString().slice(0, 10), req.user?.id || null]
+       fecha || new Date().toISOString().slice(0, 10), req.user?.id || null, tenantId]
     )
     res.status(201).json(rows[0])
   } catch (err) {
@@ -149,8 +159,8 @@ router.get('/:id/mediciones', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM objetivos_calidad_mediciones
-       WHERE objetivo_id=$1 ORDER BY fecha DESC`,
-      [req.params.id]
+       WHERE objetivo_id=$1 AND tenant_id=$2 ORDER BY fecha DESC`,
+      [req.params.id, req.user!.tenantId]
     )
     res.json(rows)
   } catch (err) {

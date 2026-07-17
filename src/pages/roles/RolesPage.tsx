@@ -21,11 +21,13 @@ const COLS: { key: ColKey; label: string }[] = [
    COMPONENTE PRINCIPAL
    ══════════════════════════════════════════════════════════════ */
 const RolesPage: React.FC = () => {
-  const { analysis } = useAIAnalysis()
+  const {
+    analysis,
+    updateFilaMatrizRoles, addFilaMatrizRoles, removeFilaMatrizRoles,
+  } = useAIAnalysis()
   const [activeTab, setActiveTab] = useState<'roles' | 'cargos'>('roles')
 
-  /* ── Estado de la Matriz ────────────────────────────────── */
-  const [filas, setFilas]           = useState<FilaMatriz[]>([])
+  const filas = analysis?.matrizRoles ?? []          // ← sin useState local ni useEffect de sync
   const [editingCell, setEditing]   = useState<{ id: number; col: ColKey } | null>(null)
   const [editValue, setEditValue]   = useState('')
   const [filterTipo, setFilterTipo] = useState<TipoProceso | 'todos'>('todos')
@@ -35,36 +37,23 @@ const RolesPage: React.FC = () => {
     funciones: '', recursos: '', rendicion: '', clausula: '',
   })
 
-  /* ── Sincronizar con el análisis global de IA ──────────── */
-  useEffect(() => {
-    if (analysis?.matrizRoles && analysis.matrizRoles.length > 0) {
-      const normalized: FilaMatriz[] = analysis.matrizRoles.map((f: any, i: number) => ({
-        ...f,
-        id: i + 1,
-      }))
-      setFilas(normalized)
-    }
-  }, [analysis?.matrizRoles])
-
-  /* ── Helpers de edición ─────────────────────────────────── */
   const filasFiltradas = filterTipo === 'todos' ? filas : filas.filter(f => f.tipo === filterTipo)
 
   const startEdit  = (id: number, col: ColKey, value: string) => { setEditing({ id, col }); setEditValue(value) }
   const commitEdit = () => {
     if (!editingCell) return
-    setFilas(prev => prev.map(f => f.id === editingCell.id ? { ...f, [editingCell.col]: editValue } : f))
+    updateFilaMatrizRoles(editingCell.id, { [editingCell.col]: editValue } as Partial<FilaMatriz>)
     setEditing(null)
   }
   const cancelEdit = () => setEditing(null)
 
   const deleteFila = (id: number) => {
-    if (window.confirm('¿Eliminar este proceso de la matriz?')) setFilas(prev => prev.filter(f => f.id !== id))
+    if (window.confirm('¿Eliminar este proceso de la matriz?')) removeFilaMatrizRoles(id)
   }
 
   const addFila = () => {
     if (!newFila.proceso.trim()) return
-    const id = Math.max(0, ...filas.map(f => f.id)) + 1
-    setFilas(prev => [...prev, { id, ...newFila }])
+    addFilaMatrizRoles(newFila)
     setShowAddModal(false)
     setNewFila({ proceso: '', tipo: 'misional', responsable: '', autoridad: '', funciones: '', recursos: '', rendicion: '', clausula: '' })
   }

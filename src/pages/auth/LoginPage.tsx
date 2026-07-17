@@ -1,12 +1,14 @@
-  import React, { useState } from 'react'
+import React, { useState } from 'react'
   import { useNavigate } from 'react-router-dom'
   import { useAuth } from '../../hooks/useAuth'
+  import { usePlatformAdminAuth } from '../../context/PlatformAdminAuthContext'
   import { authService } from '../../services'
   import './LoginPage.css'
   import logoGovernex from '../../assets/logo-governex.png'
 
   const LoginPage: React.FC = () => {
     const { login }   = useAuth()
+    const { login: loginPlatformAdmin } = usePlatformAdminAuth()
     const navigate    = useNavigate()
     const [email, setEmail]       = useState('')
     const [password, setPassword] = useState('')
@@ -19,12 +21,25 @@
       setLoading(true)
       setError('')
       try {
-        const user = await authService.login(email, password)
-        // Adaptar al formato que espera el AuthContext existente
-        login({ name: user.nombre, role: user.rol as any })
+        const { user, tenant } = await authService.login(email, password)
+        // Adaptar al formato que espera el AuthContext existente.
+        // tenant solo se guarda para mostrarlo en UI (ej. nombre de la
+        // empresa en el header); nunca se usa para filtrar datos ni se
+        // reenvía al backend — eso siempre lo decide el JWT server-side.
+        login({ name: user.nombre, role: user.rol as any, tenant })
         navigate('/dashboard')
-      } catch (e: any) {
-        setError(e.message || 'Credenciales incorrectas')
+      } catch (tenantErr: any) {
+        // Las credenciales no son válidas como usuario de tenant. Antes de
+        // mostrar el error, probamos silenciosamente si son válidas como
+        // super-admin de Governex — así el mismo formulario sirve para
+        // ambos accesos, sin exponer ningún enlace visible al panel.
+        try {
+          await loginPlatformAdmin(email, password)
+          navigate('/platform-admin')
+          return
+        } catch {
+          setError(tenantErr.message || 'Credenciales incorrectas')
+        }
       } finally {
         setLoading(false)
       }

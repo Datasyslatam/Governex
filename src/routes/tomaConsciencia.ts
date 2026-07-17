@@ -1,12 +1,13 @@
 import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
+import { requirePermission } from '../middleware/rbac'
 
 const router = Router()
 router.use(authMiddleware)
 
 // GET /api/toma-consciencia
-router.get('/', async (_req, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT tc.*,
@@ -15,7 +16,9 @@ router.get('/', async (_req, res: Response) => {
        FROM toma_consciencia tc
        LEFT JOIN personal  ps ON ps.id = tc.personal_id
        LEFT JOIN usuarios  u  ON u.id  = tc.creado_por
-       ORDER BY tc.fecha DESC NULLS LAST, tc.creado_en DESC`
+       WHERE tc.tenant_id = $1
+       ORDER BY tc.fecha DESC NULLS LAST, tc.creado_en DESC`,
+      [req.user!.tenantId]
     )
     res.json(rows)
   } catch (err) {
@@ -28,7 +31,7 @@ router.get('/', async (_req, res: Response) => {
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM toma_consciencia WHERE id=$1`, [req.params.id]
+      `SELECT * FROM toma_consciencia WHERE id=$1 AND tenant_id=$2`, [req.params.id, req.user!.tenantId]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Registro no encontrado' })
     res.json(rows[0])
@@ -39,7 +42,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // POST /api/toma-consciencia
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', requirePermission('toma_consciencia', 'crear'), async (req: AuthRequest, res: Response) => {
   const { colaborador, cargo, proceso, tema, fecha,
           modalidad, evidencia, estado, personal_id } = req.body
   if (!colaborador || !tema || !modalidad) {
@@ -48,8 +51,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `INSERT INTO toma_consciencia
-         (colaborador, cargo, proceso, tema, fecha, modalidad, evidencia, estado, personal_id, creado_por)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+         (colaborador, cargo, proceso, tema, fecha, modalidad, evidencia, estado, personal_id, creado_por, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
       [
         colaborador,
         cargo       || null,
@@ -61,6 +64,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         estado      || 'Pendiente',
         personal_id || null,
         req.user?.id || null,
+        req.user!.tenantId,
       ]
     )
     res.status(201).json(rows[0])
@@ -71,7 +75,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 })
 
 // PUT /api/toma-consciencia/:id
-router.put('/:id', async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('toma_consciencia', 'editar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { colaborador, cargo, proceso, tema, fecha,
           modalidad, evidencia, estado, personal_id } = req.body
@@ -80,9 +84,9 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       `UPDATE toma_consciencia
        SET colaborador=$1, cargo=$2, proceso=$3, tema=$4, fecha=$5,
            modalidad=$6, evidencia=$7, estado=$8, personal_id=$9
-       WHERE id=$10 RETURNING *`,
+       WHERE id=$10 AND tenant_id=$11 RETURNING *`,
       [colaborador, cargo || null, proceso || null, tema,
-       fecha || null, modalidad, evidencia || null, estado, personal_id || null, id]
+       fecha || null, modalidad, evidencia || null, estado, personal_id || null, id, req.user!.tenantId]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Registro no encontrado' })
     res.json(rows[0])
@@ -93,10 +97,10 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // DELETE /api/toma-consciencia/:id
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/:id', requirePermission('toma_consciencia', 'eliminar'), async (req: AuthRequest, res: Response) => {
   try {
     const { rowCount } = await pool.query(
-      `DELETE FROM toma_consciencia WHERE id=$1`, [req.params.id]
+      `DELETE FROM toma_consciencia WHERE id=$1 AND tenant_id=$2`, [req.params.id, req.user!.tenantId]
     )
     if (!rowCount) return res.status(404).json({ error: 'Registro no encontrado' })
     res.status(204).send()
