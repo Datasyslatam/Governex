@@ -672,31 +672,58 @@ CONTEXTO DE LA ORGANIZACIÓN (módulo 4.1):
 ${datosEmpresa.contextoNarrativo ? `- Contexto adicional: ${datosEmpresa.contextoNarrativo}` : ''}
 
 INSTRUCCIÓN:
-Analiza los productos y servicios de esta organización y genera la MATRIZ DE REVISIÓN DE REQUISITOS ISO 9001:2015 §8.2.
-Crea UNA FILA por cada producto o servicio identificado en el contexto (mínimo 3, máximo 8).
-${esEducativa ? 'Para instituciones educativas, cada área o asignatura es un "producto/servicio". Usa los clientes reales: estudiantes, padres de familia, MEN, etc.' : ''}
+Genera la MATRIZ DE REVISIÓN DE REQUISITOS (ISO 9001:2015 §8.2) Y LA FICHA TÉCNICA DETALLADA PARA CADA UNO.
+Crea UNA FILA por cada producto o servicio principal identificado en el contexto (mínimo 3, máximo 8).
+${esEducativa ? 'Para instituciones educativas, cada área o asignatura principal es un "producto/servicio".' : ''}
 
-Para cada fila determina:
-- El cliente o segmento de mercado más relevante para ese producto/servicio
-- Los requisitos específicos que ese cliente espera
-- Los requisitos legales y reglamentarios aplicables en Colombia para ese producto/servicio
-- Los requisitos internos de la organización (plazos, estándares, garantías)
-- El cargo responsable de la revisión (según el tamaño y tipo de empresa)
-- La fecha de revisión (usa el año actual 2025, distribúyelas en los meses del año)
-- El estado inicial apropiado (la mayoría Pendiente, algunos Aprobado si son servicios consolidados)
+Para CADA fila, debes proveer dos bloques de datos:
+1. Datos de la revisión: Cliente, requisitos, estado, etc.
+2. Ficha Técnica completa correspondiente a ese producto/servicio.
 
-Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
+Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown, con esta estructura exacta:
 {
   "revisiones": [
     {
       "cliente": "Nombre del cliente o segmento",
       "productoServicio": "Nombre exacto del producto o servicio",
-      "requisitosCliente": "Requisitos específicos que el cliente espera de este producto/servicio",
-      "requisitosLegales": "Normas legales, reglamentarias o técnicas aplicables en Colombia",
-      "requisitosOrg": "Requisitos internos: plazos, estándares de calidad, condiciones de entrega",
+      "requisitosCliente": "Requisitos específicos que el cliente espera",
+      "requisitosLegales": "Normas legales, reglamentarias o técnicas aplicables",
+      "requisitosOrg": "Requisitos internos: plazos, estándares de calidad",
       "revisadoPor": "Cargo del responsable",
       "fechaRevision": "2025-MM-DD",
-      "estado": "Pendiente | Aprobado | Rechazado"
+      "estado": "Pendiente | Aprobado",
+      "fichaTecnica": {
+        ${esEducativa ? `
+        "elaboradoPor": "Cargo (ej. Coordinador Académico)",
+        "aprobadoPor": "Cargo (ej. Rector)",
+        "areaAsignatura": "Nombre del área/asignatura",
+        "objetivoGeneral": "Objetivo general de formación",
+        "competencias": "Competencias a desarrollar",
+        "observaciones": "Comentarios adicionales",
+        "unidadesCurriculares": [
+          {
+            "gradoAnio": "Ej. 6to Grado",
+            "nivelCurso": "Primaria | Secundaria | Pregrado | Posgrado | Otro",
+            "periodo": "Ej. Primer Semestre",
+            "nombre": "Nombre de la unidad",
+            "intensidadHoraria": "Número (ej. 4)",
+            "docente": "Perfil sugerido del docente",
+            "contenidoProgramatico": "Temas principales",
+            "metodologia": "Metodología sugerida",
+            "criteriosEvaluacion": "Forma de evaluación",
+            "logros": "Logros esperados"
+          }
+        ]
+        ` : `
+        "elaboradoPor": "Cargo (ej. Jefe de Producción)",
+        "aprobadoPor": "Cargo (ej. Gerente General)",
+        "descripcion": "Descripción detallada del producto/servicio",
+        "especificacionesTecnicas": "Especificaciones técnicas detalladas (materiales, dimensiones, características técnicas)",
+        "normasAplicables": "Normas técnicas, ISO, reglamentos (INVIMA, ICA, RETIE, etc.)",
+        "condicionesUso": "Instrucciones de uso, almacenamiento, garantías, vida útil",
+        "observaciones": "Comentarios adicionales"
+        `}
+      }
     }
   ]
 }`
@@ -708,7 +735,7 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.3,
-          maxOutputTokens: 3000,
+          maxOutputTokens: 8192,
           responseMimeType: 'application/json',
         },
       }
@@ -842,64 +869,79 @@ IMPORTANTE:
 
   const prompt = esEducativa ? promptEducativo : promptGeneral
   const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest']
+  let rateLimitHit = false
 
-  for (const model of MODELS) {
-    try {
-      const body: any = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.35,
-          maxOutputTokens: esEducativa ? 4096 : 2048,
-          responseMimeType: 'application/json',
-        },
-      }
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-          body:    JSON.stringify(body),
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    rateLimitHit = false
+    for (const model of MODELS) {
+      try {
+        const body: any = {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.35,
+            maxOutputTokens: esEducativa ? 4096 : 2048,
+            responseMimeType: 'application/json',
+          },
         }
-      )
-      if (!response.ok) {
-        console.error(`[FichaTecnica] ${model} respondió ${response.status}`)
-        continue
-      }
-
-      const data     = await response.json()
-      const rawText  = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-      if (!rawText) { console.error(`[FichaTecnica] ${model} devolvió vacío`); continue }
-
-      // Limpiar y parsear
-      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
-      const start = cleaned.indexOf('{')
-      const end   = cleaned.lastIndexOf('}')
-      if (start !== -1 && end > start) cleaned = cleaned.slice(start, end + 1)
-
-      const parsed = JSON.parse(cleaned)
-
-      if (esEducativa) {
-        if (!parsed.areaAsignatura || !Array.isArray(parsed.unidadesCurriculares)) {
-          console.error(`[FichaTecnica] ${model} JSON educativo incompleto`)
-          continue
-        }
-        // Calcular totalHorasSemana
-        const totalHoras = parsed.unidadesCurriculares.reduce(
-          (acc: number, u: any) => acc + (Number(u.intensidadHoraria) || 0), 0
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+            body:    JSON.stringify(body),
+          }
         )
-        return res.json({ ...parsed, totalHorasSemana: totalHoras })
-      } else {
-        if (!parsed.descripcion) {
-          console.error(`[FichaTecnica] ${model} JSON general incompleto`)
+        if (!response.ok) {
+          console.error(`[FichaTecnica] ${model} respondió ${response.status}`)
+          if (response.status === 429) rateLimitHit = true
           continue
         }
-        return res.json(parsed)
+
+        const data     = await response.json()
+        const rawText  = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+        if (!rawText) { console.error(`[FichaTecnica] ${model} devolvió vacío`); continue }
+
+        // Limpiar y parsear
+        let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+        const start = cleaned.indexOf('{')
+        const end   = cleaned.lastIndexOf('}')
+        if (start !== -1 && end > start) cleaned = cleaned.slice(start, end + 1)
+
+        const parsed = JSON.parse(cleaned)
+
+        if (esEducativa) {
+          if (!parsed.areaAsignatura || !Array.isArray(parsed.unidadesCurriculares)) {
+            console.error(`[FichaTecnica] ${model} JSON educativo incompleto`)
+            continue
+          }
+          // Calcular totalHorasSemana
+          const totalHoras = parsed.unidadesCurriculares.reduce(
+            (acc: number, u: any) => acc + (Number(u.intensidadHoraria) || 0), 0
+          )
+          return res.json({ ...parsed, totalHorasSemana: totalHoras })
+        } else {
+          if (!parsed.descripcion) {
+            console.error(`[FichaTecnica] ${model} JSON general incompleto`)
+            continue
+          }
+          return res.json(parsed)
+        }
+      } catch (err) {
+        console.error(`[FichaTecnica] Error ${model}:`, err)
       }
-    } catch (err) {
-      console.error(`[FichaTecnica] Error ${model}:`, err)
+    }
+    
+    if (rateLimitHit && attempt < 3) {
+      console.log(`[FichaTecnica] 429 Límite alcanzado, esperando 15s antes del reintento ${attempt}/3...`)
+      await new Promise(r => setTimeout(r, 15000))
+    } else if (!rateLimitHit) {
+      break
     }
   }
 
+  if (rateLimitHit) {
+    return res.status(429).json({ error: 'Has alcanzado el límite de uso gratuito de la IA. Por favor, espera un minuto antes de volver a intentarlo.' })
+  }
   return res.status(500).json({ error: 'No se pudo generar la ficha técnica con ningún modelo disponible' })
 })
 
@@ -1207,6 +1249,228 @@ Responde ÚNICAMENTE con JSON válido, sin markdown ni backticks:
   }
 
   return res.status(500).json({ error: 'No se pudo generar la evaluación con la IA' })
+})
+/* ── POST /api/gemini/generar-matriz-legal-ps ──────────────────────
+   Genera la matriz legal, normas y permisos para RF-018. */
+router.post('/generar-matriz-legal-ps', async (req: AuthRequest, res: Response) => {
+  const { datosEmpresa, productoServicio, fileUrl } = req.body
+
+  if (!datosEmpresa?.nombreEmpresa || !productoServicio) {
+    return res.status(400).json({ error: 'Se requieren los datos de la empresa y el producto/servicio' })
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+  let extraContext = ''
+  let inlineData: any = null
+
+  if (fileUrl) {
+    try {
+      const fRes = await fetch(fileUrl)
+      if (fRes.ok) {
+        const buffer = await fRes.arrayBuffer()
+        if (fileUrl.toLowerCase().endsWith('.docx')) {
+          const mammoth = require('mammoth')
+          const result = await mammoth.extractRawText({ buffer: Buffer.from(buffer) })
+          extraContext = `\n\nCONTENIDO DEL DOCUMENTO ADJUNTO (CONTRATO/ORDEN):\n${result.value}`
+        } else if (fileUrl.toLowerCase().endsWith('.pdf')) {
+          inlineData = {
+            mimeType: 'application/pdf',
+            data: Buffer.from(buffer).toString('base64')
+          }
+        } else {
+          extraContext = `\n\n(El usuario adjuntó un archivo pero no es PDF ni DOCX, es: ${fileUrl})`
+        }
+      }
+    } catch (e) {
+      console.error('[MatrizLegal] Error al procesar archivo:', e)
+    }
+  }
+
+  const prompt = `Eres un consultor experto en ISO 9001:2015, cumplimiento legal y regulatorio comercial en Colombia.
+
+DATOS DE LA EMPRESA:
+- Nombre: ${datosEmpresa.nombreEmpresa}
+- Sector: ${datosEmpresa.sector ?? 'No especificado'}
+- Tipo: ${datosEmpresa.tipoEmpresa ?? 'No especificado'}
+
+PRODUCTO / SERVICIO A EVALUAR:
+- ${productoServicio}
+${extraContext}
+
+INSTRUCCIÓN:
+Genera la "Matriz Legal y Regulatoria" requerida para controlar la venta de este producto o servicio. Identifica la legislación colombiana, los permisos/licencias necesarias, normas técnicas (ej. NTC, ISO), y los registros regulatorios exigidos (ej. INVIMA, ICA, RETIE, etc.) específicos para este producto. Si hay un documento adjunto, úsalo para ser más preciso.
+
+Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
+{
+  "matrizLegal": "Texto detallado (2-3 párrafos) mencionando las leyes, normas, resoluciones y permisos exactos requeridos para comercializar este producto en Colombia."
+}`
+
+  const MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-pro']
+  let rateLimitHit = false
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    rateLimitHit = false
+    for (const model of MODELS) {
+      try {
+        const parts: any[] = [{ text: prompt }]
+        if (inlineData) parts.push({ inlineData })
+
+        const body: any = {
+          contents: [{ parts }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 2048,
+            responseMimeType: 'application/json',
+          },
+        }
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+            body:    JSON.stringify(body),
+          }
+        )
+        if (!response.ok) { 
+          console.error(`[MatrizLegal] ${model} → ${response.status}`)
+          if (response.status === 429) rateLimitHit = true
+          continue 
+        }
+
+        const data    = await response.json()
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+        if (!rawText) continue
+
+        let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+        const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+        if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+
+        const parsed = JSON.parse(cleaned)
+        if (!parsed.matrizLegal) continue
+
+        return res.json({ matrizLegal: parsed.matrizLegal })
+      } catch (err) {
+        console.error(`[MatrizLegal] Error ${model}:`, err)
+      }
+    }
+    
+    if (rateLimitHit && attempt < 3) {
+      console.log(`[MatrizLegal] 429 Límite alcanzado, esperando 15s antes del reintento ${attempt}/3...`)
+      await new Promise(r => setTimeout(r, 15000))
+    } else if (!rateLimitHit) {
+      break
+    }
+  }
+
+  if (rateLimitHit) {
+    return res.status(429).json({ error: 'Has alcanzado el límite de uso gratuito de la IA. Por favor, espera un minuto antes de volver a intentarlo.' })
+  }
+  return res.status(500).json({ error: 'No se pudo generar la matriz legal con la IA' })
+})
+
+// POST /api/gemini/extraer-cotizacion-ps
+router.post('/extraer-cotizacion-ps', async (req: AuthRequest, res: Response) => {
+  const { datosEmpresa, productoServicio, fileUrl } = req.body
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return res.status(500).json({ error: 'Falta GEMINI_API_KEY' })
+
+  try {
+    let inlineData = null
+    if (fileUrl) {
+      try {
+        const fileRes = await fetch(fileUrl)
+        if (fileRes.ok) {
+          const buffer = await fileRes.arrayBuffer()
+          const mimeType = fileRes.headers.get('content-type') || 'application/pdf'
+          inlineData = { data: Buffer.from(buffer).toString('base64'), mimeType }
+        }
+      } catch (err) {
+        console.error('Error fetching file for cotizacion extraction:', err)
+      }
+    }
+
+    const prompt = `Eres un asistente de inteligencia artificial para un sistema de gestión ISO 9001:2015.
+    
+EMPRESA: ${datosEmpresa?.nombreEmpresa || 'No especificada'}
+PRODUCTO/SERVICIO: ${productoServicio}
+
+INSTRUCCIÓN:
+Extrae la información relevante de la oferta comercial o cotización adjunta. Identifica el número de cotización (si lo hay), las especificaciones solicitadas, las cantidades, los precios y cualquier otra condición comercial importante para el control de la venta.
+Escribe un resumen conciso y directo para llenar un campo de texto que solicita: "Nº de cotización, especificaciones solicitadas, cantidades, precios...".
+
+Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
+{
+  "cotizacion": "Texto extraído y resumido (1-2 párrafos)."
+}`
+
+    const MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-pro']
+    let rateLimitHit = false
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      rateLimitHit = false
+      for (const model of MODELS) {
+        try {
+          const parts: any[] = [{ text: prompt }]
+          if (inlineData) parts.push({ inlineData })
+
+          const body: any = {
+            contents: [{ parts }],
+            generationConfig: {
+              temperature: 0.3,
+              maxOutputTokens: 2048,
+              responseMimeType: 'application/json',
+            },
+          }
+
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+            {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+              body:    JSON.stringify(body),
+            }
+          )
+          if (!response.ok) { 
+            if (response.status === 429) rateLimitHit = true
+            continue 
+          }
+
+          const data    = await response.json()
+          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+          if (!rawText) continue
+
+          let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+          const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+          if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+
+          const parsed = JSON.parse(cleaned)
+          if (!parsed.cotizacion) continue
+
+          return res.json({ cotizacion: parsed.cotizacion })
+        } catch (err) {
+          console.error(`[ExtraerCotizacion] Error ${model}:`, err)
+        }
+      }
+      
+      if (rateLimitHit && attempt < 3) {
+        await new Promise(r => setTimeout(r, 15000))
+      } else if (!rateLimitHit) {
+        break
+      }
+    }
+
+    if (rateLimitHit) {
+      return res.status(429).json({ error: 'Has alcanzado el límite de uso gratuito de la IA.' })
+    }
+
+    return res.status(500).json({ error: 'No se pudo generar la extracción.' })
+  } catch (error: any) {
+    console.error('Error en extraer-cotizacion-ps:', error)
+    return res.status(500).json({ error: 'Ocurrió un error al procesar la cotización.' })
+  }
 })
 
 export default router

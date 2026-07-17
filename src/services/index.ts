@@ -495,7 +495,8 @@ export interface RequerimientoPSItem {
   id: number; cliente: string; producto_servicio: string
   requisitos_cliente?: string; requisitos_legales?: string; requisitos_org?: string
   fecha_revision?: string; revisado_por?: string; estado: string
-  ficha_tecnica_id?: string; generado_con_ia?: boolean   // ← agregado
+  ficha_tecnica_id?: string; generado_con_ia?: boolean
+  cotizacion?: string; aprobacion_interna?: string; matriz_legal?: string; url_contrato?: string
 }
 export const requerimientosPSService = {
   getAll: () => api.get<RequerimientoPSItem[]>('/api/requerimientos-ps'),

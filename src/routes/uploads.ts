@@ -1,10 +1,35 @@
 import { Router, Response } from 'express'
 import multer from 'multer'
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { ACCEPTED_MIME_TYPES } from '../constants/uploads'
 
 const router = Router()
+
+const s3 = new S3Client({
+  region: 'auto',
+  endpoint: process.env.R2_ENDPOINT || process.env.R2_ENDPOINT0,
+  credentials: {
+    accessKeyId: process.env.R2_KEY!,
+    secretAccessKey: process.env.R2_SECRET!,
+  },
+})
+
+// Endpoint público (sin authMiddleware) para ver archivos
+router.get('/view/:key', async (req, res) => {
+  try {
+    const command = new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: req.params.key,
+    })
+    const url = await getSignedUrl(s3, command, { expiresIn: 3600 })
+    res.redirect(url)
+  } catch (err) {
+    res.status(500).send('Error al generar el enlace de visualización')
+  }
+})
+
 router.use(authMiddleware)
 
 const upload = multer({
@@ -16,15 +41,6 @@ const upload = multer({
     } else {
       cb(new Error('Tipo de archivo no permitido'))
     }
-  },
-})
-
-const s3 = new S3Client({
-  region: 'auto',
-  endpoint: process.env.R2_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.R2_KEY!,
-    secretAccessKey: process.env.R2_SECRET!,
   },
 })
 
@@ -54,7 +70,7 @@ router.post('/', (req: AuthRequest, res: Response) => {
         ContentType: req.file.mimetype,
       }))
       res.json({
-        url: `${process.env.R2_PUBLIC_URL}/${key}`,
+        url: `/api/uploads/view/${key}`,
         key,
         nombre: req.file.originalname,
         tipoMime: req.file.mimetype,

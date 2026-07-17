@@ -8,13 +8,14 @@
   "type": "module",
   "scripts": {
     "dev:frontend": "vite",
-    "dev:backend": "tsx src/index.ts",
+    "dev:backend": "tsx watch src/index.ts",
     "build": "node node_modules/typescript/bin/tsc -p tsconfig.server.json && node -e \"require('fs').writeFileSync('dist-server/package.json', JSON.stringify({type:'commonjs'}))\" && node node_modules/vite/bin/vite.js build",
     "start": "node dist-server/index.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1081.0",
+    "@aws-sdk/s3-request-presigner": "^3.1089.0",
     "@types/multer": "^2.2.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

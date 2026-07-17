@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import '../iso-module.css'
 import { useAIAnalysis } from '../../context/AIAnalysisContext'
 import { useFetch } from '../../hooks/useFetch'
-import { requerimientosPSService, fichasTecnicasPSService } from '../../services'
+import { requerimientosPSService, fichasTecnicasPSService, uploadsService } from '../../services'
 
 
 /* ─────────────────── TIPOS ─────────────────── */
@@ -31,6 +31,7 @@ interface Requisito {
   fechaRevision: string; revisadoPor: string
   estado: 'Aprobado' | 'Pendiente' | 'Rechazado'
   fichaTecnicaId?: string; generadoConIA?: boolean
+  cotizacion?: string; aprobacionInterna?: string; matrizLegal?: string; urlContrato?: string; urlCotizacion?: string
 }
 
 /* ═══ HELPERS ═══ */
@@ -89,6 +90,30 @@ async function apiPost(path: string, body: object) {
     throw new Error(err.error || `Error ${res.status}`)
   }
   return res.json()
+}
+
+// Helpers para múltiples archivos
+const tryParseJSON = (str: any) => {
+  if (!str) return []
+  if (Array.isArray(str)) return str
+  try { return JSON.parse(str) } catch { return [str] }
+}
+
+const parseUrls = (str: any) => tryParseJSON(str)
+
+const getProxiedUrl = (url: string) => {
+  if (typeof url === 'string' && url.includes('r2.cloudflarestorage.com')) {
+    const key = url.split('/').pop()
+    return `/api/uploads/view/${key}`
+  }
+  return url
+}
+
+const addUrl = (urls: string | null | undefined, newUrl: string) => JSON.stringify([...parseUrls(urls), newUrl])
+const removeUrl = (oldValue: string, urlToRemove: string) => {
+  const arr = parseUrls(oldValue)
+  const filtered = arr.filter((u: string) => u !== urlToRemove)
+  return filtered.length === 0 ? '' : JSON.stringify(filtered)
 }
 
 /* ═══════════════ PANEL FICHA GENERAL ═══════════════ */
@@ -318,6 +343,8 @@ const RequerimientosPSPage: React.FC = () => {
   const { datosEmpresa } = useAIAnalysis()
   const esEducativo = esSectorEducativo(datosEmpresa?.sector)
 
+  const [activeTab, setActiveTab] = useState<'matriz' | 'fichas' | 'control_ventas'>('matriz')
+
   const { data: itemsDB, refetch: refetchItems } = useFetch(requerimientosPSService.getAll, [])
   const { data: fichasDB, refetch: refetchFichas } = useFetch(fichasTecnicasPSService.getAll, [])
 
@@ -327,6 +354,8 @@ const RequerimientosPSPage: React.FC = () => {
     requisitosOrg: r.requisitos_org ?? '', fechaRevision: r.fecha_revision ?? '',
     revisadoPor: r.revisado_por ?? '', estado: r.estado,
     fichaTecnicaId: r.ficha_tecnica_id ?? undefined, generadoConIA: r.generado_con_ia ?? false,
+    cotizacion: r.cotizacion ?? '', aprobacionInterna: r.aprobacion_interna ?? '',
+    matrizLegal: r.matriz_legal ?? '', urlContrato: r.url_contrato ?? '', urlCotizacion: r.url_cotizacion ?? '',
   }))
 
   const fichas: Record<string, FichaTecnica> = Object.fromEntries(
@@ -344,14 +373,24 @@ const RequerimientosPSPage: React.FC = () => {
     } as FichaTecnica])
   )
 
-  // Modal nueva revisión manual
   const [showReqModal, setShowReqModal] = useState(false)
   const [form, setForm] = useState({ ...emptyReq })
+  const [fileToUpload, setFileToUpload]     = useState<File[]>([])
+  const [uploadingFile, setUploadingFile]   = useState(false)
+  const [fileCotizacion, setFileCotizacion] = useState<File[]>([])
+  const [uploadingCotizacion, setUploadingCotizacion] = useState(false)
+  const [analyzingCotizacion, setAnalyzingCotizacion] = useState(false)
 
   // Modal ficha técnica
   type ModalMode = 'ver' | 'editar'
   const [fichaModal, setFichaModal]   = useState<{ mode: ModalMode; fichaId: string; reqId?: number } | null>(null)
   const [fichaForm, setFichaForm]     = useState<FichaTecnica | null>(null)
+
+  // Modal Control Comercial RF-018
+  const [comercialModal, setComercialModal] = useState<Requisito | null>(null)
+  const [comercialMode, setComercialMode]   = useState<'ver' | 'editar'>('editar')
+  const [comercialForm, setComercialForm]   = useState<Partial<Requisito>>({})
+  const [loadingLegal, setLoadingLegal]     = useState(false)
 
   // Loading / error
   const [loadingMatriz, setLoadingMatriz] = useState(false)
@@ -366,14 +405,48 @@ const RequerimientosPSPage: React.FC = () => {
       const data = await apiPost('/api/gemini/generar-revisiones-requisitos', { datosEmpresa })
       if (!Array.isArray(data.revisiones) || data.revisiones.length === 0) throw new Error('La IA no devolvió revisiones válidas')
 
-      const nuevas = data.revisiones.map((r: any) => ({
-        cliente: r.cliente || '', producto_servicio: r.productoServicio || '',
-        requisitos_cliente: r.requisitosCliente || '', requisitos_legales: r.requisitosLegales || '',
-        requisitos_org: r.requisitosOrg || '', revisado_por: r.revisadoPor || '',
-        fecha_revision: r.fechaRevision || null, estado: r.estado || 'Pendiente',
-      }))
-      await Promise.all(nuevas.map((n: any) => requerimientosPSService.create(n)))
-      await refetchItems()
+      const tipo: 'educativa' | 'general' = esEducativo ? 'educativa' : 'general'
+
+      for (let i = 0; i < data.revisiones.length; i++) {
+        const r = data.revisiones[i]
+        let fichaId = null
+
+        if (r.fichaTecnica) {
+          fichaId = `FT-${Date.now()}-${i}`
+          const ftData = r.fichaTecnica
+          
+          const payload = tipo === 'educativa'
+            ? {
+                id: fichaId, tipo, generadaConIA: true, cliente: r.cliente, productoServicio: r.productoServicio,
+                version: '1.0', fechaElaboracion: new Date().toISOString().slice(0, 10),
+                elaboradoPor: ftData.elaboradoPor || '', aprobadoPor: ftData.aprobadoPor || '', estado: 'En revisión',
+                areaAsignatura: ftData.areaAsignatura || r.productoServicio,
+                objetivoGeneral: ftData.objetivoGeneral || '', competencias: ftData.competencias || '',
+                observaciones: ftData.observaciones || '',
+                unidadesCurriculares: Array.isArray(ftData.unidadesCurriculares) ? ftData.unidadesCurriculares : [emptyUnidad()],
+                totalHorasSemana: ftData.totalHorasSemana ?? (Array.isArray(ftData.unidadesCurriculares) ? ftData.unidadesCurriculares.reduce((a:number, c:any)=>a+(Number(c.intensidadHoraria)||0),0) : 0),
+              }
+            : {
+                id: fichaId, tipo, generadaConIA: true, cliente: r.cliente, productoServicio: r.productoServicio,
+                version: '1.0', fechaElaboracion: new Date().toISOString().slice(0, 10),
+                elaboradoPor: ftData.elaboradoPor || '', aprobadoPor: ftData.aprobadoPor || '', estado: 'En revisión',
+                descripcion: ftData.descripcion || '', especificacionesTecnicas: ftData.especificacionesTecnicas || '',
+                normasAplicables: ftData.normasAplicables || '', condicionesUso: ftData.condicionesUso || '',
+                observaciones: ftData.observaciones || '',
+              }
+          await fichasTecnicasPSService.create(payload)
+        }
+
+        await requerimientosPSService.create({
+          cliente: r.cliente || '', producto_servicio: r.productoServicio || '',
+          requisitos_cliente: r.requisitosCliente || '', requisitos_legales: r.requisitosLegales || '',
+          requisitos_org: r.requisitosOrg || '', revisado_por: r.revisadoPor || '',
+          fecha_revision: r.fechaRevision || null, estado: r.estado || 'Pendiente',
+          ficha_tecnica_id: fichaId, generado_con_ia: true
+        })
+      }
+      
+      await Promise.all([refetchFichas(), refetchItems()])
     } catch (err: any) {
       setErrorMsg(err.message ?? 'Error al generar la matriz con Governex IA')
     } finally {
@@ -381,7 +454,6 @@ const RequerimientosPSPage: React.FC = () => {
     }
   }
 
-  /* ── 2. AGREGAR REVISIÓN MANUAL ── */
   const guardarReq = async () => {
     if (!form.cliente || !form.productoServicio) return
     try {
@@ -393,6 +465,7 @@ const RequerimientosPSPage: React.FC = () => {
       })
       await refetchItems()
       setShowReqModal(false); setForm({ ...emptyReq })
+      setActiveTab('control_ventas')
     } catch (e: any) {
       alert(e.message)
     }
@@ -401,12 +474,26 @@ const RequerimientosPSPage: React.FC = () => {
   const eliminarReq = async (id: number) => {
     if (!window.confirm('¿Eliminar esta revisión?')) return
     try { await requerimientosPSService.delete(id) } catch {}
-    await refetchItems()
+    await Promise.all([refetchItems(), refetchFichas()])
+  }
+
+  const actualizarEstadoReq = async (id: number, nuevoEstado: string) => {
+    const req = itemsDB.find((r: any) => r.id === id)
+    if (!req) return
+    try {
+      await requerimientosPSService.update(id, { ...req, estado: nuevoEstado })
+      await refetchItems()
+    } catch (e: any) {
+      alert(e.message)
+    }
   }
 
   /* ── 3. GENERAR FICHA TÉCNICA CON IA ── */
   const crearFichaConIA = async (req: Requisito) => {
-    if (!datosEmpresa) return
+    if (!datosEmpresa) {
+      alert("No se encontró el análisis de contexto (Módulo 4.1). Por favor ve al módulo 4.1 y presiona 'Analizar con Governex IA'.")
+      return
+    }
     setLoadingFicha(true); setErrorMsg(null)
     try {
       const tipo: 'educativa' | 'general' = esEducativo ? 'educativa' : 'general'
@@ -444,16 +531,19 @@ const RequerimientosPSPage: React.FC = () => {
       })
 
       await Promise.all([refetchFichas(), refetchItems()])
-      setFichaForm(fichas[fichaId] ?? null)
+      setFichaForm(payload as unknown as FichaTecnica)
+      setActiveTab('fichas')
       setFichaModal({ mode: 'ver', fichaId, reqId: req.id })
     } catch (err: any) {
-      setErrorMsg(err.message ?? 'Error al generar la ficha técnica')
+      const msj = err.message ?? 'Error al generar la ficha técnica'
+      setErrorMsg(msj)
+      alert(msj)
     } finally {
       setLoadingFicha(false)
     }
   }
 
-  const abrirVerFicha  = (fichaId: string) => { setFichaForm({ ...fichas[fichaId] }); setFichaModal({ mode:'ver', fichaId }) }
+  const abrirVerFicha  = (fichaId: string) => { setActiveTab('fichas'); setFichaForm({ ...fichas[fichaId] }); setFichaModal({ mode:'ver', fichaId }) }
   const abrirEditarFicha = (fichaId: string, reqId?: number) => { setFichaForm({ ...fichas[fichaId] }); setFichaModal({ mode:'editar', fichaId, reqId }) }
   const guardarFicha = async () => {
     if (!fichaForm) return
@@ -466,7 +556,57 @@ const RequerimientosPSPage: React.FC = () => {
     }
   }
 
-  const cantFichas  = Object.keys(fichas).length
+  /* ── 4. CONTROL COMERCIAL RF-018 ── */
+  const abrirComercial = (req: Requisito, mode: 'ver' | 'editar' = 'editar') => {
+    setComercialModal(req)
+    setComercialMode(mode)
+    setComercialForm(req)
+    setFileToUpload([])
+    setFileCotizacion([])
+  }
+
+  const guardarComercial = async () => {
+    if (!comercialModal) return
+    try {
+      await requerimientosPSService.update(comercialModal.id, {
+        cliente: comercialModal.cliente, producto_servicio: comercialModal.productoServicio,
+        requisitos_cliente: comercialModal.requisitosCliente, requisitos_legales: comercialModal.requisitosLegales,
+        requisitos_org: comercialModal.requisitosOrg, revisado_por: comercialModal.revisadoPor,
+        fecha_revision: comercialModal.fechaRevision, estado: comercialModal.estado,
+        ficha_tecnica_id: comercialModal.fichaTecnicaId,
+        cotizacion: comercialForm.cotizacion,
+        aprobacion_interna: comercialForm.aprobacionInterna,
+        matriz_legal: comercialForm.matrizLegal,
+        url_contrato: comercialForm.urlContrato,
+        url_cotizacion: comercialForm.urlCotizacion,
+      })
+      await refetchItems()
+      setComercialModal(null)
+    } catch (e: any) {
+      alert(e.message)
+    }
+  }
+
+  const generarLegalIA = async () => {
+    if (!comercialModal || !datosEmpresa) {
+      alert("No se encontró el análisis de contexto (Módulo 4.1). Por favor ve al módulo 4.1 y presiona 'Analizar con Governex IA'.")
+      return
+    }
+    setLoadingLegal(true)
+    try {
+      const data = await apiPost('/api/gemini/generar-matriz-legal-ps', {
+        datosEmpresa, productoServicio: comercialModal.productoServicio,
+        fileUrl: comercialForm.urlContrato
+      })
+      setComercialForm(prev => ({ ...prev, matrizLegal: data.matrizLegal }))
+    } catch (err: any) {
+      alert(err.message || 'Error al generar matriz legal')
+    } finally {
+      setLoadingLegal(false)
+    }
+  }
+
+  const cantFichas  = items.filter(r => r.fichaTecnicaId).length
   const tieneItems  = items.length > 0
   const sinContexto = !datosEmpresa
 
@@ -566,8 +706,31 @@ const RequerimientosPSPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Estado vacío */}
-      {!tieneItems ? (
+      <div style={{ display: 'flex', gap: '1rem', borderBottom: '2px solid #e5e7eb', marginBottom: '1.5rem', marginTop: '1rem' }}>
+        <button
+          onClick={() => setActiveTab('matriz')}
+          style={{ padding: '0.75rem 1.5rem', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: activeTab === 'matriz' ? '#1d4ed8' : '#6b7280', borderBottom: activeTab === 'matriz' ? '3px solid #1d4ed8' : '3px solid transparent', marginBottom: '-2px' }}
+        >
+          📊 Vista Matriz
+        </button>
+        <button
+          onClick={() => setActiveTab('fichas')}
+          style={{ padding: '0.75rem 1.5rem', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: activeTab === 'fichas' ? '#6d28d9' : '#6b7280', borderBottom: activeTab === 'fichas' ? '3px solid #6d28d9' : '3px solid transparent', marginBottom: '-2px' }}
+        >
+          📋 Fichas Técnicas
+        </button>
+        <button
+          onClick={() => setActiveTab('control_ventas')}
+          style={{ padding: '0.75rem 1.5rem', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: activeTab === 'control_ventas' ? '#059669' : '#6b7280', borderBottom: activeTab === 'control_ventas' ? '3px solid #059669' : '3px solid transparent', marginBottom: '-2px' }}
+        >
+          💼 Control de Ventas
+        </button>
+      </div>
+
+      {activeTab === 'matriz' && (
+        <>
+          {/* Estado vacío */}
+          {!tieneItems ? (
         <div style={{ background:'#fff', border:'2px dashed #e5e7eb', borderRadius:'0.8rem', padding:'3.5rem 2rem', textAlign:'center', display:'flex', flexDirection:'column', alignItems:'center', gap:'0.9rem' }}>
           <span style={{ fontSize:'3rem' }}>{esEducativo ? '🎓' : '📋'}</span>
           <p style={{ margin:0, fontWeight:700, fontSize:'1.05rem', color:'#1b3a6b' }}>
@@ -629,23 +792,29 @@ const RequerimientosPSPage: React.FC = () => {
                     <td>{r.fechaRevision}</td>
                     <td>
                       {fichaVinculada ? (
-                        <div style={{ display:'flex', gap:'0.35rem', flexWrap:'wrap' }}>
-                          <button className="iso-btn-icon" style={{ fontSize:'0.75rem', padding:'0.25rem 0.6rem', color:'#6d28d9', borderColor:'#ddd6fe', background:'#f5f3ff' }} onClick={() => abrirVerFicha(r.fichaTecnicaId!)}>👁️ Ver</button>
-                          <button className="iso-btn-icon" style={{ fontSize:'0.75rem', padding:'0.25rem 0.6rem' }} onClick={() => abrirEditarFicha(r.fichaTecnicaId!, r.id)} title="Editar / Agregar">✏️</button>
-                        </div>
+                        <button className="iso-btn-icon" style={{ fontSize:'0.75rem', padding:'0.4rem 0.8rem', color:'#6d28d9', borderColor:'#ddd6fe', background:'#f5f3ff', width: '100%' }} onClick={() => abrirVerFicha(r.fichaTecnicaId!)}>👁️ Ver Ficha Técnica</button>
                       ) : (
                         <button
                           className="iso-btn-icon"
-                          style={{ fontSize:'0.75rem', padding:'0.25rem 0.7rem', fontWeight:600, color:'#6d28d9', borderColor:'#ddd6fe', background:'#f5f3ff' }}
+                          style={{ fontSize:'0.75rem', padding:'0.4rem 0.8rem', fontWeight:600, color:'#6d28d9', borderColor:'#ddd6fe', background:'#f5f3ff', width: '100%' }}
                           onClick={() => crearFichaConIA(r)}
                           title="Generar ficha técnica con IA"
                         >
-                          {esEducativo ? '🎓 ✨ FT' : '📋 ✨ FT'}
+                          ✨ Generar con IA
                         </button>
                       )}
                     </td>
                     <td>
-                      <span className={`iso-badge ${r.estado==='Aprobado'?'verde':r.estado==='Pendiente'?'amarillo':'rojo'}`}>{r.estado}</span>
+                      <select 
+                        className={`iso-badge ${r.estado==='Aprobado'?'verde':r.estado==='Pendiente'?'amarillo':'rojo'}`}
+                        value={r.estado}
+                        onChange={e => actualizarEstadoReq(r.id, e.target.value)}
+                        style={{ padding: '0.2rem 0.5rem', cursor: 'pointer', border: 'none', appearance: 'none', background: 'transparent' }}
+                      >
+                        <option value="Pendiente" style={{ color: '#000' }}>Pendiente</option>
+                        <option value="Aprobado" style={{ color: '#000' }}>Aprobado</option>
+                        <option value="Rechazado" style={{ color: '#000' }}>Rechazado</option>
+                      </select>
                     </td>
                     <td><button className="iso-btn-icon danger" onClick={() => eliminarReq(r.id)}>🗑️</button></td>
                   </tr>
@@ -653,6 +822,84 @@ const RequerimientosPSPage: React.FC = () => {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+      </>)}
+
+      {activeTab === 'fichas' && (
+        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.8rem', padding: '1.5rem' }}>
+          <h2 style={{ marginTop: 0, fontSize: '1.25rem', color: '#1e293b' }}>📋 Fichas Técnicas Generadas</h2>
+          <p style={{ color: '#6b7280', fontSize: '0.85rem', marginBottom: '1.5rem' }}>Aquí puedes consultar todas las Fichas Técnicas generadas para cada producto o servicio.</p>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+            {items.map(req => {
+              const hasFicha = !!req.fichaTecnicaId
+              if (!hasFicha) return null
+              
+              return (
+                <div key={req.id} style={{ border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '1.25rem', background: '#f8fafc' }}>
+                  <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '0.2rem' }}>{req.productoServicio}</div>
+                  <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1rem' }}>Cliente: {req.cliente}</div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '0.75rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>📋 Ficha Técnica</span>
+                      <button className="iso-btn-icon" style={{ fontSize:'0.75rem', padding:'0.25rem 0.6rem', color:'#6d28d9', borderColor:'#ddd6fe', background:'#f5f3ff' }} onClick={() => abrirVerFicha(req.fichaTecnicaId!)}>👁️ Ver</button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            {!items.some(r => r.fichaTecnicaId) && (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                No hay fichas técnicas generadas todavía. Usa la "Vista Matriz" para generarlas.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'control_ventas' && (
+        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.8rem', padding: '1.5rem' }}>
+          <h2 style={{ marginTop: 0, fontSize: '1.25rem', color: '#1e293b' }}>💼 Control Comercial y Regulatorio</h2>
+          <p style={{ color: '#6b7280', fontSize: '0.85rem', marginBottom: '1.5rem' }}>Aseguramiento de las variables de venta, cotizaciones, aprobación de planos/contratos y matrices legales para cada producto o servicio.</p>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+            {items.map(req => {
+              const hasControl = req.cotizacion || req.matrizLegal || req.urlContrato
+              // The user requested to show all of them so they can be easily filled from this tab!
+              
+              return (
+                <div key={req.id} style={{ border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '1.25rem', background: '#f8fafc' }}>
+                  <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '0.2rem' }}>{req.productoServicio}</div>
+                  <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1rem' }}>Cliente: {req.cliente}</div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '0.75rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155' }}>
+                        {hasControl ? '✅ Control diligenciado' : '⏳ Pendiente de diligenciar'}
+                      </span>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {hasControl && (
+                          <button className="iso-btn-icon" style={{ fontSize:'0.75rem', padding:'0.25rem 0.6rem', color:'#6d28d9', borderColor:'#ddd6fe', background:'#f5f3ff' }} onClick={() => abrirComercial(req, 'ver')}>
+                            👁️ Ver
+                          </button>
+                        )}
+                        <button className="iso-btn-icon" style={{ fontSize:'0.75rem', padding:'0.25rem 0.6rem', color:'#1d4ed8', borderColor:'#bfdbfe', background:'#eff6ff' }} onClick={() => abrirComercial(req, 'editar')}>
+                          {hasControl ? '✏️ Revisar' : '💼 Llenar'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            {items.length === 0 && (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                No hay productos o servicios en la matriz todavía. Usa la "Vista Matriz" para generarlos.
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -696,6 +943,165 @@ const RequerimientosPSPage: React.FC = () => {
       {/* Modal Editar ficha */}
       {fichaModal?.mode === 'editar' && fichaForm && (
         <ModalFicha ficha={fichaForm} onChange={setFichaForm} onClose={() => { setFichaModal(null); setFichaForm(null) }} onGuardar={guardarFicha} errorIA={errorMsg} />
+      )}
+
+      {/* Modal Control Comercial RF-018 */}
+      {comercialModal && (
+        <div className="iso-modal-overlay" onClick={() => { setComercialModal(null); setFileToUpload([]); setFileCotizacion([]); }}>
+          <div className="iso-modal" style={{ maxWidth: 650 }} onClick={e => e.stopPropagation()}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+              <div>
+                <h2 style={{ margin:0, color: '#1e3a8a', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  Control Comercial y Regulatorio
+                </h2>
+                <p style={{ margin:'0.25rem 0 0', fontSize:'0.82rem', color:'#6b7280' }}>
+                  Aseguramiento de variables de venta para: {comercialModal.productoServicio}
+                </p>
+              </div>
+            </div>
+            
+            <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              
+              <div className="iso-field">
+                <label>Oferta Comercial & Requisitos</label>
+                <textarea rows={3} value={comercialForm.cotizacion || ''} onChange={e => setComercialForm(p => ({ ...p, cotizacion: e.target.value }))} placeholder="Nº de cotización, especificaciones solicitadas, cantidades, precios..." readOnly={comercialMode === 'ver'} style={comercialMode === 'ver' ? { background: '#f8fafc', color: '#475569' } : {}} />
+                
+                {parseUrls(comercialForm.urlCotizacion).length > 0 && (
+                   <div style={{display:'flex', flexDirection:'column', gap:'0.5rem', marginTop: '0.75rem'}}>
+                     {parseUrls(comercialForm.urlCotizacion).map((url: string, i: number) => (
+                       <div key={i} style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}>
+                         <a href={getProxiedUrl(url)} target="_blank" rel="noreferrer" style={{color:'#2563eb', fontSize:'0.85rem', textDecoration:'none', fontWeight:600}}>📄 Ver Cotización Adjunta {i + 1}</a>
+                         {comercialMode !== 'ver' && (
+                           <button onClick={() => setComercialForm(p => ({ ...p, urlCotizacion: removeUrl(p.urlCotizacion || '', url) }))} className="iso-btn-icon danger" title="Eliminar archivo" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>Quitar</button>
+                         )}
+                       </div>
+                     ))}
+                     {analyzingCotizacion && <span style={{ fontSize: '0.75rem', color: '#0284c7', fontStyle: 'italic', marginTop: '0.25rem' }}>✨ Analizando datos con IA...</span>}
+                   </div>
+                )}
+                
+                {comercialMode !== 'ver' && (
+                  <div style={{ marginTop: '0.75rem' }}>
+                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', background: '#f0f9ff', border: '1px dashed #3b82f6', borderRadius: '0.5rem', cursor: 'pointer', textAlign: 'center' }}>
+                      <span style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📁</span>
+                      <span style={{ fontWeight: 600, color: '#0369a1', marginBottom: '0.25rem' }}>
+                        {fileCotizacion.length > 0 ? `${fileCotizacion.length} archivo(s) seleccionado(s)` : 'Nº de cotización, especificaciones solicitadas, cantidades, precios...'}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Arrastra o haz clic para subir cotizaciones • Solo .pdf, .docx, .xlsx</span>
+                      <input type="file" multiple accept=".pdf,.docx,.xlsx" onChange={e => setFileCotizacion(Array.from(e.target.files || []))} style={{ display: 'none' }} />
+                    </label>
+                    {fileCotizacion.length > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5rem' }}>
+                        <button className="iso-btn-secondary" onClick={async () => {
+                           setUploadingCotizacion(true)
+                           try {
+                             let lastUrl = ''
+                             for (const file of fileCotizacion) {
+                               const res = await uploadsService.upload(file)
+                               lastUrl = res.url
+                               setComercialForm(p => ({ ...p, urlCotizacion: addUrl(p.urlCotizacion, res.url) }))
+                             }
+                             setFileCotizacion([])
+                             
+                             // Extracción con IA (con el último archivo)
+                             setAnalyzingCotizacion(true)
+                             try {
+                               const data = await apiPost('/api/gemini/extraer-cotizacion-ps', {
+                                 datosEmpresa, productoServicio: comercialModal.productoServicio,
+                                 fileUrl: lastUrl
+                               })
+                               if (data.cotizacion) {
+                                 setComercialForm(p => ({ ...p, cotizacion: data.cotizacion }))
+                               }
+                             } catch (err: any) {
+                               console.error("Error extrayendo cotización:", err)
+                             } finally {
+                               setAnalyzingCotizacion(false)
+                             }
+                             
+                           } catch (e: any) { alert(e.message) }
+                           setUploadingCotizacion(false)
+                        }} disabled={uploadingCotizacion} style={{ padding:'0.3rem 1rem', fontSize:'0.8rem' }}>
+                          {uploadingCotizacion ? 'Subiendo...' : 'Subir Cotización'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div className="iso-field">
+                <label>Aprobación de la Capacidad Organizacional</label>
+                <textarea rows={2} value={comercialForm.aprobacionInterna || ''} onChange={e => setComercialForm(p => ({ ...p, aprobacionInterna: e.target.value }))} placeholder="Detalla quién aprobó la oferta (ej. Gerencia Operativa confirma disponibilidad de personal y maquinaria)." readOnly={comercialMode === 'ver'} style={comercialMode === 'ver' ? { background: '#f8fafc', color: '#475569' } : {}} />
+              </div>
+              
+              <div className="iso-field">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                  <label style={{ margin: 0 }}>Cumplimiento Regulatorio y Matriz Legal</label>
+                  {comercialMode !== 'ver' && (
+                    <button className="iso-btn-icon" style={{ fontSize:'0.75rem', padding:'0.2rem 0.6rem', color:'#6d28d9', borderColor:'#ddd6fe', background:'#f5f3ff', fontWeight:600 }} onClick={generarLegalIA} disabled={loadingLegal}>
+                      {loadingLegal ? 'Generando...' : 'Generar con IA'}
+                    </button>
+                  )}
+                </div>
+                <textarea rows={4} value={comercialForm.matrizLegal || ''} onChange={e => setComercialForm(p => ({ ...p, matrizLegal: e.target.value }))} placeholder="Legislación identificada, normas técnicas aplicables, permisos, registros regulatorios (INVIMA, ICA, RETIE, etc.)..." readOnly={comercialMode === 'ver'} style={comercialMode === 'ver' ? { background: '#f8fafc', color: '#475569' } : {}} />
+              </div>
+
+              <div className="iso-field">
+                <label>Evidencia Documentada (Contrato, Orden de Compra, Planos)</label>
+                {parseUrls(comercialForm.urlContrato).length > 0 && (
+                   <div style={{display:'flex', flexDirection:'column', gap:'0.5rem', marginTop: '0.75rem'}}>
+                     {parseUrls(comercialForm.urlContrato).map((url: string, i: number) => (
+                       <div key={i} style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}>
+                         <a href={getProxiedUrl(url)} target="_blank" rel="noreferrer" style={{color:'#2563eb', fontSize:'0.85rem', textDecoration:'none', fontWeight:600}}>📄 Ver Documento de Evidencia {i + 1}</a>
+                         {comercialMode !== 'ver' && (
+                           <button onClick={() => setComercialForm(p => ({ ...p, urlContrato: removeUrl(p.urlContrato || '', url) }))} className="iso-btn-icon danger" title="Eliminar archivo" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>Quitar</button>
+                         )}
+                       </div>
+                     ))}
+                   </div>
+                )}
+                
+                {comercialMode !== 'ver' && (
+                  <div style={{ marginTop: '0.75rem' }}>
+                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', background: '#f0f9ff', border: '1px dashed #3b82f6', borderRadius: '0.5rem', cursor: 'pointer', textAlign: 'center' }}>
+                      <span style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📁</span>
+                      <span style={{ fontWeight: 600, color: '#0369a1', marginBottom: '0.25rem' }}>
+                        {fileToUpload.length > 0 ? `${fileToUpload.length} archivo(s) seleccionado(s)` : 'Cargar Evidencia'}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Arrastra o haz clic • Solo .pdf, .docx, .xlsx</span>
+                      <input type="file" multiple accept=".pdf,.docx,.xlsx" onChange={e => setFileToUpload(Array.from(e.target.files || []))} style={{ display: 'none' }} />
+                    </label>
+                    {fileToUpload.length > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5rem' }}>
+                        <button className="iso-btn-secondary" onClick={async () => {
+                           setUploadingFile(true)
+                           try {
+                             for (const file of fileToUpload) {
+                               const res = await uploadsService.upload(file)
+                               setComercialForm(p => ({ ...p, urlContrato: addUrl(p.urlContrato, res.url) }))
+                             }
+                             setFileToUpload([])
+                           } catch (e: any) { alert(e.message) }
+                           setUploadingFile(false)
+                        }} disabled={uploadingFile} style={{ padding:'0.3rem 1rem', fontSize:'0.8rem' }}>
+                          {uploadingFile ? 'Subiendo...' : 'Subir Documento(s)'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="iso-modal__footer" style={{ marginTop: '1.5rem' }}>
+              <button className="iso-btn-secondary" onClick={() => { setComercialModal(null); setFileToUpload([]); setFileCotizacion([]); }}>{comercialMode === 'ver' ? 'Cerrar' : 'Cancelar'}</button>
+              {comercialMode !== 'ver' && (
+                <button className="iso-btn-primary" onClick={guardarComercial}>Guardar Control</button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
