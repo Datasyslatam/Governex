@@ -1,22 +1,25 @@
 import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
+import { requirePermission } from '../middleware/rbac'
 
 const router = Router()
 router.use(authMiddleware)
 
 // GET /api/proveedores
-router.get('/', async (_req, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT pv.*,
               (SELECT row_to_json(e) FROM (
                 SELECT total, fecha FROM proveedor_evaluaciones
-                WHERE proveedor_id = pv.id
+                WHERE proveedor_id = pv.id AND tenant_id = pv.tenant_id
                 ORDER BY fecha DESC LIMIT 1
               ) e) AS ultima_evaluacion
        FROM proveedores pv
-       ORDER BY pv.razon`
+       WHERE pv.tenant_id = $1
+       ORDER BY pv.razon`,
+      [req.user!.tenantId]
     )
     res.json(rows)
   } catch (err) {
@@ -26,14 +29,14 @@ router.get('/', async (_req, res: Response) => {
 })
 
 // POST /api/proveedores
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', requirePermission('proveedores', 'crear'), async (req: AuthRequest, res: Response) => {
   const { nit, razon, tipo, estado, prox_eval } = req.body
   if (!nit || !razon) return res.status(400).json({ error: 'nit y razon son requeridos' })
   try {
     const { rows } = await pool.query(
-      `INSERT INTO proveedores (nit, razon, tipo, estado, prox_eval)
-       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [nit, razon, tipo || null, estado || 'Aprobado', prox_eval || null]
+      `INSERT INTO proveedores (nit, razon, tipo, estado, prox_eval, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [nit, razon, tipo || null, estado || 'Aprobado', prox_eval || null, req.user!.tenantId]
     )
     res.status(201).json(rows[0])
   } catch (err: any) {
@@ -44,14 +47,14 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 })
 
 // PUT /api/proveedores/:id
-router.put('/:id', async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('proveedores', 'editar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { razon, tipo, estado, prox_eval } = req.body
   try {
     const { rows } = await pool.query(
       `UPDATE proveedores SET razon=$1, tipo=$2, estado=$3, prox_eval=$4
-       WHERE id=$5 RETURNING *`,
-      [razon, tipo || null, estado, prox_eval || null, id]
+       WHERE id=$5 AND tenant_id=$6 RETURNING *`,
+      [razon, tipo || null, estado, prox_eval || null, id, req.user!.tenantId]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Proveedor no encontrado' })
     res.json(rows[0])
@@ -62,26 +65,32 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // POST /api/proveedores/:id/evaluaciones
-router.post('/:id/evaluaciones', async (req: AuthRequest, res: Response) => {
+router.post('/:id/evaluaciones', requirePermission('proveedores', 'crear'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { evaluador, calidad, entrega, precio, servicio, fecha } = req.body
   if (calidad == null || entrega == null || precio == null || servicio == null) {
     return res.status(400).json({ error: 'calidad, entrega, precio y servicio son requeridos' })
   }
   try {
+    const tenantId = req.user!.tenantId
+    const { rowCount } = await pool.query(
+      'SELECT 1 FROM proveedores WHERE id = $1 AND tenant_id = $2', [id, tenantId]
+    )
+    if (!rowCount) return res.status(404).json({ error: 'Proveedor no encontrado' })
+
     // Insertar evaluación
     const { rows } = await pool.query(
-      `INSERT INTO proveedor_evaluaciones (proveedor_id, evaluador, calidad, entrega, precio, servicio, fecha)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      `INSERT INTO proveedor_evaluaciones (proveedor_id, evaluador, calidad, entrega, precio, servicio, fecha, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
       [id, evaluador || null, calidad, entrega, precio, servicio,
-       fecha || new Date().toISOString().slice(0, 10)]
+       fecha || new Date().toISOString().slice(0, 10), tenantId]
     )
     // Actualizar estado del proveedor según puntaje total
     const total = rows[0].total
     const nuevoEstado = total >= 80 ? 'Aprobado' : total >= 60 ? 'Condicional' : 'Suspendido'
     await pool.query(
-      `UPDATE proveedores SET estado=$1 WHERE id=$2`,
-      [nuevoEstado, id]
+      `UPDATE proveedores SET estado=$1 WHERE id=$2 AND tenant_id=$3`,
+      [nuevoEstado, id, tenantId]
     )
     res.status(201).json(rows[0])
   } catch (err) {
@@ -94,8 +103,8 @@ router.post('/:id/evaluaciones', async (req: AuthRequest, res: Response) => {
 router.get('/:id/evaluaciones', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM proveedor_evaluaciones WHERE proveedor_id=$1 ORDER BY fecha DESC`,
-      [req.params.id]
+      `SELECT * FROM proveedor_evaluaciones WHERE proveedor_id=$1 AND tenant_id=$2 ORDER BY fecha DESC`,
+      [req.params.id, req.user!.tenantId]
     )
     res.json(rows)
   } catch (err) {

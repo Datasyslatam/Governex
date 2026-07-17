@@ -2,6 +2,7 @@ import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { analyzeWithGemini, generateResourcesOnly, MapaData, DatosEmpresa, FilaMatrizCargos } from '../services/geminiService'
+import { requirePermission } from '../middleware/rbac'
 
 /** Allowed PESTEL factor codes as required by the DB constraint. */
 const VALID_PESTEL_FACTORS = new Set(['P', 'E', 'S', 'T', 'A', 'L'])
@@ -46,7 +47,7 @@ const router = Router()
 router.use(authMiddleware)
 
 /* POST /api/gemini/analizar-organigrama */
-router.post('/analizar-organigrama', async (req: AuthRequest, res: Response) => {
+router.post('/analizar-organigrama', requirePermission('contexto_empresa', 'crear'), async (req: AuthRequest, res: Response) => {
   const { mapa, nombreEmpresa, sector, datosEmpresa, guardarEnBD = true } = req.body as {
     mapa: MapaData; nombreEmpresa?: string; sector?: string
     datosEmpresa?: DatosEmpresa; guardarEnBD?: boolean
@@ -78,25 +79,32 @@ router.post('/analizar-organigrama', async (req: AuthRequest, res: Response) => 
     console.log(`[Gemini] Análisis completado. Roles: ${analysis.matrizRoles?.length}, Recursos: ${analysis.matrizRecursos?.length}`);
 
     if (guardarEnBD) {
+      const tenantId = req.user!.tenantId
       const client = await pool.connect()
       try {
         await client.query('BEGIN')
-        await client.query('DELETE FROM pestel')
-        await client.query('DELETE FROM dofa')
+        // BUG CORREGIDO: los 4 DELETE/UPDATE de este bloque no filtraban por
+        // tenant_id — un usuario de CUALQUIER tenant que corriera este
+        // análisis borraba/sobreescribía el PESTEL, DOFA, indicadores y
+        // política de calidad de TODOS los tenants de Governex.
+        await client.query('DELETE FROM pestel WHERE tenant_id = $1', [tenantId])
+        await client.query('DELETE FROM dofa WHERE tenant_id = $1', [tenantId])
 
         for (const row of analysis.pestel) {
           const factorChar = mapPestelFactor(row.factor)
           await client.query(
-            `INSERT INTO pestel (factor, categoria, descripcion, impacto, oportunidad) VALUES ($1,$2,$3,$4,$5)`,
-            [factorChar, row.categoria, row.descripcion, row.impacto, row.oportunidad]
+            `INSERT INTO pestel (factor, categoria, descripcion, impacto, oportunidad, tenant_id) VALUES ($1,$2,$3,$4,$5,$6)`,
+            [factorChar, row.categoria, row.descripcion, row.impacto, row.oportunidad, tenantId]
           )
         }
 
         for (const row of analysis.dofa) {
-          await client.query(`INSERT INTO dofa (tipo, descripcion) VALUES ($1,$2)`, [row.tipo, row.descripcion])
+          await client.query(`INSERT INTO dofa (tipo, descripcion, tenant_id) VALUES ($1,$2,$3)`, [row.tipo, row.descripcion, tenantId])
         }
 
-        const { rows: tipos } = await client.query('SELECT id, nombre FROM tipos_proceso')
+        // tipos_proceso también es por-tenant desde la migración; se filtra
+        // el catálogo para no mapear contra los tipos de otra empresa.
+        const { rows: tipos } = await client.query('SELECT id, nombre FROM tipos_proceso WHERE tenant_id = $1', [tenantId])
         const tipoMap: Record<string, number> = {}
         for (const t of tipos) tipoMap[t.nombre.toLowerCase()] = t.id
 
@@ -109,23 +117,23 @@ router.post('/analizar-organigrama', async (req: AuthRequest, res: Response) => 
           else                                  tipo_id = tipoMap['apoyo']       ?? tipoMap['soporte']      ?? 3
 
           const procRes = await client.query(
-            `INSERT INTO procesos (codigo, nombre, objetivo, entradas, salidas, indicador_kpi, responsable, tipo_id, estado)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-             ON CONFLICT (codigo) DO UPDATE SET
+            `INSERT INTO procesos (codigo, nombre, objetivo, entradas, salidas, indicador_kpi, responsable, tipo_id, estado, tenant_id)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+             ON CONFLICT (tenant_id, codigo) DO UPDATE SET
                nombre=EXCLUDED.nombre, objetivo=EXCLUDED.objetivo, entradas=EXCLUDED.entradas,
                salidas=EXCLUDED.salidas, indicador_kpi=EXCLUDED.indicador_kpi,
                responsable=EXCLUDED.responsable, tipo_id=EXCLUDED.tipo_id, estado=EXCLUDED.estado
              RETURNING id`,
             [row.codigo, row.proceso, row.objetivo, row.entradas, row.salidas,
-             row.indicador, row.responsable, tipo_id, row.estado ?? 'Activo']
+             row.indicador, row.responsable, tipo_id, row.estado ?? 'Activo', tenantId]
           )
           procesoIdMap[row.proceso.toLowerCase()] = procRes.rows[0].id
         }
 
         if (analysis.indicadores && analysis.indicadores.length > 0) {
-          // Eliminar todos los indicadores anteriores antes de generar los nuevos
-          await client.query('DELETE FROM indicador_mediciones');
-          await client.query('DELETE FROM indicadores');
+          // Eliminar los indicadores anteriores de ESTE tenant antes de generar los nuevos
+          await client.query('DELETE FROM indicador_mediciones WHERE tenant_id = $1', [tenantId]);
+          await client.query('DELETE FROM indicadores WHERE tenant_id = $1', [tenantId]);
 
           for (const ind of analysis.indicadores) {
             const procId = procesoIdMap[(ind.proceso || '').toLowerCase()] || null
@@ -136,20 +144,20 @@ router.post('/analizar-organigrama', async (req: AuthRequest, res: Response) => 
             }
 
             await client.query(
-              `INSERT INTO indicadores (codigo, titulo, proceso_id, frecuencia, meta, activo)
-               VALUES ($1,$2,$3,$4,$5,$6)`,
-              [ind.codigo, ind.titulo, procId, freq, ind.meta, true]
+              `INSERT INTO indicadores (codigo, titulo, proceso_id, frecuencia, meta, activo, tenant_id)
+               VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+              [ind.codigo, ind.titulo, procId, freq, ind.meta, true, tenantId]
             )
           }
         }
 
         // Auto-publicar Política de Calidad si está presente en datosEmpresa
         if (datosEmpresa && datosEmpresa.politicaCalidad) {
-          await client.query(`UPDATE politica_calidad SET estado='Obsoleto' WHERE estado='Vigente'`);
+          await client.query(`UPDATE politica_calidad SET estado='Obsoleto' WHERE estado='Vigente' AND tenant_id=$1`, [tenantId]);
           await client.query(
-            `INSERT INTO politica_calidad (version, contenido, estado, fecha_vigencia, aprobado_por)
-             VALUES ($1, $2, $3, CURRENT_DATE, NULL)`,
-            ['v1.0', datosEmpresa.politicaCalidad, 'Vigente']
+            `INSERT INTO politica_calidad (version, contenido, estado, fecha_vigencia, aprobado_por, tenant_id)
+             VALUES ($1, $2, $3, CURRENT_DATE, NULL, $4)`,
+            ['v1.0', datosEmpresa.politicaCalidad, 'Vigente', tenantId]
           );
         }
 

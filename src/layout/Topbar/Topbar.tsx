@@ -9,6 +9,9 @@ const Topbar: React.FC = () => {
     <header className="topbar">
       <div className="topbar__left">
         <div className="topbar__title">Governex · Sistema de Gestión de Calidad</div>
+        {user?.tenant?.nombre && (
+          <span className="topbar__subtitle">{user.tenant.nombre}</span>
+        )}
       </div>
 
       <div className="topbar__right">

@@ -1,15 +1,17 @@
 import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
+import { requirePermission } from '../middleware/rbac'
 
 const router = Router()
 router.use(authMiddleware)
 
 // GET /api/planificacion-cambios
-router.get('/', async (_req: AuthRequest, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM planificacion_cambios ORDER BY creado_en DESC`
+      `SELECT * FROM planificacion_cambios WHERE tenant_id = $1 ORDER BY creado_en DESC`,
+      [req.user!.tenantId]
     )
     res.json(rows)
   } catch (err) {
@@ -19,7 +21,7 @@ router.get('/', async (_req: AuthRequest, res: Response) => {
 })
 
 // POST /api/planificacion-cambios
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', requirePermission('planificacion_cambios', 'crear'), async (req: AuthRequest, res: Response) => {
   const {
     codigo, categoria, descripcion, justificacion, responsable, recursos,
     implicaciones, acciones, fecha_inicio, fecha_fin, impacto, estado,
@@ -37,8 +39,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       `INSERT INTO planificacion_cambios
          (codigo, categoria, descripcion, justificacion, responsable, recursos,
           implicaciones, acciones, fecha_inicio, fecha_fin, impacto, estado,
-          procesos_afectados, documentos_afectados, aprobado_por, observaciones)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+          procesos_afectados, documentos_afectados, aprobado_por, observaciones, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
        RETURNING *`,
       [
         codigo          || null,
@@ -57,6 +59,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         documentos_afectados  || null,
         aprobado_por    || null,
         observaciones   || null,
+        req.user!.tenantId,
       ]
     )
     res.status(201).json(rows[0])
@@ -69,7 +72,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 })
 
 // PUT /api/planificacion-cambios/:id
-router.put('/:id', async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('planificacion_cambios', 'editar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const {
     categoria, descripcion, justificacion, responsable, recursos,
@@ -84,7 +87,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
          recursos=$5, implicaciones=$6, acciones=$7, fecha_inicio=$8,
          fecha_fin=$9, impacto=$10, estado=$11, procesos_afectados=$12,
          documentos_afectados=$13, aprobado_por=$14, observaciones=$15
-       WHERE id=$16 RETURNING *`,
+       WHERE id=$16 AND tenant_id=$17 RETURNING *`,
       [
         categoria       || 'Otro',
         descripcion,
@@ -102,6 +105,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
         aprobado_por    || null,
         observaciones   || null,
         id,
+        req.user!.tenantId,
       ]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Cambio no encontrado' })
@@ -113,10 +117,11 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // DELETE /api/planificacion-cambios/:id
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/:id', requirePermission('planificacion_cambios', 'eliminar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   try {
-    await pool.query('DELETE FROM planificacion_cambios WHERE id=$1', [id])
+    const { rowCount } = await pool.query('DELETE FROM planificacion_cambios WHERE id=$1 AND tenant_id=$2', [id, req.user!.tenantId])
+    if (!rowCount) return res.status(404).json({ error: 'Cambio no encontrado' })
     res.status(204).send()
   } catch (err) {
     console.error(err)

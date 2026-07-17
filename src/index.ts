@@ -32,6 +32,7 @@ import contextoEmpresaRouter    from './routes/contextoEmpresa'
 import riesgoEvidenciasRouter   from './routes/riesgoEvidencias'
 import uploadsRouter from './routes/uploads'
 import enfoqueClienteRouter from './routes/enfoqueCliente'
+  import platformAdminRouter from './routes/platformAdmin'
 
 
 // ── IA: Gemini ──────────────────────────────────────────────
@@ -74,7 +75,7 @@ app.use('/api/contexto-empresa',      contextoEmpresaRouter)
 app.use('/api/riesgo-evidencias',     riesgoEvidenciasRouter)
 app.use('/api/uploads', uploadsRouter)
 app.use('/api/enfoque-cliente', enfoqueClienteRouter)
-
+app.use('/api/platform-admin', platformAdminRouter)
 // ── IA ──────────────────────────────────────────────────────
 app.use('/api/gemini',                geminiRouter)
 
@@ -82,11 +83,21 @@ app.use('/api/gemini',                geminiRouter)
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 
 // ── Frontend estático (Vite build) ──────────────────────────
-const frontendDist = path.join(path.dirname(process.argv[1]), '..', 'dist')
-app.use(express.static(frontendDist))
-app.get('*', (_req, res) => {
-  res.sendFile(path.join(frontendDist, 'index.html'))
-})
+// Solo en producción: en dev, Vite (puerto 5173) sirve el frontend y
+// maneja su propio SPA routing. Si este catch-all corriera en dev,
+// cualquier petición mal enrutada al backend intentaría servir
+// dist/index.html —que no existe— y tiraría ENOENT en vez de un 404 claro.
+if (process.env.NODE_ENV === 'production') {
+  const frontendDist = path.join(path.dirname(process.argv[1]), '..', 'dist')
+  app.use(express.static(frontendDist))
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(frontendDist, 'index.html'))
+  })
+} else {
+  app.get('*', (_req, res) => {
+    res.status(404).json({ error: 'Ruta no encontrada' })
+  })
+}
 
 app.listen(PORT, () => {
   console.log(`Governex API + Frontend corriendo en puerto ${PORT}`)

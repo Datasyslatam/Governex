@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react'
 import { contextoEmpresaService, procesosService } from '../services'
 import { disenoDesarrolloService } from '../services'
+import { useAuthContext } from './AuthContext'
 
 
 /* ── Datos del formulario de empresa ─────────────────────────── */
@@ -205,11 +206,20 @@ interface AIAnalysisContextValue {
   updateProyectoDiseno: (id: string, p: ProyectoDiseno) => void
   removeProyectoDiseno: (id: string) => void
   clearAnalysis:   () => void
+  updateFilaMatrizRoles:  (id: number, patch: Partial<FilaMatriz>) => void
+  addFilaMatrizRoles:     (fila: Omit<FilaMatriz, 'id'>) => void
+  removeFilaMatrizRoles:  (id: number) => void
+
+  updateFilaMatrizCargos: (id: number, patch: Partial<FilaMatrizCargos>) => void
+  addFilaMatrizCargos:    (fila: Omit<FilaMatrizCargos, 'id'>) => void
+  removeFilaMatrizCargos: (id: number) => void
 }
 
 const AIAnalysisContext = createContext<AIAnalysisContextValue | undefined>(undefined)
 
 export const AIAnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useAuthContext()
+  
   const [analysis, setAnalysisState] = useState<AIAnalysis | null>(() => {
     try { const s = sessionStorage.getItem('governex_ai_analysis'); return s ? JSON.parse(s) : null }
     catch { return null }
@@ -295,6 +305,7 @@ const mapCaracterizacionDB = (rows: any[]): CaracterizacionRow[] => rows.map(r =
 
   /* ── Carga inicial desde la API (sessionStorage solo es fallback mientras carga) ── */
   useEffect(() => {
+    if (!isAuthenticated) return
     (async () => {
       try {
         // 1. Agregamos la nueva petición al Promise.all con un .catch(() => []) integrado 
@@ -367,7 +378,7 @@ const mapCaracterizacionDB = (rows: any[]): CaracterizacionRow[] => rows.map(r =
         console.warn('[AIAnalysisContext] No se pudo cargar contexto desde la API, usando caché local.', e)
       }
     })()
-  }, [])
+  }, [isAuthenticated])
 
   /* ── setAnalysis: guarda local + sincroniza matrices con la API ── */
   const setAnalysis = (a: AIAnalysis) => {
@@ -463,16 +474,112 @@ const mapCaracterizacionDB = (rows: any[]): CaracterizacionRow[] => rows.map(r =
     contextoEmpresaService.deleteDatos().catch(() => {})
   }
 
+  /* ── Matriz de Roles: edición granular por fila, persistida en BD ── */
+const updateFilaMatrizRoles = (id: number, patch: Partial<FilaMatriz>) => {
+  const prevAnalysis = analysis
+  const filaActual = analysis?.matrizRoles?.find(f => f.id === id)
+  if (!filaActual) return
+
+  setAnalysisState(prev => {
+    if (!prev) return prev
+    const next = { ...prev, matrizRoles: (prev.matrizRoles || []).map(f => f.id === id ? { ...f, ...patch } : f) }
+    try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(next)) } catch {}
+    return next
+  })
+
+  contextoEmpresaService.putMatrizRolesFila(id, { ...filaActual, ...patch }).catch(e => {
+    console.warn('No se pudo actualizar fila de matrizRoles en BD:', e)
+    setAnalysisState(prevAnalysis)
+    try { if (prevAnalysis) sessionStorage.setItem('governex_ai_analysis', JSON.stringify(prevAnalysis)) } catch {}
+  })
+}
+
+const addFilaMatrizRoles = (fila: Omit<FilaMatriz, 'id'>) => {
+  contextoEmpresaService.postMatrizRolesNueva(fila).then(saved => {
+    const nueva = mapMatrizRoles([saved])[0]
+    setAnalysisState(prev => {
+      const base: AIAnalysis = prev ?? { pestel: [], dofa: [], caracterizacion: [] }
+      const next = { ...base, matrizRoles: [...(base.matrizRoles || []), nueva] }
+      try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }).catch(e => console.warn('No se pudo crear fila de matrizRoles en BD:', e))
+}
+
+const removeFilaMatrizRoles = (id: number) => {
+  const prevAnalysis = analysis
+  setAnalysisState(prev => {
+    if (!prev) return prev
+    const next = { ...prev, matrizRoles: (prev.matrizRoles || []).filter(f => f.id !== id) }
+    try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(next)) } catch {}
+    return next
+  })
+  contextoEmpresaService.deleteMatrizRolesFila(id).catch(e => {
+    console.warn('No se pudo eliminar fila de matrizRoles en BD:', e)
+    setAnalysisState(prevAnalysis)
+    try { if (prevAnalysis) sessionStorage.setItem('governex_ai_analysis', JSON.stringify(prevAnalysis)) } catch {}
+  })
+}
+
+/* ── Matriz de Cargos: mismo patrón ── */
+const updateFilaMatrizCargos = (id: number, patch: Partial<FilaMatrizCargos>) => {
+  const prevAnalysis = analysis
+  const filaActual = analysis?.matrizCargos?.find(f => f.id === id)
+  if (!filaActual) return
+
+  setAnalysisState(prev => {
+    if (!prev) return prev
+    const next = { ...prev, matrizCargos: (prev.matrizCargos || []).map(f => f.id === id ? { ...f, ...patch } : f) }
+    try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(next)) } catch {}
+    return next
+  })
+
+  contextoEmpresaService.putMatrizCargosFila(id, { ...filaActual, ...patch }).catch(e => {
+    console.warn('No se pudo actualizar fila de matrizCargos en BD:', e)
+    setAnalysisState(prevAnalysis)
+    try { if (prevAnalysis) sessionStorage.setItem('governex_ai_analysis', JSON.stringify(prevAnalysis)) } catch {}
+  })
+}
+
+const addFilaMatrizCargos = (fila: Omit<FilaMatrizCargos, 'id'>) => {
+  contextoEmpresaService.postMatrizCargosNueva(fila).then(saved => {
+    const nueva = mapMatrizCargos([saved])[0]
+    setAnalysisState(prev => {
+      const base: AIAnalysis = prev ?? { pestel: [], dofa: [], caracterizacion: [] }
+      const next = { ...base, matrizCargos: [...(base.matrizCargos || []), nueva] }
+      try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }).catch(e => console.warn('No se pudo crear fila de matrizCargos en BD:', e))
+}
+
+const removeFilaMatrizCargos = (id: number) => {
+  const prevAnalysis = analysis
+  setAnalysisState(prev => {
+    if (!prev) return prev
+    const next = { ...prev, matrizCargos: (prev.matrizCargos || []).filter(f => f.id !== id) }
+    try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(next)) } catch {}
+    return next
+  })
+  contextoEmpresaService.deleteMatrizCargosFila(id).catch(e => {
+    console.warn('No se pudo eliminar fila de matrizCargos en BD:', e)
+    setAnalysisState(prevAnalysis)
+    try { if (prevAnalysis) sessionStorage.setItem('governex_ai_analysis', JSON.stringify(prevAnalysis)) } catch {}
+  })
+}
+
   return (
-    <AIAnalysisContext.Provider value={{
-      analysis, datosEmpresa, actividades, proyectosDiseno,
-      setAnalysis, setDatosEmpresa, setActividades, setProyectosDiseno,
-      addActividad, removeActividad,
-      addProyectoDiseno, updateProyectoDiseno, removeProyectoDiseno,
-      clearAnalysis,
-    }}>
-      {children}
-    </AIAnalysisContext.Provider>
+  <AIAnalysisContext.Provider value={{
+    analysis, datosEmpresa, actividades, proyectosDiseno,
+    setAnalysis, setDatosEmpresa, setActividades, setProyectosDiseno,
+    addActividad, removeActividad,
+    addProyectoDiseno, updateProyectoDiseno, removeProyectoDiseno,
+    updateFilaMatrizRoles, addFilaMatrizRoles, removeFilaMatrizRoles,
+    updateFilaMatrizCargos, addFilaMatrizCargos, removeFilaMatrizCargos,
+    clearAnalysis,
+  }}>
+    {children}
+  </AIAnalysisContext.Provider>
   )
 }
 

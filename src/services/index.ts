@@ -80,13 +80,29 @@ export interface PlanFormacion {
 
 // ── AUTH ───────────────────────────────────────────────────
 
+// ── AUTH ───────────────────────────────────────────────────
+// REEMPLAZA el bloque `authService` existente en src/services/index.ts
+// por este. Es el único bloque que cambia en ese archivo: el resto
+// (riesgosService, auditoriasService, etc.) queda igual.
+
+export interface TenantInfo {
+  id: number;
+  nombre: string;
+}
+
 export const authService = {
   login: async (email: string, password: string) => {
-    const data = await api.post<{ token: string; user: { nombre: string; rol: string } }>(
-      '/api/auth/login', { email, password }
-    )
+    const data = await api.post<{
+      token: string;
+      user: { id: number; nombre: string; email: string; rol: string };
+      tenant: TenantInfo;
+    }>('/api/auth/login', { email, password }, true) // skipSessionModal: un 401 aquí es credencial inválida, no sesión expirada
     saveToken(data.token)
-    return data.user
+    // Se devuelven user y tenant por separado; el llamador (LoginPage)
+    // decide cómo combinarlos para AuthContext. Nunca se persiste ni
+    // reenvía tenant.id como si fuera información editable del cliente:
+    // es solo el nombre que el backend ya validó para mostrarlo en UI.
+    return { user: data.user, tenant: data.tenant }
   },
   logout: () => clearToken(),
 }
@@ -313,6 +329,7 @@ export const contextoEmpresaService = {
 
   getMatrizRoles:        () => api.get<any[]>('/api/contexto-empresa/matriz-roles'),
   postMatrizRoles:       (filas: any[]) => api.post<any[]>('/api/contexto-empresa/matriz-roles', { filas }),
+  postMatrizRolesNueva:  (fila: any) => api.post<any>('/api/contexto-empresa/matriz-roles/nueva', fila), // ← nuevo
   putMatrizRolesFila:    (id: number, body: any) => api.put<any>(`/api/contexto-empresa/matriz-roles/${id}`, body),
   deleteMatrizRolesFila: (id: number) => api.delete<void>(`/api/contexto-empresa/matriz-roles/${id}`),
 

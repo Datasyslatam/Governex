@@ -1,6 +1,8 @@
 import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
+import { requirePermission } from '../middleware/rbac'
+import { resolveFileUrl } from '../services/storageService'
 
 const router = Router()
 router.use(authMiddleware)
@@ -10,10 +12,11 @@ router.use(authMiddleware)
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/enfoque-cliente/pqrs
-router.get('/pqrs', async (_req, res: Response) => {
+router.get('/pqrs', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM pqrs_enfoque_cliente ORDER BY creado_en DESC`
+      `SELECT * FROM pqrs_enfoque_cliente WHERE tenant_id = $1 ORDER BY creado_en DESC`,
+      [req.user!.tenantId]
     )
     res.json(rows)
   } catch (err) {
@@ -23,17 +26,17 @@ router.get('/pqrs', async (_req, res: Response) => {
 })
 
 // POST /api/enfoque-cliente/pqrs
-router.post('/pqrs', async (req: AuthRequest, res: Response) => {
+router.post('/pqrs', requirePermission('enfoque_cliente', 'crear'), async (req: AuthRequest, res: Response) => {
   const { tipo, origen, fecha, descripcion, estado } = req.body
   if (!tipo || !origen || !descripcion) {
     return res.status(400).json({ error: 'tipo, origen y descripcion son requeridos' })
   }
   try {
     const { rows } = await pool.query(
-      `INSERT INTO pqrs_enfoque_cliente (tipo, origen, fecha, descripcion, estado, creado_por)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      `INSERT INTO pqrs_enfoque_cliente (tipo, origen, fecha, descripcion, estado, creado_por, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
       [tipo, origen, fecha || new Date().toISOString().slice(0, 10),
-       descripcion, estado || 'Abierta', req.user?.id || null]
+       descripcion, estado || 'Abierta', req.user?.id || null, req.user!.tenantId]
     )
     res.status(201).json(rows[0])
   } catch (err) {
@@ -43,15 +46,15 @@ router.post('/pqrs', async (req: AuthRequest, res: Response) => {
 })
 
 // PUT /api/enfoque-cliente/pqrs/:id  (usado para cambiar estado)
-router.put('/pqrs/:id', async (req: AuthRequest, res: Response) => {
+router.put('/pqrs/:id', requirePermission('enfoque_cliente', 'editar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { tipo, origen, fecha, descripcion, estado } = req.body
   try {
     const { rows } = await pool.query(
       `UPDATE pqrs_enfoque_cliente
        SET tipo=$1, origen=$2, fecha=$3, descripcion=$4, estado=$5
-       WHERE id=$6 RETURNING *`,
-      [tipo, origen, fecha, descripcion, estado, id]
+       WHERE id=$6 AND tenant_id=$7 RETURNING *`,
+      [tipo, origen, fecha, descripcion, estado, id, req.user!.tenantId]
     )
     if (!rows[0]) return res.status(404).json({ error: 'PQRS no encontrada' })
     res.json(rows[0])
@@ -62,9 +65,9 @@ router.put('/pqrs/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // DELETE /api/enfoque-cliente/pqrs/:id
-router.delete('/pqrs/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/pqrs/:id', requirePermission('enfoque_cliente', 'eliminar'), async (req: AuthRequest, res: Response) => {
   try {
-    const { rowCount } = await pool.query('DELETE FROM pqrs_enfoque_cliente WHERE id=$1', [req.params.id])
+    const { rowCount } = await pool.query('DELETE FROM pqrs_enfoque_cliente WHERE id=$1 AND tenant_id=$2', [req.params.id, req.user!.tenantId])
     if (!rowCount) return res.status(404).json({ error: 'PQRS no encontrada' })
     res.status(204).send()
   } catch (err) {
@@ -78,12 +81,17 @@ router.delete('/pqrs/:id', async (req: AuthRequest, res: Response) => {
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/enfoque-cliente/archivos
-router.get('/archivos', async (_req, res: Response) => {
+router.get('/archivos', async (req: AuthRequest, res: Response) => {
   try {
+    const tenantId = req.user!.tenantId
     const { rows } = await pool.query(
-      `SELECT * FROM archivos_enfoque_cliente ORDER BY subido_en DESC`
+      `SELECT * FROM archivos_enfoque_cliente WHERE tenant_id = $1 ORDER BY subido_en DESC`,
+      [tenantId]
     )
-    res.json(rows)
+    const withSignedUrls = await Promise.all(
+      rows.map(async (a) => ({ ...a, url: await resolveFileUrl(a.url, tenantId) }))
+    )
+    res.json(withSignedUrls)
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Error al obtener archivos' })
@@ -91,16 +99,16 @@ router.get('/archivos', async (_req, res: Response) => {
 })
 
 // POST /api/enfoque-cliente/archivos
-router.post('/archivos', async (req: AuthRequest, res: Response) => {
+router.post('/archivos', requirePermission('enfoque_cliente', 'crear'), async (req: AuthRequest, res: Response) => {
   const { nombre, tipo, url, tipoMime, tamanoBytes } = req.body
   if (!nombre || !tipo || !url) {
     return res.status(400).json({ error: 'nombre, tipo y url son requeridos' })
   }
   try {
     const { rows } = await pool.query(
-      `INSERT INTO archivos_enfoque_cliente (nombre, tipo, url, tipo_mime, tamano_bytes, subido_por)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [nombre, tipo, url, tipoMime || null, tamanoBytes || null, req.user?.id || null]
+      `INSERT INTO archivos_enfoque_cliente (nombre, tipo, url, tipo_mime, tamano_bytes, subido_por, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [nombre, tipo, url, tipoMime || null, tamanoBytes || null, req.user?.id || null, req.user!.tenantId]
     )
     res.status(201).json(rows[0])
   } catch (err) {
@@ -110,12 +118,13 @@ router.post('/archivos', async (req: AuthRequest, res: Response) => {
 })
 
 // DELETE /api/enfoque-cliente/archivos/:id  (borra también sus respuestas asociadas)
-router.delete('/archivos/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/archivos/:id', requirePermission('enfoque_cliente', 'eliminar'), async (req: AuthRequest, res: Response) => {
+  const tenantId = req.user!.tenantId
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
-    await client.query('DELETE FROM respuestas_encuesta_satisfaccion WHERE archivo_id=$1', [req.params.id])
-    const { rowCount } = await client.query('DELETE FROM archivos_enfoque_cliente WHERE id=$1', [req.params.id])
+    await client.query('DELETE FROM respuestas_encuesta_satisfaccion WHERE archivo_id=$1 AND tenant_id=$2', [req.params.id, tenantId])
+    const { rowCount } = await client.query('DELETE FROM archivos_enfoque_cliente WHERE id=$1 AND tenant_id=$2', [req.params.id, tenantId])
     await client.query('COMMIT')
     if (!rowCount) return res.status(404).json({ error: 'Archivo no encontrado' })
     res.status(204).send()
@@ -133,10 +142,11 @@ router.delete('/archivos/:id', async (req: AuthRequest, res: Response) => {
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/enfoque-cliente/respuestas
-router.get('/respuestas', async (_req, res: Response) => {
+router.get('/respuestas', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM respuestas_encuesta_satisfaccion ORDER BY creado_en DESC`
+      `SELECT * FROM respuestas_encuesta_satisfaccion WHERE tenant_id = $1 ORDER BY creado_en DESC`,
+      [req.user!.tenantId]
     )
     res.json(rows)
   } catch (err) {
@@ -146,18 +156,25 @@ router.get('/respuestas', async (_req, res: Response) => {
 })
 
 // POST /api/enfoque-cliente/respuestas
-router.post('/respuestas', async (req: AuthRequest, res: Response) => {
+router.post('/respuestas', requirePermission('enfoque_cliente', 'crear'), async (req: AuthRequest, res: Response) => {
   const { archivoId, archivoNombre, tipo, campos, nombreEncuestado, fecha } = req.body
   if (!archivoNombre || !tipo || !campos) {
     return res.status(400).json({ error: 'archivoNombre, tipo y campos son requeridos' })
   }
   try {
+    const tenantId = req.user!.tenantId
+    if (archivoId) {
+      const { rowCount } = await pool.query(
+        'SELECT 1 FROM archivos_enfoque_cliente WHERE id = $1 AND tenant_id = $2', [archivoId, tenantId]
+      )
+      if (!rowCount) return res.status(400).json({ error: 'archivoId no pertenece a tu organización' })
+    }
     const { rows } = await pool.query(
       `INSERT INTO respuestas_encuesta_satisfaccion
-         (archivo_id, archivo_nombre, tipo, campos, nombre_encuestado, fecha)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+         (archivo_id, archivo_nombre, tipo, campos, nombre_encuestado, fecha, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
       [archivoId || null, archivoNombre, tipo, JSON.stringify(campos),
-       nombreEncuestado || null, fecha || null]
+       nombreEncuestado || null, fecha || null, tenantId]
     )
     res.status(201).json(rows[0])
   } catch (err) {
