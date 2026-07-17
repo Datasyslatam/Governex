@@ -64,7 +64,8 @@ export interface Indicador {
 export interface Proveedor {
   id: number; nit: string; razon: string; tipo?: string
   estado: 'Aprobado' | 'Condicional' | 'Suspendido'; prox_eval?: string
-  ultima_evaluacion?: { total: number; fecha: string }
+  periodicidad_evaluacion?: 'Semestral' | 'Anual'; email?: string
+  ultima_evaluacion?: { total: number; fecha: string; calidad?: number; entrega?: number; precio?: number; servicio?: number; debilidades?: string }
 }
 
 export interface PersonalItem {
@@ -174,8 +175,10 @@ export const proveedoresService = {
   getAll:          ()                                         => api.get<Proveedor[]>('/api/proveedores'),
   create:          (body: Partial<Proveedor>)                 => api.post<Proveedor>('/api/proveedores', body),
   update:          (id: number, body: Partial<Proveedor>)     => api.put<Proveedor>(`/api/proveedores/${id}`, body),
+  delete:          (id: number)                               => api.delete<void>(`/api/proveedores/${id}`),
   getEvaluaciones: (id: number)                               => api.get<any[]>(`/api/proveedores/${id}/evaluaciones`),
   addEvaluacion:   (id: number, body: any)                    => api.post<any>(`/api/proveedores/${id}/evaluaciones`, body),
+  generarEvaluacionIA: (body: any)                            => api.post<any>('/api/gemini/generar-evaluacion-proveedor', body),
 }
 
 // ── PROCESOS ───────────────────────────────────────────────

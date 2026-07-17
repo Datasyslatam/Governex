@@ -1236,3 +1236,16 @@ COMMENT ON TABLE fichas_tecnicas_ps IS 'ISO 9001:2015 §8.2 — Fichas técnicas
 COMMENT ON COLUMN fichas_tecnicas_ps.UNIDADES_CURRICULARES IS 'Array JSON de objetos {nombre, nivelCurso, gradoAnio, intensidadHoraria, periodo, docente, contenidoProgramatico, metodologia, recursosMateriales, criteriosEvaluacion, logros}. Solo aplica si tipo=educativa.';
 
 CREATE INDEX IF NOT EXISTS idx_fichas_tecnicas_ps_tipo ON fichas_tecnicas_ps (TIPO);
+
+-- ============================================================
+--  PARTE 13: EVALUACIÓN DE PROVEEDORES CON IA (RF-016)
+-- ============================================================
+ALTER TABLE PROVEEDORES
+  ADD COLUMN IF NOT EXISTS periodicidad_evaluacion VARCHAR(20) DEFAULT 'Anual' CHECK (periodicidad_evaluacion IN ('Semestral', 'Anual')),
+  ADD COLUMN IF NOT EXISTS email VARCHAR(150);
+
+ALTER TABLE PROVEEDOR_EVALUACIONES
+  ADD COLUMN IF NOT EXISTS precio_mercado NUMERIC,
+  ADD COLUMN IF NOT EXISTS precio_proveedor NUMERIC,
+  ADD COLUMN IF NOT EXISTS debilidades TEXT,
+  ADD COLUMN IF NOT EXISTS generada_con_ia BOOLEAN DEFAULT FALSE;
