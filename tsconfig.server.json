@@ -28,6 +28,7 @@
     "src/layout/**/*",
     "src/routes/AppRoutes.tsx",
     "src/routes/ProtectedRoute.tsx",
+    "src/routes/PlatformAdminProtectedRoute.tsx",
     "src/services/**/*",
     "src/styles/**/*",
     "node_modules"
