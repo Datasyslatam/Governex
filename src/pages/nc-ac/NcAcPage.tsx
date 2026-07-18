@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react'
 import './NcAcPage.css'
 import { useFetch } from '../../hooks/useFetch'
 import { ncAcService, NoConformidad, AccionCorrectiva } from '../../services'
+import { usePermissions } from '../../hooks/usePermissions'
 
 type Tab = 'no_conformidades' | 'acciones_correctivas'
 
@@ -35,6 +36,8 @@ const emptyAC: Partial<AccionCorrectiva> = {
 
 const NcAcPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('no_conformidades')
+  const { canEdit: canEditNC, isReadOnly: isReadOnlyNC } = usePermissions('no_conformidades')
+  const { canEdit: canEditAC, isReadOnly: isReadOnlyAC } = usePermissions('acciones_correctivas')
 
   // ── Datos desde la API ────────────────────────────────────
   const {
@@ -160,12 +163,12 @@ const NcAcPage: React.FC = () => {
         </div>
         <div className="ncac-page__actions">
           {activeTab === 'no_conformidades' && (
-            <button className="btn btn--primary" onClick={() => { setEditingNCId(null); setFormNC(emptyNC); setShowModalNC(true) }}>
+            <button className="btn btn--primary" onClick={() => { setEditingNCId(null); setFormNC(emptyNC); setShowModalNC(true) }} disabled={!canEditNC} title={!canEditNC ? 'Tu rol no tiene permiso para esta acción' : undefined}>
               + Nueva NC
             </button>
           )}
           {activeTab === 'acciones_correctivas' && (
-            <button className="btn btn--primary" onClick={() => { setEditingACId(null); setFormAC(emptyAC); setShowModalAC(true) }}>
+            <button className="btn btn--primary" onClick={() => { setEditingACId(null); setFormAC(emptyAC); setShowModalAC(true) }} disabled={!canEditAC} title={!canEditAC ? 'Tu rol no tiene permiso para esta acción' : undefined}>
               + Nueva Acción Correctiva
             </button>
           )}
@@ -261,15 +264,16 @@ const NcAcPage: React.FC = () => {
                         }`}>{nc.estado}</span>
                       </td>
                       <td className="ncac-table__actions">
-                        <button className="ncac-action-btn" title="Editar" onClick={() => openEditNC(nc)}>✏️</button>
+                        <button className="ncac-action-btn" title={!canEditNC ? 'Tu rol no tiene permiso para esta acción' : "Editar"} onClick={() => openEditNC(nc)} disabled={!canEditNC}>✏️</button>
                         <button
-                          className="ncac-action-btn" title="Crear AC vinculada"
+                          className="ncac-action-btn" title={!canEditAC ? 'Tu rol no tiene permiso para esta acción' : "Crear AC vinculada"}
                           onClick={() => {
                             setEditingACId(null)
                             setFormAC({ ...emptyAC, nc_id: nc.id })
                             setShowModalAC(true)
                             setActiveTab('acciones_correctivas')
                           }}
+                          disabled={!canEditAC}
                         >🔗</button>
                       </td>
                     </tr>
@@ -330,7 +334,7 @@ const NcAcPage: React.FC = () => {
                         }`}>{ac.eficacia}</span>
                       </td>
                       <td className="ncac-table__actions">
-                        <button className="ncac-action-btn" title="Editar" onClick={() => openEditAC(ac)}>✏️</button>
+                        <button className="ncac-action-btn" title={!canEditAC ? 'Tu rol no tiene permiso para esta acción' : "Editar"} onClick={() => openEditAC(ac)} disabled={!canEditAC}>✏️</button>
                       </td>
                     </tr>
                   ))}
@@ -358,7 +362,7 @@ const NcAcPage: React.FC = () => {
               <div className="form-group">
                 <label>Origen</label>
                 <select className="filter-select form-control" value={formNC.origen}
-                  onChange={e => setFormNC(f => ({ ...f, origen: e.target.value }))}>
+                  onChange={e => setFormNC(f => ({ ...f, origen: e.target.value }))} disabled={!canEditNC}>
                   <option value="Auditoría Interna">Auditoría Interna</option>
                   <option value="Cliente (Queja)">Cliente (Queja)</option>
                   <option value="Proceso Interno">Proceso Interno</option>
@@ -372,13 +376,14 @@ const NcAcPage: React.FC = () => {
                   value={formNC.descripcion}
                   onChange={e => setFormNC(f => ({ ...f, descripcion: e.target.value }))}
                   placeholder="Describa la no conformidad detectada..."
+                  readOnly={isReadOnlyNC()}
                 />
               </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Gravedad</label>
                   <select className="filter-select form-control" value={formNC.gravedad}
-                    onChange={e => setFormNC(f => ({ ...f, gravedad: e.target.value }))}>
+                    onChange={e => setFormNC(f => ({ ...f, gravedad: e.target.value }))} disabled={!canEditNC}>
                     <option value="Menor">Menor</option>
                     <option value="Mayor">Mayor</option>
                     <option value="Crítica">Crítica</option>
@@ -387,7 +392,7 @@ const NcAcPage: React.FC = () => {
                 <div className="form-group">
                   <label>Estado</label>
                   <select className="filter-select form-control" value={formNC.estado}
-                    onChange={e => setFormNC(f => ({ ...f, estado: e.target.value }))}>
+                    onChange={e => setFormNC(f => ({ ...f, estado: e.target.value }))} disabled={!canEditNC}>
                     <option value="Abierta">Abierta</option>
                     <option value="En Análisis">En Análisis</option>
                     <option value="Verificación">Verificación</option>
@@ -398,7 +403,7 @@ const NcAcPage: React.FC = () => {
             </div>
             <div className="modal-footer">
               <button className="btn btn--secondary" onClick={() => setShowModalNC(false)}>Cancelar</button>
-              <button className="btn btn--primary" onClick={handleSaveNC} disabled={saving || !formNC.descripcion}>
+              <button className="btn btn--primary" onClick={handleSaveNC} disabled={saving || !formNC.descripcion || !canEditNC} title={!canEditNC ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                 {saving ? 'Guardando...' : editingNCId ? 'Guardar Cambios' : 'Registrar NC'}
               </button>
             </div>
@@ -418,7 +423,7 @@ const NcAcPage: React.FC = () => {
               <div className="form-group">
                 <label>NC vinculada</label>
                 <select className="filter-select form-control" value={formAC.nc_id || ''}
-                  onChange={e => setFormAC(f => ({ ...f, nc_id: Number(e.target.value) }))}>
+                  onChange={e => setFormAC(f => ({ ...f, nc_id: Number(e.target.value) }))} disabled={!canEditAC}>
                   <option value="">Seleccionar NC...</option>
                   {ncData.filter(nc => nc.estado !== 'Cerrada').map(nc => (
                     <option key={nc.id} value={nc.id}>{nc.codigo} — {nc.descripcion.slice(0, 50)}</option>
@@ -428,7 +433,7 @@ const NcAcPage: React.FC = () => {
               <div className="form-group">
                 <label>Método de análisis de causa raíz</label>
                 <select className="filter-select form-control" value={formAC.metodo_analisis}
-                  onChange={e => setFormAC(f => ({ ...f, metodo_analisis: e.target.value }))}>
+                  onChange={e => setFormAC(f => ({ ...f, metodo_analisis: e.target.value }))} disabled={!canEditAC}>
                   <option value="5 Por Qué's">5 Por Qué's</option>
                   <option value="Ishikawa">Ishikawa</option>
                   <option value="Pareto">Pareto</option>
@@ -441,6 +446,7 @@ const NcAcPage: React.FC = () => {
                   value={formAC.accion}
                   onChange={e => setFormAC(f => ({ ...f, accion: e.target.value }))}
                   placeholder="Describa la acción correctiva..."
+                  readOnly={isReadOnlyAC()}
                 />
               </div>
               <div className="form-row">
@@ -449,6 +455,7 @@ const NcAcPage: React.FC = () => {
                   <input type="text" className="filter-input form-control"
                     value={formAC.responsable || ''} placeholder="Nombre del responsable"
                     onChange={e => setFormAC(f => ({ ...f, responsable: e.target.value }))}
+                    readOnly={isReadOnlyAC()}
                   />
                 </div>
                 <div className="form-group">
@@ -456,6 +463,7 @@ const NcAcPage: React.FC = () => {
                   <input type="date" className="filter-input form-control"
                     value={formAC.fecha_fin || ''}
                     onChange={e => setFormAC(f => ({ ...f, fecha_fin: e.target.value }))}
+                    readOnly={isReadOnlyAC()}
                   />
                 </div>
               </div>
@@ -463,7 +471,7 @@ const NcAcPage: React.FC = () => {
                 <div className="form-group">
                   <label>Estado</label>
                   <select className="filter-select form-control" value={formAC.estado}
-                    onChange={e => setFormAC(f => ({ ...f, estado: e.target.value }))}>
+                    onChange={e => setFormAC(f => ({ ...f, estado: e.target.value }))} disabled={!canEditAC}>
                     <option value="En Implementación">En Implementación</option>
                     <option value="Verificación">Verificación</option>
                     <option value="Cerrada">Cerrada</option>
@@ -472,7 +480,7 @@ const NcAcPage: React.FC = () => {
                 <div className="form-group">
                   <label>Eficacia</label>
                   <select className="filter-select form-control" value={formAC.eficacia}
-                    onChange={e => setFormAC(f => ({ ...f, eficacia: e.target.value }))}>
+                    onChange={e => setFormAC(f => ({ ...f, eficacia: e.target.value }))} disabled={!canEditAC}>
                     <option value="-">Pendiente</option>
                     <option value="Pendiente 30 días">Pendiente 30 días</option>
                     <option value="Eficaz">Eficaz</option>
@@ -483,7 +491,7 @@ const NcAcPage: React.FC = () => {
             </div>
             <div className="modal-footer">
               <button className="btn btn--secondary" onClick={() => setShowModalAC(false)}>Cancelar</button>
-              <button className="btn btn--primary" onClick={handleSaveAC} disabled={saving || !formAC.accion || !formAC.nc_id}>
+              <button className="btn btn--primary" onClick={handleSaveAC} disabled={saving || !formAC.accion || !formAC.nc_id || !canEditAC} title={!canEditAC ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                 {saving ? 'Guardando...' : editingACId ? 'Guardar Cambios' : 'Crear AC'}
               </button>
             </div>

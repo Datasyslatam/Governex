@@ -3,6 +3,9 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { pool } from '../db'
 import { platformAdminMiddleware, PlatformAdminRequest } from '../middleware/platformAdminAuth'
+import { getUserPermissions } from './auth'
+import { ListObjectsV2Command } from '@aws-sdk/client-s3'
+import { s3 } from '../services/storageService'
 
 const router = Router()
 
@@ -264,9 +267,11 @@ router.post('/tenants/:id/impersonate', async (req: PlatformAdminRequest, res: R
       usuarioEmail: usuario.email, tenantNombre: usuario.tenant_nombre,
     })
 
+    const permissions = await getUserPermissions(usuario.id)
+
     res.json({
       token,
-      user: { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol },
+      user: { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol, permissions },
       tenant: { id: usuario.tenant_id, nombre: usuario.tenant_nombre },
     })
   } catch (err) {
@@ -471,6 +476,73 @@ router.post('/tenants/:id/usuarios/:usuarioId/reset-password', async (req: Platf
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Error al resetear la contraseña' })
+  }
+})
+
+// GET /api/platform-admin/global-stats
+router.get('/global-stats', async (req: PlatformAdminRequest, res: Response) => {
+  try {
+    const [
+      usuariosRes,
+      procesosRes,
+      riesgosRes,
+      auditoriasRes,
+      documentosRes,
+      ncRes,
+      mejorasRes,
+      tenantsRes
+    ] = await Promise.all([
+      pool.query('SELECT COUNT(*)::int AS total FROM usuarios'),
+      pool.query('SELECT COUNT(*)::int AS total FROM procesos'),
+      pool.query('SELECT COUNT(*)::int AS total FROM riesgos'),
+      pool.query('SELECT COUNT(*)::int AS total FROM auditorias'),
+      pool.query('SELECT COUNT(*)::int AS total FROM documentos'),
+      pool.query('SELECT COUNT(*)::int AS total FROM no_conformidades'),
+      pool.query('SELECT COUNT(*)::int AS total FROM mejoras_continuas'),
+      pool.query("SELECT plan, estado FROM tenants")
+    ])
+
+    // Calculate MRR based on active tenants
+    let mrr = 0
+    tenantsRes.rows.forEach(t => {
+      if (t.estado === 'Activo') {
+        if (t.plan === 'Standard') mrr += 49
+        else if (t.plan === 'Pro') mrr += 99
+        else if (t.plan === 'Enterprise') mrr += 249
+      }
+    })
+
+    // R2 Bucket stats
+    let totalFiles = 0
+    let totalStorageBytes = 0
+
+    try {
+      const response = await s3.send(new ListObjectsV2Command({
+        Bucket: process.env.R2_BUCKET,
+      }))
+      if (response.Contents) {
+        totalFiles = response.Contents.length
+        totalStorageBytes = response.Contents.reduce((sum, item) => sum + (item.Size || 0), 0)
+      }
+    } catch (s3Err) {
+      console.error('Error fetching R2 stats:', s3Err)
+    }
+
+    res.json({
+      mrr,
+      totalFiles,
+      totalStorageBytes,
+      totalUsuarios: usuariosRes.rows[0]?.total || 0,
+      totalProcesos: procesosRes.rows[0]?.total || 0,
+      totalRiesgos: riesgosRes.rows[0]?.total || 0,
+      totalAuditorias: auditoriasRes.rows[0]?.total || 0,
+      totalDocumentos: documentosRes.rows[0]?.total || 0,
+      totalNoConformidades: ncRes.rows[0]?.total || 0,
+      totalMejoras: mejorasRes.rows[0]?.total || 0,
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al obtener estadísticas globales' })
   }
 })
 

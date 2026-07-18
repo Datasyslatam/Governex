@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import './RolesPage.css'
 import { useAIAnalysis, FilaMatriz, TipoProceso } from '../../context/AIAnalysisContext'
 import MatrizCargosPage from './MatrizCargosPage'
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 
 /* ══════════════════════════════════════════════════════════════
    TIPOS
@@ -25,6 +27,7 @@ const RolesPage: React.FC = () => {
     analysis,
     updateFilaMatrizRoles, addFilaMatrizRoles, removeFilaMatrizRoles,
   } = useAIAnalysis()
+  const { canEdit, canCreate, canDelete } = usePermissions('procesos')
   const [activeTab, setActiveTab] = useState<'roles' | 'cargos'>('roles')
 
   const filas = analysis?.matrizRoles ?? []          // ← sin useState local ni useEffect de sync
@@ -148,7 +151,7 @@ const RolesPage: React.FC = () => {
                   </select>
                 </div>
                 <div className="roles-matriz-actions">
-                  <button className="btn-primary" onClick={() => setShowAddModal(true)}>＋ Agregar proceso</button>
+                  <button className="btn-primary" onClick={() => setShowAddModal(true)} disabled={!canCreate} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Agregar proceso</button>
                 </div>
               </div>
 
@@ -184,25 +187,27 @@ const RolesPage: React.FC = () => {
                           const isEditing = editingCell?.id === fila.id && editingCell?.col === col.key
                           const val = fila[col.key]
                           return (
-                            <td key={col.key} onClick={() => !isEditing && startEdit(fila.id, col.key, val)} style={{ cursor: 'pointer' }}>
+                            <td key={col.key} onClick={canEdit ? (() => !isEditing && startEdit(fila.id, col.key, val)) : undefined} style={{ cursor: canEdit ? 'pointer' : 'default' }} title={!canEdit ? 'Tu rol no tiene permiso para editar' : undefined}>
                               {isEditing ? (
                                 <div className="roles-cell-edit" onClick={e => e.stopPropagation()}>
                                   <textarea autoFocus rows={3} value={editValue}
                                     onChange={e => setEditValue(e.target.value)}
                                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitEdit() } if (e.key === 'Escape') cancelEdit() }} />
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                    <button className="btn-icon" onClick={commitEdit} title="Guardar (Enter)">✔</button>
+                                    <button className="btn-icon" onClick={commitEdit} title="Guardar (Enter)" disabled={!canEdit}>✔</button>
                                     <button className="btn-icon" onClick={cancelEdit} title="Cancelar (Esc)">✕</button>
                                   </div>
                                 </div>
                               ) : val
                                 ? <span className="roles-cell-text">{val}</span>
-                                : <span className="roles-cell-empty">— clic para editar</span>}
+                                : (canEdit ? <span className="roles-cell-empty">— clic para editar</span> : null)}
                             </td>
                           )
                         })}
                         <td>
-                          <button className="btn-icon danger" onClick={() => deleteFila(fila.id)} title="Eliminar proceso">🗑️</button>
+                          <PermissionGuard recurso="procesos" accion="eliminar" mode="hide">
+                            <button className="btn-icon danger" onClick={() => deleteFila(fila.id)} title="Eliminar proceso">🗑️</button>
+                          </PermissionGuard>
                         </td>
                       </tr>
                     ))}
@@ -224,7 +229,7 @@ const RolesPage: React.FC = () => {
                 <label>Cláusula<input type="text" placeholder="ej. §8.1, §8.3" value={newFila.clausula} onChange={e => setNewFila(p => ({ ...p, clausula: e.target.value }))} /></label>
                 <div className="roles-modal__footer">
                   <button className="btn-secondary" onClick={() => setShowAddModal(false)}>Cancelar</button>
-                  <button className="btn-primary" onClick={addFila} disabled={!newFila.proceso.trim()}>＋ Agregar</button>
+                  <button className="btn-primary" onClick={addFila} disabled={!canCreate || !newFila.proceso.trim()} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Agregar</button>
                 </div>
               </div>
             </div>

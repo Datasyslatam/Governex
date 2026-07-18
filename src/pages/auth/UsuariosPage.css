@@ -1,0 +1,552 @@
+/* ══════════════════════════════════════════════════════════════
+   UsuariosPage CSS - Premium user management & audit logs styles
+   ══════════════════════════════════════════════════════════════ */
+
+.usuarios-page {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Header */
+.usuarios-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.usuarios-page__title-block h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1b3a6b;
+  margin: 0 0 0.25rem;
+}
+
+.usuarios-page__title-block p {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.usuarios-page__clause {
+  display: inline-block;
+  background: #e8f0fb;
+  color: #1b3a6b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.2rem 0.75rem;
+  margin-top: 0.4rem;
+}
+
+/* Tabs */
+.usuarios-page__tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.usuarios-tab-btn {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  background: none;
+  font-size: 0.88rem;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 4px 4px 0 0;
+  transition: color 0.15s, border-color 0.15s;
+  font-weight: 500;
+}
+
+.usuarios-tab-btn:hover {
+  color: #1b3a6b;
+}
+
+.usuarios-tab-btn.active {
+  color: #1b3a6b;
+  font-weight: 700;
+  border-bottom-color: #2e86de;
+}
+
+/* Spinner / Loading */
+.usuarios-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: #2e86de;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 3rem;
+}
+
+.usuarios-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #bfdbfe;
+  border-top-color: #2e86de;
+  border-radius: 50%;
+  animation: user-spin 0.7s linear infinite;
+}
+
+@keyframes user-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Table Wrapper & Badges */
+.usuarios-table-wrapper {
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.usuarios-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+  min-width: 900px;
+}
+
+.usuarios-matrix-table thead tr {
+  background: #1b3a6b;
+  color: #fff;
+}
+
+.usuarios-matrix-table thead th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.usuarios-matrix-table tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.usuarios-matrix-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.usuarios-matrix-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.usuarios-matrix-table tbody tr:hover {
+  background: #eef4ff;
+}
+
+.usuarios-matrix-table tbody td {
+  padding: 0.75rem 1rem;
+  vertical-align: middle;
+}
+
+/* Role badge */
+.rol-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  text-transform: capitalize;
+}
+
+.rol-badge.superusuario {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.rol-badge.gestión {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.rol-badge.operativo {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Status badge */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.status-badge.activo {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.inactivo {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Permisos badge */
+.permisos-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
+.permisos-badge.personalizados {
+  background: #faf5ff;
+  color: #6b21a8;
+  border: 1px solid #e9d5ff;
+  font-weight: 600;
+}
+
+.permisos-badge.rol-defecto {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+/* Modal Styling */
+.usuarios-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.usuarios-modal {
+  background: #fff;
+  border-radius: 0.85rem;
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow-y: auto;
+}
+
+.usuarios-modal h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1b3a6b;
+  margin: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.usuarios-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.usuarios-form label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.usuarios-form input[type="text"],
+.usuarios-form input[type="email"],
+.usuarios-form input[type="password"],
+.usuarios-form select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: #1f2937;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.usuarios-form input:focus,
+.usuarios-form select:focus {
+  outline: none;
+  border-color: #2e86de;
+  box-shadow: 0 0 0 3px rgba(46, 134, 222, 0.15);
+}
+
+.switch-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+/* Custom permissions block */
+.permisos-personalizacion-panel {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.permisos-personalizacion-panel h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1b3a6b;
+  margin: 0;
+}
+
+.permisos-helper-text {
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin: 0 0 0.5rem;
+}
+
+.permisos-recursos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.permisos-recurso-grupo {
+  background: #fff;
+  border: 1px solid #f1f5f9;
+  border-radius: 6px;
+  padding: 0.6rem;
+}
+
+.permisos-recurso-grupo h4 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  margin: 0 0 0.4rem;
+  border-bottom: 1px dashed #f1f5f9;
+  padding-bottom: 0.2rem;
+}
+
+.permisos-acciones-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.checkbox-label-mini {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: #f1f5f9;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.checkbox-label-mini:hover {
+  background: #e2e8f0;
+}
+
+.checkbox-label-mini input {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Action Label text styling */
+.accion-label {
+  text-transform: capitalize;
+  font-weight: 600;
+}
+
+.accion-label.leer { color: #0284c7; }
+.accion-label.crear { color: #16a34a; }
+.accion-label.editar { color: #d97706; }
+.accion-label.eliminar { color: #dc2626; }
+.accion-label.aprobar { color: #7c3aed; }
+
+/* Modal Footer */
+.usuarios-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* ── Logs Panel Styling ─────────────────────────────────────── */
+.logs-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.logs-panel__toolbar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.logs-search-input {
+  flex: 1;
+  min-width: 250px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #1f2937;
+  outline: none;
+}
+
+.logs-search-input:focus {
+  border-color: #2e86de;
+  box-shadow: 0 0 0 3px rgba(46, 134, 222, 0.15);
+}
+
+/* Action Pills for Logs */
+.accion-pill {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.accion-pill.crear {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.accion-pill.modificar {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.accion-pill.eliminar {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.accion-pill.inicio-de-sesion {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.accion-pill.cierre-de-sesion {
+  background: #faf5ff;
+  color: #6b21a8;
+}
+
+.recurso-badge {
+  display: inline-block;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  text-transform: capitalize;
+}
+
+/* Global button styles matching the rest of the application */
+.btn-primary {
+  padding: 0.45rem 1rem;
+  background: #2e86de;
+  color: #fff;
+  border: none;
+  border-radius: 0.4rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: background 0.15s;
+}
+
+.btn-primary:hover { background: #1b6ec2; }
+
+.btn-secondary {
+  padding: 0.45rem 1rem;
+  background: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 0.4rem;
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-secondary:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.btn-icon {
+  padding: 0.3rem 0.5rem;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.15s;
+  color: #374151;
+}
+
+.btn-icon:hover { background: #f3f4f6; }
+.btn-icon.danger:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }

@@ -2,6 +2,8 @@ import React, { useState, useCallback } from 'react'
 import './IndicadoresPage.css'
 import { useFetch } from '../../hooks/useFetch'
 import { indicadoresService, Indicador } from '../../services'
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 
 const FRECUENCIAS = ['Diaria', 'Semanal', 'Mensual', 'Trimestral', 'Semestral', 'Anual']
 
@@ -13,6 +15,7 @@ const emptyMedicion = { valor: '', tendencia: 'stable' as const, estado: 'Cumple
 
 const IndicadoresPage: React.FC = () => {
   const { data: kpiData, loading, error, refetch } = useFetch(indicadoresService.getAll, [])
+  const { canEdit, canDelete, isReadOnly } = usePermissions('indicadores')
 
   const [showModalInd, setShowModalInd]     = useState(false)
   const [showModalMed, setShowModalMed]     = useState(false)
@@ -129,10 +132,10 @@ const IndicadoresPage: React.FC = () => {
           <p className="ind-page__subtitle">Medición, análisis y evaluación de resultados del SGC</p>
         </div>
         <div className="ind-page__actions" style={{ display: 'flex', gap: '1rem' }}>
-          <button className="btn btn--danger" onClick={handleDeleteAll} disabled={saving || kpiData.length === 0} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none' }}>
+          <button className="btn btn--danger" onClick={handleDeleteAll} disabled={saving || kpiData.length === 0 || !canDelete} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none' }} title={!canDelete ? 'Tu rol no tiene permiso para esta acción' : undefined}>
             🗑️ Eliminar Todos
           </button>
-          <button className="btn btn--primary" onClick={openCreate}>+ Crear Indicador (Ficha Técnica)</button>
+          <button className="btn btn--primary" onClick={openCreate} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>+ Crear Indicador (Ficha Técnica)</button>
         </div>
       </header>
 
@@ -213,10 +216,10 @@ const IndicadoresPage: React.FC = () => {
                         }`}>{med?.estado || 'Sin datos'}</span>
                       </td>
                       <td className="ind-table__actions">
-                        <button className="ind-action-btn btn-record" title="Registrar Medición"
-                          onClick={() => openMedir(kpi)}>📝 Medir</button>
-                        <button className="ind-action-btn" title="Editar ficha"
-                          onClick={() => openEdit(kpi)}>✏️</button>
+                        <button className="ind-action-btn btn-record" title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : "Registrar Medición"}
+                          onClick={() => openMedir(kpi)} disabled={!canEdit}>📝 Medir</button>
+                        <button className="ind-action-btn" title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : "Editar ficha"}
+                          onClick={() => openEdit(kpi)} disabled={!canEdit}>✏️</button>
                       </td>
                     </tr>
                   )
@@ -245,13 +248,13 @@ const IndicadoresPage: React.FC = () => {
                 <label>Nombre del Indicador</label>
                 <input type="text" className="filter-input form-control"
                   value={form.titulo} placeholder="Ej: Cumplimiento Presupuesto Ventas"
-                  onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))} />
+                  onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))} readOnly={isReadOnly()} />
               </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Frecuencia de medición</label>
                   <select className="filter-select form-control" value={form.frecuencia}
-                    onChange={e => setForm(f => ({ ...f, frecuencia: e.target.value }))}>
+                    onChange={e => setForm(f => ({ ...f, frecuencia: e.target.value }))} disabled={!canEdit}>
                     {FRECUENCIAS.map(fr => <option key={fr} value={fr}>{fr}</option>)}
                   </select>
                 </div>
@@ -259,14 +262,14 @@ const IndicadoresPage: React.FC = () => {
                   <label>Meta aprobada</label>
                   <input type="text" className="filter-input form-control"
                     value={form.meta} placeholder="Ej: > 95%"
-                    onChange={e => setForm(f => ({ ...f, meta: e.target.value }))} />
+                    onChange={e => setForm(f => ({ ...f, meta: e.target.value }))} readOnly={isReadOnly()} />
                 </div>
               </div>
             </div>
             <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
               <div>
                 {editingId && (
-                  <button className="btn btn--danger" onClick={handleDeleteInd} disabled={saving} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>
+                  <button className="btn btn--danger" onClick={handleDeleteInd} disabled={saving || !canDelete} title={!canDelete ? 'Tu rol no tiene permiso para esta acción' : undefined} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>
                     🗑️ Eliminar
                   </button>
                 )}
@@ -274,7 +277,7 @@ const IndicadoresPage: React.FC = () => {
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button className="btn btn--secondary" onClick={() => setShowModalInd(false)}>Cancelar</button>
                 <button className="btn btn--primary" onClick={handleSaveInd}
-                  disabled={saving || !form.titulo || !form.meta}>
+                  disabled={saving || !form.titulo || !form.meta || !canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                   {saving ? 'Guardando...' : editingId ? 'Guardar Cambios' : 'Crear Indicador'}
                 </button>
               </div>
@@ -296,13 +299,13 @@ const IndicadoresPage: React.FC = () => {
                 <label>Valor medido</label>
                 <input type="text" className="filter-input form-control"
                   value={formMed.valor} placeholder="Ej: 94%"
-                  onChange={e => setFormMed(f => ({ ...f, valor: e.target.value }))} />
+                  onChange={e => setFormMed(f => ({ ...f, valor: e.target.value }))} readOnly={isReadOnly()} />
               </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Tendencia</label>
                   <select className="filter-select form-control" value={formMed.tendencia}
-                    onChange={e => setFormMed(f => ({ ...f, tendencia: e.target.value as any }))}>
+                    onChange={e => setFormMed(f => ({ ...f, tendencia: e.target.value as any }))} disabled={!canEdit}>
                     <option value="up">↗ Mejorando</option>
                     <option value="stable">→ Estable</option>
                     <option value="down">↘ Deteriorando</option>
@@ -311,7 +314,7 @@ const IndicadoresPage: React.FC = () => {
                 <div className="form-group">
                   <label>Resultado vs meta</label>
                   <select className="filter-select form-control" value={formMed.estado}
-                    onChange={e => setFormMed(f => ({ ...f, estado: e.target.value as any }))}>
+                    onChange={e => setFormMed(f => ({ ...f, estado: e.target.value as any }))} disabled={!canEdit}>
                     <option value="Cumple">Cumple</option>
                     <option value="Riesgo">En Riesgo</option>
                     <option value="No Cumple">No Cumple</option>
@@ -322,7 +325,7 @@ const IndicadoresPage: React.FC = () => {
             <div className="modal-footer">
               <button className="btn btn--secondary" onClick={() => setShowModalMed(false)}>Cancelar</button>
               <button className="btn btn--primary" onClick={handleSaveMed}
-                disabled={saving || !formMed.valor}>
+                disabled={saving || !formMed.valor || !canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                 {saving ? 'Guardando...' : 'Registrar Medición'}
               </button>
             </div>

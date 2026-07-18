@@ -3,7 +3,8 @@ import '../iso-module.css'
 import { useAIAnalysis } from '../../context/AIAnalysisContext'
 import { useFetch } from '../../hooks/useFetch'
 import { requerimientosPSService, fichasTecnicasPSService, uploadsService } from '../../services'
-
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 
 /* ─────────────────── TIPOS ─────────────────── */
 interface UnidadCurricular {
@@ -118,30 +119,31 @@ const removeUrl = (oldValue: string, urlToRemove: string) => {
 
 /* ═══════════════ PANEL FICHA GENERAL ═══════════════ */
 const PanelGeneral: React.FC<{ ficha: FichaTecnica; onChange: (f: FichaTecnica) => void }> = ({ ficha, onChange }) => {
+  const { isReadOnly } = usePermissions('requerimientos_ps')
   const set = (k: keyof FichaTecnica, v: any) => onChange({ ...ficha, [k]: v })
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'0.85rem' }}>
       <div className="iso-form-row">
-        <div className="iso-field"><label>Cliente / Destinatario</label><input value={ficha.cliente} onChange={e => set('cliente', e.target.value)} /></div>
-        <div className="iso-field"><label>Producto / Servicio</label><input value={ficha.productoServicio} onChange={e => set('productoServicio', e.target.value)} /></div>
+        <div className="iso-field"><label>Cliente / Destinatario</label><input readOnly={isReadOnly()} value={ficha.cliente} onChange={e => set('cliente', e.target.value)} /></div>
+        <div className="iso-field"><label>Producto / Servicio</label><input readOnly={isReadOnly()} value={ficha.productoServicio} onChange={e => set('productoServicio', e.target.value)} /></div>
       </div>
-      <div className="iso-field"><label>Descripción general</label><textarea rows={2} value={ficha.descripcion} onChange={e => set('descripcion', e.target.value)} /></div>
-      <div className="iso-field"><label>Especificaciones técnicas</label><textarea rows={3} value={ficha.especificacionesTecnicas} onChange={e => set('especificacionesTecnicas', e.target.value)} /></div>
+      <div className="iso-field"><label>Descripción general</label><textarea readOnly={isReadOnly()} rows={2} value={ficha.descripcion} onChange={e => set('descripcion', e.target.value)} /></div>
+      <div className="iso-field"><label>Especificaciones técnicas</label><textarea readOnly={isReadOnly()} rows={3} value={ficha.especificacionesTecnicas} onChange={e => set('especificacionesTecnicas', e.target.value)} /></div>
       <div className="iso-form-row">
-        <div className="iso-field"><label>Normas / Estándares aplicables</label><input value={ficha.normasAplicables} onChange={e => set('normasAplicables', e.target.value)} /></div>
-        <div className="iso-field"><label>Condiciones de uso</label><input value={ficha.condicionesUso} onChange={e => set('condicionesUso', e.target.value)} /></div>
+        <div className="iso-field"><label>Normas / Estándares aplicables</label><input readOnly={isReadOnly()} value={ficha.normasAplicables} onChange={e => set('normasAplicables', e.target.value)} /></div>
+        <div className="iso-field"><label>Condiciones de uso</label><input readOnly={isReadOnly()} value={ficha.condicionesUso} onChange={e => set('condicionesUso', e.target.value)} /></div>
       </div>
-      <div className="iso-field"><label>Observaciones</label><textarea rows={2} value={ficha.observaciones} onChange={e => set('observaciones', e.target.value)} /></div>
+      <div className="iso-field"><label>Observaciones</label><textarea readOnly={isReadOnly()} rows={2} value={ficha.observaciones} onChange={e => set('observaciones', e.target.value)} /></div>
       <div className="iso-form-row">
-        <div className="iso-field"><label>Elaborado por</label><input value={ficha.elaboradoPor} onChange={e => set('elaboradoPor', e.target.value)} /></div>
-        <div className="iso-field"><label>Aprobado por</label><input value={ficha.aprobadoPor} onChange={e => set('aprobadoPor', e.target.value)} /></div>
+        <div className="iso-field"><label>Elaborado por</label><input readOnly={isReadOnly()} value={ficha.elaboradoPor} onChange={e => set('elaboradoPor', e.target.value)} /></div>
+        <div className="iso-field"><label>Aprobado por</label><input readOnly={isReadOnly()} value={ficha.aprobadoPor} onChange={e => set('aprobadoPor', e.target.value)} /></div>
       </div>
       <div className="iso-form-row">
-        <div className="iso-field"><label>Versión</label><input value={ficha.version} onChange={e => set('version', e.target.value)} /></div>
-        <div className="iso-field"><label>Fecha elaboración</label><input type="date" value={ficha.fechaElaboracion} onChange={e => set('fechaElaboracion', e.target.value)} /></div>
+        <div className="iso-field"><label>Versión</label><input readOnly={isReadOnly()} value={ficha.version} onChange={e => set('version', e.target.value)} /></div>
+        <div className="iso-field"><label>Fecha elaboración</label><input type="date" readOnly={isReadOnly()} value={ficha.fechaElaboracion} onChange={e => set('fechaElaboracion', e.target.value)} /></div>
       </div>
       <div className="iso-field"><label>Estado</label>
-        <select value={ficha.estado} onChange={e => set('estado', e.target.value as any)}>
+        <select disabled={isReadOnly()} value={ficha.estado} onChange={e => set('estado', e.target.value as any)}>
           <option>En revisión</option><option>Vigente</option><option>Obsoleta</option>
         </select>
       </div>
@@ -151,6 +153,7 @@ const PanelGeneral: React.FC<{ ficha: FichaTecnica; onChange: (f: FichaTecnica) 
 
 /* ═══════════════ PANEL FICHA EDUCATIVA ═══════════════ */
 const PanelEducativa: React.FC<{ ficha: FichaTecnica; onChange: (f: FichaTecnica) => void }> = ({ ficha, onChange }) => {
+  const { canEdit, isReadOnly } = usePermissions('requerimientos_ps')
   const set = (k: keyof FichaTecnica, v: any) => onChange({ ...ficha, [k]: v })
   const setU = (idx: number, k: keyof UnidadCurricular, v: any) => {
     const us = ficha.unidadesCurriculares.map((u, i) => i === idx ? { ...u, [k]: v } : u)
@@ -167,19 +170,19 @@ const PanelEducativa: React.FC<{ ficha: FichaTecnica; onChange: (f: FichaTecnica
       <div style={{ background:'#f8fafc', border:'1px solid #e5e7eb', borderRadius:'0.5rem', padding:'1rem', display:'flex', flexDirection:'column', gap:'0.75rem' }}>
         <p style={{ margin:0, fontWeight:700, fontSize:'0.82rem', color:'#1b3a6b' }}>📂 Datos generales del área</p>
         <div className="iso-form-row">
-          <div className="iso-field"><label>Institución / Cliente</label><input value={ficha.cliente} onChange={e => set('cliente', e.target.value)} /></div>
-          <div className="iso-field"><label>Área / Asignatura</label><input value={ficha.areaAsignatura} onChange={e => set('areaAsignatura', e.target.value)} /></div>
+          <div className="iso-field"><label>Institución / Cliente</label><input readOnly={isReadOnly()} value={ficha.cliente} onChange={e => set('cliente', e.target.value)} /></div>
+          <div className="iso-field"><label>Área / Asignatura</label><input readOnly={isReadOnly()} value={ficha.areaAsignatura} onChange={e => set('areaAsignatura', e.target.value)} /></div>
         </div>
-        <div className="iso-field"><label>Objetivo general</label><textarea rows={2} value={ficha.objetivoGeneral} onChange={e => set('objetivoGeneral', e.target.value)} /></div>
-        <div className="iso-field"><label>Competencias a desarrollar</label><textarea rows={2} value={ficha.competencias} onChange={e => set('competencias', e.target.value)} /></div>
-        <div className="iso-field"><label>Observaciones</label><textarea rows={2} value={ficha.observaciones} onChange={e => set('observaciones', e.target.value)} /></div>
+        <div className="iso-field"><label>Objetivo general</label><textarea readOnly={isReadOnly()} rows={2} value={ficha.objetivoGeneral} onChange={e => set('objetivoGeneral', e.target.value)} /></div>
+        <div className="iso-field"><label>Competencias a desarrollar</label><textarea readOnly={isReadOnly()} rows={2} value={ficha.competencias} onChange={e => set('competencias', e.target.value)} /></div>
+        <div className="iso-field"><label>Observaciones</label><textarea readOnly={isReadOnly()} rows={2} value={ficha.observaciones} onChange={e => set('observaciones', e.target.value)} /></div>
       </div>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <p style={{ margin:0, fontWeight:700, fontSize:'0.82rem', color:'#1b3a6b' }}>
           📚 Cursos / Grados
           <span style={{ marginLeft:'0.5rem', background:'#dbeafe', color:'#1e40af', padding:'0.1rem 0.55rem', borderRadius:999, fontSize:'0.72rem', fontWeight:700 }}>{ficha.totalHorasSemana}h/semana</span>
         </p>
-        <button className="iso-btn-primary" style={{ fontSize:'0.78rem', padding:'0.35rem 0.75rem' }} onClick={addU}>＋ Agregar curso</button>
+        <button disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined} className="iso-btn-primary" style={{ fontSize:'0.78rem', padding:'0.35rem 0.75rem' }} onClick={addU}>＋ Agregar curso</button>
       </div>
       {ficha.unidadesCurriculares.map((u, idx) => {
         const nc = NIVEL_COLOR[u.nivelCurso] || NIVEL_COLOR['Primaria']
@@ -187,34 +190,38 @@ const PanelEducativa: React.FC<{ ficha: FichaTecnica; onChange: (f: FichaTecnica
           <div key={idx} style={{ border:`1.5px solid ${nc.color}35`, borderRadius:'0.6rem', padding:'1rem', background:nc.bg, display:'flex', flexDirection:'column', gap:'0.75rem' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <span style={{ fontWeight:700, fontSize:'0.82rem', color:nc.color }}>📖 Curso #{idx+1}{u.gradoAnio && ` — ${u.gradoAnio}`}</span>
-              {ficha.unidadesCurriculares.length > 1 && <button className="iso-btn-icon danger" onClick={() => removeU(idx)}>🗑️</button>}
+              {ficha.unidadesCurriculares.length > 1 && (
+                <PermissionGuard recurso="requerimientos_ps" accion="eliminar" mode="hide">
+                  <button className="iso-btn-icon danger" onClick={() => removeU(idx)}>🗑️</button>
+                </PermissionGuard>
+              )}
             </div>
             <div className="iso-form-row">
               <div className="iso-field"><label>Nivel educativo</label>
-                <select value={u.nivelCurso} onChange={e => setU(idx,'nivelCurso',e.target.value as any)}>
+                <select disabled={isReadOnly()} value={u.nivelCurso} onChange={e => setU(idx,'nivelCurso',e.target.value as any)}>
                   <option>Preescolar</option><option>Primaria</option><option>Secundaria</option><option>Media</option><option>Técnico</option>
                 </select>
               </div>
-              <div className="iso-field"><label>Grado / Año</label><input value={u.gradoAnio} onChange={e => setU(idx,'gradoAnio',e.target.value)} placeholder="3° Primaria, 10° Grado…" /></div>
+              <div className="iso-field"><label>Grado / Año</label><input readOnly={isReadOnly()} value={u.gradoAnio} onChange={e => setU(idx,'gradoAnio',e.target.value)} placeholder="3° Primaria, 10° Grado…" /></div>
             </div>
             <div className="iso-form-row">
-              <div className="iso-field"><label>Nombre unidad / módulo</label><input value={u.nombre} onChange={e => setU(idx,'nombre',e.target.value)} /></div>
-              <div className="iso-field"><label>Intensidad horaria (h/sem)</label><input type="number" min={1} max={40} value={u.intensidadHoraria} onChange={e => setU(idx,'intensidadHoraria',Number(e.target.value))} /></div>
+              <div className="iso-field"><label>Nombre unidad / módulo</label><input readOnly={isReadOnly()} value={u.nombre} onChange={e => setU(idx,'nombre',e.target.value)} /></div>
+              <div className="iso-field"><label>Intensidad horaria (h/sem)</label><input readOnly={isReadOnly()} type="number" min={1} max={40} value={u.intensidadHoraria} onChange={e => setU(idx,'intensidadHoraria',Number(e.target.value))} /></div>
             </div>
             <div className="iso-form-row">
-              <div className="iso-field"><label>Periodo académico</label><input value={u.periodo} onChange={e => setU(idx,'periodo',e.target.value)} /></div>
-              <div className="iso-field"><label>Docente responsable</label><input value={u.docente} onChange={e => setU(idx,'docente',e.target.value)} /></div>
+              <div className="iso-field"><label>Periodo académico</label><input readOnly={isReadOnly()} value={u.periodo} onChange={e => setU(idx,'periodo',e.target.value)} /></div>
+              <div className="iso-field"><label>Docente responsable</label><input readOnly={isReadOnly()} value={u.docente} onChange={e => setU(idx,'docente',e.target.value)} /></div>
             </div>
             <div className="iso-field"><label>Contenido programático</label>
-              <textarea rows={4} value={u.contenidoProgramatico} onChange={e => setU(idx,'contenidoProgramatico',e.target.value)} placeholder="Tema 1: …&#10;Tema 2: …" />
+              <textarea readOnly={isReadOnly()} rows={4} value={u.contenidoProgramatico} onChange={e => setU(idx,'contenidoProgramatico',e.target.value)} placeholder="Tema 1: …&#10;Tema 2: …" />
             </div>
             <div className="iso-form-row">
-              <div className="iso-field"><label>Metodología</label><input value={u.metodologia} onChange={e => setU(idx,'metodologia',e.target.value)} /></div>
-              <div className="iso-field"><label>Recursos y materiales</label><input value={u.recursosMateriales} onChange={e => setU(idx,'recursosMateriales',e.target.value)} /></div>
+              <div className="iso-field"><label>Metodología</label><input readOnly={isReadOnly()} value={u.metodologia} onChange={e => setU(idx,'metodologia',e.target.value)} /></div>
+              <div className="iso-field"><label>Recursos y materiales</label><input readOnly={isReadOnly()} value={u.recursosMateriales} onChange={e => setU(idx,'recursosMateriales',e.target.value)} /></div>
             </div>
             <div className="iso-form-row">
-              <div className="iso-field"><label>Criterios de evaluación</label><input value={u.criteriosEvaluacion} onChange={e => setU(idx,'criteriosEvaluacion',e.target.value)} /></div>
-              <div className="iso-field"><label>Logros esperados</label><input value={u.logros} onChange={e => setU(idx,'logros',e.target.value)} /></div>
+              <div className="iso-field"><label>Criterios de evaluación</label><input readOnly={isReadOnly()} value={u.criteriosEvaluacion} onChange={e => setU(idx,'criteriosEvaluacion',e.target.value)} /></div>
+              <div className="iso-field"><label>Logros esperados</label><input readOnly={isReadOnly()} value={u.logros} onChange={e => setU(idx,'logros',e.target.value)} /></div>
             </div>
           </div>
         )
@@ -222,15 +229,15 @@ const PanelEducativa: React.FC<{ ficha: FichaTecnica; onChange: (f: FichaTecnica
       <div style={{ background:'#f8fafc', border:'1px solid #e5e7eb', borderRadius:'0.5rem', padding:'1rem', display:'flex', flexDirection:'column', gap:'0.75rem' }}>
         <p style={{ margin:0, fontWeight:700, fontSize:'0.82rem', color:'#1b3a6b' }}>🗂️ Control del documento</p>
         <div className="iso-form-row">
-          <div className="iso-field"><label>Elaborado por</label><input value={ficha.elaboradoPor} onChange={e => set('elaboradoPor', e.target.value)} /></div>
-          <div className="iso-field"><label>Aprobado por</label><input value={ficha.aprobadoPor} onChange={e => set('aprobadoPor', e.target.value)} /></div>
+          <div className="iso-field"><label>Elaborado por</label><input readOnly={isReadOnly()} value={ficha.elaboradoPor} onChange={e => set('elaboradoPor', e.target.value)} /></div>
+          <div className="iso-field"><label>Aprobado por</label><input readOnly={isReadOnly()} value={ficha.aprobadoPor} onChange={e => set('aprobadoPor', e.target.value)} /></div>
         </div>
         <div className="iso-form-row">
-          <div className="iso-field"><label>Versión</label><input value={ficha.version} onChange={e => set('version', e.target.value)} /></div>
-          <div className="iso-field"><label>Fecha elaboración</label><input type="date" value={ficha.fechaElaboracion} onChange={e => set('fechaElaboracion', e.target.value)} /></div>
+          <div className="iso-field"><label>Versión</label><input readOnly={isReadOnly()} value={ficha.version} onChange={e => set('version', e.target.value)} /></div>
+          <div className="iso-field"><label>Fecha elaboración</label><input readOnly={isReadOnly()} type="date" value={ficha.fechaElaboracion} onChange={e => set('fechaElaboracion', e.target.value)} /></div>
         </div>
         <div className="iso-field"><label>Estado</label>
-          <select value={ficha.estado} onChange={e => set('estado', e.target.value as any)}>
+          <select disabled={isReadOnly()} value={ficha.estado} onChange={e => set('estado', e.target.value as any)}>
             <option>En revisión</option><option>Vigente</option><option>Obsoleta</option>
           </select>
         </div>
@@ -240,7 +247,9 @@ const PanelEducativa: React.FC<{ ficha: FichaTecnica; onChange: (f: FichaTecnica
 }
 
 /* ═══════════════ MODAL EDITAR FICHA ═══════════════ */
-const ModalFicha: React.FC<{ ficha: FichaTecnica; onChange: (f: FichaTecnica) => void; onClose: () => void; onGuardar: () => void; errorIA: string | null }> = ({ ficha, onChange, onClose, onGuardar, errorIA }) => (
+const ModalFicha: React.FC<{ ficha: FichaTecnica; onChange: (f: FichaTecnica) => void; onClose: () => void; onGuardar: () => void; errorIA: string | null }> = ({ ficha, onChange, onClose, onGuardar, errorIA }) => {
+  const { canEdit } = usePermissions('requerimientos_ps')
+  return (
   <div className="iso-modal-overlay" onClick={onClose}>
     <div className="iso-modal" style={{ maxWidth:720 }} onClick={e => e.stopPropagation()}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'0.5rem', flexWrap:'wrap' }}>
@@ -259,11 +268,11 @@ const ModalFicha: React.FC<{ ficha: FichaTecnica; onChange: (f: FichaTecnica) =>
       {ficha.tipo === 'educativa' ? <PanelEducativa ficha={ficha} onChange={onChange} /> : <PanelGeneral ficha={ficha} onChange={onChange} />}
       <div className="iso-modal__footer">
         <button className="iso-btn-secondary" onClick={onClose}>Cancelar</button>
-        <button className="iso-btn-primary" onClick={onGuardar}>💾 Guardar ficha</button>
+        <button disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined} className="iso-btn-primary" onClick={onGuardar}>💾 Guardar ficha</button>
       </div>
     </div>
   </div>
-)
+)}
 
 /* ═══════════════ MODAL VER FICHA ═══════════════ */
 const ModalVerFicha: React.FC<{ ficha: FichaTecnica; onClose: () => void; onEditar: () => void }> = ({ ficha, onClose, onEditar }) => {
@@ -340,6 +349,7 @@ const ModalVerFicha: React.FC<{ ficha: FichaTecnica; onClose: () => void; onEdit
 
 /* ═══════════════ PÁGINA PRINCIPAL ═══════════════ */
 const RequerimientosPSPage: React.FC = () => {
+  const { canEdit, canCreate, canDelete, canApprove, isReadOnly } = usePermissions('requerimientos_ps')
   const { datosEmpresa } = useAIAnalysis()
   const esEducativo = esSectorEducativo(datosEmpresa?.sector)
 
@@ -692,14 +702,15 @@ const RequerimientosPSPage: React.FC = () => {
               className="iso-btn-primary"
               style={{ background:'linear-gradient(90deg,#7c3aed,#2e86de)', display:'flex', alignItems:'center', gap:'0.4rem' }}
               onClick={generarMatrizConIA}
-              disabled={loadingMatriz}
+              disabled={loadingMatriz || !canCreate}
+              title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}
             >
               ✨ {tieneItems ? 'Regenerar matriz con IA' : 'Generar matriz con IA'}
             </button>
           )}
           {/* Botón secundario — agregar manual (solo si ya hay matriz) */}
           {tieneItems && (
-            <button className="iso-btn-secondary" onClick={() => setShowReqModal(true)}>
+            <button disabled={!canCreate} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined} className="iso-btn-secondary" onClick={() => setShowReqModal(true)}>
               ＋ Agregar revisión manual
             </button>
           )}
@@ -798,7 +809,8 @@ const RequerimientosPSPage: React.FC = () => {
                           className="iso-btn-icon"
                           style={{ fontSize:'0.75rem', padding:'0.4rem 0.8rem', fontWeight:600, color:'#6d28d9', borderColor:'#ddd6fe', background:'#f5f3ff', width: '100%' }}
                           onClick={() => crearFichaConIA(r)}
-                          title="Generar ficha técnica con IA"
+                          title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : "Generar ficha técnica con IA"}
+                          disabled={!canCreate}
                         >
                           ✨ Generar con IA
                         </button>
@@ -806,6 +818,7 @@ const RequerimientosPSPage: React.FC = () => {
                     </td>
                     <td>
                       <select 
+                        disabled={isReadOnly()}
                         className={`iso-badge ${r.estado==='Aprobado'?'verde':r.estado==='Pendiente'?'amarillo':'rojo'}`}
                         value={r.estado}
                         onChange={e => actualizarEstadoReq(r.id, e.target.value)}
@@ -816,7 +829,11 @@ const RequerimientosPSPage: React.FC = () => {
                         <option value="Rechazado" style={{ color: '#000' }}>Rechazado</option>
                       </select>
                     </td>
-                    <td><button className="iso-btn-icon danger" onClick={() => eliminarReq(r.id)}>🗑️</button></td>
+                    <td>
+                      <PermissionGuard recurso="requerimientos_ps" accion="eliminar" mode="hide">
+                        <button className="iso-btn-icon danger" onClick={() => eliminarReq(r.id)}>🗑️</button>
+                      </PermissionGuard>
+                    </td>
                   </tr>
                 )
               })}
@@ -885,7 +902,7 @@ const RequerimientosPSPage: React.FC = () => {
                             👁️ Ver
                           </button>
                         )}
-                        <button className="iso-btn-icon" style={{ fontSize:'0.75rem', padding:'0.25rem 0.6rem', color:'#1d4ed8', borderColor:'#bfdbfe', background:'#eff6ff' }} onClick={() => abrirComercial(req, 'editar')}>
+                        <button disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined} className="iso-btn-icon" style={{ fontSize:'0.75rem', padding:'0.25rem 0.6rem', color:'#1d4ed8', borderColor:'#bfdbfe', background:'#eff6ff' }} onClick={() => abrirComercial(req, 'editar')}>
                           {hasControl ? '✏️ Revisar' : '💼 Llenar'}
                         </button>
                       </div>
@@ -912,24 +929,24 @@ const RequerimientosPSPage: React.FC = () => {
               Completa los campos para agregar una revisión adicional a la matriz generada por IA.
             </p>
             <div className="iso-form-row">
-              <div className="iso-field"><label>Cliente *</label><input value={form.cliente} onChange={e => setForm(p => ({ ...p, cliente:e.target.value }))} /></div>
-              <div className="iso-field"><label>{esEducativo ? 'Área / Asignatura *' : 'Producto / Servicio *'}</label><input value={form.productoServicio} onChange={e => setForm(p => ({ ...p, productoServicio:e.target.value }))} /></div>
+              <div className="iso-field"><label>Cliente *</label><input readOnly={isReadOnly()} value={form.cliente} onChange={e => setForm(p => ({ ...p, cliente:e.target.value }))} /></div>
+              <div className="iso-field"><label>{esEducativo ? 'Área / Asignatura *' : 'Producto / Servicio *'}</label><input readOnly={isReadOnly()} value={form.productoServicio} onChange={e => setForm(p => ({ ...p, productoServicio:e.target.value }))} /></div>
             </div>
-            <div className="iso-field"><label>Requisitos del cliente</label><textarea rows={2} value={form.requisitosCliente} onChange={e => setForm(p => ({ ...p, requisitosCliente:e.target.value }))} /></div>
-            <div className="iso-field"><label>Requisitos legales y reglamentarios</label><textarea rows={2} value={form.requisitosLegales} onChange={e => setForm(p => ({ ...p, requisitosLegales:e.target.value }))} /></div>
-            <div className="iso-field"><label>Requisitos de la organización</label><textarea rows={2} value={form.requisitosOrg} onChange={e => setForm(p => ({ ...p, requisitosOrg:e.target.value }))} /></div>
+            <div className="iso-field"><label>Requisitos del cliente</label><textarea readOnly={isReadOnly()} rows={2} value={form.requisitosCliente} onChange={e => setForm(p => ({ ...p, requisitosCliente:e.target.value }))} /></div>
+            <div className="iso-field"><label>Requisitos legales y reglamentarios</label><textarea readOnly={isReadOnly()} rows={2} value={form.requisitosLegales} onChange={e => setForm(p => ({ ...p, requisitosLegales:e.target.value }))} /></div>
+            <div className="iso-field"><label>Requisitos de la organización</label><textarea readOnly={isReadOnly()} rows={2} value={form.requisitosOrg} onChange={e => setForm(p => ({ ...p, requisitosOrg:e.target.value }))} /></div>
             <div className="iso-form-row">
-              <div className="iso-field"><label>Revisado por</label><input value={form.revisadoPor} onChange={e => setForm(p => ({ ...p, revisadoPor:e.target.value }))} /></div>
-              <div className="iso-field"><label>Fecha</label><input type="date" value={form.fechaRevision} onChange={e => setForm(p => ({ ...p, fechaRevision:e.target.value }))} /></div>
+              <div className="iso-field"><label>Revisado por</label><input readOnly={isReadOnly()} value={form.revisadoPor} onChange={e => setForm(p => ({ ...p, revisadoPor:e.target.value }))} /></div>
+              <div className="iso-field"><label>Fecha</label><input type="date" readOnly={isReadOnly()} value={form.fechaRevision} onChange={e => setForm(p => ({ ...p, fechaRevision:e.target.value }))} /></div>
             </div>
             <div className="iso-field"><label>Estado</label>
-              <select value={form.estado} onChange={e => setForm(p => ({ ...p, estado:e.target.value as any }))}>
+              <select disabled={isReadOnly()} value={form.estado} onChange={e => setForm(p => ({ ...p, estado:e.target.value as any }))}>
                 <option>Pendiente</option><option>Aprobado</option><option>Rechazado</option>
               </select>
             </div>
             <div className="iso-modal__footer">
               <button className="iso-btn-secondary" onClick={() => setShowReqModal(false)}>Cancelar</button>
-              <button className="iso-btn-primary" onClick={guardarReq} disabled={!form.cliente || !form.productoServicio}>＋ Agregar</button>
+              <button className="iso-btn-primary" onClick={guardarReq} disabled={!form.cliente || !form.productoServicio || !canCreate} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Agregar</button>
             </div>
           </div>
         </div>
@@ -964,7 +981,7 @@ const RequerimientosPSPage: React.FC = () => {
               
               <div className="iso-field">
                 <label>Oferta Comercial & Requisitos</label>
-                <textarea rows={3} value={comercialForm.cotizacion || ''} onChange={e => setComercialForm(p => ({ ...p, cotizacion: e.target.value }))} placeholder="Nº de cotización, especificaciones solicitadas, cantidades, precios..." readOnly={comercialMode === 'ver'} style={comercialMode === 'ver' ? { background: '#f8fafc', color: '#475569' } : {}} />
+                <textarea rows={3} value={comercialForm.cotizacion || ''} onChange={e => setComercialForm(p => ({ ...p, cotizacion: e.target.value }))} placeholder="Nº de cotización, especificaciones solicitadas, cantidades, precios..." readOnly={comercialMode === 'ver' || isReadOnly()} style={comercialMode === 'ver' ? { background: '#f8fafc', color: '#475569' } : {}} />
                 
                 {parseUrls(comercialForm.urlCotizacion).length > 0 && (
                    <div style={{display:'flex', flexDirection:'column', gap:'0.5rem', marginTop: '0.75rem'}}>
@@ -1021,7 +1038,7 @@ const RequerimientosPSPage: React.FC = () => {
                              
                            } catch (e: any) { alert(e.message) }
                            setUploadingCotizacion(false)
-                        }} disabled={uploadingCotizacion} style={{ padding:'0.3rem 1rem', fontSize:'0.8rem' }}>
+                        }} disabled={uploadingCotizacion || !canEdit} style={{ padding:'0.3rem 1rem', fontSize:'0.8rem' }}>
                           {uploadingCotizacion ? 'Subiendo...' : 'Subir Cotización'}
                         </button>
                       </div>
@@ -1032,19 +1049,19 @@ const RequerimientosPSPage: React.FC = () => {
               
               <div className="iso-field">
                 <label>Aprobación de la Capacidad Organizacional</label>
-                <textarea rows={2} value={comercialForm.aprobacionInterna || ''} onChange={e => setComercialForm(p => ({ ...p, aprobacionInterna: e.target.value }))} placeholder="Detalla quién aprobó la oferta (ej. Gerencia Operativa confirma disponibilidad de personal y maquinaria)." readOnly={comercialMode === 'ver'} style={comercialMode === 'ver' ? { background: '#f8fafc', color: '#475569' } : {}} />
+                <textarea rows={2} value={comercialForm.aprobacionInterna || ''} onChange={e => setComercialForm(p => ({ ...p, aprobacionInterna: e.target.value }))} placeholder="Detalla quién aprobó la oferta (ej. Gerencia Operativa confirma disponibilidad de personal y maquinaria)." readOnly={comercialMode === 'ver' || isReadOnly()} style={comercialMode === 'ver' ? { background: '#f8fafc', color: '#475569' } : {}} />
               </div>
               
               <div className="iso-field">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                   <label style={{ margin: 0 }}>Cumplimiento Regulatorio y Matriz Legal</label>
                   {comercialMode !== 'ver' && (
-                    <button className="iso-btn-icon" style={{ fontSize:'0.75rem', padding:'0.2rem 0.6rem', color:'#6d28d9', borderColor:'#ddd6fe', background:'#f5f3ff', fontWeight:600 }} onClick={generarLegalIA} disabled={loadingLegal}>
+                    <button disabled={loadingLegal || !canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined} className="iso-btn-icon" style={{ fontSize:'0.75rem', padding:'0.2rem 0.6rem', color:'#6d28d9', borderColor:'#ddd6fe', background:'#f5f3ff', fontWeight:600 }} onClick={generarLegalIA}>
                       {loadingLegal ? 'Generando...' : 'Generar con IA'}
                     </button>
                   )}
                 </div>
-                <textarea rows={4} value={comercialForm.matrizLegal || ''} onChange={e => setComercialForm(p => ({ ...p, matrizLegal: e.target.value }))} placeholder="Legislación identificada, normas técnicas aplicables, permisos, registros regulatorios (INVIMA, ICA, RETIE, etc.)..." readOnly={comercialMode === 'ver'} style={comercialMode === 'ver' ? { background: '#f8fafc', color: '#475569' } : {}} />
+                <textarea rows={4} value={comercialForm.matrizLegal || ''} onChange={e => setComercialForm(p => ({ ...p, matrizLegal: e.target.value }))} placeholder="Legislación identificada, normas técnicas aplicables, permisos, registros regulatorios (INVIMA, ICA, RETIE, etc.)..." readOnly={comercialMode === 'ver' || isReadOnly()} style={comercialMode === 'ver' ? { background: '#f8fafc', color: '#475569' } : {}} />
               </div>
 
               <div className="iso-field">
@@ -1084,7 +1101,7 @@ const RequerimientosPSPage: React.FC = () => {
                              setFileToUpload([])
                            } catch (e: any) { alert(e.message) }
                            setUploadingFile(false)
-                        }} disabled={uploadingFile} style={{ padding:'0.3rem 1rem', fontSize:'0.8rem' }}>
+                        }} disabled={uploadingFile || !canEdit} style={{ padding:'0.3rem 1rem', fontSize:'0.8rem' }}>
                           {uploadingFile ? 'Subiendo...' : 'Subir Documento(s)'}
                         </button>
                       </div>
@@ -1097,7 +1114,7 @@ const RequerimientosPSPage: React.FC = () => {
             <div className="iso-modal__footer" style={{ marginTop: '1.5rem' }}>
               <button className="iso-btn-secondary" onClick={() => { setComercialModal(null); setFileToUpload([]); setFileCotizacion([]); }}>{comercialMode === 'ver' ? 'Cerrar' : 'Cancelar'}</button>
               {comercialMode !== 'ver' && (
-                <button className="iso-btn-primary" onClick={guardarComercial}>Guardar Control</button>
+                <button className="iso-btn-primary" onClick={guardarComercial} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>Guardar Control</button>
               )}
             </div>
           </div>

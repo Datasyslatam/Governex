@@ -36,9 +36,10 @@ import ProduccionServicioPage      from "../pages/produccion-servicio/Produccion
 import LiberacionPSPage            from "../pages/liberacion-ps/LiberacionPSPage";
 import SalidasNCPage               from "../pages/salidas-nc/SalidasNCPage";
 import MejoraContinuaPage          from "../pages/mejora-continua/MejoraContinuaPage";
+import UsuariosPage               from "../pages/auth/UsuariosPage";
 
 export const AppRoutes: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   return (
     <Routes>
@@ -73,6 +74,9 @@ export const AppRoutes: React.FC = () => {
         <Route path="politica"                element={<PoliticaPage />} />
         <Route path="roles"                   element={<RolesPage />} />
         <Route path="enfoque-cliente"         element={<EnfoqueClientePage />} /> {/* ← NUEVO */}
+        {user?.role === "Superusuario" && (
+          <Route path="usuarios"              element={<UsuariosPage />} />
+        )}
 
         {/* §6 */}
         <Route path="riesgos"                 element={<RiesgosPage />} />

@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import '../iso-module.css'
 import { useFetch } from '../../hooks/useFetch'
 import { tomaConscienciaService } from '../../services'
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 
 const empty = { colaborador: '', cargo: '', proceso: '', tema: '', fecha: '', modalidad: 'Capacitación' as const, evidencia: '', estado: 'Pendiente' as const }
 
@@ -12,6 +14,8 @@ const TomaConscienciaPage: React.FC = () => {
     tema: r.tema, fecha: r.fecha ?? '', modalidad: r.modalidad, evidencia: r.evidencia ?? '',
     estado: r.estado,
   }))
+
+  const { canCreate, isReadOnly } = usePermissions('toma_consciencia')
 
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ ...empty })
@@ -73,7 +77,7 @@ const TomaConscienciaPage: React.FC = () => {
           </select>
         </div>
         <div className="iso-topbar__actions">
-          <button className="iso-btn-primary" onClick={() => setShowModal(true)}>＋ Nuevo registro</button>
+          <button className="iso-btn-primary" onClick={() => setShowModal(true)} disabled={!canCreate} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Nuevo registro</button>
         </div>
       </div>
 
@@ -109,7 +113,11 @@ const TomaConscienciaPage: React.FC = () => {
                     {r.estado}
                   </span>
                 </td>
-                <td><button className="iso-btn-icon danger" onClick={() => eliminar(r.id)}>🗑️</button></td>
+                <td>
+                  <PermissionGuard recurso="toma_consciencia" accion="eliminar" mode="hide">
+                    <button className="iso-btn-icon danger" onClick={() => eliminar(r.id)}>🗑️</button>
+                  </PermissionGuard>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -121,30 +129,30 @@ const TomaConscienciaPage: React.FC = () => {
           <div className="iso-modal" onClick={e => e.stopPropagation()}>
             <h2>➕ Nuevo registro de toma de consciencia</h2>
             <div className="iso-form-row">
-              <div className="iso-field"><label>Colaborador *</label><input type="text" placeholder="Nombre completo" value={form.colaborador} onChange={e => setForm(p => ({ ...p, colaborador: e.target.value }))} /></div>
-              <div className="iso-field"><label>Cargo</label><input type="text" placeholder="Cargo del colaborador" value={form.cargo} onChange={e => setForm(p => ({ ...p, cargo: e.target.value }))} /></div>
+              <div className="iso-field"><label>Colaborador *</label><input type="text" placeholder="Nombre completo" readOnly={isReadOnly()} value={form.colaborador} onChange={e => setForm(p => ({ ...p, colaborador: e.target.value }))} /></div>
+              <div className="iso-field"><label>Cargo</label><input type="text" placeholder="Cargo del colaborador" readOnly={isReadOnly()} value={form.cargo} onChange={e => setForm(p => ({ ...p, cargo: e.target.value }))} /></div>
             </div>
             <div className="iso-form-row">
-              <div className="iso-field"><label>Proceso</label><input type="text" placeholder="Proceso al que pertenece" value={form.proceso} onChange={e => setForm(p => ({ ...p, proceso: e.target.value }))} /></div>
-              <div className="iso-field"><label>Fecha</label><input type="date" value={form.fecha} onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} /></div>
+              <div className="iso-field"><label>Proceso</label><input type="text" placeholder="Proceso al que pertenece" readOnly={isReadOnly()} value={form.proceso} onChange={e => setForm(p => ({ ...p, proceso: e.target.value }))} /></div>
+              <div className="iso-field"><label>Fecha</label><input type="date" value={form.fecha} readOnly={isReadOnly()} onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} /></div>
             </div>
-            <div className="iso-field iso-form-row full"><label>Tema de consciencia *</label><input type="text" placeholder="ej. Política de calidad, consecuencias del incumplimiento..." value={form.tema} onChange={e => setForm(p => ({ ...p, tema: e.target.value }))} /></div>
+            <div className="iso-field iso-form-row full"><label>Tema de consciencia *</label><input type="text" placeholder="ej. Política de calidad, consecuencias del incumplimiento..." readOnly={isReadOnly()} value={form.tema} onChange={e => setForm(p => ({ ...p, tema: e.target.value }))} /></div>
             <div className="iso-form-row">
               <div className="iso-field"><label>Modalidad</label>
-                <select value={form.modalidad} onChange={e => setForm(p => ({ ...p, modalidad: e.target.value as any }))}>
+                <select value={form.modalidad} disabled={isReadOnly()} onChange={e => setForm(p => ({ ...p, modalidad: e.target.value as any }))}>
                   <option>Capacitación</option><option>Comunicado</option><option>Taller</option><option>Inducción</option><option>E-learning</option>
                 </select>
               </div>
               <div className="iso-field"><label>Estado</label>
-                <select value={form.estado} onChange={e => setForm(p => ({ ...p, estado: e.target.value as any }))}>
+                <select value={form.estado} disabled={isReadOnly()} onChange={e => setForm(p => ({ ...p, estado: e.target.value as any }))}>
                   <option>Pendiente</option><option>Completado</option><option>Vencido</option>
                 </select>
               </div>
             </div>
-            <div className="iso-field"><label>Evidencia</label><input type="text" placeholder="ej. Lista de asistencia, certificado, acta..." value={form.evidencia} onChange={e => setForm(p => ({ ...p, evidencia: e.target.value }))} /></div>
+            <div className="iso-field"><label>Evidencia</label><input type="text" placeholder="ej. Lista de asistencia, certificado, acta..." readOnly={isReadOnly()} value={form.evidencia} onChange={e => setForm(p => ({ ...p, evidencia: e.target.value }))} /></div>
             <div className="iso-modal__footer">
               <button className="iso-btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="iso-btn-primary" onClick={guardar} disabled={!form.colaborador || !form.tema}>＋ Guardar</button>
+              <button className="iso-btn-primary" onClick={guardar} disabled={!form.colaborador || !form.tema || !canCreate} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Guardar</button>
             </div>
           </div>
         </div>

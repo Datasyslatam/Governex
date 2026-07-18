@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
-import { clearToken } from "../services/api";
+import { authService } from "../services";
 
 export type UserRole = "Superusuario" | "Operativo" | "Gestión";
 
@@ -15,13 +15,14 @@ export interface User {
   name: string;
   role: UserRole;
   tenant?: TenantInfo;
+  permissions?: string[];
 }
 
 interface AuthContextValue {
   user: User | null;
   isAuthenticated: boolean;
   login: (user: User) => void;
-  logout: () => void;
+  logout: () => any;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -51,10 +52,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
   };
 
-  const logout = () => {
+  const logout = async () => {
     setUser(null);
     localStorage.removeItem(USER_KEY);
-    clearToken(); // elimina el JWT del localStorage también
+    await authService.logout();
     localStorage.removeItem(IMPERSONATION_KEY); // por si la sesión terminó estando impersonando
 
     // Limpia también el caché de AIAnalysisContext (sessionStorage). Evita

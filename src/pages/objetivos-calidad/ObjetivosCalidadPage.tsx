@@ -14,6 +14,8 @@ import {
   FrecuenciaMedicion,
 } from '../../context/AIAnalysisContext'
 import { objetivosCalidadService } from '../../services'
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 
 /* ─── Tipos locales ──────────────────────────────────────────── */
 type EstadoObjetivo = 'Pendiente' | 'En Progreso' | 'Cumplido' | 'No Cumplido'
@@ -99,6 +101,8 @@ const EditModal: React.FC<EditModalProps> = ({ obj, onSave, onClose }) => {
   const set = (k: keyof ObjetivoCalidad, v: string) =>
     setForm(p => ({ ...p, [k]: v }))
 
+  const { isReadOnly } = usePermissions('objetivos_calidad')
+
   return (
     <div className="iso-modal-overlay" onClick={onClose}>
       <div className="iso-modal oc-modal" onClick={e => e.stopPropagation()}>
@@ -110,7 +114,7 @@ const EditModal: React.FC<EditModalProps> = ({ obj, onSave, onClose }) => {
         <div className="iso-form-row oc-form-row--full">
           <div className="iso-field">
             <label>Objetivo de Calidad *</label>
-            <textarea rows={3} value={form.objetivo}
+            <textarea rows={3} value={form.objetivo} readOnly={isReadOnly()}
               onChange={e => set('objetivo', e.target.value)} />
           </div>
         </div>
@@ -118,7 +122,7 @@ const EditModal: React.FC<EditModalProps> = ({ obj, onSave, onClose }) => {
         <div className="iso-form-row oc-form-row--full">
           <div className="iso-field">
             <label>Fuente — Riesgo / Oportunidad origen</label>
-            <textarea rows={2} value={form.fuente_riesgo_oportunidad}
+            <textarea rows={2} value={form.fuente_riesgo_oportunidad} readOnly={isReadOnly()}
               onChange={e => set('fuente_riesgo_oportunidad', e.target.value)} />
           </div>
         </div>
@@ -126,7 +130,7 @@ const EditModal: React.FC<EditModalProps> = ({ obj, onSave, onClose }) => {
         <div className="iso-form-row oc-form-row--full">
           <div className="iso-field">
             <label>Acción a desarrollar (Cómo) *</label>
-            <textarea rows={3} value={form.accion}
+            <textarea rows={3} value={form.accion} readOnly={isReadOnly()}
               onChange={e => set('accion', e.target.value)} />
           </div>
         </div>
@@ -134,50 +138,50 @@ const EditModal: React.FC<EditModalProps> = ({ obj, onSave, onClose }) => {
         <div className="iso-form-row">
           <div className="iso-field">
             <label>Indicador *</label>
-            <input value={form.indicador} onChange={e => set('indicador', e.target.value)} />
+            <input value={form.indicador} onChange={e => set('indicador', e.target.value)} readOnly={isReadOnly()} />
           </div>
           <div className="iso-field">
             <label>Meta *</label>
-            <input value={form.meta} onChange={e => set('meta', e.target.value)} />
+            <input value={form.meta} onChange={e => set('meta', e.target.value)} readOnly={isReadOnly()} />
           </div>
         </div>
 
         <div className="iso-form-row">
           <div className="iso-field">
             <label>Frecuencia de medición *</label>
-            <select value={form.frecuencia_medicion}
+            <select value={form.frecuencia_medicion} disabled={isReadOnly()}
               onChange={e => set('frecuencia_medicion', e.target.value as FrecuenciaMedicion)}>
               {FRECUENCIAS.map(f => <option key={f}>{f}</option>)}
             </select>
           </div>
           <div className="iso-field">
             <label>Responsable *</label>
-            <input value={form.responsable} onChange={e => set('responsable', e.target.value)} />
+            <input value={form.responsable} onChange={e => set('responsable', e.target.value)} readOnly={isReadOnly()} />
           </div>
         </div>
 
         <div className="iso-form-row">
           <div className="iso-field">
             <label>Proceso relacionado</label>
-            <input value={form.proceso_relacionado}
+            <input value={form.proceso_relacionado} readOnly={isReadOnly()}
               onChange={e => set('proceso_relacionado', e.target.value)}
               placeholder="Ej: Gestión de Calidad" />
           </div>
           <div className="iso-field">
             <label>Recursos necesarios</label>
-            <input value={form.recursos} onChange={e => set('recursos', e.target.value)} />
+            <input value={form.recursos} onChange={e => set('recursos', e.target.value)} readOnly={isReadOnly()} />
           </div>
         </div>
 
         <div className="iso-form-row">
           <div className="iso-field">
             <label>Fecha inicio</label>
-            <input type="date" value={form.fecha_inicio}
+            <input type="date" value={form.fecha_inicio} readOnly={isReadOnly()}
               onChange={e => set('fecha_inicio', e.target.value)} />
           </div>
           <div className="iso-field">
             <label>Fecha límite</label>
-            <input type="date" value={form.fecha_fin}
+            <input type="date" value={form.fecha_fin} readOnly={isReadOnly()}
               onChange={e => set('fecha_fin', e.target.value)} />
           </div>
         </div>
@@ -185,7 +189,7 @@ const EditModal: React.FC<EditModalProps> = ({ obj, onSave, onClose }) => {
         <div className="iso-form-row">
           <div className="iso-field">
             <label>Estado</label>
-            <select value={form.estado}
+            <select value={form.estado} disabled={isReadOnly()}
               onChange={e => set('estado', e.target.value as EstadoObjetivo)}>
               <option>Pendiente</option>
               <option>En Progreso</option>
@@ -197,9 +201,11 @@ const EditModal: React.FC<EditModalProps> = ({ obj, onSave, onClose }) => {
 
         <div className="iso-modal__footer">
           <button className="iso-btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="iso-btn-primary" onClick={() => onSave({ ...form, _guardado: true })}>
-            ✅ Confirmar objetivo
-          </button>
+          {!isReadOnly() && (
+            <button className="iso-btn-primary" onClick={() => onSave({ ...form, _guardado: true })}>
+              ✅ Confirmar objetivo
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -219,6 +225,8 @@ const MedicionModal: React.FC<MedicionModalProps> = ({ objetivo, onSave, onClose
     fecha: new Date().toISOString().slice(0, 10),
   })
 
+  const { isReadOnly } = usePermissions('objetivos_calidad')
+
   return (
     <div className="iso-modal-overlay" onClick={onClose}>
       <div className="iso-modal" onClick={e => e.stopPropagation()}>
@@ -231,13 +239,13 @@ const MedicionModal: React.FC<MedicionModalProps> = ({ objetivo, onSave, onClose
         <div className="iso-form-row">
           <div className="iso-field">
             <label>Período *</label>
-            <input value={form.periodo}
+            <input value={form.periodo} readOnly={isReadOnly()}
               onChange={e => setForm(p => ({ ...p, periodo: e.target.value }))}
               placeholder="Q1 2025, Sem-1 2025, Ene 2025..." />
           </div>
           <div className="iso-field">
             <label>Valor obtenido *</label>
-            <input type="number" step="0.01" value={form.valor}
+            <input type="number" step="0.01" value={form.valor} readOnly={isReadOnly()}
               onChange={e => setForm(p => ({ ...p, valor: Number(e.target.value) }))} />
           </div>
         </div>
@@ -245,7 +253,7 @@ const MedicionModal: React.FC<MedicionModalProps> = ({ objetivo, onSave, onClose
         <div className="iso-form-row">
           <div className="iso-field">
             <label>Estado *</label>
-            <select value={form.estado}
+            <select value={form.estado} disabled={isReadOnly()}
               onChange={e => setForm(p => ({ ...p, estado: e.target.value as EstadoMedicion }))}>
               <option>En Progreso</option>
               <option>Cumplido</option>
@@ -254,7 +262,7 @@ const MedicionModal: React.FC<MedicionModalProps> = ({ objetivo, onSave, onClose
           </div>
           <div className="iso-field">
             <label>Fecha</label>
-            <input type="date" value={form.fecha}
+            <input type="date" value={form.fecha} readOnly={isReadOnly()}
               onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} />
           </div>
         </div>
@@ -262,7 +270,7 @@ const MedicionModal: React.FC<MedicionModalProps> = ({ objetivo, onSave, onClose
         <div className="iso-form-row oc-form-row--full">
           <div className="iso-field">
             <label>Comentario / Evidencia</label>
-            <textarea rows={2} value={form.comentario}
+            <textarea rows={2} value={form.comentario} readOnly={isReadOnly()}
               onChange={e => setForm(p => ({ ...p, comentario: e.target.value }))}
               placeholder="Observaciones, documentos de soporte..." />
           </div>
@@ -270,12 +278,14 @@ const MedicionModal: React.FC<MedicionModalProps> = ({ objetivo, onSave, onClose
 
         <div className="iso-modal__footer">
           <button className="iso-btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="iso-btn-primary" onClick={() => {
-            if (!form.periodo) { alert('El período es obligatorio.'); return }
-            onSave(form)
-          }}>
-            💾 Guardar medición
-          </button>
+          {!isReadOnly() && (
+            <button className="iso-btn-primary" onClick={() => {
+              if (!form.periodo) { alert('El período es obligatorio.'); return }
+              onSave(form)
+            }}>
+              💾 Guardar medición
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -293,6 +303,7 @@ interface MatrizRowProps {
 const MatrizRow: React.FC<MatrizRowProps> = ({ obj, onEdit, onDelete, onMedir }) => {
   const [expanded, setExpanded] = useState(false)
   const nivel = nivelBadge(obj._riesgoNivel)
+  const { canEdit, canDelete } = usePermissions('objetivos_calidad')
 
   return (
     <>
@@ -329,15 +340,17 @@ const MatrizRow: React.FC<MatrizRowProps> = ({ obj, onEdit, onDelete, onMedir })
         <td onClick={e => e.stopPropagation()}>
           <div className="oc-matrix__actions">
             {obj._guardado && (
-              <button className="iso-btn-icon" title="Registrar medición"
-                onClick={() => onMedir(obj)}>📊</button>
+              <button className="iso-btn-icon" title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : "Registrar medición"}
+                onClick={() => onMedir(obj)} disabled={!canEdit}>📊</button>
             )}
-            <button className="iso-btn-icon" title={obj._guardado ? 'Editar' : 'Revisar y confirmar'}
-              onClick={() => onEdit(obj)}>
+            <button className="iso-btn-icon" title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : (obj._guardado ? 'Editar' : 'Revisar y confirmar')}
+              onClick={() => onEdit(obj)} disabled={!canEdit}>
               {obj._guardado ? '✏️' : '✅'}
             </button>
-            <button className="iso-btn-icon danger" title="Eliminar"
-              onClick={() => onDelete(obj.codigo)}>🗑️</button>
+            <PermissionGuard recurso="objetivos_calidad" accion="eliminar" mode="hide">
+              <button className="iso-btn-icon danger" title="Eliminar"
+                onClick={() => onDelete(obj.codigo)}>🗑️</button>
+            </PermissionGuard>
           </div>
         </td>
       </tr>
@@ -429,6 +442,8 @@ const ObjetivosCalidadPage: React.FC = () => {
   const [filterTipo,    setFilterTipo]    = useState('todos')
   const [filterGuard,   setFilterGuard]   = useState('todos')  // todos | borrador | confirmado
   const [search,        setSearch]        = useState('')
+
+  const { canEdit, canCreate } = usePermissions('objetivos_calidad')
 
   /* ── Cargar objetivos guardados en BD ──────────────────────── */
   const cargarDesdeBD = useCallback(async () => {
@@ -679,15 +694,15 @@ const ObjetivosCalidadPage: React.FC = () => {
         </div>
         <div className="oc-header-actions">
           {borradores > 0 && (
-            <button className="iso-btn-primary oc-btn-confirm-all" onClick={confirmarTodos}>
+            <button className="iso-btn-primary oc-btn-confirm-all" onClick={confirmarTodos} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>
               ✅ Confirmar todos los borradores ({borradores})
             </button>
           )}
           <button
             className="iso-btn-secondary oc-btn-regen"
             onClick={generarDesdeIA}
-            disabled={generando}
-            title="Regenerar borradores desde el análisis IA actual"
+            disabled={generando || !canCreate}
+            title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : "Regenerar borradores desde el análisis IA actual"}
           >
             {generando ? '⏳ Generando...' : '🔄 Regenerar desde §6.1'}
           </button>

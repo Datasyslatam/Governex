@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import './RecursosPage.css'
 import { useAIAnalysis, FilaMatrizRecursos } from '../../context/AIAnalysisContext'
+import { usePermissions } from '../../hooks/usePermissions'
 
 /* ══════════════════════════════════════════════════════════════
    TIPOS
@@ -22,6 +23,7 @@ const COLS: { key: ColKey; label: string; group?: string }[] = [
    ══════════════════════════════════════════════════════════════ */
 const RecursosPage: React.FC = () => {
   const { analysis } = useAIAnalysis()
+  const { canEdit, isReadOnly } = usePermissions('contexto_empresa')
 
   /* ── Estado de la Matriz ────────────────────────────────── */
   const [activeTab, setActiveTab]   = useState<'matriz' | 'criterios'>('matriz')
@@ -161,14 +163,14 @@ const RecursosPage: React.FC = () => {
                       const isEditing = editingCell?.id === fila.id && editingCell?.col === col.key
                       const val = fila[col.key]
                       return (
-                        <td key={col.key} onClick={() => !isEditing && startEdit(fila.id, col.key, val)} style={{ cursor: 'pointer' }}>
+                        <td key={col.key} onClick={canEdit ? (() => !isEditing && startEdit(fila.id, col.key, val)) : undefined} style={{ cursor: canEdit ? 'pointer' : 'default' }} title={!canEdit ? 'Tu rol no tiene permiso para editar' : undefined}>
                           {isEditing ? (
                             <div className="recursos-cell-edit" onClick={e => e.stopPropagation()}>
-                              <textarea autoFocus rows={3} value={editValue}
+                              <textarea readOnly={isReadOnly()} autoFocus rows={3} value={editValue}
                                 onChange={e => setEditValue(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitEdit() } if (e.key === 'Escape') cancelEdit() }} />
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                <button className="btn-icon" onClick={commitEdit} title="Guardar (Enter)">✔</button>
+                                <button className="btn-icon" onClick={commitEdit} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : "Guardar (Enter)"}>✔</button>
                                 <button className="btn-icon" onClick={cancelEdit} title="Cancelar (Esc)">✕</button>
                               </div>
                             </div>

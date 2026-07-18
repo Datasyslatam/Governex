@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react'
 import './CompetenciasPage.css'
 import { useFetch } from '../../hooks/useFetch'
 import { competenciasService, PersonalItem, PlanFormacion } from '../../services'
+import { usePermissions } from '../../hooks/usePermissions'
 
 const emptyPersonal = { nombre: '', cargo: '' }
 const emptyPlan     = { tema: '', fecha: '', estado: 'Planificado' as const }
@@ -12,6 +13,8 @@ const CompetenciasPage: React.FC = () => {
 
   const { data: planFormacion, loading: lF, error: eF, refetch: refetchF }
     = useFetch(competenciasService.getPlanFormacion, [])
+
+  const { canEdit, canCreate, isReadOnly } = usePermissions('competencias')
 
   const [filtroProceso, setFiltroProceso]   = useState('')
   const [showModalPers, setShowModalPers]   = useState(false)
@@ -103,7 +106,7 @@ const CompetenciasPage: React.FC = () => {
           <p className="comp-page__subtitle">Perfiles de cargo, evaluación de brechas y planes de capacitación</p>
         </div>
         <div className="comp-page__actions">
-          <button className="btn btn--primary" onClick={() => { setShowModalPers(true); setFormPers(emptyPersonal) }}>
+          <button className="btn btn--primary" onClick={() => { setShowModalPers(true); setFormPers(emptyPersonal) }} disabled={!canCreate} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}>
             + Nueva Evaluación
           </button>
         </div>
@@ -162,8 +165,8 @@ const CompetenciasPage: React.FC = () => {
                         }`}>{estado}</span>
                       </td>
                       <td className="comp-table__actions">
-                        <button className="comp-action-btn" title="Registrar Evaluación"
-                          onClick={() => openEval(prs)}>📊</button>
+                        <button className="comp-action-btn" title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : "Registrar Evaluación"}
+                          onClick={() => openEval(prs)} disabled={!canEdit}>📊</button>
                       </td>
                     </tr>
                   )
@@ -184,7 +187,7 @@ const CompetenciasPage: React.FC = () => {
             <h3>Plan Anual de Formación {new Date().getFullYear()}</h3>
             <button className="btn btn--muted"
               style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
-              onClick={() => { setEditingPlanId(null); setFormPlan(emptyPlan); setShowModalPlan(true) }}>
+              onClick={() => { setEditingPlanId(null); setFormPlan(emptyPlan); setShowModalPlan(true) }} disabled={!canCreate} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}>
               + Tarea
             </button>
           </div>
@@ -210,7 +213,7 @@ const CompetenciasPage: React.FC = () => {
                       {plan.estado}
                     </span>
                     <button style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                      onClick={() => openEditPlan(plan)}>✏️</button>
+                      onClick={() => openEditPlan(plan)} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>✏️</button>
                   </div>
                 </div>
               ))}
@@ -233,13 +236,13 @@ const CompetenciasPage: React.FC = () => {
             <div className="modal-body">
               <div className="form-group">
                 <label>Nombre completo *</label>
-                <input type="text" className="filter-input form-control"
+                <input type="text" className="filter-input form-control" readOnly={isReadOnly()}
                   value={formPers.nombre} placeholder="Ej: Laura Gómez"
                   onChange={e => setFormPers(f => ({ ...f, nombre: e.target.value }))} />
               </div>
               <div className="form-group">
                 <label>Cargo</label>
-                <input type="text" className="filter-input form-control"
+                <input type="text" className="filter-input form-control" readOnly={isReadOnly()}
                   value={formPers.cargo} placeholder="Ej: Jefe de Calidad"
                   onChange={e => setFormPers(f => ({ ...f, cargo: e.target.value }))} />
               </div>
@@ -247,7 +250,7 @@ const CompetenciasPage: React.FC = () => {
             <div className="modal-footer">
               <button className="btn btn--secondary" onClick={() => setShowModalPers(false)}>Cancelar</button>
               <button className="btn btn--primary" onClick={guardarPersonal}
-                disabled={saving || !formPers.nombre}>
+                disabled={saving || !formPers.nombre || !canCreate} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                 {saving ? 'Guardando...' : 'Registrar'}
               </button>
             </div>
@@ -281,7 +284,7 @@ const CompetenciasPage: React.FC = () => {
             </div>
             <div className="modal-footer">
               <button className="btn btn--secondary" onClick={() => setShowModalEval(false)}>Cancelar</button>
-              <button className="btn btn--primary" onClick={guardarEval} disabled={saving}>
+              <button className="btn btn--primary" onClick={guardarEval} disabled={saving || !canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                 {saving ? 'Guardando...' : 'Registrar Evaluación'}
               </button>
             </div>
@@ -300,14 +303,14 @@ const CompetenciasPage: React.FC = () => {
             <div className="modal-body">
               <div className="form-group">
                 <label>Tema / Capacitación *</label>
-                <input type="text" className="filter-input form-control"
+                <input type="text" className="filter-input form-control" readOnly={isReadOnly()}
                   value={formPlan.tema} placeholder="Ej: Auditor Interno del SGC"
                   onChange={e => setFormPlan(f => ({ ...f, tema: e.target.value }))} />
               </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Fecha</label>
-                  <input type="date" className="filter-input form-control"
+                  <input type="date" className="filter-input form-control" readOnly={isReadOnly()}
                     value={formPlan.fecha}
                     onChange={e => setFormPlan(f => ({ ...f, fecha: e.target.value }))} />
                 </div>
@@ -326,7 +329,7 @@ const CompetenciasPage: React.FC = () => {
             <div className="modal-footer">
               <button className="btn btn--secondary" onClick={() => setShowModalPlan(false)}>Cancelar</button>
               <button className="btn btn--primary" onClick={guardarPlan}
-                disabled={saving || !formPlan.tema}>
+                disabled={saving || !formPlan.tema || (editingPlanId ? !canEdit : !canCreate)} title={(editingPlanId ? !canEdit : !canCreate) ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                 {saving ? 'Guardando...' : editingPlanId ? 'Guardar Cambios' : 'Crear Actividad'}
               </button>
             </div>

@@ -12,6 +12,8 @@ import Swal from 'sweetalert2'
 import { useFetch } from '../../hooks/useFetch'
 import { procesosService } from '../../services'
 import { useAIAnalysis, DatosEmpresa } from '../../context/AIAnalysisContext'
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 import EmpresaFormModal            from './EmpresaFormModal'
 import ContextoOrganizacionalPanel from './ContextoOrganizacionalPanel'
 import PlantillaOrganizacion       from './PlantillaOrganizacion'
@@ -400,6 +402,8 @@ const ProcesosPage: React.FC = () => {
     removeActividad,
   } = useAIAnalysis()
 
+  const { canEdit, canCreate, canDelete } = usePermissions('procesos')
+
   const [aiAnalysis,    setAiAnalysis]    = useState<AiAnalysis | null>(globalAnalysis as any)
   const [geminiLoading, setGeminiLoading] = useState(false)
   const [showEmpresaForm, setShowEmpresaForm] = useState(false)
@@ -671,7 +675,7 @@ const ProcesosPage: React.FC = () => {
           )}
           {mapMode === 'manual'    && <ManualForm         onSave={handleSave}  onCancel={() => { setMapMode('empty'); setShowMap(true) }} />}
           {mapMode === 'ai'        && <UploadAI            onSave={handleSave}  onCancel={() => { setMapMode('empty'); setShowMap(true) }} />}
-          {mapMode === 'plantilla' && <PlantillaOrganizacion onDatosYOrganigramaListos={handlePlantillaListos} onCancel={() => { setMapMode('empty'); setShowMap(true) }} />}
+          {mapMode === 'plantilla' && <PlantillaOrganizacion currentDatos={datosEmpresa} onDatosYOrganigramaListos={handlePlantillaListos} onCancel={() => { setMapMode('empty'); setShowMap(true) }} />}
         </div>
       )}
 
@@ -767,6 +771,8 @@ const ProcesosPage: React.FC = () => {
                 className="btn btn--primary"
                 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}
                 onClick={() => setShowActividadModal(true)}
+                disabled={!canCreate}
+                title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}
               >
                 <span>⚙️</span> Registrar Actividad
               </button>
@@ -862,28 +868,30 @@ const ProcesosPage: React.FC = () => {
                           )}
                         </div>
                       </div>
-                      <button
-                        onClick={() => removeActividad(act.id)}
-                        style={{
-                          background: 'none', border: '1px solid #e2e8f0',
-                          borderRadius: '0.35rem', padding: '0.25rem 0.6rem',
-                          fontSize: '0.75rem', color: '#9ca3af', cursor: 'pointer',
-                          transition: 'all 0.15s',
-                        }}
-                        onMouseEnter={e => {
-                          (e.target as HTMLButtonElement).style.background = '#fee2e2'
-                          ;(e.target as HTMLButtonElement).style.color = '#dc2626'
-                          ;(e.target as HTMLButtonElement).style.borderColor = '#fca5a5'
-                        }}
-                        onMouseLeave={e => {
-                          (e.target as HTMLButtonElement).style.background = 'none'
-                          ;(e.target as HTMLButtonElement).style.color = '#9ca3af'
-                          ;(e.target as HTMLButtonElement).style.borderColor = '#e2e8f0'
-                        }}
-                        title="Eliminar actividad"
-                      >
-                        ✕ Eliminar
-                      </button>
+                      <PermissionGuard recurso="procesos" accion="eliminar" mode="hide">
+                        <button
+                          onClick={() => removeActividad(act.id)}
+                          style={{
+                            background: 'none', border: '1px solid #e2e8f0',
+                            borderRadius: '0.35rem', padding: '0.25rem 0.6rem',
+                            fontSize: '0.75rem', color: '#9ca3af', cursor: 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={e => {
+                            (e.target as HTMLButtonElement).style.background = '#fee2e2'
+                            ;(e.target as HTMLButtonElement).style.color = '#dc2626'
+                            ;(e.target as HTMLButtonElement).style.borderColor = '#fca5a5'
+                          }}
+                          onMouseLeave={e => {
+                            (e.target as HTMLButtonElement).style.background = 'none'
+                            ;(e.target as HTMLButtonElement).style.color = '#9ca3af'
+                            ;(e.target as HTMLButtonElement).style.borderColor = '#e2e8f0'
+                          }}
+                          title="Eliminar actividad"
+                        >
+                          ✕ Eliminar
+                        </button>
+                      </PermissionGuard>
                     </div>
 
                     {/* ── NUEVO: Objetivo e Indicador generados por IA ── */}

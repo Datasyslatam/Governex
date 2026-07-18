@@ -13,6 +13,8 @@ import {
   derivarRiesgos,
   RiesgoDerivado,
 } from '../../context/AIAnalysisContext'
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 
 /* ─────────────────────────── TIPOS LOCALES ─────────────────────── */
 type Tab = 'caracterizacion' | 'mapa' | 'manual' | 'riesgos'
@@ -414,68 +416,27 @@ const TablaCaracterizacion: React.FC<{
 const MapaProcedimiento: React.FC<{ filas: FilaMatriz[]; empresa?: string; sector?: string }> = ({
   filas, empresa, sector,
 }) => {
+  const [search, setSearch] = useState('')
+
+  const filtered = filas.filter(f =>
+    f.proceso.toLowerCase().includes(search.toLowerCase()) ||
+    f.responsable.toLowerCase().includes(search.toLowerCase()) ||
+    (f.clausula || '').toLowerCase().includes(search.toLowerCase()) ||
+    (f.tipo || '').toLowerCase().includes(search.toLowerCase())
+  )
+
   const grupos = useMemo(() => ({
     estrategico: filas.filter(f => f.tipo === 'estrategico'),
     misional:    filas.filter(f => f.tipo === 'misional'),
     apoyo:       filas.filter(f => f.tipo === 'apoyo'),
   }), [filas])
 
-  const renderGrupo = (tipo: TipoProceso) => {
-    const items = grupos[tipo]
-    if (items.length === 0) return null
-    const c = TIPO_COLOR[tipo]
-    return (
-      <div key={tipo} style={{ border: `1.5px solid ${c.border}`, borderRadius: '0.75rem', overflow: 'hidden' }}>
-        <div style={{
-          background: c.bg, borderBottom: `1px solid ${c.border}`,
-          padding: '0.65rem 1.1rem', display: 'flex', alignItems: 'center', gap: '0.6rem',
-        }}>
-          <span style={{
-            background: c.color, color: '#fff', fontSize: '0.72rem',
-            fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: 999,
-          }}>{TIPO_LABEL[tipo].toUpperCase()}</span>
-          <span style={{ fontSize: '0.82rem', color: c.color, fontWeight: 600 }}>
-            {items.length} proceso{items.length !== 1 ? 's' : ''}
-          </span>
-        </div>
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-          gap: '0.75rem', padding: '0.85rem', background: '#fff',
-        }}>
-          {items.map(f => (
-            <div key={f.id} style={{
-              border: `1px solid ${c.border}`, borderRadius: '0.6rem',
-              padding: '0.75rem', background: c.bg,
-              display: 'flex', flexDirection: 'column', gap: '0.35rem',
-            }}>
-              <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1b3a6b' }}>{f.proceso}</div>
-              <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>👤 {f.responsable}</div>
-              {f.clausula && (
-                <div style={{
-                  fontSize: '0.7rem', background: '#e8f0fb', color: '#1b3a6b',
-                  padding: '0.15rem 0.45rem', borderRadius: 999,
-                  display: 'inline-block', width: 'fit-content', fontWeight: 600,
-                }}>{f.clausula}</div>
-              )}
-              {f.funciones && (
-                <div style={{ fontSize: '0.73rem', color: '#374151', marginTop: 2 }}>
-                  {f.funciones.length > 80 ? f.funciones.slice(0, 80) + '…' : f.funciones}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div className="iso-info-box">
         <span className="iso-info-box__icon">🗺️</span>
         <span>
-          <strong>§4.4 / §8.1</strong> — Representación visual del mapa de procesos
-          clasificados por tipo: estratégicos, misionales y de apoyo.
+          <strong>§4.4 / §8.1 - Mapa de Procedimiento (Tabla)</strong> — Relación de procesos clasificados por tipo, responsables, cláusulas ISO aplicables y descripción de funciones.
         </span>
       </div>
 
@@ -504,26 +465,70 @@ const MapaProcedimiento: React.FC<{ filas: FilaMatriz[]; empresa?: string; secto
         )}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <div style={{
-          background: 'linear-gradient(90deg, #1b3a6b, #2e86de)',
-          borderRadius: '0.6rem', padding: '0.6rem 1.2rem',
-          color: '#fff', fontSize: '0.82rem', fontWeight: 600,
-          textAlign: 'center', letterSpacing: '0.04em',
-        }}>
-          ⬇️ REQUISITOS Y EXPECTATIVAS DEL CLIENTE / PARTES INTERESADAS
+      <div className="iso-topbar">
+        <div className="iso-topbar__info">
+          Procedimientos en el Mapa: <strong>{filas.length}</strong>
+          {search && <span style={{ marginLeft: 8, color: '#6b7280' }}>· Mostrando {filtered.length}</span>}
         </div>
-        {renderGrupo('estrategico')}
-        {renderGrupo('misional')}
-        {renderGrupo('apoyo')}
-        <div style={{
-          background: 'linear-gradient(90deg, #166534, #16a34a)',
-          borderRadius: '0.6rem', padding: '0.6rem 1.2rem',
-          color: '#fff', fontSize: '0.82rem', fontWeight: 600,
-          textAlign: 'center', letterSpacing: '0.04em',
-        }}>
-          ⬆️ SATISFACCIÓN DEL CLIENTE · RESULTADOS DEL SGC
-        </div>
+        <input
+          type="text"
+          placeholder="🔍 Filtrar procedimientos…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{
+            padding: '0.4rem 0.75rem', border: '1px solid #e5e7eb',
+            borderRadius: '0.5rem', fontSize: '0.82rem', outline: 'none', width: 220,
+          }}
+        />
+      </div>
+
+      <div className="iso-table-wrapper">
+        <table className="iso-table">
+          <thead>
+            <tr>
+              <th style={{ width: '120px' }}>Tipo</th>
+              <th>Proceso</th>
+              <th>Responsable</th>
+              <th>Cláusula ISO</th>
+              <th>Funciones / Requisitos</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr><td colSpan={5} style={{ textAlign: 'center', color: '#9ca3af', padding: '1.5rem' }}>Sin resultados</td></tr>
+            ) : filtered.map(f => {
+              const tipo = f.tipo as TipoProceso
+              const c = TIPO_COLOR[tipo] || { bg: '#f3f4f6', color: '#374151', border: '#cbd5e1' }
+              return (
+                <tr key={f.id}>
+                  <td>
+                    <span style={{
+                      background: c.bg, color: c.color, border: `1px solid ${c.border}`,
+                      fontSize: '0.7rem', fontWeight: 700, padding: '0.15rem 0.55rem',
+                      borderRadius: 6, textTransform: 'uppercase', display: 'inline-block',
+                    }}>
+                      {TIPO_LABEL[tipo] || tipo}
+                    </span>
+                  </td>
+                  <td style={{ fontWeight: 600, color: '#1b3a6b' }}>{f.proceso}</td>
+                  <td style={{ fontWeight: 500 }}>{f.responsable}</td>
+                  <td>
+                    {f.clausula ? (
+                      <span style={{
+                        background: '#e8f0fb', color: '#1b3a6b',
+                        padding: '0.15rem 0.45rem', borderRadius: 999,
+                        fontSize: '0.72rem', fontWeight: 600,
+                      }}>{f.clausula}</span>
+                    ) : <em style={{ color: '#9ca3af' }}>—</em>}
+                  </td>
+                  <td style={{ fontSize: '0.8rem', color: '#4b5563', lineHeight: 1.5 }}>
+                    {f.funciones || <em style={{ color: '#9ca3af' }}>—</em>}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   )
@@ -533,14 +538,18 @@ const MapaProcedimiento: React.FC<{ filas: FilaMatriz[]; empresa?: string; secto
 const ManualProcedimiento: React.FC<{ rows: CaracterizacionRow[]; filas: FilaMatriz[] }> = ({
   rows, filas,
 }) => {
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const toggle = (codigo: string) =>
-    setExpanded(prev => { const n = new Set(prev); n.has(codigo) ? n.delete(codigo) : n.add(codigo); return n })
+  const [search, setSearch] = useState('')
 
   const enriched = useMemo(() => rows.map(row => {
     const match = filas.find(f => f.proceso.toLowerCase().trim() === row.proceso.toLowerCase().trim())
     return { ...row, tipo: match?.tipo as TipoProceso | undefined, clausula: match?.clausula ?? row.codigo?.split('-')[0] }
   }), [rows, filas])
+
+  const filtered = enriched.filter(r =>
+    r.proceso.toLowerCase().includes(search.toLowerCase()) ||
+    r.responsable.toLowerCase().includes(search.toLowerCase()) ||
+    (r.clausula || '').toLowerCase().includes(search.toLowerCase())
+  )
 
   const generarPasos = (row: CaracterizacionRow): string[] => [
     `Revisar las entradas del proceso: ${row.entradas}.`,
@@ -556,140 +565,91 @@ const ManualProcedimiento: React.FC<{ rows: CaracterizacionRow[]; filas: FilaMat
       <div className="iso-info-box">
         <span className="iso-info-box__icon">📖</span>
         <span>
-          <strong>§8.1 / §4.4.2</strong> — El manual de procedimiento documenta
-          las actividades, responsabilidades e indicadores de cada proceso operacional.
+          <strong>§8.1 / §4.4.2 - Manual de Procedimientos (Tabla)</strong> — Documentación de las fichas de procesos y guías paso a paso del procedimiento operacional estándar.
         </span>
       </div>
 
       <div className="iso-topbar">
         <div className="iso-topbar__info">
-          {rows.length} procedimiento{rows.length !== 1 ? 's' : ''} · {expanded.size} expandido{expanded.size !== 1 ? 's' : ''}
+          Procedimientos documentados: <strong>{enriched.length}</strong>
+          {search && <span style={{ marginLeft: 8, color: '#6b7280' }}>· Mostrando {filtered.length}</span>}
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="iso-btn-secondary" style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
-            onClick={() => setExpanded(new Set(rows.map(r => r.codigo)))}>
-            Expandir todo
-          </button>
-          <button className="iso-btn-secondary" style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
-            onClick={() => setExpanded(new Set())}>
-            Colapsar todo
-          </button>
-        </div>
+        <input
+          type="text"
+          placeholder="🔍 Buscar procedimiento o responsable…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{
+            padding: '0.4rem 0.75rem', border: '1px solid #e5e7eb',
+            borderRadius: '0.5rem', fontSize: '0.82rem', outline: 'none', width: 220,
+          }}
+        />
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        {enriched.map(row => {
-          const isOpen = expanded.has(row.codigo)
-          const c = row.tipo ? TIPO_COLOR[row.tipo] : { bg: '#f8fafc', color: '#374151', border: '#e5e7eb' }
-          const pasos = generarPasos(row)
-          return (
-            <div key={row.codigo} style={{
-              border: `1px solid ${isOpen ? c.border : '#e5e7eb'}`,
-              borderRadius: '0.65rem', overflow: 'hidden', transition: 'border-color 0.15s',
-            }}>
-              <button onClick={() => toggle(row.codigo)} style={{
-                width: '100%', background: isOpen ? c.bg : '#fff', border: 'none',
-                padding: '0.85rem 1.1rem', display: 'flex', alignItems: 'center',
-                gap: '0.75rem', cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s',
-              }}>
-                <code style={{
-                  background: c.color, color: '#fff', fontSize: '0.72rem',
-                  fontWeight: 700, padding: '0.2rem 0.55rem', borderRadius: 4, flexShrink: 0,
-                }}>{row.codigo}</code>
-                <span style={{ fontWeight: 700, color: '#1b3a6b', fontSize: '0.9rem', flex: 1 }}>
-                  {row.proceso}
-                </span>
-                {row.tipo && (
-                  <span style={{
-                    background: c.bg, color: c.color, border: `1px solid ${c.border}`,
-                    fontSize: '0.7rem', fontWeight: 700, padding: '0.15rem 0.5rem',
-                    borderRadius: 999, flexShrink: 0,
-                  }}>{TIPO_LABEL[row.tipo]}</span>
-                )}
-                {row.clausula && (
-                  <span style={{
-                    background: '#e8f0fb', color: '#1b3a6b', fontSize: '0.7rem',
-                    fontWeight: 600, padding: '0.15rem 0.5rem', borderRadius: 999, flexShrink: 0,
-                  }}>{row.clausula}</span>
-                )}
-                <span style={{ fontSize: '0.78rem', color: '#6b7280', flexShrink: 0 }}>
-                  👤 {row.responsable}
-                </span>
-                <span className={`iso-badge ${estadoBadgeClass(row.estado)}`} style={{ flexShrink: 0 }}>
-                  {row.estado}
-                </span>
-                <span style={{
-                  color: '#9ca3af', fontSize: '0.8rem', flexShrink: 0,
-                  display: 'inline-block',
-                  transform: isOpen ? 'rotate(180deg)' : 'none',
-                  transition: 'transform 0.2s',
-                }}>▼</span>
-              </button>
-
-              {isOpen && (
-                <div style={{
-                  borderTop: `1px solid ${c.border}`, padding: '1.1rem 1.25rem',
-                  background: '#fff', display: 'grid',
-                  gridTemplateColumns: '1fr 1fr', gap: '1rem',
-                }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <h4 style={{ margin: 0, fontSize: '0.82rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Ficha del proceso
-                    </h4>
-                    {[
-                      { label: '🎯 Objetivo',  value: row.objetivo  },
-                      { label: '📥 Entradas',  value: row.entradas  },
-                      { label: '📤 Salidas',   value: row.salidas   },
-                      { label: '📊 Indicador', value: row.indicador },
-                    ].map(({ label, value }) => (
-                      <div key={label}>
-                        <div style={{ fontSize: '0.73rem', fontWeight: 700, color: '#374151', marginBottom: 3 }}>{label}</div>
-                        <div style={{
-                          fontSize: '0.82rem', color: '#4b5563', background: '#f9fafb',
-                          border: '1px solid #f3f4f6', borderRadius: '0.4rem',
-                          padding: '0.5rem 0.75rem', lineHeight: 1.5,
-                        }}>{value}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <h4 style={{ margin: 0, fontSize: '0.82rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Procedimiento operacional
-                    </h4>
+      <div className="iso-table-wrapper">
+        <table className="iso-table">
+          <thead>
+            <tr>
+              <th style={{ width: '90px' }}>Código</th>
+              <th style={{ width: '180px' }}>Proceso / Responsable</th>
+              <th style={{ width: '220px' }}>Ficha Técnica SGC</th>
+              <th style={{ minWidth: '320px' }}>Procedimiento Operacional (Paso a Paso)</th>
+              <th style={{ width: '110px' }}>Cláusula ISO</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr><td colSpan={5} style={{ textAlign: 'center', color: '#9ca3af', padding: '1.5rem' }}>Sin resultados</td></tr>
+            ) : filtered.map(row => {
+              const c = row.tipo ? TIPO_COLOR[row.tipo] : { bg: '#f8fafc', color: '#374151', border: '#e5e7eb' }
+              const pasos = generarPasos(row)
+              return (
+                <tr key={row.codigo} style={{ verticalAlign: 'top' }}>
+                  <td>
+                    <code style={{
+                      background: c.color, color: '#fff', fontSize: '0.72rem',
+                      fontWeight: 700, padding: '0.2rem 0.55rem', borderRadius: 4, display: 'inline-block',
+                    }}>{row.codigo}</code>
+                  </td>
+                  <td>
+                    <div style={{ fontWeight: 700, color: '#1b3a6b', fontSize: '0.85rem', marginBottom: 4 }}>{row.proceso}</div>
+                    <div style={{ fontSize: '0.74rem', color: '#6b7280' }}>👤 <strong>Resp:</strong> {row.responsable}</div>
+                    <div style={{ marginTop: 4 }}>
+                      <span className={`iso-badge ${estadoBadgeClass(row.estado)}`}>{row.estado}</span>
+                    </div>
+                  </td>
+                  <td style={{ fontSize: '0.78rem', color: '#4b5563', lineHeight: 1.5 }}>
+                    <div style={{ marginBottom: 4 }}><strong>🎯 Objetivo:</strong> {row.objetivo}</div>
+                    <div style={{ marginBottom: 4 }}><strong>📥 Entradas:</strong> {row.entradas}</div>
+                    <div style={{ marginBottom: 4 }}><strong>📤 Salidas:</strong> {row.salidas}</div>
+                    <div><strong>📊 Indicador:</strong> {row.indicador}</div>
+                  </td>
+                  <td>
                     <div style={{
-                      background: '#f8fafc', border: '1px solid #e5e7eb',
-                      borderRadius: '0.5rem', padding: '0.85rem',
+                      background: '#f8fafc', border: '1px solid #e2e8f0',
+                      borderRadius: '0.4rem', padding: '0.6rem 0.75rem',
                     }}>
-                      <div style={{ fontSize: '0.73rem', fontWeight: 700, color: '#1b3a6b', marginBottom: '0.6rem' }}>
-                        {row.codigo}-01 — {row.proceso}
-                      </div>
-                      <ol style={{ margin: 0, paddingLeft: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <ol style={{ margin: 0, paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: 4 }}>
                         {pasos.map((paso, idx) => (
-                          <li key={idx} style={{ fontSize: '0.8rem', color: '#374151', lineHeight: 1.55 }}>{paso}</li>
+                          <li key={idx} style={{ fontSize: '0.78rem', color: '#374151', lineHeight: 1.45 }}>{paso}</li>
                         ))}
                       </ol>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <div style={{
-                        background: '#eff6ff', border: '1px solid #bfdbfe',
-                        borderRadius: '0.4rem', padding: '0.35rem 0.65rem',
-                        fontSize: '0.75rem', color: '#1e40af',
-                      }}>👤 <strong>Responsable:</strong> {row.responsable}</div>
-                      {row.clausula && (
-                        <div style={{
-                          background: '#f0fdf4', border: '1px solid #bbf7d0',
-                          borderRadius: '0.4rem', padding: '0.35rem 0.65rem',
-                          fontSize: '0.75rem', color: '#166534',
-                        }}>📎 <strong>Cláusula:</strong> {row.clausula}</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
+                  </td>
+                  <td>
+                    {row.clausula ? (
+                      <span style={{
+                        background: '#e8f0fb', color: '#1b3a6b',
+                        padding: '0.15rem 0.45rem', borderRadius: 999,
+                        fontSize: '0.72rem', fontWeight: 600, display: 'inline-block',
+                      }}>{row.clausula}</span>
+                    ) : <em style={{ color: '#9ca3af' }}>—</em>}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   )
@@ -879,6 +839,7 @@ const MatrizRiesgosActividades: React.FC<{
 
 /* ─────────────────────────── PÁGINA PRINCIPAL ─────────────────── */
 const PlanificacionOperacionPage: React.FC = () => {
+  const { canEdit } = usePermissions('planes_operacion')
   const { analysis, actividades } = useAIAnalysis()
   const [activeTab, setActiveTab] = useState<Tab>('caracterizacion')
 

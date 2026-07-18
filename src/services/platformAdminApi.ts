@@ -166,4 +166,19 @@ export const platformAdminApi = {
       method: 'POST',
       body: JSON.stringify({ usuarioId }),
     }),
+
+  getGlobalStats: () => request<GlobalStats>('/api/platform-admin/global-stats'),
+}
+
+export interface GlobalStats {
+  mrr: number
+  totalFiles: number
+  totalStorageBytes: number
+  totalUsuarios: number
+  totalProcesos: number
+  totalRiesgos: number
+  totalAuditorias: number
+  totalDocumentos: number
+  totalNoConformidades: number
+  totalMejoras: number
 }

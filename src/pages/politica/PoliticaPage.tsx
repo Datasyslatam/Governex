@@ -3,6 +3,7 @@ import './PoliticaPage.css'
 import { useFetch } from '../../hooks/useFetch'
 import { politicaService } from '../../services'
 import { useAIAnalysis } from '../../context/AIAnalysisContext'
+import { usePermissions } from '../../hooks/usePermissions'
 
 const PoliticaPage: React.FC = () => {
   const { data: politicas, loading: lPol, refetch: refetchPol }
@@ -13,6 +14,7 @@ const PoliticaPage: React.FC = () => {
 
   const { datosEmpresa } = useAIAnalysis()
   const politicaIA = datosEmpresa?.politicaCalidad?.trim() || null
+  const { canEdit, canCreate, isReadOnly } = usePermissions('politica_calidad')
 
   const [showModalEditar, setShowModalEditar] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -84,7 +86,7 @@ const PoliticaPage: React.FC = () => {
           <p className="pol-page__subtitle">Establecimiento, comunicación y despliegue de la directriz principal del SGC</p>
         </div>
         <div className="pol-page__actions">
-          <button className="btn btn--primary" onClick={openEditar}>Editar Política</button>
+          <button className="btn btn--primary" onClick={openEditar} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>Editar Política</button>
         </div>
       </header>
 
@@ -160,9 +162,10 @@ const PoliticaPage: React.FC = () => {
                       <span className="pol-lec-date">{reg.fecha_lectura || '—'}</span>
                       {reg.estado === 'Pendiente' && (
                         <button
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem' }}
-                          title="Marcar como leído"
+                          style={{ background: 'none', border: 'none', cursor: canEdit ? 'pointer' : 'default', fontSize: '0.75rem' }}
+                          title={!canEdit ? 'Tu rol no tiene permiso para editar' : 'Marcar como leído'}
                           onClick={() => marcarLectura(reg)}
+                          disabled={!canEdit}
                         >
                           ✅
                         </button>
@@ -176,7 +179,7 @@ const PoliticaPage: React.FC = () => {
               </div>
             )}
 
-            <button className="btn btn--muted w-100 mt-3">Enviar Recordatorio</button>
+            <button className="btn btn--muted w-100 mt-3" disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>Enviar Recordatorio</button>
           </div>
         </div>
       </div>
@@ -198,6 +201,7 @@ const PoliticaPage: React.FC = () => {
                   value={formPol.version}
                   placeholder="Ej: v2.1"
                   onChange={e => setFormPol(f => ({ ...f, version: e.target.value }))}
+                  readOnly={isReadOnly()}
                 />
               </div>
               <div className="form-group">
@@ -207,7 +211,8 @@ const PoliticaPage: React.FC = () => {
                     type="button"
                     className="btn btn--secondary"
                     style={{ fontSize: '0.8rem', padding: '0.35rem 0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-                    disabled={generandoIA}
+                    disabled={generandoIA || !canEdit}
+                    title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}
                     onClick={async () => {
                       setGenerandoIA(true)
                       try {
@@ -242,6 +247,7 @@ const PoliticaPage: React.FC = () => {
                   value={formPol.contenido}
                   placeholder="Escribe el contenido completo de la política de calidad..."
                   onChange={e => setFormPol(f => ({ ...f, contenido: e.target.value }))}
+                  readOnly={isReadOnly()}
                 />
               </div>
             </div>
@@ -250,7 +256,8 @@ const PoliticaPage: React.FC = () => {
               <button
                 className="btn btn--primary"
                 onClick={guardarPolitica}
-                disabled={saving || !formPol.version || !formPol.contenido}
+                disabled={!canEdit || saving || !formPol.version || !formPol.contenido}
+                title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}
               >
                 {saving ? 'Guardando...' : 'Publicar Política'}
               </button>

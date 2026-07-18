@@ -3,8 +3,9 @@ import '../iso-module.css'
 import './ComprasPage.css' // Nuevos estilos específicos
 import Swal from 'sweetalert2'
 import { useFetch } from '../../hooks/useFetch'
-import { fichasTecnicasService, evaluacionesOrdenCompraService, uploadsService } from '../../services'
-import { ordenesCompraService } from '../../services'
+import { fichasTecnicasService, evaluacionesOrdenCompraService, uploadsService, ordenesCompraService } from '../../services'
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 
 /* ══════════════════════════════════════════════════════════════
    TIPOS
@@ -74,6 +75,7 @@ const initEvaluaciones: EvaluacionProveedor[] = [
    COMPONENTE
    ══════════════════════════════════════════════════════════════ */
 const ComprasPage: React.FC = () => {
+  const { canEdit, canCreate, canDelete, isReadOnly } = usePermissions('compras')
   const [activeTab, setActiveTab] = useState<'ordenes' | 'fichas' | 'evaluaciones'>('ordenes')
 
   // Estados de datos

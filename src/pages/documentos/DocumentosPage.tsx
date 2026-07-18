@@ -2,6 +2,8 @@ import React, { useState, useCallback } from 'react'
 import './DocumentosPage.css'
 import { useFetch } from '../../hooks/useFetch'
 import { documentosService, Documento } from '../../services'
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 
 const TIPOS = ['Manual', 'Política', 'Proceso', 'Instrucción', 'Formato', 'Otro']
 const ESTADOS = ['Aprobado', 'En Revision', 'Borrador', 'Obsoleto']
@@ -31,6 +33,8 @@ const DocumentosPage: React.FC = () => {
   const [filtroTipo, setFiltroTipo]     = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
   const [busqueda, setBusqueda]         = useState('')
+
+  const { canEdit, canCreate, canApprove, isReadOnly } = usePermissions('documentos')
 
   const filtrados = documentosData.filter(d =>
     (!filtroTipo   || d.tipo === filtroTipo) &&
@@ -97,7 +101,7 @@ const DocumentosPage: React.FC = () => {
           <span>Governex — Cap. 7.5 — Información Documentada</span>
         </div>
         <div className="docs-topbar__right">
-          <button className="btn btn--primary" onClick={openCreate}>+ Nuevo Documento</button>
+          <button className="btn btn--primary" onClick={openCreate} disabled={!canCreate} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}>+ Nuevo Documento</button>
         </div>
       </div>
 
@@ -164,16 +168,16 @@ const DocumentosPage: React.FC = () => {
                     </td>
                     <td onClick={e => e.stopPropagation()}>
                       <button style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                        title="Editar" onClick={() => openEdit(doc)}>✏️</button>
+                        title={!canEdit ? 'Tu rol no tiene permiso para editar' : "Editar"} onClick={() => openEdit(doc)} disabled={!canEdit}>✏️</button>
                       {doc.estado === 'Borrador' && (
                         <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem' }}
-                          title="Enviar a revisión"
-                          onClick={() => cambiarEstado(doc, 'En Revision')}>📤</button>
+                          title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : "Enviar a revisión"}
+                          onClick={() => cambiarEstado(doc, 'En Revision')} disabled={!canEdit}>📤</button>
                       )}
                       {doc.estado === 'En Revision' && (
                         <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem' }}
-                          title="Aprobar"
-                          onClick={() => cambiarEstado(doc, 'Aprobado')}>✅</button>
+                          title={!canApprove ? 'Tu rol no tiene permiso para esta acción' : "Aprobar"}
+                          onClick={() => cambiarEstado(doc, 'Aprobado')} disabled={!canApprove}>✅</button>
                       )}
                     </td>
                   </tr>
@@ -269,28 +273,28 @@ const DocumentosPage: React.FC = () => {
             <div className="modal-body">
               <div className="form-group">
                 <label>Título del documento</label>
-                <input type="text" className="filter-input form-control"
+                <input type="text" className="filter-input form-control" readOnly={isReadOnly()}
                   value={form.titulo} placeholder="Ej: Procedimiento de Compras"
                   onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))} />
               </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Tipo</label>
-                  <select className="filter-select form-control" value={form.tipo}
+                  <select className="filter-select form-control" value={form.tipo} disabled={isReadOnly()}
                     onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
                     {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
                   <label>Versión</label>
-                  <input type="text" className="filter-input form-control"
+                  <input type="text" className="filter-input form-control" readOnly={isReadOnly()}
                     value={form.version} placeholder="v1.0"
                     onChange={e => setForm(f => ({ ...f, version: e.target.value }))} />
                 </div>
               </div>
               <div className="form-group">
                 <label>Estado</label>
-                <select className="filter-select form-control" value={form.estado}
+                <select className="filter-select form-control" value={form.estado} disabled={isReadOnly()}
                   onChange={e => setForm(f => ({ ...f, estado: e.target.value }))}>
                   {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
                 </select>
@@ -298,10 +302,12 @@ const DocumentosPage: React.FC = () => {
             </div>
             <div className="modal-footer">
               <button className="btn btn--secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="btn btn--primary" onClick={handleSave}
-                disabled={saving || !form.titulo}>
-                {saving ? 'Guardando...' : editingId ? 'Guardar Cambios' : 'Crear Documento'}
-              </button>
+              {!isReadOnly() && (
+                <button className="btn btn--primary" onClick={handleSave}
+                  disabled={saving || !form.titulo}>
+                  {saving ? 'Guardando...' : editingId ? 'Guardar Cambios' : 'Crear Documento'}
+                </button>
+              )}
             </div>
           </div>
         </div>

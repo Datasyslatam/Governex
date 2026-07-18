@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 import "./Sidebar.css";
 
 interface SectionItem {
@@ -86,6 +87,7 @@ const SECTIONS: Section[] = [
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
+  const { user } = useAuth();
 
   const activeSection = SECTIONS.find(s =>
     s.items.some(item => location.pathname.startsWith(item.to))
@@ -116,6 +118,13 @@ const Sidebar: React.FC = () => {
           <span className="sidebar__icon">📊</span>
           <span className="sidebar__text">Dashboard</span>
         </NavLink>
+
+        {user?.role === "Superusuario" && (
+          <NavLink to="/usuarios" className="sidebar__link">
+            <span className="sidebar__icon">👤</span>
+            <span className="sidebar__text">Gestión de Usuarios</span>
+          </NavLink>
+        )}
 
         {SECTIONS.map(section => {
           const isOpen    = openSections.has(section.id);

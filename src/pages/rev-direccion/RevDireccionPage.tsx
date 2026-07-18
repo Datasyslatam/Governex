@@ -14,6 +14,7 @@ import {
 } from '../../services'
 import { useAIAnalysis } from '../../context/AIAnalysisContext'
 import { api } from '../../services/api'
+import { usePermissions } from '../../hooks/usePermissions'
 
 // ── Tipos locales ──────────────────────────────────────────────────────────────
 
@@ -43,6 +44,7 @@ function pct(val: number, total: number) {
 // ── Componente principal ───────────────────────────────────────────────────────
 
 const RevDireccionPage: React.FC = () => {
+  const { canEdit, canApprove, isReadOnly } = usePermissions('rev_direccion')
   // Historial de actas
   const { data: revisiones, loading: loadingRev, error: errorRev, refetch: refetchRev } =
     useFetch(revDireccionService.getAll, [])
@@ -341,7 +343,8 @@ const RevDireccionPage: React.FC = () => {
           <button
             className={`btn btn--primary rev9-btn-analizar ${analizando ? 'rev9-btn-analizar--loading' : ''}`}
             onClick={handleAnalizar}
-            disabled={analizando}
+            disabled={analizando || !canEdit}
+            title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}
           >
             {analizando
               ? <><span className="rev9-spinner" />Analizando…</>
@@ -496,6 +499,8 @@ const RevDireccionPage: React.FC = () => {
                 <button
                   className="btn btn--primary rev9-btn-acta"
                   onClick={() => setShowActaModal(true)}
+                  disabled={!canApprove}
+                  title={!canApprove ? 'Tu rol no tiene permiso para esta acción' : undefined}
                 >
                   📋 Registrar Acta de Revisión
                 </button>
@@ -575,6 +580,7 @@ const RevDireccionPage: React.FC = () => {
                     type="date" className="filter-input form-control"
                     value={formActa.fecha}
                     onChange={e => setFormActa(f => ({ ...f, fecha: e.target.value }))}
+                    readOnly={isReadOnly()}
                   />
                 </div>
                 <div className="form-group">
@@ -583,6 +589,7 @@ const RevDireccionPage: React.FC = () => {
                     type="date" className="filter-input form-control"
                     value={formActa.proxima_rev}
                     onChange={e => setFormActa(f => ({ ...f, proxima_rev: e.target.value }))}
+                    readOnly={isReadOnly()}
                   />
                 </div>
               </div>
@@ -593,6 +600,7 @@ const RevDireccionPage: React.FC = () => {
                   placeholder="Ej: Gerente General, Director de Calidad…"
                   value={formActa.asistentes}
                   onChange={e => setFormActa(f => ({ ...f, asistentes: e.target.value }))}
+                  readOnly={isReadOnly()}
                 />
               </div>
               {analisis && (
@@ -613,7 +621,8 @@ const RevDireccionPage: React.FC = () => {
               <button
                 className="btn btn--primary"
                 onClick={handleGuardarActa}
-                disabled={guardando || !formActa.asistentes.trim()}
+                disabled={guardando || !formActa.asistentes.trim() || !canApprove}
+                title={!canApprove ? 'Tu rol no tiene permiso para esta acción' : undefined}
               >
                 {guardando ? 'Guardando…' : 'Registrar Acta'}
               </button>

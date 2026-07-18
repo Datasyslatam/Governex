@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import '../iso-module.css'
 import { useFetch } from '../../hooks/useFetch'
 import { comunicacionService } from '../../services'
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 
 const empty = { que: '', cuando: '', quien: '', aQuien: '', como: '', tipo: 'Interna' as const, estado: 'Activo' as const }
 
@@ -11,6 +13,8 @@ const ComunicacionPage: React.FC = () => {
     id: r.id, que: r.que, cuando: r.cuando ?? '', quien: r.quien, aQuien: r.a_quien ?? '',
     como: r.como ?? '', tipo: r.tipo, estado: r.estado,
   }))
+
+  const { canCreate, isReadOnly } = usePermissions('comunicaciones')
 
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ ...empty })
@@ -71,7 +75,7 @@ const ComunicacionPage: React.FC = () => {
           </select>
         </div>
         <div className="iso-topbar__actions">
-          <button className="iso-btn-primary" onClick={() => setShowModal(true)}>＋ Nueva comunicación</button>
+          <button className="iso-btn-primary" onClick={() => setShowModal(true)} disabled={!canCreate} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Nueva comunicación</button>
         </div>
       </div>
 
@@ -101,7 +105,11 @@ const ComunicacionPage: React.FC = () => {
                 <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>{r.como}</td>
                 <td><span className={`iso-badge ${r.tipo === 'Interna' ? 'azul' : 'verde'}`}>{r.tipo}</span></td>
                 <td><span className={`iso-badge ${r.estado === 'Activo' ? 'verde' : r.estado === 'Revisión' ? 'amarillo' : 'gris'}`}>{r.estado}</span></td>
-                <td><button className="iso-btn-icon danger" onClick={() => eliminar(r.id)}>🗑️</button></td>
+                <td>
+                  <PermissionGuard recurso="comunicaciones" accion="eliminar" mode="hide">
+                    <button className="iso-btn-icon danger" onClick={() => eliminar(r.id)}>🗑️</button>
+                  </PermissionGuard>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -112,30 +120,30 @@ const ComunicacionPage: React.FC = () => {
         <div className="iso-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="iso-modal" onClick={e => e.stopPropagation()}>
             <h2>➕ Nueva comunicación</h2>
-            <div className="iso-field"><label>¿Qué se comunica? *</label><input type="text" placeholder="ej. Resultados de auditoría" value={form.que} onChange={e => setForm(p => ({ ...p, que: e.target.value }))} /></div>
+            <div className="iso-field"><label>¿Qué se comunica? *</label><input type="text" placeholder="ej. Resultados de auditoría" readOnly={isReadOnly()} value={form.que} onChange={e => setForm(p => ({ ...p, que: e.target.value }))} /></div>
             <div className="iso-form-row">
-              <div className="iso-field"><label>¿Cuándo?</label><input type="text" placeholder="ej. Trimestralmente" value={form.cuando} onChange={e => setForm(p => ({ ...p, cuando: e.target.value }))} /></div>
-              <div className="iso-field"><label>¿Quién comunica? *</label><input type="text" placeholder="ej. Director de Calidad" value={form.quien} onChange={e => setForm(p => ({ ...p, quien: e.target.value }))} /></div>
+              <div className="iso-field"><label>¿Cuándo?</label><input type="text" placeholder="ej. Trimestralmente" readOnly={isReadOnly()} value={form.cuando} onChange={e => setForm(p => ({ ...p, cuando: e.target.value }))} /></div>
+              <div className="iso-field"><label>¿Quién comunica? *</label><input type="text" placeholder="ej. Director de Calidad" readOnly={isReadOnly()} value={form.quien} onChange={e => setForm(p => ({ ...p, quien: e.target.value }))} /></div>
             </div>
             <div className="iso-form-row">
-              <div className="iso-field"><label>¿A quién?</label><input type="text" placeholder="ej. Todo el personal" value={form.aQuien} onChange={e => setForm(p => ({ ...p, aQuien: e.target.value }))} /></div>
-              <div className="iso-field"><label>¿Cómo?</label><input type="text" placeholder="ej. Correo, reunión, cartelera" value={form.como} onChange={e => setForm(p => ({ ...p, como: e.target.value }))} /></div>
+              <div className="iso-field"><label>¿A quién?</label><input type="text" placeholder="ej. Todo el personal" readOnly={isReadOnly()} value={form.aQuien} onChange={e => setForm(p => ({ ...p, aQuien: e.target.value }))} /></div>
+              <div className="iso-field"><label>¿Cómo?</label><input type="text" placeholder="ej. Correo, reunión, cartelera" readOnly={isReadOnly()} value={form.como} onChange={e => setForm(p => ({ ...p, como: e.target.value }))} /></div>
             </div>
             <div className="iso-form-row">
               <div className="iso-field"><label>Tipo</label>
-                <select value={form.tipo} onChange={e => setForm(p => ({ ...p, tipo: e.target.value as any }))}>
+                <select value={form.tipo} disabled={isReadOnly()} onChange={e => setForm(p => ({ ...p, tipo: e.target.value as any }))}>
                   <option>Interna</option><option>Externa</option>
                 </select>
               </div>
               <div className="iso-field"><label>Estado</label>
-                <select value={form.estado} onChange={e => setForm(p => ({ ...p, estado: e.target.value as any }))}>
+                <select value={form.estado} disabled={isReadOnly()} onChange={e => setForm(p => ({ ...p, estado: e.target.value as any }))}>
                   <option>Activo</option><option>Revisión</option><option>Inactivo</option>
                 </select>
               </div>
             </div>
             <div className="iso-modal__footer">
               <button className="iso-btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="iso-btn-primary" onClick={guardar} disabled={!form.que || !form.quien}>＋ Guardar</button>
+              <button className="iso-btn-primary" onClick={guardar} disabled={!form.que || !form.quien || !canCreate} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Guardar</button>
             </div>
           </div>
         </div>

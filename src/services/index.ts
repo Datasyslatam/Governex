@@ -95,17 +95,64 @@ export const authService = {
   login: async (email: string, password: string) => {
     const data = await api.post<{
       token: string;
-      user: { id: number; nombre: string; email: string; rol: string };
+      user: { id: number; nombre: string; email: string; rol: string; permissions?: string[] };
       tenant: TenantInfo;
-    }>('/api/auth/login', { email, password }, true) // skipSessionModal: un 401 aquí es credencial inválida, no sesión expirada
+    }>('/api/auth/login', { email, password }, true)
     saveToken(data.token)
-    // Se devuelven user y tenant por separado; el llamador (LoginPage)
-    // decide cómo combinarlos para AuthContext. Nunca se persiste ni
-    // reenvía tenant.id como si fuera información editable del cliente:
-    // es solo el nombre que el backend ya validó para mostrarlo en UI.
     return { user: data.user, tenant: data.tenant }
   },
-  logout: () => clearToken(),
+  logout: async () => {
+    try {
+      await api.post('/api/auth/logout', {})
+    } catch (err) {
+      console.error('Error logging out on backend:', err)
+    } finally {
+      clearToken()
+    }
+  },
+}
+
+export interface Usuario {
+  id: number;
+  nombre: string;
+  email: string;
+  rol_id: number;
+  rol: string;
+  activo: boolean;
+  tiene_permisos_personalizados: boolean;
+  permisos_ids: number[];
+}
+
+export interface PermisoItem {
+  id: number;
+  recurso: string;
+  accion: string;
+}
+
+export interface RoleItem {
+  id: number;
+  nombre: string;
+}
+
+export interface LogActividad {
+  id: number;
+  usuario_nombre: string;
+  usuario_email: string;
+  usuario_rol: string;
+  accion: string;
+  recurso: string;
+  detalle: string;
+  fecha_hora: string;
+}
+
+export const usuariosService = {
+  getAll: () => api.get<Usuario[]>('/api/auth/users'),
+  getRoles: () => api.get<RoleItem[]>('/api/auth/roles'),
+  getPermisos: () => api.get<PermisoItem[]>('/api/auth/permisos'),
+  create: (body: any) => api.post<Usuario>('/api/auth/users', body),
+  update: (id: number, body: any) => api.put<{ success: boolean }>(`/api/auth/users/${id}`, body),
+  delete: (id: number) => api.delete<{ success: boolean; message?: string }>(`/api/auth/users/${id}`),
+  getActivityLogs: () => api.get<LogActividad[]>('/api/auth/activity-logs'),
 }
 
 // ── RIESGOS ────────────────────────────────────────────────

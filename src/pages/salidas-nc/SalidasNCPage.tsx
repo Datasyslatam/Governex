@@ -2,10 +2,11 @@ import React, { useState } from 'react'
 import '../iso-module.css'
 import { useFetch } from '../../hooks/useFetch'
 import { salidasNCService } from '../../services'
-
-const empty = { codigo: '', descripcion: '', proceso: '', detectadoEn: 'Inspección final' as const, disposicion: 'Reparar' as const, responsable: '', fecha: '', accionTomada: '', verificadoPor: '', estado: 'Abierta' as const }
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 
 const SalidasNCPage: React.FC = () => {
+  const { canEdit, isReadOnly } = usePermissions('salidas_nc')
   const { data: itemsDB, loading, refetch } = useFetch(salidasNCService.getAll, [])
   const items = itemsDB.map((r: any) => ({
     id: r.id, codigo: r.codigo ?? '', descripcion: r.descripcion, proceso: r.proceso ?? '',
@@ -69,7 +70,7 @@ const SalidasNCPage: React.FC = () => {
             <option value="todos">Todos</option><option>Abierta</option><option>En tratamiento</option><option>Cerrada</option>
           </select>
         </div>
-        <button className="iso-btn-primary" onClick={() => setShowModal(true)}>＋ Registrar salida NC</button>
+        <button className="iso-btn-primary" onClick={() => setShowModal(true)} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Registrar salida NC</button>
       </div>
 
       <div className="iso-table-wrapper">
@@ -90,7 +91,11 @@ const SalidasNCPage: React.FC = () => {
                 <td>{r.fecha}</td>
                 <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>{r.accionTomada}</td>
                 <td><span className={`iso-badge ${r.estado === 'Cerrada' ? 'verde' : r.estado === 'En tratamiento' ? 'amarillo' : 'rojo'}`}>{r.estado}</span></td>
-                <td><button className="iso-btn-icon danger" onClick={() => eliminar(r.id)}>🗑️</button></td>
+                <td>
+                  <PermissionGuard recurso="salidas_nc" accion="eliminar" mode="hide">
+                    <button className="iso-btn-icon danger" onClick={() => eliminar(r.id)}>🗑️</button>
+                  </PermissionGuard>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -102,38 +107,38 @@ const SalidasNCPage: React.FC = () => {
           <div className="iso-modal" onClick={e => e.stopPropagation()}>
             <h2>➕ Registrar salida no conforme</h2>
             <div className="iso-form-row">
-              <div className="iso-field"><label>Código</label><input type="text" placeholder="ej. SNC-2025-003" value={form.codigo} onChange={e => setForm(p => ({ ...p, codigo: e.target.value }))} /></div>
-              <div className="iso-field"><label>Proceso</label><input type="text" value={form.proceso} onChange={e => setForm(p => ({ ...p, proceso: e.target.value }))} /></div>
+              <div className="iso-field"><label>Código</label><input type="text" placeholder="ej. SNC-2025-003" value={form.codigo} onChange={e => setForm(p => ({ ...p, codigo: e.target.value }))} disabled={!canEdit} /></div>
+              <div className="iso-field"><label>Proceso</label><input type="text" value={form.proceso} onChange={e => setForm(p => ({ ...p, proceso: e.target.value }))} disabled={!canEdit} /></div>
             </div>
-            <div className="iso-field"><label>Descripción de la no conformidad *</label><textarea rows={2} value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} /></div>
+            <div className="iso-field"><label>Descripción de la no conformidad *</label><textarea rows={2} value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} disabled={!canEdit} /></div>
             <div className="iso-form-row">
               <div className="iso-field"><label>Detectado en</label>
-                <select value={form.detectadoEn} onChange={e => setForm(p => ({ ...p, detectadoEn: e.target.value as any }))}>
+                <select value={form.detectadoEn} onChange={e => setForm(p => ({ ...p, detectadoEn: e.target.value as any }))} disabled={!canEdit}>
                   <option>Producción</option><option>Inspección final</option><option>Entrega</option><option>Postventa</option><option>Proveedor</option>
                 </select>
               </div>
               <div className="iso-field"><label>Disposición</label>
-                <select value={form.disposicion} onChange={e => setForm(p => ({ ...p, disposicion: e.target.value as any }))}>
+                <select value={form.disposicion} onChange={e => setForm(p => ({ ...p, disposicion: e.target.value as any }))} disabled={!canEdit}>
                   <option>Reparar</option><option>Reprocesar</option><option>Concesión al cliente</option><option>Devolver al proveedor</option><option>Desechar</option>
                 </select>
               </div>
             </div>
-            <div className="iso-field"><label>Acción tomada</label><textarea rows={2} value={form.accionTomada} onChange={e => setForm(p => ({ ...p, accionTomada: e.target.value }))} /></div>
+            <div className="iso-field"><label>Acción tomada</label><textarea rows={2} value={form.accionTomada} onChange={e => setForm(p => ({ ...p, accionTomada: e.target.value }))} disabled={!canEdit} /></div>
             <div className="iso-form-row">
-              <div className="iso-field"><label>Responsable</label><input type="text" value={form.responsable} onChange={e => setForm(p => ({ ...p, responsable: e.target.value }))} /></div>
-              <div className="iso-field"><label>Fecha</label><input type="date" value={form.fecha} onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} /></div>
+              <div className="iso-field"><label>Responsable</label><input type="text" value={form.responsable} onChange={e => setForm(p => ({ ...p, responsable: e.target.value }))} disabled={!canEdit} /></div>
+              <div className="iso-field"><label>Fecha</label><input type="date" value={form.fecha} onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} disabled={!canEdit} /></div>
             </div>
             <div className="iso-form-row">
-              <div className="iso-field"><label>Verificado por</label><input type="text" value={form.verificadoPor} onChange={e => setForm(p => ({ ...p, verificadoPor: e.target.value }))} /></div>
+              <div className="iso-field"><label>Verificado por</label><input type="text" value={form.verificadoPor} onChange={e => setForm(p => ({ ...p, verificadoPor: e.target.value }))} disabled={!canEdit} /></div>
               <div className="iso-field"><label>Estado</label>
-                <select value={form.estado} onChange={e => setForm(p => ({ ...p, estado: e.target.value as any }))}>
+                <select value={form.estado} onChange={e => setForm(p => ({ ...p, estado: e.target.value as any }))} disabled={!canEdit}>
                   <option>Abierta</option><option>En tratamiento</option><option>Cerrada</option>
                 </select>
               </div>
             </div>
             <div className="iso-modal__footer">
               <button className="iso-btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="iso-btn-primary" onClick={guardar} disabled={!form.descripcion}>＋ Guardar</button>
+              <button className="iso-btn-primary" onClick={guardar} disabled={!form.descripcion || !canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Guardar</button>
             </div>
           </div>
         </div>

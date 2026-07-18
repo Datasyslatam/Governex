@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import './MatrizCargosPage.css'
 import { useAIAnalysis, FilaMatrizCargos, TipoProceso } from '../../context/AIAnalysisContext'
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 
 /* ══════════════════════════════════════════════════════════════
    LISTA PREDEFINIDA DE CLÁUSULAS ISO 9001:2015
@@ -60,6 +62,7 @@ const MatrizCargosPage: React.FC<MatrizCargosProps> = ({ isSubTab }) => {
     analysis,
     updateFilaMatrizCargos, addFilaMatrizCargos, removeFilaMatrizCargos,
   } = useAIAnalysis()
+  const { canEdit, canCreate, canDelete } = usePermissions('procesos')
 
   const filas = analysis?.matrizCargos ?? []         // ← sin useState local ni useEffect de sync
   const [editingCell, setEditing]     = useState<{ id: number; col: ColKey } | null>(null)
@@ -175,7 +178,7 @@ const MatrizCargosPage: React.FC<MatrizCargosProps> = ({ isSubTab }) => {
               </select>
             </div>
             <div className="cargos-matriz-actions">
-              <button className="btn-primary" onClick={() => setShowAddModal(true)}>＋ Agregar cargo</button>
+              <button className="btn-primary" onClick={() => setShowAddModal(true)} disabled={!canCreate} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Agregar cargo</button>
             </div>
           </div>
 
@@ -212,7 +215,7 @@ const MatrizCargosPage: React.FC<MatrizCargosProps> = ({ isSubTab }) => {
 
                       if (col.key === 'actividades') {
                         return (
-                          <td key={col.key} onClick={() => !isEditing && startEdit(fila.id, col.key, fila)} style={{ cursor: 'pointer' }}>
+                          <td key={col.key} onClick={canEdit ? (() => !isEditing && startEdit(fila.id, col.key, fila)) : undefined} style={{ cursor: canEdit ? 'pointer' : 'default' }} title={!canEdit ? 'Tu rol no tiene permiso para editar' : undefined}>
                             {isEditing ? (
                               <div className="cargos-cell-edit" onClick={e => e.stopPropagation()}>
                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
@@ -221,19 +224,19 @@ const MatrizCargosPage: React.FC<MatrizCargosProps> = ({ isSubTab }) => {
                                       <input type="text" value={act} onChange={e => {
                                         const next = [...editActividades]; next[ai] = e.target.value; setEditActividades(next)
                                       }} style={{ flex: 1, fontSize: '0.8rem', padding: '0.25rem 0.35rem', border: '1px solid #cbd5e1', borderRadius: '3px' }} />
-                                      <button className="btn-icon danger" onClick={() => setEditActividades(prev => prev.filter((_, i) => i !== ai))} title="Quitar" style={{ fontSize: '0.7rem', padding: '0.15rem 0.3rem' }}>✕</button>
+                                      <button className="btn-icon danger" onClick={() => setEditActividades(prev => prev.filter((_, i) => i !== ai))} title="Quitar" style={{ fontSize: '0.7rem', padding: '0.15rem 0.3rem' }} disabled={!canEdit}>✕</button>
                                     </div>
                                   ))}
-                                  <button className="btn-icon" onClick={() => setEditActividades(prev => [...prev, ''])} style={{ fontSize: '0.72rem', alignSelf: 'flex-start' }}>＋ Actividad</button>
+                                  <button className="btn-icon" onClick={() => setEditActividades(prev => [...prev, ''])} style={{ fontSize: '0.72rem', alignSelf: 'flex-start' }} disabled={!canEdit}>＋ Actividad</button>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                  <button className="btn-icon" onClick={commitEdit} title="Guardar">✔</button>
+                                  <button className="btn-icon" onClick={commitEdit} title="Guardar" disabled={!canEdit}>✔</button>
                                   <button className="btn-icon" onClick={cancelEdit} title="Cancelar">✕</button>
                                 </div>
                               </div>
                             ) : Array.isArray(fila.actividades) && fila.actividades.length > 0
                               ? <ul className="cargos-actividades-list">{fila.actividades.map((a, i) => <li key={i}>{a}</li>)}</ul>
-                              : <span className="cargos-cell-empty">— clic para editar</span>
+                              : (canEdit ? <span className="cargos-cell-empty">— clic para editar</span> : null)
                             }
                           </td>
                         )
@@ -241,7 +244,7 @@ const MatrizCargosPage: React.FC<MatrizCargosProps> = ({ isSubTab }) => {
 
                       const val = fila[col.key] as string
                       return (
-                        <td key={col.key} onClick={() => !isEditing && startEdit(fila.id, col.key, fila)} style={{ cursor: 'pointer' }}>
+                        <td key={col.key} onClick={canEdit ? (() => !isEditing && startEdit(fila.id, col.key, fila)) : undefined} style={{ cursor: canEdit ? 'pointer' : 'default' }} title={!canEdit ? 'Tu rol no tiene permiso para editar' : undefined}>
                           {isEditing ? (
                             <div className="cargos-cell-edit" onClick={e => e.stopPropagation()}>
                               {col.key === 'clausulaDetalle' ? (
@@ -259,18 +262,20 @@ const MatrizCargosPage: React.FC<MatrizCargosProps> = ({ isSubTab }) => {
                                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitEdit() } if (e.key === 'Escape') cancelEdit() }} />
                               )}
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                <button className="btn-icon" onClick={commitEdit} title="Guardar (Enter)">✔</button>
+                                <button className="btn-icon" onClick={commitEdit} title="Guardar (Enter)" disabled={!canEdit}>✔</button>
                                 <button className="btn-icon" onClick={cancelEdit} title="Cancelar (Esc)">✕</button>
                               </div>
                             </div>
                           ) : val
                             ? <span className="cargos-cell-text">{val}</span>
-                            : <span className="cargos-cell-empty">— clic para editar</span>}
+                            : (canEdit ? <span className="cargos-cell-empty">— clic para editar</span> : null)}
                         </td>
                       )
                     })}
                     <td>
-                      <button className="btn-icon danger" onClick={() => deleteFila(fila.id)} title="Eliminar cargo">🗑️</button>
+                      <PermissionGuard recurso="procesos" accion="eliminar" mode="hide">
+                        <button className="btn-icon danger" onClick={() => deleteFila(fila.id)} title="Eliminar cargo">🗑️</button>
+                      </PermissionGuard>
                     </td>
                   </tr>
                 ))}
@@ -321,7 +326,7 @@ const MatrizCargosPage: React.FC<MatrizCargosProps> = ({ isSubTab }) => {
 
             <div className="cargos-modal__footer">
               <button className="btn-secondary" onClick={() => setShowAddModal(false)}>Cancelar</button>
-              <button className="btn-primary" onClick={addFila} disabled={!newFila.proceso.trim()}>＋ Agregar</button>
+              <button className="btn-primary" onClick={addFila} disabled={!canCreate || !newFila.proceso.trim()} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Agregar</button>
             </div>
           </div>
         </div>

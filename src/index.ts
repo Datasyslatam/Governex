@@ -2,6 +2,7 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import path from 'path'
+import { logActivityMiddleware } from './middleware/activityLogger'
 
 // ── Rutas existentes ────────────────────────────────────────
 import authRouter               from './routes/auth'
@@ -46,6 +47,7 @@ app.use(cors({
   credentials: true,
 }))
 app.use(express.json())
+app.use(logActivityMiddleware)
 
 // ── API Routes ──────────────────────────────────────────────
 app.use('/api/auth',                  authRouter)

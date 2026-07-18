@@ -10,10 +10,11 @@ import Swal from 'sweetalert2'
 import { DatosEmpresa } from '../../context/AIAnalysisContext'
 import './PlantillaOrganizacion.css'
 import logoGovernex from "../../assets/logo-governex.png";
-import { uploadFile } from '../../services/api'
+import { uploadFile, openSignedFile } from '../../services/api'
 
 /* ── Props ─────────────────────────────────────────────────── */
 interface Props {
+  currentDatos?: DatosEmpresa | null
   onDatosYOrganigramaListos: (
     datos: DatosEmpresa,
     orgBase64: string,
@@ -355,7 +356,7 @@ async function generarIdearioConIA(datos: Partial<DatosEmpresa>): Promise<Textos
 /* ══════════════════════════════════════════════════════════════
    COMPONENTE
    ══════════════════════════════════════════════════════════════ */
-const PlantillaOrganizacion: React.FC<Props> = ({ onDatosYOrganigramaListos, onCancel }) => {
+const PlantillaOrganizacion: React.FC<Props> = ({ currentDatos, onDatosYOrganigramaListos, onCancel }) => {
   const fileRef    = useRef<HTMLInputElement>(null)
   const orgFileRef = useRef<HTMLInputElement>(null)
 
@@ -505,18 +506,30 @@ const PlantillaOrganizacion: React.FC<Props> = ({ onDatosYOrganigramaListos, onC
 
   /* ── Analizar: combina datos + ideario editado ─────────── */
   const handleAnalizar = () => {
-  if (!parseado || !organigrama) return
+    if (!parseado || !organigrama) return
 
-  const datosFinales: DatosEmpresa = {
-    ...parseado.datos,
-    mision:           idearioEditado?.mision           ?? '',
-    vision:           idearioEditado?.vision           ?? '',
-    politicaCalidad:  idearioEditado?.politicaCalidad  ?? '',
-    organigramaUrl:    organigrama.url,
-    organigramaNombre: organigrama.nombre,
-  }
-
-  onDatosYOrganigramaListos(datosFinales, organigrama.b64, organigrama.mime, organigrama.nombre)
+    Swal.fire({
+      title: '¿Confirmar nuevo análisis?',
+      html: '<p style="font-size:0.875rem;line-height:1.5;color:#374151">Ten en cuenta que un nuevo análisis con la IA de Governex <b>puede generar un resultado diferente</b> a los actuales (como el PESTEL, DOFA o Caracterización existentes).</p>',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, analizar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#1a6ebd',
+      cancelButtonColor: '#6b7280'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const datosFinales: DatosEmpresa = {
+          ...parseado.datos,
+          mision:           idearioEditado?.mision           ?? '',
+          vision:           idearioEditado?.vision           ?? '',
+          politicaCalidad:  idearioEditado?.politicaCalidad  ?? '',
+          organigramaUrl:    organigrama.url,
+          organigramaNombre: organigrama.nombre,
+        }
+        onDatosYOrganigramaListos(datosFinales, organigrama.b64, organigrama.mime, organigrama.nombre)
+      }
+    })
   }
 
   const listo = !!parseado && !!organigrama && !!ideario
@@ -552,6 +565,49 @@ const PlantillaOrganizacion: React.FC<Props> = ({ onDatosYOrganigramaListos, onC
           </React.Fragment>
         ))}
       </div>
+
+      {/* Current Files if Analysis exists */}
+      {currentDatos && (currentDatos.pdfFormularioUrl || currentDatos.organigramaUrl) && (
+        <div className="plantilla-org__current-files">
+          <h4>📂 Archivos del Análisis Actual</h4>
+          <p className="plantilla-org__current-files-desc">Puedes descargar y revisar el formulario y organigrama que se encuentran activos actualmente en el SGC:</p>
+          <div className="plantilla-org__current-grid">
+            {currentDatos.pdfFormularioUrl && (
+              <div className="plantilla-org__current-file-card">
+                <span className="current-file-icon">📄</span>
+                <div className="current-file-info">
+                  <div className="current-file-title">Formulario de Contexto</div>
+                  <div className="current-file-name">{currentDatos.pdfFormularioNombre || 'plantilla_contexto.pdf'}</div>
+                </div>
+                <button
+                  type="button"
+                  className="btn-download-mini"
+                  onClick={() => openSignedFile(currentDatos.pdfFormularioUrl!)}
+                >
+                  Descargar ⬇️
+                </button>
+              </div>
+            )}
+            
+            {currentDatos.organigramaUrl && (
+              <div className="plantilla-org__current-file-card">
+                <span className="current-file-icon">🖼️</span>
+                <div className="current-file-info">
+                  <div className="current-file-title">Organigrama de la Empresa</div>
+                  <div className="current-file-name">{currentDatos.organigramaNombre || 'organigrama.pdf'}</div>
+                </div>
+                <button
+                  type="button"
+                  className="btn-download-mini"
+                  onClick={() => openSignedFile(currentDatos.organigramaUrl!)}
+                >
+                  Descargar ⬇️
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Botón descargar */}
       <button className="plantilla-org__btn-download" onClick={handleDescargar} disabled={generando}>

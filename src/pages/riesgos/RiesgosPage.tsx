@@ -8,6 +8,7 @@ import RiskSummaryBars from './components/RiskSummaryBars'
 import './RiesgosPage.css'
 import { useAIAnalysis, derivarRiesgos, RiesgoDerivado } from '../../context/AIAnalysisContext'
 import { riesgoEvidenciasService, uploadsService, riesgosService } from '../../services'
+import { usePermissions } from '../../hooks/usePermissions'
 import { ACCEPTED } from '../../constants/uploads'
 
 
@@ -123,6 +124,7 @@ interface EvidenciasCellProps {
 }
 
 const EvidenciasCell: React.FC<EvidenciasCellProps> = ({ riesgoCodigo, evidencias, onChange }) => {
+  const { canEdit } = usePermissions('riesgos')
   const inputRef              = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState<EvidenciaFile | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -182,7 +184,9 @@ const EvidenciasCell: React.FC<EvidenciasCellProps> = ({ riesgoCodigo, evidencia
     <div className="ev-cell">
       <div
         className="ev-dropzone"
-        onClick={() => !uploading && inputRef.current?.click()}
+        onClick={canEdit ? (() => !uploading && inputRef.current?.click()) : undefined}
+        style={{ cursor: canEdit ? 'pointer' : 'default' }}
+        title={!canEdit ? 'Tu rol no tiene permiso para editar' : undefined}
         onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('ev-dropzone--over') }}
         onDragLeave={e => e.currentTarget.classList.remove('ev-dropzone--over')}
         onDrop={e => {
@@ -218,7 +222,7 @@ const EvidenciasCell: React.FC<EvidenciasCellProps> = ({ riesgoCodigo, evidencia
                 <span className="ev-item__name" title={f.name}>{f.name}</span>
                 <span className="ev-item__info">{fmtSize(f.size)} · {f.uploadedAt}</span>
               </div>
-              <button className="ev-item__remove" onClick={() => removeFile(f.id)} title="Quitar">✕</button>
+              <button className="ev-item__remove" onClick={() => removeFile(f.id)} title={canEdit ? "Quitar" : "Tu rol no tiene permiso para editar"} disabled={!canEdit}>✕</button>
             </li>
           ))}
         </ul>
@@ -258,6 +262,7 @@ function eficaciaLabel(v: number) {
 }
 
 const EficaciaCell: React.FC<EficaciaCellProps> = ({ value, onChange }) => {
+  const { canEdit } = usePermissions('riesgos')
   const [editing, setEditing] = useState(false)
   const [draft,   setDraft]   = useState(value)
   const variant = eficaciaVariant(value)
@@ -294,8 +299,9 @@ const EficaciaCell: React.FC<EficaciaCellProps> = ({ value, onChange }) => {
         ) : (
           <button
             className={`ef-badge ef-badge--${variant}`}
-            onClick={() => { setDraft(value); setEditing(true) }}
-            title="Clic para editar porcentaje"
+            onClick={canEdit ? (() => { setDraft(value); setEditing(true) }) : undefined}
+            title={canEdit ? "Clic para editar porcentaje" : "Tu rol no tiene permiso para editar"}
+            disabled={!canEdit}
           >
             {value}% · {eficaciaLabel(value)}
           </button>
@@ -308,6 +314,7 @@ const EficaciaCell: React.FC<EficaciaCellProps> = ({ value, onChange }) => {
 /* ── Componente principal ────────────────────────────────────── */
 const RiesgosPage: React.FC = () => {
   const { analysis, actividades } = useAIAnalysis()
+  const { canEdit, canCreate } = usePermissions('riesgos')
 
   const riesgos: RiesgoDerivado[] = useMemo(
     () => (analysis ? derivarRiesgos(analysis, actividades) : []),
@@ -550,7 +557,8 @@ const RiesgosPage: React.FC = () => {
             </div>
             <button
               className="iso-btn-secondary"
-              disabled={confirmandoTodos || riesgosFinal.every(r => confirmados[r.codigo])}
+              disabled={!canCreate || confirmandoTodos || riesgosFinal.every(r => confirmados[r.codigo])}
+              title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}
               onClick={confirmarTodos}
             >
               {confirmandoTodos ? 'Guardando...' : '✅ Confirmar todos los borradores'}
@@ -652,6 +660,8 @@ const RiesgosPage: React.FC = () => {
                           className={`risk-table__estado-select risk-table__estado-select--${r.estado.toLowerCase()}`}
                           value={r.estado}
                           onChange={e => changeEstado(r.codigo, e.target.value as RiesgoDerivado['estado'])}
+                          disabled={!canEdit}
+                          title={!canEdit ? 'Tu rol no tiene permiso para editar' : undefined}
                         >
                           <option value="MONITOREO">MONITOREO</option>
                           <option value="TRATAMIENTO">TRATAMIENTO</option>
@@ -670,14 +680,15 @@ const RiesgosPage: React.FC = () => {
                                 if (e.key === 'Escape') setEditingId(null)
                               }}
                             />
-                            <button onClick={() => saveEdit(r.codigo)}>✔</button>
+                            <button onClick={() => saveEdit(r.codigo)} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>✔</button>
                             <button onClick={() => setEditingId(null)}>✕</button>
                           </div>
                         ) : (
                           <span
                             className="risk-table__responsable"
-                            onClick={() => { setEditingId(r.codigo); setEditValue(r.responsable) }}
-                            title="Clic para editar"
+                            onClick={canEdit ? (() => { setEditingId(r.codigo); setEditValue(r.responsable) }) : undefined}
+                            title={canEdit ? "Clic para editar" : "Tu rol no tiene permiso para editar"}
+                            style={{ cursor: canEdit ? 'pointer' : 'default' }}
                           >
                             {r.responsable}
                           </span>
@@ -708,9 +719,9 @@ const RiesgosPage: React.FC = () => {
                         ) : (
                           <button
                             className="risk-table__bd-confirm-btn"
-                            disabled={estaGuardando}
+                            disabled={!canCreate || estaGuardando}
                             onClick={() => confirmarRiesgo(r)}
-                            title="Guardar este riesgo/oportunidad en la base de datos"
+                            title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : "Guardar este riesgo/oportunidad en la base de datos"}
                           >
                             {estaGuardando ? '⏳' : '💾 Confirmar'}
                           </button>

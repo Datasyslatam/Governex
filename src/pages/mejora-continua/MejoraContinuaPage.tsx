@@ -2,10 +2,13 @@ import React, { useState } from 'react'
 import '../iso-module.css'
 import { useFetch } from '../../hooks/useFetch'
 import { mejoraContinuaService } from '../../services'
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 
 const empty = { codigo: '', titulo: '', origen: 'Sugerencia' as const, proceso: '', descripcion: '', beneficioEsperado: '', responsable: '', fechaInicio: '', fechaCierre: '', avancePct: 0, estado: 'Propuesta' as const }
 
 const MejoraContinuaPage: React.FC = () => {
+  const { canEdit, isReadOnly } = usePermissions('mejoras_continuas')
   const { data: itemsDB, loading, refetch } = useFetch(mejoraContinuaService.getAll, [])
   const items = itemsDB.map((r: any) => ({
     id: r.id, codigo: r.codigo, titulo: r.titulo, origen: r.origen, proceso: r.proceso ?? '',
@@ -80,7 +83,7 @@ const MejoraContinuaPage: React.FC = () => {
             <option>Propuesta</option><option>Aprobada</option><option>En ejecución</option><option>Completada</option><option>Cancelada</option>
           </select>
         </div>
-        <button className="iso-btn-primary" onClick={() => setShowModal(true)}>＋ Nueva iniciativa</button>
+        <button className="iso-btn-primary" onClick={() => setShowModal(true)} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Nueva iniciativa</button>
       </div>
 
       <div className="iso-table-wrapper">
@@ -108,7 +111,11 @@ const MejoraContinuaPage: React.FC = () => {
                   </div>
                 </td>
                 <td><span className={`iso-badge ${r.estado === 'Completada' ? 'verde' : r.estado === 'En ejecución' ? 'azul' : r.estado === 'Aprobada' ? 'amarillo' : r.estado === 'Cancelada' ? 'rojo' : 'gris'}`}>{r.estado}</span></td>
-                <td><button className="iso-btn-icon danger" onClick={() => eliminar(r.id)}>🗑️</button></td>
+                <td>
+                  <PermissionGuard recurso="mejoras_continuas" accion="eliminar" mode="hide">
+                    <button className="iso-btn-icon danger" onClick={() => eliminar(r.id)}>🗑️</button>
+                  </PermissionGuard>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -120,35 +127,35 @@ const MejoraContinuaPage: React.FC = () => {
           <div className="iso-modal" onClick={e => e.stopPropagation()}>
             <h2>➕ Nueva iniciativa de mejora</h2>
             <div className="iso-form-row">
-              <div className="iso-field"><label>Código</label><input type="text" placeholder="ej. MC-2025-004" value={form.codigo} onChange={e => setForm(p => ({ ...p, codigo: e.target.value }))} /></div>
+              <div className="iso-field"><label>Código</label><input type="text" placeholder="ej. MC-2025-004" value={form.codigo} onChange={e => setForm(p => ({ ...p, codigo: e.target.value }))} disabled={!canEdit} /></div>
               <div className="iso-field"><label>Origen</label>
-                <select value={form.origen} onChange={e => setForm(p => ({ ...p, origen: e.target.value as any }))}>
+                <select value={form.origen} onChange={e => setForm(p => ({ ...p, origen: e.target.value as any }))} disabled={!canEdit}>
                   <option>Auditoría</option><option>Indicador</option><option>Revisión dirección</option><option>Sugerencia</option><option>Análisis de datos</option><option>Quejas cliente</option>
                 </select>
               </div>
             </div>
-            <div className="iso-field"><label>Título de la iniciativa *</label><input type="text" value={form.titulo} onChange={e => setForm(p => ({ ...p, titulo: e.target.value }))} /></div>
+            <div className="iso-field"><label>Título de la iniciativa *</label><input type="text" value={form.titulo} onChange={e => setForm(p => ({ ...p, titulo: e.target.value }))} disabled={!canEdit} /></div>
             <div className="iso-form-row">
-              <div className="iso-field"><label>Proceso</label><input type="text" value={form.proceso} onChange={e => setForm(p => ({ ...p, proceso: e.target.value }))} /></div>
-              <div className="iso-field"><label>Responsable</label><input type="text" value={form.responsable} onChange={e => setForm(p => ({ ...p, responsable: e.target.value }))} /></div>
+              <div className="iso-field"><label>Proceso</label><input type="text" value={form.proceso} onChange={e => setForm(p => ({ ...p, proceso: e.target.value }))} disabled={!canEdit} /></div>
+              <div className="iso-field"><label>Responsable</label><input type="text" value={form.responsable} onChange={e => setForm(p => ({ ...p, responsable: e.target.value }))} disabled={!canEdit} /></div>
             </div>
-            <div className="iso-field"><label>Descripción</label><textarea rows={2} value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} /></div>
-            <div className="iso-field"><label>Beneficio esperado</label><textarea rows={2} value={form.beneficioEsperado} onChange={e => setForm(p => ({ ...p, beneficioEsperado: e.target.value }))} /></div>
+            <div className="iso-field"><label>Descripción</label><textarea rows={2} value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} disabled={!canEdit} /></div>
+            <div className="iso-field"><label>Beneficio esperado</label><textarea rows={2} value={form.beneficioEsperado} onChange={e => setForm(p => ({ ...p, beneficioEsperado: e.target.value }))} disabled={!canEdit} /></div>
             <div className="iso-form-row">
-              <div className="iso-field"><label>Fecha inicio</label><input type="date" value={form.fechaInicio} onChange={e => setForm(p => ({ ...p, fechaInicio: e.target.value }))} /></div>
-              <div className="iso-field"><label>Fecha cierre</label><input type="date" value={form.fechaCierre} onChange={e => setForm(p => ({ ...p, fechaCierre: e.target.value }))} /></div>
+              <div className="iso-field"><label>Fecha inicio</label><input type="date" value={form.fechaInicio} onChange={e => setForm(p => ({ ...p, fechaInicio: e.target.value }))} disabled={!canEdit} /></div>
+              <div className="iso-field"><label>Fecha cierre</label><input type="date" value={form.fechaCierre} onChange={e => setForm(p => ({ ...p, fechaCierre: e.target.value }))} disabled={!canEdit} /></div>
             </div>
             <div className="iso-form-row">
-              <div className="iso-field"><label>Avance % (0-100)</label><input type="number" min={0} max={100} value={form.avancePct} onChange={e => setForm(p => ({ ...p, avancePct: Number(e.target.value) }))} /></div>
+              <div className="iso-field"><label>Avance % (0-100)</label><input type="number" min={0} max={100} value={form.avancePct} onChange={e => setForm(p => ({ ...p, avancePct: Number(e.target.value) }))} disabled={!canEdit} /></div>
               <div className="iso-field"><label>Estado</label>
-                <select value={form.estado} onChange={e => setForm(p => ({ ...p, estado: e.target.value as any }))}>
+                <select value={form.estado} onChange={e => setForm(p => ({ ...p, estado: e.target.value as any }))} disabled={!canEdit}>
                   <option>Propuesta</option><option>Aprobada</option><option>En ejecución</option><option>Completada</option><option>Cancelada</option>
                 </select>
               </div>
             </div>
             <div className="iso-modal__footer">
               <button className="iso-btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="iso-btn-primary" onClick={guardar} disabled={!form.titulo}>＋ Guardar</button>
+              <button className="iso-btn-primary" onClick={guardar} disabled={!form.titulo || !canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Guardar</button>
             </div>
           </div>
         </div>

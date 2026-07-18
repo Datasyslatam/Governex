@@ -26,7 +26,7 @@ import React, { useState } from 'react'
         // tenant solo se guarda para mostrarlo en UI (ej. nombre de la
         // empresa en el header); nunca se usa para filtrar datos ni se
         // reenvía al backend — eso siempre lo decide el JWT server-side.
-        login({ name: user.nombre, role: user.rol as any, tenant })
+        login({ name: user.nombre, role: user.rol as any, tenant, permissions: user.permissions })
         navigate('/dashboard')
       } catch (tenantErr: any) {
         // Las credenciales no son válidas como usuario de tenant. Antes de

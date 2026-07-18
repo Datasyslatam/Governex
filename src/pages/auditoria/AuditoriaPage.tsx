@@ -3,6 +3,7 @@ import './AuditoriaPage.css'
 import AuditCalendar from './components/AuditCalendar'
 import { useFetch } from '../../hooks/useFetch'
 import { auditoriasService, Auditoria, Hallazgo } from '../../services'
+import { usePermissions } from '../../hooks/usePermissions'
 
 type Tab = 'programa' | 'auditorias' | 'hallazgos'
 
@@ -29,6 +30,7 @@ const formatFecha = (iso: string) => {
 }
 
 const AuditoriaPage: React.FC = () => {
+  const { canEdit, isReadOnly } = usePermissions('auditorias')
   const [activeTab, setActiveTab]     = useState<Tab>('programa')
   const [viewMode, setViewMode]       = useState<'table' | 'calendar'>('table')
   const [showModal, setShowModal]           = useState(false)
@@ -157,7 +159,7 @@ const AuditoriaPage: React.FC = () => {
           <p className="audit-page__subtitle">Programa anual, planes de auditoría y gestión de hallazgos</p>
         </div>
         <div className="audit-page__actions">
-          <button className="btn btn--primary" onClick={() => { setProgramaForm(emptyPrograma); setShowProgramaModal(true) }}>+ Nuevo Programa Anual</button>
+          <button className="btn btn--primary" onClick={() => { setProgramaForm(emptyPrograma); setShowProgramaModal(true) }} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>+ Nuevo Programa Anual</button>
         </div>
       </header>
 
@@ -244,7 +246,7 @@ const AuditoriaPage: React.FC = () => {
                     <option value="Cerrada">Cerrada</option>
                   </select>
                 </div>
-                <button className="btn btn--primary audit-btn-small" onClick={openCreate}>+ Nueva Auditoría</button>
+                <button className="btn btn--primary audit-btn-small" onClick={openCreate} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>+ Nueva Auditoría</button>
               </div>
             </div>
 
@@ -276,7 +278,7 @@ const AuditoriaPage: React.FC = () => {
                             }`}>{aud.estado}</span>
                           </td>
                           <td className="audit-table__actions">
-                            <button className="audit-action-btn" title="Editar" onClick={() => openEdit(aud)}>✏️</button>
+                            <button className="audit-action-btn" title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : "Editar"} onClick={() => openEdit(aud)} disabled={!canEdit}>✏️</button>
                             <button className="audit-action-btn" title="Plan de auditoría">📋</button>
                             {aud.estado === 'Cerrada' && (
                               <button className="audit-action-btn" title="Informe final">📄</button>
@@ -372,7 +374,7 @@ const AuditoriaPage: React.FC = () => {
                 <label>Auditor Líder</label>
                 <select value={form.auditor_lider}
                   onChange={e => setForm(f => ({ ...f, auditor_lider: e.target.value }))}
-                  className="filter-select form-control">
+                  className="filter-select form-control" disabled={!canEdit}>
                   {AUDITORES.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
               </div>
@@ -380,20 +382,20 @@ const AuditoriaPage: React.FC = () => {
                 <div className="form-group">
                   <label>Fecha de inicio</label>
                   <input type="date" className="filter-input form-control" value={form.fecha_inicio}
-                    onChange={e => setForm(f => ({ ...f, fecha_inicio: e.target.value }))} />
+                    onChange={e => setForm(f => ({ ...f, fecha_inicio: e.target.value }))} readOnly={isReadOnly()} />
                 </div>
                 <div className="form-group">
                   <label>Duración (días)</label>
                   <input type="number" min={1} max={30} className="filter-input form-control"
                     value={form.duracion_dias}
-                    onChange={e => setForm(f => ({ ...f, duracion_dias: Math.max(1, parseInt(e.target.value) || 1) }))} />
+                    onChange={e => setForm(f => ({ ...f, duracion_dias: Math.max(1, parseInt(e.target.value) || 1) }))} readOnly={isReadOnly()} />
                 </div>
               </div>
               <div className="form-group">
                 <label>Estado</label>
                 <select value={form.estado}
                   onChange={e => setForm(f => ({ ...f, estado: e.target.value as Auditoria['estado'] }))}
-                  className="filter-select form-control">
+                  className="filter-select form-control" disabled={!canEdit}>
                   <option value="Planificada">Planificada</option>
                   <option value="En Ejecución">En Ejecución</option>
                   <option value="Cerrada">Cerrada</option>
@@ -402,7 +404,7 @@ const AuditoriaPage: React.FC = () => {
             </div>
             <div className="modal-footer">
               <button className="btn btn--secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="btn btn--primary" onClick={handleSave} disabled={saving || !form.fecha_inicio}>
+              <button className="btn btn--primary" onClick={handleSave} disabled={saving || !form.fecha_inicio || !canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                 {saving ? 'Guardando...' : editingId ? 'Guardar Cambios' : 'Guardar Auditoría'}
               </button>
             </div>
@@ -424,13 +426,13 @@ const AuditoriaPage: React.FC = () => {
                   <input type="number" className="filter-input form-control"
                     value={programaForm.anio}
                     min={2000} max={2100}
-                    onChange={e => setProgramaForm(f => ({ ...f, anio: parseInt(e.target.value) || f.anio }))} />
+                    onChange={e => setProgramaForm(f => ({ ...f, anio: parseInt(e.target.value) || f.anio }))} readOnly={isReadOnly()} />
                 </div>
                 <div className="form-group">
                   <label>Estado</label>
                   <select className="filter-select form-control"
                     value={programaForm.estado}
-                    onChange={e => setProgramaForm(f => ({ ...f, estado: e.target.value as typeof f.estado }))}>
+                    onChange={e => setProgramaForm(f => ({ ...f, estado: e.target.value as typeof f.estado }))} disabled={!canEdit}>
                     <option value="En Curso">En Curso</option>
                     <option value="Cerrado">Cerrado</option>
                   </select>
@@ -441,21 +443,21 @@ const AuditoriaPage: React.FC = () => {
                 <input type="text" className="filter-input form-control"
                   placeholder="Ej: Verificar conformidad con los requisitos establecidos..."
                   value={programaForm.objetivo}
-                  onChange={e => setProgramaForm(f => ({ ...f, objetivo: e.target.value }))} />
+                  onChange={e => setProgramaForm(f => ({ ...f, objetivo: e.target.value }))} readOnly={isReadOnly()} />
               </div>
               <div className="form-group">
                 <label>Tiempo / Recursos</label>
                 <input type="text" className="filter-input form-control"
                   placeholder="Ej: 3 auditores, 12 meses"
                   value={programaForm.duracion}
-                  onChange={e => setProgramaForm(f => ({ ...f, duracion: e.target.value }))} />
+                  onChange={e => setProgramaForm(f => ({ ...f, duracion: e.target.value }))} readOnly={isReadOnly()} />
               </div>
             </div>
             <div className="modal-footer">
               <button className="btn btn--secondary" onClick={() => setShowProgramaModal(false)}>Cancelar</button>
               <button className="btn btn--primary"
                 onClick={handleSavePrograma}
-                disabled={savingPrograma || !programaForm.objetivo.trim()}>
+                disabled={savingPrograma || !programaForm.objetivo.trim() || !canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                 {savingPrograma ? 'Guardando...' : 'Guardar Programa'}
               </button>
             </div>

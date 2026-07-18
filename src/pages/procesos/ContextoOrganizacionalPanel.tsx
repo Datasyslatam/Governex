@@ -10,6 +10,7 @@
 
 import React, { useState } from 'react'
 import { DatosEmpresa } from '../../context/AIAnalysisContext'
+import { usePermissions } from '../../hooks/usePermissions'
 import './ContextoOrganizacionalPanel.css'
 
 /* ── Props ─────────────────────────────────────────────────── */
@@ -91,6 +92,7 @@ const ExpandableText: React.FC<{ label: string; text: string }> = ({ label, text
 const ContextoOrganizacionalPanel: React.FC<Props> = ({ datos, onEditar }) => {
   const tieneIdeario = !!(datos.mision || datos.vision || datos.politicaCalidad)
   const tieneNarrativo = !!(datos.contextoNarrativo)
+  const { canEdit } = usePermissions('procesos')
 
   return (
     <div className="ctx-panel">
@@ -112,7 +114,12 @@ const ContextoOrganizacionalPanel: React.FC<Props> = ({ datos, onEditar }) => {
           </div>
         </div>
         {onEditar && (
-          <button className="ctx-header__edit-btn" onClick={onEditar} title="Re-analizar con Governex IA">
+          <button
+            className="ctx-header__edit-btn"
+            onClick={canEdit ? onEditar : undefined}
+            disabled={!canEdit}
+            title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : "Re-analizar con Governex IA"}
+          >
             🔄 Re-analizar
           </button>
         )}

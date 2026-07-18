@@ -10,6 +10,8 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import '../iso-module.css'
 import './PlanificacionCambiosPage.css'
 import { planificacionCambiosService } from '../../services'
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 
 /* ═══════════════════════════════════════════════════════════════
    TIPOS
@@ -147,6 +149,8 @@ const FormModal: React.FC<FormModalProps> = ({ initial, cambios, onSave, onClose
   const set = useCallback((field: keyof FormData, value: string) =>
     setForm(p => ({ ...p, [field]: value })), [])
 
+  const { isReadOnly } = usePermissions('planificacion_cambios')
+
   const handleCategoria = useCallback((cat: CategoriaCambio) => {
     setForm(p => ({
       ...p,
@@ -188,7 +192,7 @@ const FormModal: React.FC<FormModalProps> = ({ initial, cambios, onSave, onClose
             <div className="iso-form-row">
               <div className="iso-field">
                 <label>Categoría del cambio *</label>
-                <select value={form.categoria} onChange={e => handleCategoria(e.target.value as CategoriaCambio)}>
+                <select value={form.categoria} onChange={e => handleCategoria(e.target.value as CategoriaCambio)} disabled={isReadOnly()}>
                   {CATEGORIAS.map(c => <option key={c} value={c}>{categoriaIcon(c)} {c}</option>)}
                 </select>
               </div>
@@ -205,7 +209,7 @@ const FormModal: React.FC<FormModalProps> = ({ initial, cambios, onSave, onClose
             <div className="iso-form-row iso-form-row--full">
               <div className="iso-field">
                 <label>Descripción del cambio *</label>
-                <textarea rows={3} value={form.descripcion}
+                <textarea rows={3} value={form.descripcion} readOnly={isReadOnly()}
                   onChange={e => set('descripcion', e.target.value)}
                   placeholder="Describe el cambio planificado..." />
               </div>
@@ -213,7 +217,7 @@ const FormModal: React.FC<FormModalProps> = ({ initial, cambios, onSave, onClose
             <div className="iso-form-row iso-form-row--full">
               <div className="iso-field">
                 <label>Justificación / Propósito *</label>
-                <textarea rows={2} value={form.justificacion}
+                <textarea rows={2} value={form.justificacion} readOnly={isReadOnly()}
                   onChange={e => set('justificacion', e.target.value)}
                   placeholder="¿Por qué se realiza este cambio?" />
               </div>
@@ -221,7 +225,7 @@ const FormModal: React.FC<FormModalProps> = ({ initial, cambios, onSave, onClose
             <div className="iso-form-row">
               <div className="iso-field">
                 <label>Impacto *</label>
-                <select value={form.impacto} onChange={e => set('impacto', e.target.value as ImpactoCambio)}>
+                <select value={form.impacto} onChange={e => set('impacto', e.target.value as ImpactoCambio)} disabled={isReadOnly()}>
                   <option value="Alto">Alto</option>
                   <option value="Medio">Medio</option>
                   <option value="Bajo">Bajo</option>
@@ -229,7 +233,7 @@ const FormModal: React.FC<FormModalProps> = ({ initial, cambios, onSave, onClose
               </div>
               <div className="iso-field">
                 <label>Estado *</label>
-                <select value={form.estado} onChange={e => set('estado', e.target.value as EstadoCambio)}>
+                <select value={form.estado} onChange={e => set('estado', e.target.value as EstadoCambio)} disabled={isReadOnly()}>
                   {ESTADOS.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
@@ -243,7 +247,7 @@ const FormModal: React.FC<FormModalProps> = ({ initial, cambios, onSave, onClose
             <div className="iso-form-row iso-form-row--full">
               <div className="iso-field">
                 <label>Acciones / Pasos para implementar el cambio</label>
-                <textarea rows={3} value={form.acciones}
+                <textarea rows={3} value={form.acciones} readOnly={isReadOnly()}
                   onChange={e => set('acciones', e.target.value)}
                   placeholder={'1. Levantar requerimientos\n2. Asignar recursos\n3. Ejecutar\n4. Verificar'} />
               </div>
@@ -251,7 +255,7 @@ const FormModal: React.FC<FormModalProps> = ({ initial, cambios, onSave, onClose
             <div className="iso-form-row iso-form-row--full">
               <div className="iso-field">
                 <label>Implicaciones si no se realiza el cambio</label>
-                <textarea rows={2} value={form.implicaciones}
+                <textarea rows={2} value={form.implicaciones} readOnly={isReadOnly()}
                   onChange={e => set('implicaciones', e.target.value)}
                   placeholder="Consecuencias de no ejecutar el cambio..." />
               </div>
@@ -259,19 +263,19 @@ const FormModal: React.FC<FormModalProps> = ({ initial, cambios, onSave, onClose
             <div className="iso-form-row">
               <div className="iso-field">
                 <label>Procesos afectados</label>
-                <input value={form.procesos_afectados} onChange={e => set('procesos_afectados', e.target.value)}
+                <input value={form.procesos_afectados} onChange={e => set('procesos_afectados', e.target.value)} readOnly={isReadOnly()}
                   placeholder="Ej: Gestión de Calidad, Producción..." />
               </div>
               <div className="iso-field">
                 <label>Documentos afectados</label>
-                <input value={form.documentos_afectados} onChange={e => set('documentos_afectados', e.target.value)}
+                <input value={form.documentos_afectados} onChange={e => set('documentos_afectados', e.target.value)} readOnly={isReadOnly()}
                   placeholder="Ej: Manual de Calidad, Procedimientos..." />
               </div>
             </div>
             <div className="iso-form-row">
               <div className="iso-field">
                 <label>Recursos necesarios</label>
-                <input value={form.recursos} onChange={e => set('recursos', e.target.value)}
+                <input value={form.recursos} onChange={e => set('recursos', e.target.value)} readOnly={isReadOnly()}
                   placeholder="Presupuesto, personal, equipos..." />
               </div>
             </div>
@@ -284,29 +288,29 @@ const FormModal: React.FC<FormModalProps> = ({ initial, cambios, onSave, onClose
             <div className="iso-form-row">
               <div className="iso-field">
                 <label>Responsable *</label>
-                <input value={form.responsable} onChange={e => set('responsable', e.target.value)}
+                <input value={form.responsable} onChange={e => set('responsable', e.target.value)} readOnly={isReadOnly()}
                   placeholder="Director de Calidad, Gerente de TI..." />
               </div>
               <div className="iso-field">
                 <label>Aprobado por</label>
-                <input value={form.aprobado_por} onChange={e => set('aprobado_por', e.target.value)}
+                <input value={form.aprobado_por} onChange={e => set('aprobado_por', e.target.value)} readOnly={isReadOnly()}
                   placeholder="Alta dirección, Comité de Calidad..." />
               </div>
             </div>
             <div className="iso-form-row">
               <div className="iso-field">
                 <label>Fecha de inicio</label>
-                <input type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} />
+                <input type="date" value={form.fecha_inicio} onChange={e => set('fecha_inicio', e.target.value)} readOnly={isReadOnly()} />
               </div>
               <div className="iso-field">
                 <label>Fecha de finalización</label>
-                <input type="date" value={form.fecha_fin} onChange={e => set('fecha_fin', e.target.value)} />
+                <input type="date" value={form.fecha_fin} onChange={e => set('fecha_fin', e.target.value)} readOnly={isReadOnly()} />
               </div>
             </div>
             <div className="iso-form-row iso-form-row--full">
               <div className="iso-field">
                 <label>Observaciones / Evidencias</label>
-                <textarea rows={3} value={form.observaciones}
+                <textarea rows={3} value={form.observaciones} readOnly={isReadOnly()}
                   onChange={e => set('observaciones', e.target.value)}
                   placeholder="Notas adicionales, resultados, lecciones aprendidas..." />
               </div>
@@ -316,7 +320,9 @@ const FormModal: React.FC<FormModalProps> = ({ initial, cambios, onSave, onClose
 
         <div className="iso-modal__footer">
           <button className="iso-btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="iso-btn-primary" onClick={handleGuardar}>💾 Guardar cambio</button>
+          {!isReadOnly() && (
+            <button className="iso-btn-primary" onClick={handleGuardar}>💾 Guardar cambio</button>
+          )}
         </div>
       </div>
     </div>
@@ -335,6 +341,7 @@ interface MatrizRowProps {
 
 const MatrizRow: React.FC<MatrizRowProps> = ({ cambio, onEdit, onDelete, onRetry }) => {
   const [expanded, setExpanded] = useState(false)
+  const { canEdit, canDelete } = usePermissions('planificacion_cambios')
 
   const diasRestantes = (() => {
     if (!cambio.fecha_fin) return null
@@ -383,11 +390,13 @@ const MatrizRow: React.FC<MatrizRowProps> = ({ cambio, onEdit, onDelete, onRetry
         <td onClick={e => e.stopPropagation()}>
           <div className="pc-matrix__actions">
             {cambio._sinGuardar && (
-              <button className="iso-btn-icon" title="Reintentar guardado en la base de datos"
-                onClick={() => onRetry(cambio)}>🔄</button>
+              <button className="iso-btn-icon" title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : "Reintentar guardado en la base de datos"}
+                onClick={() => onRetry(cambio)} disabled={!canEdit}>🔄</button>
             )}
-            <button className="iso-btn-icon" title="Editar" onClick={() => onEdit(cambio)}>✏️</button>
-            <button className="iso-btn-icon danger" title="Eliminar" onClick={() => onDelete(cambio.id)}>🗑️</button>
+            <button className="iso-btn-icon" title={!canEdit ? 'Tu rol no tiene permiso para editar' : "Editar"} onClick={() => onEdit(cambio)} disabled={!canEdit}>✏️</button>
+            <PermissionGuard recurso="planificacion_cambios" accion="eliminar" mode="hide">
+              <button className="iso-btn-icon danger" title="Eliminar" onClick={() => onDelete(cambio.id)}>🗑️</button>
+            </PermissionGuard>
           </div>
         </td>
       </tr>
@@ -462,6 +471,8 @@ const PlanificacionCambiosPage: React.FC = () => {
   const [filterCat,     setFilterCat]     = useState('todos')
   const [filterImpacto, setFilterImpacto] = useState('todos')
   const [search,        setSearch]        = useState('')
+
+  const { canCreate } = usePermissions('planificacion_cambios')
 
   /* ── Cargar desde BD ──────────────────────────────────── */
   useEffect(() => {
@@ -605,7 +616,7 @@ const PlanificacionCambiosPage: React.FC = () => {
           <p>Registro y seguimiento de todos los cambios planificados que afectan al SGC · Cláusula 6.3</p>
           <span className="iso-page__clause">Cláusula 6.3</span>
         </div>
-        <button className="iso-btn-primary pc-btn-add" onClick={() => { setEditItem(null); setShowForm(true) }}>
+        <button className="iso-btn-primary pc-btn-add" onClick={() => { setEditItem(null); setShowForm(true) }} disabled={!canCreate} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}>
           ➕ Registrar cambio
         </button>
       </header>

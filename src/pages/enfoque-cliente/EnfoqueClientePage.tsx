@@ -10,7 +10,8 @@ import {
 } from '../../utils/surveyPdf'
 import { useFetch } from '../../hooks/useFetch'
 import { pqrsBackendService, archivosEnfoqueService, respuestasEncuestaService, uploadsService } from '../../services'
-
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 /* ══════════════════════════════════════════════════════════════
    TIPOS LOCALES (sin persistencia en BD — solo estado en memoria)
    ══════════════════════════════════════════════════════════════ */
@@ -104,6 +105,7 @@ const DOFA_STYLE: Record<DofaEncuestaItem['tipo'], { icon: string; clase: string
 }
 
 const EnfoqueClientePage: React.FC = () => {
+  const { canEdit } = usePermissions('enfoque_cliente')
   const { datosEmpresa } = useAIAnalysis()
   const [activeTab, setActiveTab] = useState<'encuestas' | 'archivos'>('encuestas')
 
@@ -382,7 +384,7 @@ const EnfoqueClientePage: React.FC = () => {
             </div>
 
             {!loadingIA ? (
-              <button className="btn-ai-generate" onClick={generarEncuestas} disabled={loadingIA}>
+              <button className="btn-ai-generate" onClick={generarEncuestas} disabled={loadingIA || !canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                 {encuestas ? '🔄 Regenerar Encuestas' : '✨ Generar Encuestas con IA'}
               </button>
             ) : (
@@ -428,9 +430,9 @@ const EnfoqueClientePage: React.FC = () => {
                 <option value="PQRS">Documento de PQRS</option>
                 <option value="Otro">Otro documento</option>
               </select>
-              <label className="enf-upload-btn">
+              <label className="enf-upload-btn" title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                 {procesandoArchivos ? '⏳ Leyendo archivo(s)...' : '📎 Seleccionar archivo(s)'}
-                <input type="file" multiple accept="application/pdf" onChange={handleFileUpload} disabled={procesandoArchivos} style={{ display: 'none' }} />
+                <input type="file" multiple accept="application/pdf" onChange={handleFileUpload} disabled={procesandoArchivos || !canEdit} style={{ display: 'none' }} />
               </label>
             </div>
             <p className="enf-upload-hint">
@@ -459,7 +461,11 @@ const EnfoqueClientePage: React.FC = () => {
                         </td>
                         <td>{a.sizeKB} KB</td>
                         <td>{a.fecha}</td>
-                        <td><button className="btn-icon danger" onClick={() => eliminarArchivo(a.id)}>🗑️</button></td>
+                        <td>
+                          <PermissionGuard recurso="enfoque_cliente" accion="eliminar" mode="hide">
+                            <button className="btn-icon danger" onClick={() => eliminarArchivo(a.id)}>🗑️</button>
+                          </PermissionGuard>
+                        </td>
                       </tr>
                     )
                   })}
@@ -472,7 +478,7 @@ const EnfoqueClientePage: React.FC = () => {
           <div className="panel enf-pqrs-panel">
             <div className="enf-pqrs-panel__header">
               <h3>📨 Registro de PQRS</h3>
-              <button className="btn-primary" onClick={abrirModalPqrs}>＋ Agregar PQRS</button>
+              <button className="btn-primary" onClick={abrirModalPqrs} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Agregar PQRS</button>
             </div>
 
             {pqrsList.length === 0 ? (
@@ -488,7 +494,7 @@ const EnfoqueClientePage: React.FC = () => {
                       <td>{p.fecha}</td>
                       <td className="enf-table__desc">{p.descripcion}</td>
                       <td>
-                        <select value={p.estado} onChange={e => cambiarEstadoPqrs(p.id, e.target.value as EstadoPqrs)}>
+                        <select value={p.estado} onChange={e => cambiarEstadoPqrs(p.id, e.target.value as EstadoPqrs)} disabled={!canEdit}>
                           <option value="Abierta">Abierta</option>
                           <option value="En Proceso">En Proceso</option>
                           <option value="Cerrada">Cerrada</option>
@@ -496,7 +502,9 @@ const EnfoqueClientePage: React.FC = () => {
                       </td>
                       <td style={{ display: 'flex', gap: '0.3rem' }}>
                         <button className="btn-icon" title="Descargar PDF" onClick={() => descargarPqrsPDF(p)}>⬇️</button>
-                        <button className="btn-icon danger" onClick={() => eliminarPqrs(p.id)}>🗑️</button>
+                        <PermissionGuard recurso="enfoque_cliente" accion="eliminar" mode="hide">
+                          <button className="btn-icon danger" onClick={() => eliminarPqrs(p.id)}>🗑️</button>
+                        </PermissionGuard>
                       </td>
                     </tr>
                   ))}
@@ -515,7 +523,7 @@ const EnfoqueClientePage: React.FC = () => {
                   y {pqrsList.length} PQRS registradas.
                 </p>
               </div>
-              <button className="btn-ai-generate" onClick={analizarConIA} disabled={loadingAnalisis}>
+              <button className="btn-ai-generate" onClick={analizarConIA} disabled={loadingAnalisis || !canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                 {loadingAnalisis ? 'Analizando...' : (analisis ? '🔄 Reanalizar' : '🤖 Generar Análisis DOFA')}
               </button>
             </div>
@@ -564,7 +572,7 @@ const EnfoqueClientePage: React.FC = () => {
                   <div className="form-group">
                     <label>Tipo</label>
                     <select className="filter-input form-control" value={newPqrs.tipo}
-                      onChange={e => setNewPqrs(p => ({ ...p, tipo: e.target.value as TipoPqrs }))}>
+                      onChange={e => setNewPqrs(p => ({ ...p, tipo: e.target.value as TipoPqrs }))} disabled={!canEdit}>
                       <option value="Petición">Petición</option>
                       <option value="Queja">Queja</option>
                       <option value="Reclamo">Reclamo</option>
@@ -574,22 +582,22 @@ const EnfoqueClientePage: React.FC = () => {
                   <div className="form-group">
                     <label>Cliente / Proveedor</label>
                     <input type="text" className="filter-input form-control" placeholder="Nombre"
-                      value={newPqrs.origen} onChange={e => setNewPqrs(p => ({ ...p, origen: e.target.value }))} />
+                      value={newPqrs.origen} onChange={e => setNewPqrs(p => ({ ...p, origen: e.target.value }))} disabled={!canEdit} />
                   </div>
                   <div className="form-group">
                     <label>Fecha</label>
                     <input type="date" className="filter-input form-control"
-                      value={newPqrs.fecha} onChange={e => setNewPqrs(p => ({ ...p, fecha: e.target.value }))} />
+                      value={newPqrs.fecha} onChange={e => setNewPqrs(p => ({ ...p, fecha: e.target.value }))} disabled={!canEdit} />
                   </div>
                   <div className="form-group">
                     <label>Descripción</label>
                     <textarea className="filter-input form-control" rows={4}
-                      value={newPqrs.descripcion} onChange={e => setNewPqrs(p => ({ ...p, descripcion: e.target.value }))} />
+                      value={newPqrs.descripcion} onChange={e => setNewPqrs(p => ({ ...p, descripcion: e.target.value }))} disabled={!canEdit} />
                   </div>
                 </div>
                 <div className="modal-footer">
                   <button className="btn--secondary btn" onClick={cerrarModalPqrs}>Cancelar</button>
-                  <button className="btn-primary" onClick={agregarPqrs} disabled={!newPqrs.origen.trim() || !newPqrs.descripcion.trim()}>
+                  <button className="btn-primary" onClick={agregarPqrs} disabled={!newPqrs.origen.trim() || !newPqrs.descripcion.trim() || !canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                     Guardar
                   </button>
                 </div>

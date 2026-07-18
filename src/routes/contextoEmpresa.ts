@@ -2,7 +2,7 @@ import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/rbac'
-import { resolveFileUrl } from '../services/storageService'
+import { resolveFileUrl, deleteObject } from '../services/storageService'
 
 const router = Router()
 router.use(authMiddleware)
@@ -30,6 +30,14 @@ router.get('/datos', async (req: AuthRequest, res: Response) => {
   }
 })
 
+function cleanKey(url: string | null | undefined): string | null {
+  if (!url) return null
+  if (url.startsWith('/api/uploads/view/')) {
+    return url.slice('/api/uploads/view/'.length)
+  }
+  return url
+}
+
 // PUT /api/contexto-empresa/datos  (upsert simple: siempre inserta una nueva versión)
 router.put('/datos', requirePermission('contexto_empresa', 'editar'), async (req: AuthRequest, res: Response) => {
   const {
@@ -44,6 +52,28 @@ router.put('/datos', requirePermission('contexto_empresa', 'editar'), async (req
   }
 
   try {
+    const tenantId = req.user!.tenantId
+
+    // Borrar de R2 los archivos anteriores si han sido reemplazados
+    const { rows: prevRows } = await pool.query(
+      `SELECT pdf_formulario_url, organigrama_url FROM datos_empresa WHERE tenant_id = $1 ORDER BY actualizado_en DESC LIMIT 1`,
+      [tenantId]
+    )
+    const prevRow = prevRows[0]
+    if (prevRow) {
+      const oldPdfKey = cleanKey(prevRow.pdf_formulario_url)
+      const newPdfKey = cleanKey(pdfFormularioUrl)
+      if (oldPdfKey && oldPdfKey !== newPdfKey) {
+        await deleteObject(oldPdfKey)
+      }
+
+      const oldOrgKey = cleanKey(prevRow.organigrama_url)
+      const newOrgKey = cleanKey(organigramaUrl)
+      if (oldOrgKey && oldOrgKey !== newOrgKey) {
+        await deleteObject(oldOrgKey)
+      }
+    }
+
     const { rows } = await pool.query(
       `INSERT INTO datos_empresa
          (nombre_empresa, sector, tipo_empresa, tamano, ubicacion, ano_fundacion,
@@ -59,7 +89,7 @@ router.put('/datos', requirePermission('contexto_empresa', 'editar'), async (req
         cantidadEmpleados || null, alcanceSGC || null, certificaciones || null,
         parteInteresadas || null, contextoNarrativo || null,
         pdfFormularioUrl || null, pdfFormularioNombre || null,
-        organigramaUrl || null, organigramaNombre || null, req.user!.tenantId,
+        organigramaUrl || null, organigramaNombre || null, tenantId,
       ]
     )
     res.status(201).json(rows[0])
@@ -73,7 +103,21 @@ router.put('/datos', requirePermission('contexto_empresa', 'editar'), async (req
 // BUG CORREGIDO: antes borraba datos_empresa de TODOS los tenants sin filtro.
 router.delete('/datos', requirePermission('contexto_empresa', 'eliminar'), async (req: AuthRequest, res: Response) => {
   try {
-    await pool.query('DELETE FROM datos_empresa WHERE tenant_id = $1', [req.user!.tenantId])
+    const tenantId = req.user!.tenantId
+
+    // Eliminar de R2 todos los archivos asociados al tenant
+    const { rows: prevRows } = await pool.query(
+      `SELECT pdf_formulario_url, organigrama_url FROM datos_empresa WHERE tenant_id = $1`,
+      [tenantId]
+    )
+    for (const row of prevRows) {
+      const pdfKey = cleanKey(row.pdf_formulario_url)
+      if (pdfKey) await deleteObject(pdfKey)
+      const orgKey = cleanKey(row.organigrama_url)
+      if (orgKey) await deleteObject(orgKey)
+    }
+
+    await pool.query('DELETE FROM datos_empresa WHERE tenant_id = $1', [tenantId])
     res.status(204).send()
   } catch (err) {
     console.error(err)

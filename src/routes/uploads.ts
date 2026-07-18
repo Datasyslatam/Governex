@@ -3,6 +3,7 @@ import multer from 'multer'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { ACCEPTED_MIME_TYPES } from '../constants/uploads'
 import { uploadObject, resolveFileUrl, keyBelongsToTenant, getSignedDownloadUrl } from '../services/storageService'
+import { pool } from '../db'
 
 const router = Router()
 
@@ -54,7 +55,26 @@ router.post('/', (req: AuthRequest, res: Response) => {
 
     try {
       const tenantId = req.user!.tenantId
-      const key = await uploadObject(tenantId, req.file.originalname, req.file.mimetype, req.file.buffer)
+      const userId = req.user!.id
+      const userRole = req.user!.rol
+
+      const [tenantRes, userRes] = await Promise.all([
+        pool.query('SELECT nombre FROM tenants WHERE id = $1', [tenantId]),
+        pool.query('SELECT nombre FROM usuarios WHERE id = $1', [userId])
+      ])
+
+      const tenantNombre = tenantRes.rows[0]?.nombre || `tenant_${tenantId}`
+      const userNombre = userRes.rows[0]?.nombre || `usuario_${userId}`
+
+      const key = await uploadObject(
+        tenantId,
+        tenantNombre,
+        userNombre,
+        userRole,
+        req.file.originalname,
+        req.file.mimetype,
+        req.file.buffer
+      )
       // Se firma una primera URL de cortesía para que el frontend pueda
       // mostrar/previsualizar el archivo inmediatamente tras subirlo, sin
       // tener que hacer una segunda llamada. Para verlo más adelante

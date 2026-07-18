@@ -2,6 +2,8 @@ import React, { useState, useCallback, useRef } from 'react'
 import './ProveedoresPage.css'
 import { useFetch } from '../../hooks/useFetch'
 import { proveedoresService, Proveedor } from '../../services'
+import { usePermissions } from '../../hooks/usePermissions'
+import PermissionGuard from '../../components/ui/PermissionGuard'
 
 const TIPOS_SUMINISTRO = ['Materia Prima', 'Tecnología / Software', 'Transporte', 'Servicios', 'Otro']
 
@@ -10,6 +12,7 @@ const emptyEval = { evaluador: '', calidad: 80, entrega: 80, precio: 80, servici
 
 const ProveedoresPage: React.FC = () => {
   const { data: proveedores, loading, error, refetch } = useFetch(proveedoresService.getAll, [])
+  const { canEdit, canCreate, canDelete, isReadOnly } = usePermissions('proveedores')
 
   const [busqueda, setBusqueda]             = useState('')
   const [filtroEstado, setFiltroEstado]     = useState('')
@@ -164,7 +167,7 @@ const ProveedoresPage: React.FC = () => {
           <p className="prov-page__subtitle">Selección, evaluación y reevaluación de proveedores externos</p>
         </div>
         <div className="prov-page__actions">
-          <button className="btn btn--primary" onClick={abrirModalNuevo}>+ Nuevo Proveedor</button>
+          <button className="btn btn--primary" onClick={abrirModalNuevo} disabled={!canCreate} title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}>+ Nuevo Proveedor</button>
         </div>
       </header>
 
@@ -225,14 +228,16 @@ const ProveedoresPage: React.FC = () => {
                       </td>
                       <td className="prov-table__next">{prov.prox_eval || '—'}</td>
                       <td className="prov-table__actions">
-                        <button className="prov-action-btn btn-evaluar" title="Realizar Evaluación"
-                          onClick={() => abrirModalEval(prov)}>⭐ Evaluar</button>
+                        <button className="prov-action-btn btn-evaluar" title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : "Realizar Evaluación"}
+                          onClick={() => abrirModalEval(prov)} disabled={!canEdit}>⭐ Evaluar</button>
                         <button className="prov-action-btn" title="Historial"
                           onClick={() => abrirHistorial(prov)}>📜</button>
-                        <button className="prov-action-btn" title="Editar"
-                          onClick={() => editarProveedor(prov)}>✏️</button>
-                        <button className="prov-action-btn" title="Eliminar"
-                          onClick={() => eliminarProveedor(prov.id)}>🗑️</button>
+                        <button className="prov-action-btn" title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : "Editar"}
+                          onClick={() => editarProveedor(prov)} disabled={!canEdit}>✏️</button>
+                        <PermissionGuard recurso="proveedores" accion="eliminar" mode="hide">
+                          <button className="prov-action-btn" title="Eliminar"
+                            onClick={() => eliminarProveedor(prov.id)}>🗑️</button>
+                        </PermissionGuard>
                       </td>
                     </tr>
                   )
@@ -302,33 +307,33 @@ const ProveedoresPage: React.FC = () => {
             </div>
             <div className="modal-body">
               <label>NIT *</label>
-              <input type="text" className="input" disabled={!!editingId}
+              <input type="text" className="input" disabled={!!editingId} readOnly={isReadOnly()}
                 value={formData.nit || ''}
                 onChange={e => setFormData(f => ({ ...f, nit: e.target.value }))} />
               <label>Razón Social *</label>
-              <input type="text" className="input"
+              <input type="text" className="input" readOnly={isReadOnly()}
                 value={formData.razon || ''}
                 onChange={e => setFormData(f => ({ ...f, razon: e.target.value }))} />
               <label>Tipo de Suministro *</label>
-              <select className="input" value={formData.tipo || ''}
+              <select className="input" value={formData.tipo || ''} disabled={isReadOnly()}
                 onChange={e => setFormData(f => ({ ...f, tipo: e.target.value }))}>
                 <option value="">Seleccionar</option>
                 {TIPOS_SUMINISTRO.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
               <label>Periodicidad de Evaluación</label>
-              <select className="input" value={formData.periodicidad_evaluacion || 'Anual'}
+              <select className="input" value={formData.periodicidad_evaluacion || 'Anual'} disabled={isReadOnly()}
                 onChange={e => setFormData(f => ({ ...f, periodicidad_evaluacion: e.target.value as any }))}>
                 <option value="Anual">Anual</option>
                 <option value="Semestral">Semestral</option>
               </select>
               <label>Email de Contacto</label>
-              <input type="email" className="input" placeholder="proveedor@ejemplo.com"
+              <input type="email" className="input" placeholder="proveedor@ejemplo.com" readOnly={isReadOnly()}
                 value={formData.email || ''}
                 onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
             </div>
             <div className="modal-footer">
               <button className="btn btn--secondary" onClick={() => setShowModalNuevo(false)}>Cancelar</button>
-              <button className="btn btn--primary" onClick={guardarProveedor} disabled={saving}>
+              <button className="btn btn--primary" onClick={guardarProveedor} disabled={saving || (editingId ? !canEdit : !canCreate)} title={(editingId ? !canEdit : !canCreate) ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                 {saving ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
@@ -350,16 +355,16 @@ const ProveedoresPage: React.FC = () => {
               </p>
 
               <label>Evaluador</label>
-              <input type="text" className="input" placeholder="Nombre del evaluador"
+              <input type="text" className="input" placeholder="Nombre del evaluador" readOnly={isReadOnly()}
                 value={evalData.evaluador}
                 onChange={e => setEvalData(f => ({ ...f, evaluador: e.target.value }))} />
 
               <div style={{ background: 'var(--color-background-secondary)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
                 <p style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>Ingresa los datos para que Governex evalúe considerando historial, precios y tus puntajes preliminares.</p>
                 <label>Precio del Mercado Referencia ($)</label>
-                <input type="number" className="input" placeholder="Ej: 1500" value={evalData.precio_mercado} onChange={e => setEvalData(f => ({ ...f, precio_mercado: e.target.value }))} />
+                <input type="number" className="input" placeholder="Ej: 1500" value={evalData.precio_mercado} readOnly={isReadOnly()} onChange={e => setEvalData(f => ({ ...f, precio_mercado: e.target.value }))} />
                 <label>Precio del Proveedor ($)</label>
-                <input type="number" className="input" placeholder="Ej: 1600" value={evalData.precio_proveedor} onChange={e => setEvalData(f => ({ ...f, precio_proveedor: e.target.value }))} />
+                <input type="number" className="input" placeholder="Ej: 1600" value={evalData.precio_proveedor} readOnly={isReadOnly()} onChange={e => setEvalData(f => ({ ...f, precio_proveedor: e.target.value }))} />
               </div>
 
               {(['calidad', 'entrega', 'precio', 'servicio'] as const).map(campo => (
@@ -371,11 +376,11 @@ const ProveedoresPage: React.FC = () => {
               ))}
               
               <label>Debilidades / Plan de Acción</label>
-              <textarea className="input" rows={3} placeholder="Aspectos a mejorar..."
+              <textarea className="input" rows={3} placeholder="Aspectos a mejorar..." readOnly={isReadOnly()}
                 value={evalData.debilidades || ''}
                 onChange={e => setEvalData(f => ({ ...f, debilidades: e.target.value }))} />
 
-              <button className="btn btn--primary" style={{ width: '100%', marginTop: '0.5rem', marginBottom: '1rem', display: 'flex', justifyContent: 'center', gap: '0.5rem' }} onClick={generarEvalIA} disabled={generatingIA}>
+              <button className="btn btn--primary" style={{ width: '100%', marginTop: '0.5rem', marginBottom: '1rem', display: 'flex', justifyContent: 'center', gap: '0.5rem' }} onClick={generarEvalIA} disabled={generatingIA || !canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                 {generatingIA ? 'Analizando con Governex...' : '✨ Generar Análisis Governex'}
               </button>
 
@@ -389,7 +394,7 @@ const ProveedoresPage: React.FC = () => {
             </div>
             <div className="modal-footer">
               <button className="btn btn--secondary" onClick={() => setShowModalEval(false)}>Cancelar</button>
-              <button className="btn btn--primary" onClick={guardarEvaluacion} disabled={saving}>
+              <button className="btn btn--primary" onClick={guardarEvaluacion} disabled={saving || !canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                 {saving ? 'Guardando...' : 'Guardar Evaluación'}
               </button>
             </div>

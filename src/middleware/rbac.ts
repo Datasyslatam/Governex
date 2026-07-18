@@ -35,11 +35,12 @@ export function requirePermission(recurso: string, accion: Accion) {
     try {
       const { rows } = await pool.query(
         `SELECT 1
-         FROM rol_permisos rp
-         JOIN roles r     ON r.id = rp.rol_id
-         JOIN permisos p  ON p.id = rp.permiso_id
-         WHERE r.nombre = $1 AND p.recurso = $2 AND p.accion = $3`,
-        [rol, recurso, accion]
+         FROM usuarios u
+         JOIN permisos p ON p.recurso = $2 AND p.accion = $3
+         LEFT JOIN rol_permisos rp ON rp.rol_id = u.rol_id AND rp.permiso_id = p.id AND u.tiene_permisos_personalizados = false
+         LEFT JOIN usuario_permisos up ON up.usuario_id = u.id AND up.permiso_id = p.id AND u.tiene_permisos_personalizados = true
+         WHERE u.id = $1 AND (rp.permiso_id IS NOT NULL OR up.permiso_id IS NOT NULL)`,
+        [req.user!.id, recurso, accion]
       )
       const allowed = (rows.length ?? 0) > 0
       cache.set(cacheKey, { allowed, expiresAt: now + TTL_MS })
