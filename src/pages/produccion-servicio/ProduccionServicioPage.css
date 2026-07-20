@@ -1,0 +1,98 @@
+/* ProduccionServicioPage.css — extensiones §8.5 sobre iso-module.css */
+
+.pv-modal--wide { max-width: 900px; }
+
+.pv-tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 0.25rem;
+}
+.pv-tab-btn {
+  padding: 0.45rem 0.9rem;
+  border: none;
+  background: none;
+  font-size: 0.82rem;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.pv-tab-btn:hover { color: #1b3a6b; }
+.pv-tab-btn.active { color: #1b3a6b; font-weight: 600; border-bottom-color: #2e86de; }
+
+.pv-personal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.4rem;
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.4rem;
+  padding: 0.6rem;
+}
+.pv-personal-check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #374151;
+}
+.pv-personal-check input { margin: 0; }
+.pv-personal-empty { font-size: 0.8rem; color: #9ca3af; padding: 0.4rem; }
+
+.pv-chip-list { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.pv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #eef4ff;
+  color: #1b3a6b;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.pv-link-badge {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.72rem;
+}
+.pv-link-badge__code { font-weight: 700; color: #1b3a6b; }
+.pv-link-badge__meta { color: #9ca3af; }
+.pv-link-empty { font-size: 0.75rem; color: #9ca3af; font-style: italic; }
+
+.pv-pc-summary { display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; }
+.pv-pc-count { font-weight: 700; color: #1b3a6b; }
+
+.pv-pc-table-wrapper { max-height: 260px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem; }
+.pv-pc-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.pv-pc-table thead tr { background: #f3f4f6; }
+.pv-pc-table thead th { padding: 0.5rem 0.6rem; text-align: left; font-weight: 600; color: #374151; position: sticky; top: 0; background: #f3f4f6; }
+.pv-pc-table tbody td { padding: 0.45rem 0.6rem; border-top: 1px solid #e5e7eb; vertical-align: top; }
+.pv-pc-table tbody tr:hover { background: #f8fafc; }
+
+.pv-pc-form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+.pv-pc-form .iso-form-row.full,
+.pv-pc-form .iso-field.span2 { grid-column: 1 / -1; }
+
+.pv-section-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1b3a6b;
+  margin: 0.25rem 0 0;
+}
+
+@media (max-width: 768px) {
+  .pv-pc-form { grid-template-columns: 1fr; }
+}

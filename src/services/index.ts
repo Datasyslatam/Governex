@@ -548,17 +548,55 @@ export const salidasNCService = {
 }
 
 // ── PRODUCCIÓN Y PROVISIÓN DEL SERVICIO (§8.5) ────────────────
+export interface PersonalAsignadoItem {
+  id?: number; nombre: string; cargo?: string
+}
+
 export interface OrdenProduccionItem {
   id: number; codigo: string; producto_servicio: string; cliente?: string
   cantidad?: string; instruccion_trabajo?: string; equipos?: string
   responsable?: string; fecha_inicio?: string; fecha_entrega?: string
   etapa: string; conformidad: string
+  // §8.5.1 a) — ficha técnica del producto/servicio terminado
+  ficha_tecnica_id?: string
+  ficha_tecnica_producto?: string; ficha_tecnica_version?: string; ficha_tecnica_estado?: string
+  // §8.5.1 a) — instructivo de trabajo documentado
+  documento_instructivo_id?: number
+  documento_instructivo_codigo?: string; documento_instructivo_titulo?: string
+  documento_instructivo_version?: string; documento_instructivo_estado?: string
+  // §8.5.1 c)/d) — infraestructura y ambiente
+  infraestructura_ambiente?: string
+  // §8.5.1 e) / §7.2 — personal competente asignado
+  personal_asignado?: PersonalAsignadoItem[]
+  // §8.5.5 b) — postventa
+  seguimiento_postventa?: string; fecha_postventa?: string
+  // §8.6 — última liberación asociada (por código de OP)
+  liberacion_decision?: 'Liberado' | 'Retenido' | 'Rechazado'
+  liberacion_fecha?: string
+  // §8.5.1 b) — resumen de puntos de control
+  puntos_control_total?: number
+  puntos_control_no_conformes?: number
+  puntos_control_pendientes?: number
 }
+
+export interface PuntoControlProduccion {
+  id: number; orden_produccion_id: number
+  punto_control: string; parametro?: string; criterio_aceptacion?: string
+  valor_medido?: string; unidad?: string; instrumento_medicion?: string
+  resultado: 'Conforme' | 'No conforme' | 'Pendiente'
+  responsable?: string; fecha: string; observaciones?: string
+  registrado_por_nombre?: string
+}
+
 export const produccionService = {
   getAll: () => api.get<OrdenProduccionItem[]>('/api/produccion'),
   create: (body: any) => api.post<OrdenProduccionItem>('/api/produccion', body),
   update: (id: number, body: any) => api.put<OrdenProduccionItem>(`/api/produccion/${id}`, body),
   delete: (id: number) => api.delete<void>(`/api/produccion/${id}`),
+  // ── Puntos de control (seguimiento y medición) ──────────────
+  getPuntosControl: (ordenId: number) => api.get<PuntoControlProduccion[]>(`/api/produccion/${ordenId}/puntos-control`),
+  addPuntoControl: (ordenId: number, body: any) => api.post<PuntoControlProduccion>(`/api/produccion/${ordenId}/puntos-control`, body),
+  deletePuntoControl: (pcId: number) => api.delete<void>(`/api/produccion/puntos-control/${pcId}`),
 }
 
 // ── REQUERIMIENTOS PARA PRODUCTOS Y SERVICIOS (§8.2) ─────────
