@@ -1248,4 +1248,21 @@ ALTER TABLE PROVEEDOR_EVALUACIONES
   ADD COLUMN IF NOT EXISTS precio_mercado NUMERIC,
   ADD COLUMN IF NOT EXISTS precio_proveedor NUMERIC,
   ADD COLUMN IF NOT EXISTS debilidades TEXT,
-  ADD COLUMN IF NOT EXISTS generada_con_ia BOOLEAN DEFAULT FALSE;
+  ADD COLUMN IF NOT EXISTS generada_con_ia BOOLEAN DEFAULT FALSE;
+
+-- ============================================================
+--  PARTE 14: REGISTRO DE CARGAS EN R2
+-- ============================================================
+CREATE TABLE IF NOT EXISTS registro_cargas_r2 (
+	ID SERIAL PRIMARY KEY,
+	TENANT_ID INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+	USUARIO_ID INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+	NOMBRE_ARCHIVO VARCHAR(255) NOT NULL,
+	KEY_R2 TEXT NOT NULL UNIQUE,
+	MIME_TYPE VARCHAR(100) NOT NULL,
+	TAMANO_BYTES BIGINT NOT NULL,
+	CREADO_EN TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE registro_cargas_r2 IS 'Registro histórico de todas las cargas de documentos a R2.';
+

@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { pool } from '../db'
 
 export const s3 = new S3Client({
   region: 'auto',
@@ -56,6 +57,7 @@ export async function getSignedDownloadUrl(key: string): Promise<string> {
 export async function uploadObject(
   tenantId: number,
   tenantNombre: string,
+  userId: number,
   userNombre: string,
   userRole: string,
   originalName: string,
@@ -69,6 +71,17 @@ export async function uploadObject(
     Body: buffer,
     ContentType: mimeType,
   }))
+
+  try {
+    await pool.query(
+      `INSERT INTO registro_cargas_r2 (tenant_id, usuario_id, nombre_archivo, key_r2, mime_type, tamano_bytes)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [tenantId, userId, originalName, key, mimeType, buffer.length]
+    )
+  } catch (dbErr) {
+    console.error('[storageService] Error al registrar carga de R2 en la base de datos:', dbErr)
+  }
+
   return key
 }
 
@@ -100,12 +113,7 @@ export async function resolveFileUrl(key: string | null | undefined, tenantId: n
  * Elimina un objeto de R2 a partir de su key.
  */
 export async function deleteObject(key: string): Promise<void> {
-  try {
-    await s3.send(new DeleteObjectCommand({
-      Bucket: process.env.R2_BUCKET,
-      Key: key,
-    }))
-  } catch (err) {
-    console.error(`Error al eliminar objeto con key ${key} de R2:`, err)
-  }
+  console.log(`[storageService] deleteObject omitido para preservar historial (key: ${key})`)
+  // Se omite la eliminación física en R2 para garantizar que no se reescriban
+  // ni borren los archivos subidos históricamente.
 }

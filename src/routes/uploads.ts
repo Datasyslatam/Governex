@@ -69,6 +69,7 @@ router.post('/', (req: AuthRequest, res: Response) => {
       const key = await uploadObject(
         tenantId,
         tenantNombre,
+        userId,
         userNombre,
         userRole,
         req.file.originalname,
