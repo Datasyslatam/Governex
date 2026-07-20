@@ -442,4 +442,214 @@ router.delete('/actividades/:id', requirePermission('contexto_empresa', 'elimina
   }
 })
 
+/* ══════════════════════════════════════════════════════════════
+   MAPA DE PROCEDIMIENTO (§4.4 / §8.1)
+   ══════════════════════════════════════════════════════════════ */
+
+// GET /api/contexto-empresa/mapa-procedimiento
+router.get('/mapa-procedimiento', async (req: AuthRequest, res: Response) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM mapa_procedimiento WHERE tenant_id = $1 ORDER BY id',
+      [req.user!.tenantId]
+    )
+    res.json(rows)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al obtener mapa de procedimiento' })
+  }
+})
+
+// POST /api/contexto-empresa/mapa-procedimiento (reemplaza todo el set — usado tras análisis IA)
+router.post('/mapa-procedimiento', requirePermission('planes_operacion', 'crear'), async (req: AuthRequest, res: Response) => {
+  const { filas } = req.body as { filas: any[] }
+  if (!Array.isArray(filas)) return res.status(400).json({ error: 'Se requiere un array "filas"' })
+
+  const tenantId = req.user!.tenantId
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    await client.query('DELETE FROM mapa_procedimiento WHERE tenant_id = $1', [tenantId])
+    for (const f of filas) {
+      await client.query(
+        `INSERT INTO mapa_procedimiento (proceso, tipo, responsable, clausula, funciones, tenant_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [f.proceso, f.tipo || 'misional', f.responsable || null,
+         f.clausula || null, f.funciones || null, tenantId]
+      )
+    }
+    await client.query('COMMIT')
+    const { rows } = await pool.query(
+      'SELECT * FROM mapa_procedimiento WHERE tenant_id = $1 ORDER BY id', [tenantId]
+    )
+    res.status(201).json(rows)
+  } catch (err) {
+    await client.query('ROLLBACK')
+    console.error(err)
+    res.status(500).json({ error: 'Error al guardar mapa de procedimiento' })
+  } finally {
+    client.release()
+  }
+})
+
+// POST /api/contexto-empresa/mapa-procedimiento/nueva (agrega una fila individual)
+router.post('/mapa-procedimiento/nueva', requirePermission('planes_operacion', 'crear'), async (req: AuthRequest, res: Response) => {
+  const { proceso, tipo, responsable, clausula, funciones } = req.body
+  if (!proceso) return res.status(400).json({ error: 'proceso es requerido' })
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO mapa_procedimiento (proceso, tipo, responsable, clausula, funciones, tenant_id)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [proceso, tipo || 'misional', responsable || null,
+       clausula || null, funciones || null, req.user!.tenantId]
+    )
+    res.status(201).json(rows[0])
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al crear fila de mapa de procedimiento' })
+  }
+})
+
+// PUT /api/contexto-empresa/mapa-procedimiento/:id
+router.put('/mapa-procedimiento/:id', requirePermission('planes_operacion', 'editar'), async (req: AuthRequest, res: Response) => {
+  const { proceso, tipo, responsable, clausula, funciones } = req.body
+  try {
+    const { rows } = await pool.query(
+      `UPDATE mapa_procedimiento
+       SET proceso=$1, tipo=$2, responsable=$3, clausula=$4, funciones=$5, actualizado_en=NOW()
+       WHERE id=$6 AND tenant_id=$7 RETURNING *`,
+      [proceso, tipo || 'misional', responsable || null,
+       clausula || null, funciones || null, req.params.id, req.user!.tenantId]
+    )
+    if (!rows.length) return res.status(404).json({ error: 'Fila no encontrada' })
+    res.json(rows[0])
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al actualizar fila de mapa de procedimiento' })
+  }
+})
+
+// DELETE /api/contexto-empresa/mapa-procedimiento/:id
+router.delete('/mapa-procedimiento/:id', requirePermission('planes_operacion', 'eliminar'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { rowCount } = await pool.query(
+      'DELETE FROM mapa_procedimiento WHERE id=$1 AND tenant_id=$2',
+      [req.params.id, req.user!.tenantId]
+    )
+    if (!rowCount) return res.status(404).json({ error: 'Fila no encontrada' })
+    res.status(204).send()
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al eliminar fila de mapa de procedimiento' })
+  }
+})
+
+/* ══════════════════════════════════════════════════════════════
+   MANUAL DE PROCEDIMIENTO (§8.1 / §4.4.2)
+   ══════════════════════════════════════════════════════════════ */
+
+// GET /api/contexto-empresa/manual-procedimiento
+router.get('/manual-procedimiento', async (req: AuthRequest, res: Response) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM manual_procedimiento WHERE tenant_id = $1 ORDER BY id',
+      [req.user!.tenantId]
+    )
+    res.json(rows)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al obtener manual de procedimiento' })
+  }
+})
+
+// POST /api/contexto-empresa/manual-procedimiento (reemplaza todo el set — usado tras análisis IA)
+router.post('/manual-procedimiento', requirePermission('planes_operacion', 'crear'), async (req: AuthRequest, res: Response) => {
+  const { filas } = req.body as { filas: any[] }
+  if (!Array.isArray(filas)) return res.status(400).json({ error: 'Se requiere un array "filas"' })
+
+  const tenantId = req.user!.tenantId
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    await client.query('DELETE FROM manual_procedimiento WHERE tenant_id = $1', [tenantId])
+    for (const f of filas) {
+      await client.query(
+        `INSERT INTO manual_procedimiento
+           (codigo, proceso, objetivo, entradas, salidas, indicador, responsable, estado, clausula, tenant_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [f.codigo || '', f.proceso, f.objetivo || null, f.entradas || null,
+         f.salidas || null, f.indicador || null, f.responsable || null,
+         f.estado || 'Activo', f.clausula || null, tenantId]
+      )
+    }
+    await client.query('COMMIT')
+    const { rows } = await pool.query(
+      'SELECT * FROM manual_procedimiento WHERE tenant_id = $1 ORDER BY id', [tenantId]
+    )
+    res.status(201).json(rows)
+  } catch (err) {
+    await client.query('ROLLBACK')
+    console.error(err)
+    res.status(500).json({ error: 'Error al guardar manual de procedimiento' })
+  } finally {
+    client.release()
+  }
+})
+
+// POST /api/contexto-empresa/manual-procedimiento/nueva (agrega una fila individual)
+router.post('/manual-procedimiento/nueva', requirePermission('planes_operacion', 'crear'), async (req: AuthRequest, res: Response) => {
+  const { codigo, proceso, objetivo, entradas, salidas, indicador, responsable, estado, clausula } = req.body
+  if (!proceso) return res.status(400).json({ error: 'proceso es requerido' })
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO manual_procedimiento
+         (codigo, proceso, objetivo, entradas, salidas, indicador, responsable, estado, clausula, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [codigo || '', proceso, objetivo || null, entradas || null,
+       salidas || null, indicador || null, responsable || null,
+       estado || 'Activo', clausula || null, req.user!.tenantId]
+    )
+    res.status(201).json(rows[0])
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al crear fila de manual de procedimiento' })
+  }
+})
+
+// PUT /api/contexto-empresa/manual-procedimiento/:id
+router.put('/manual-procedimiento/:id', requirePermission('planes_operacion', 'editar'), async (req: AuthRequest, res: Response) => {
+  const { codigo, proceso, objetivo, entradas, salidas, indicador, responsable, estado, clausula } = req.body
+  try {
+    const { rows } = await pool.query(
+      `UPDATE manual_procedimiento
+       SET codigo=$1, proceso=$2, objetivo=$3, entradas=$4, salidas=$5,
+           indicador=$6, responsable=$7, estado=$8, clausula=$9, actualizado_en=NOW()
+       WHERE id=$10 AND tenant_id=$11 RETURNING *`,
+      [codigo || '', proceso, objetivo || null, entradas || null,
+       salidas || null, indicador || null, responsable || null,
+       estado || 'Activo', clausula || null, req.params.id, req.user!.tenantId]
+    )
+    if (!rows.length) return res.status(404).json({ error: 'Fila no encontrada' })
+    res.json(rows[0])
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al actualizar fila de manual de procedimiento' })
+  }
+})
+
+// DELETE /api/contexto-empresa/manual-procedimiento/:id
+router.delete('/manual-procedimiento/:id', requirePermission('planes_operacion', 'eliminar'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { rowCount } = await pool.query(
+      'DELETE FROM manual_procedimiento WHERE id=$1 AND tenant_id=$2',
+      [req.params.id, req.user!.tenantId]
+    )
+    if (!rowCount) return res.status(404).json({ error: 'Fila no encontrada' })
+    res.status(204).send()
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al eliminar fila de manual de procedimiento' })
+  }
+})
+
 export default router

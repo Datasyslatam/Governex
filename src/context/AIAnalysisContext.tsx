@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react'
-import { contextoEmpresaService, procesosService } from '../services'
+import { contextoEmpresaService, procesosService, planificacionControlService } from '../services'
 import { disenoDesarrolloService } from '../services'
 import { useAuthContext } from './AuthContext'
 
@@ -133,17 +133,41 @@ export interface ProyectoDiseno {
   estado:       'En tiempo' | 'En riesgo' | 'Retrasado'
 }
 
+export interface FilaMapaDB {
+  id:          number
+  proceso:     string
+  tipo:        TipoProceso
+  responsable: string
+  clausula:    string
+  funciones:   string
+}
+
+export interface FilaManualDB {
+  id:          number
+  codigo:      string
+  proceso:     string
+  objetivo:    string
+  entradas:    string
+  salidas:     string
+  indicador:   string
+  responsable: string
+  estado:      string
+  clausula:    string
+}
+
 export interface AIAnalysis {
-  pestel:           PestelRow[]
-  dofa:             DofaRow[]
-  caracterizacion:  CaracterizacionRow[]
-  matrizRoles?:     FilaMatriz[]
-  matrizCargos?:    FilaMatrizCargos[]
-  matrizRecursos?:  FilaMatrizRecursos[]
-  indicadores?:     any[]
-  nombreEmpresa?:   string
-  sector?:          string
-  datosEmpresa?:    DatosEmpresa
+  pestel:                PestelRow[]
+  dofa:                  DofaRow[]
+  caracterizacion:       CaracterizacionRow[]
+  matrizRoles?:          FilaMatriz[]
+  matrizCargos?:         FilaMatrizCargos[]
+  matrizRecursos?:       FilaMatrizRecursos[]
+  indicadores?:          any[]
+  nombreEmpresa?:        string
+  sector?:               string
+  datosEmpresa?:         DatosEmpresa
+  mapaProcedimiento?:    FilaMapaDB[]
+  manualProcedimiento?:  FilaManualDB[]
 }
 
 /* ── Tipos derivados §6.1 ────────────────────────────────────── */
@@ -213,6 +237,14 @@ interface AIAnalysisContextValue {
   updateFilaMatrizCargos: (id: number, patch: Partial<FilaMatrizCargos>) => void
   addFilaMatrizCargos:    (fila: Omit<FilaMatrizCargos, 'id'>) => void
   removeFilaMatrizCargos: (id: number) => void
+
+  // Mapa y Manual de Procedimiento
+  addFilaMapaProcedimiento:    (fila: Omit<FilaMapaDB, 'id'>) => void
+  updateFilaMapaProcedimiento: (id: number, patch: Partial<FilaMapaDB>) => void
+  removeFilaMapaProcedimiento: (id: number) => void
+  addFilaManualProcedimiento:    (fila: Omit<FilaManualDB, 'id'>) => void
+  updateFilaManualProcedimiento: (id: number, patch: Partial<FilaManualDB>) => void
+  removeFilaManualProcedimiento: (id: number) => void
 }
 
 const AIAnalysisContext = createContext<AIAnalysisContextValue | undefined>(undefined)
@@ -303,6 +335,21 @@ const mapCaracterizacionDB = (rows: any[]): CaracterizacionRow[] => rows.map(r =
     creadaEn: r.creada_en,
   }))
 
+  /* ── Mapeo BD → FilaMapaDB / FilaManualDB ─────────────────── */
+  const mapMapaDB = (rows: any[]): FilaMapaDB[] => rows.map(r => ({
+    id: r.id, proceso: r.proceso, tipo: r.tipo as TipoProceso,
+    responsable: r.responsable ?? '', clausula: r.clausula ?? '',
+    funciones: r.funciones ?? '',
+  }))
+
+  const mapManualDB = (rows: any[]): FilaManualDB[] => rows.map(r => ({
+    id: r.id, codigo: r.codigo ?? '', proceso: r.proceso,
+    objetivo: r.objetivo ?? '', entradas: r.entradas ?? '',
+    salidas: r.salidas ?? '', indicador: r.indicador ?? '',
+    responsable: r.responsable ?? '', estado: r.estado ?? 'Activo',
+    clausula: r.clausula ?? '',
+  }))
+
   /* ── Carga inicial desde la API (sessionStorage solo es fallback mientras carga) ── */
   useEffect(() => {
     if (!isAuthenticated) return
@@ -310,7 +357,7 @@ const mapCaracterizacionDB = (rows: any[]): CaracterizacionRow[] => rows.map(r =
       try {
         // 1. Agregamos la nueva petición al Promise.all con un .catch(() => []) integrado 
         // para evitar que si falla esta petición en específico, se caigan las demás.
-        const [datos, roles, cargos, recursos, acts, projs, pestelRows, dofaRows, procesosRows] = await Promise.all([
+        const [datos, roles, cargos, recursos, acts, projs, pestelRows, dofaRows, procesosRows, mapaRows, manualRows] = await Promise.all([
           contextoEmpresaService.getDatos(),
           contextoEmpresaService.getMatrizRoles(),
           contextoEmpresaService.getMatrizCargos(),
@@ -320,6 +367,8 @@ const mapCaracterizacionDB = (rows: any[]): CaracterizacionRow[] => rows.map(r =
           procesosService.getPestel().catch(() => []),
           procesosService.getDofa().catch(() => []),
           procesosService.getAll().catch(() => []),
+          planificacionControlService.getMapaProcedimiento().catch(() => []),
+          planificacionControlService.getManualProcedimiento().catch(() => []),
         ])
         
         // datosEmpresa: BD manda siempre, incluso si está vacía (null)
@@ -335,16 +384,18 @@ const mapCaracterizacionDB = (rows: any[]): CaracterizacionRow[] => rows.map(r =
         // analysis: BD manda siempre, sin condicionar al length  
         setAnalysisState(prev => {
           const merged: AIAnalysis = {
-            pestel:          mapPestelDB(pestelRows),
-            dofa:            mapDofaDB(dofaRows),
-            caracterizacion: mapCaracterizacionDB(procesosRows),
-            matrizRoles:     mapMatrizRoles(roles),
-            matrizCargos:    mapMatrizCargos(cargos),
-            matrizRecursos:  mapMatrizRecursos(recursos),
-            indicadores:     prev?.indicadores,
-            nombreEmpresa:   prev?.nombreEmpresa,
-            sector:          prev?.sector,
-            datosEmpresa:    prev?.datosEmpresa,
+            pestel:               mapPestelDB(pestelRows),
+            dofa:                 mapDofaDB(dofaRows),
+            caracterizacion:      mapCaracterizacionDB(procesosRows),
+            matrizRoles:          mapMatrizRoles(roles),
+            matrizCargos:         mapMatrizCargos(cargos),
+            matrizRecursos:       mapMatrizRecursos(recursos),
+            indicadores:          prev?.indicadores,
+            nombreEmpresa:        prev?.nombreEmpresa,
+            sector:               prev?.sector,
+            datosEmpresa:         prev?.datosEmpresa,
+            mapaProcedimiento:    mapMapaDB(mapaRows),
+            manualProcedimiento:  mapManualDB(manualRows),
           }
           sessionStorage.setItem('governex_ai_analysis', JSON.stringify(merged))
           return merged
@@ -396,6 +447,40 @@ const mapCaracterizacionDB = (rows: any[]): CaracterizacionRow[] => rows.map(r =
     if (a.matrizRecursos?.length) {
       contextoEmpresaService.postMatrizRecursos(a.matrizRecursos).catch(e =>
         console.warn('No se pudo guardar matrizRecursos en BD:', e))
+    }
+    // Sincronizar Mapa y Manual de Procedimiento con la BD tras análisis IA
+    if (a.matrizRoles?.length) {
+      const mapaFilas = a.matrizRoles.map(f => ({
+        proceso: f.proceso, tipo: f.tipo, responsable: f.responsable,
+        clausula: f.clausula, funciones: f.funciones,
+      }))
+      planificacionControlService.postMapaProcedimiento(mapaFilas)
+        .then(saved => {
+          setAnalysisState(prev => {
+            if (!prev) return prev
+            const next = { ...prev, mapaProcedimiento: mapMapaDB(saved) }
+            try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(next)) } catch {}
+            return next
+          })
+        })
+        .catch(e => console.warn('No se pudo guardar mapa de procedimiento en BD:', e))
+    }
+    if (a.caracterizacion?.length) {
+      const manualFilas = a.caracterizacion.map(r => ({
+        codigo: r.codigo, proceso: r.proceso, objetivo: r.objetivo,
+        entradas: r.entradas, salidas: r.salidas, indicador: r.indicador,
+        responsable: r.responsable, estado: r.estado, clausula: '',
+      }))
+      planificacionControlService.postManualProcedimiento(manualFilas)
+        .then(saved => {
+          setAnalysisState(prev => {
+            if (!prev) return prev
+            const next = { ...prev, manualProcedimiento: mapManualDB(saved) }
+            try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(next)) } catch {}
+            return next
+          })
+        })
+        .catch(e => console.warn('No se pudo guardar manual de procedimiento en BD:', e))
     }
   }
 
@@ -568,6 +653,82 @@ const removeFilaMatrizCargos = (id: number) => {
   })
 }
 
+  /* ── Mapa de Procedimiento: CRUD granular persistido en BD ──── */
+  const addFilaMapaProcedimiento = (fila: Omit<FilaMapaDB, 'id'>) => {
+    planificacionControlService.postMapaNueva(fila).then(saved => {
+      const nueva = mapMapaDB([saved])[0]
+      setAnalysisState(prev => {
+        const base: AIAnalysis = prev ?? { pestel: [], dofa: [], caracterizacion: [] }
+        const next = { ...base, mapaProcedimiento: [...(base.mapaProcedimiento || []), nueva] }
+        try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(next)) } catch {}
+        return next
+      })
+    }).catch(e => console.warn('No se pudo crear fila de mapa de procedimiento en BD:', e))
+  }
+
+  const updateFilaMapaProcedimiento = (id: number, patch: Partial<FilaMapaDB>) => {
+    const filaActual = analysis?.mapaProcedimiento?.find(f => f.id === id)
+    if (!filaActual) return
+    const updated = { ...filaActual, ...patch }
+    setAnalysisState(prev => {
+      if (!prev) return prev
+      const next = { ...prev, mapaProcedimiento: (prev.mapaProcedimiento || []).map(f => f.id === id ? updated : f) }
+      try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(next)) } catch {}
+      return next
+    })
+    planificacionControlService.putMapaFila(id, updated)
+      .catch(e => console.warn('No se pudo actualizar fila de mapa de procedimiento en BD:', e))
+  }
+
+  const removeFilaMapaProcedimiento = (id: number) => {
+    setAnalysisState(prev => {
+      if (!prev) return prev
+      const next = { ...prev, mapaProcedimiento: (prev.mapaProcedimiento || []).filter(f => f.id !== id) }
+      try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(next)) } catch {}
+      return next
+    })
+    planificacionControlService.deleteMapaFila(id)
+      .catch(e => console.warn('No se pudo eliminar fila de mapa de procedimiento en BD:', e))
+  }
+
+  /* ── Manual de Procedimiento: CRUD granular persistido en BD ── */
+  const addFilaManualProcedimiento = (fila: Omit<FilaManualDB, 'id'>) => {
+    planificacionControlService.postManualNueva(fila).then(saved => {
+      const nueva = mapManualDB([saved])[0]
+      setAnalysisState(prev => {
+        const base: AIAnalysis = prev ?? { pestel: [], dofa: [], caracterizacion: [] }
+        const next = { ...base, manualProcedimiento: [...(base.manualProcedimiento || []), nueva] }
+        try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(next)) } catch {}
+        return next
+      })
+    }).catch(e => console.warn('No se pudo crear fila de manual de procedimiento en BD:', e))
+  }
+
+  const updateFilaManualProcedimiento = (id: number, patch: Partial<FilaManualDB>) => {
+    const filaActual = analysis?.manualProcedimiento?.find(f => f.id === id)
+    if (!filaActual) return
+    const updated = { ...filaActual, ...patch }
+    setAnalysisState(prev => {
+      if (!prev) return prev
+      const next = { ...prev, manualProcedimiento: (prev.manualProcedimiento || []).map(f => f.id === id ? updated : f) }
+      try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(next)) } catch {}
+      return next
+    })
+    planificacionControlService.putManualFila(id, updated)
+      .catch(e => console.warn('No se pudo actualizar fila de manual de procedimiento en BD:', e))
+  }
+
+  const removeFilaManualProcedimiento = (id: number) => {
+    setAnalysisState(prev => {
+      if (!prev) return prev
+      const next = { ...prev, manualProcedimiento: (prev.manualProcedimiento || []).filter(f => f.id !== id) }
+      try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(next)) } catch {}
+      return next
+    })
+    planificacionControlService.deleteManualFila(id)
+      .catch(e => console.warn('No se pudo eliminar fila de manual de procedimiento en BD:', e))
+  }
+
   return (
   <AIAnalysisContext.Provider value={{
     analysis, datosEmpresa, actividades, proyectosDiseno,
@@ -576,6 +737,8 @@ const removeFilaMatrizCargos = (id: number) => {
     addProyectoDiseno, updateProyectoDiseno, removeProyectoDiseno,
     updateFilaMatrizRoles, addFilaMatrizRoles, removeFilaMatrizRoles,
     updateFilaMatrizCargos, addFilaMatrizCargos, removeFilaMatrizCargos,
+    addFilaMapaProcedimiento, updateFilaMapaProcedimiento, removeFilaMapaProcedimiento,
+    addFilaManualProcedimiento, updateFilaManualProcedimiento, removeFilaManualProcedimiento,
     clearAnalysis,
   }}>
     {children}

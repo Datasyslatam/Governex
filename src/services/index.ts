@@ -620,3 +620,30 @@ export const planificacionCambiosService = {
   update: (id: number, body: any) => api.put<any>(`/api/planificacion-cambios/${id}`, body),
   delete: (id: number) => api.delete<void>(`/api/planificacion-cambios/${id}`),
 }
+
+// ── MAPA Y MANUAL DE PROCEDIMIENTO (§8.1 / §4.4) ────────────
+export const planificacionControlService = {
+  // ── Mapa de Procedimiento ──────────────────────────────────
+  getMapaProcedimiento:   () =>
+    api.get<any[]>('/api/contexto-empresa/mapa-procedimiento'),
+  postMapaProcedimiento:  (filas: any[]) =>
+    api.post<any[]>('/api/contexto-empresa/mapa-procedimiento', { filas }),
+  postMapaNueva:          (fila: any) =>
+    api.post<any>('/api/contexto-empresa/mapa-procedimiento/nueva', fila),
+  putMapaFila:            (id: number, body: any) =>
+    api.put<any>(`/api/contexto-empresa/mapa-procedimiento/${id}`, body),
+  deleteMapaFila:         (id: number) =>
+    api.delete<void>(`/api/contexto-empresa/mapa-procedimiento/${id}`),
+
+  // ── Manual de Procedimiento ────────────────────────────────
+  getManualProcedimiento:   () =>
+    api.get<any[]>('/api/contexto-empresa/manual-procedimiento'),
+  postManualProcedimiento:  (filas: any[]) =>
+    api.post<any[]>('/api/contexto-empresa/manual-procedimiento', { filas }),
+  postManualNueva:          (fila: any) =>
+    api.post<any>('/api/contexto-empresa/manual-procedimiento/nueva', fila),
+  putManualFila:            (id: number, body: any) =>
+    api.put<any>(`/api/contexto-empresa/manual-procedimiento/${id}`, body),
+  deleteManualFila:         (id: number) =>
+    api.delete<void>(`/api/contexto-empresa/manual-procedimiento/${id}`),
+}

@@ -9,6 +9,7 @@
   "scripts": {
     "dev:frontend": "vite",
     "dev:backend": "tsx watch src/index.ts",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "build": "node node_modules/typescript/bin/tsc -p tsconfig.server.json && node -e \"require('fs').writeFileSync('dist-server/package.json', JSON.stringify({type:'commonjs'}))\" && node node_modules/vite/bin/vite.js build",
     "start": "node dist-server/index.js",
     "typecheck": "tsc --noEmit"
@@ -42,6 +43,7 @@
     "@types/react-dom": "^18.2.0",
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^6.0.2",
+    "concurrently": "^10.0.3",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.4.0",
