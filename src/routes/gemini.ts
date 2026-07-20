@@ -497,11 +497,12 @@ REGLAS:
    proveedores) junto con los registros de PQRS, y genera un DOFA
    específico basado en evidencia real (§5.1.2, §9.1.2, §6.1).      */
 router.post('/analizar-encuestas-cliente', async (req: AuthRequest, res: Response) => {
-  const { datosEmpresa, resumenClientes, resumenProveedores, pqrs } = req.body as {
+  const { datosEmpresa, resumenClientes, resumenProveedores, pqrs, documentos } = req.body as {
     datosEmpresa?: DatosEmpresa
     resumenClientes?: any
     resumenProveedores?: any
     pqrs?: { tipo: string; descripcion: string; estado: string }[]
+    documentos?: string[]
   }
 
   const sinDatos =
@@ -520,6 +521,9 @@ router.post('/analizar-encuestas-cliente', async (req: AuthRequest, res: Respons
 
 EMPRESA: ${datosEmpresa?.nombreEmpresa ?? 'No especificada'} — Sector: ${datosEmpresa?.sector ?? 'No especificado'}
 
+DOCUMENTOS Y FUENTES DE INFORMACIÓN SUMINISTRADAS (Archivos de encuestas subidos y PQRS registradas):
+${documentos && documentos.length ? documentos.map(d => `- ${d}`).join('\n') : 'Ninguno especificado'}
+
 RESULTADOS DE ENCUESTAS A CLIENTES (sobre el producto/servicio entregado):
 ${resumenClientes ? JSON.stringify(resumenClientes, null, 2) : 'Sin datos disponibles'}
 
@@ -530,12 +534,11 @@ PQRS REGISTRADAS POR LA ORGANIZACIÓN:
 ${pqrs && pqrs.length ? JSON.stringify(pqrs, null, 2) : 'Sin registros'}
 
 INSTRUCCIÓN:
-Analiza TODA esta información (promedios por categoría, respuestas abiertas y PQRS) y genera un análisis DOFA
-específico, basado ÚNICAMENTE en la evidencia entregada (no genérico ni inventado).
+Analiza TODA esta información (promedios por categoría, respuestas abiertas y PQRS) y genera un análisis DOFA específico, basado ÚNICAMENTE en la evidencia entregada (no genérico ni inventado). En tu "resumenEjecutivo", menciona de forma explícita qué documentos/fuentes de información de la lista anterior tuviste disponibles y procesaste para este análisis (menciónalos con sus nombres de archivo y/o fuentes reales).
 
 Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
 {
-  "resumenEjecutivo": "200-300 palabras resumiendo los hallazgos principales de las encuestas y PQRS, mencionando qué fuentes de información tuviste disponibles",
+  "resumenEjecutivo": "200-300 palabras resumiendo los hallazgos principales de las encuestas y PQRS, mencionando de forma explícita qué fuentes de información (archivos y registros PQRS) tuviste disponibles y procesaste",
   "dofa": [
     { "tipo":"Fortaleza",   "descripcion":"basada en evidencia concreta, ej: alta calificación promedio en X categoría" },
     { "tipo":"Oportunidad", "descripcion":"..." },

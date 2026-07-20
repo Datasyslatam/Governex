@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import './EnfoqueClientePage.css'
 import { useAIAnalysis } from '../../context/AIAnalysisContext'
 import {
@@ -23,6 +23,7 @@ interface ArchivoSubido {
   tipo:   TipoArchivo
   sizeKB: number
   fecha:  string
+  url?:   string
 }
 
 interface RespuestaEncuesta {
@@ -53,18 +54,84 @@ function idsDeEncuesta(e?: EncuestaGenerada): Set<string> {
   return s
 }
 
-function detectarTipoRespuesta(
-  campos: Record<string, string>,
+function detectarTipoRespuesta(campos: Record<string, string>, encuestas: EncuestasSatisfaccion | null): 'cliente' | 'proveedor' | 'desconocido' {
+  const keys = Object.keys(campos).filter(k => k !== 'encuestado_nombre' && k !== 'encuestado_fecha')
+  if (keys.length === 0) return 'desconocido'
+
+  if (encuestas) {
+    const clientIds = idsDeEncuesta(encuestas.clientes)
+    const providerIds = idsDeEncuesta(encuestas.proveedores)
+    let clientMatches = 0
+    let providerMatches = 0
+
+    keys.forEach(k => {
+      if (clientIds.has(k)) clientMatches++
+      if (providerIds.has(k)) providerMatches++
+    })
+
+    if (clientMatches > 0 || providerMatches > 0) {
+      return clientMatches > providerMatches ? 'cliente' : 'proveedor'
+    }
+  }
+
+  let clientPrefixMatches = 0
+  let providerPrefixMatches = 0
+  keys.forEach(k => {
+    if (k.startsWith('c')) clientPrefixMatches++
+    if (k.startsWith('p')) providerPrefixMatches++
+  })
+
+  if (clientPrefixMatches > 0 || providerPrefixMatches > 0) {
+    return clientPrefixMatches > providerPrefixMatches ? 'cliente' : 'proveedor'
+  }
+
+  return 'desconocido'
+}
+
+async function detectarTipoArchivoAutomatico(
+  file: File,
   encuestas: EncuestasSatisfaccion | null
-): 'cliente' | 'proveedor' | 'desconocido' {
-  if (!encuestas) return 'desconocido'
-  const keys    = Object.keys(campos)
-  const idsCli  = idsDeEncuesta(encuestas.clientes)
-  const idsProv = idsDeEncuesta(encuestas.proveedores)
-  const matchCli  = keys.filter(k => idsCli.has(k)).length
-  const matchProv = keys.filter(k => idsProv.has(k)).length
-  if (matchCli === 0 && matchProv === 0) return 'desconocido'
-  return matchCli >= matchProv ? 'cliente' : 'proveedor'
+): Promise<TipoArchivo> {
+  if (file.type === 'application/pdf') {
+    try {
+      const { campos } = await leerRespuestasPDF(file)
+      const tipoRespuesta = detectarTipoRespuesta(campos, encuestas)
+      if (tipoRespuesta === 'cliente') return 'Encuesta Cliente'
+      if (tipoRespuesta === 'proveedor') return 'Encuesta Proveedor'
+    } catch (err) {
+      console.error('Error al intentar leer campos del PDF:', err)
+    }
+  }
+
+  const nombreLower = file.name.toLowerCase()
+  if (nombreLower.includes('proveedor') || nombreLower.includes('supplier') || nombreLower.includes('vendor')) {
+    return 'Encuesta Proveedor'
+  }
+  if (
+    nombreLower.includes('cliente') ||
+    nombreLower.includes('satisfaccion') ||
+    nombreLower.includes('satisfacción') ||
+    nombreLower.includes('encuesta') ||
+    nombreLower.includes('client') ||
+    nombreLower.includes('survey') ||
+    nombreLower.includes('customer')
+  ) {
+    return 'Encuesta Cliente'
+  }
+  if (
+    nombreLower.includes('pqrs') ||
+    nombreLower.includes('peticion') ||
+    nombreLower.includes('petición') ||
+    nombreLower.includes('queja') ||
+    nombreLower.includes('reclamo') ||
+    nombreLower.includes('sugerencia') ||
+    nombreLower.includes('reclamacion') ||
+    nombreLower.includes('reclamación')
+  ) {
+    return 'PQRS'
+  }
+
+  return 'Otro'
 }
 
 function agregarRespuestas(encuesta: EncuestaGenerada | undefined, respuestas: RespuestaEncuesta[]) {
@@ -110,7 +177,14 @@ const EnfoqueClientePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'encuestas' | 'archivos'>('encuestas')
 
   /* ── Generación de encuestas con IA ──────────────────────── */
-  const [encuestas, setEncuestas] = useState<EncuestasSatisfaccion | null>(null)
+  const [encuestas, setEncuestas] = useState<EncuestasSatisfaccion | null>(() => {
+    try {
+      const saved = localStorage.getItem('governex_encuestas_templates')
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  })
   const [loadingIA, setLoadingIA] = useState(false)
   const [errorIA, setErrorIA]     = useState<string | null>(null)
   const [descargando, setDescargando] = useState<string | null>(null)
@@ -124,6 +198,7 @@ const EnfoqueClientePage: React.FC = () => {
     try {
       const data = await enfoqueClienteService.generarEncuestas(datosEmpresa)
       setEncuestas(data)
+      localStorage.setItem('governex_encuestas_templates', JSON.stringify(data))
     } catch (e: any) {
       setErrorIA(e.message || 'Error al generar las encuestas')
     } finally {
@@ -162,6 +237,7 @@ const EnfoqueClientePage: React.FC = () => {
 
   const archivos: ArchivoSubido[] = archivosDB.map((a: any) => ({
     id: a.id, nombre: a.nombre, tipo: a.tipo,
+    url: a.url,
     sizeKB: Math.round((a.tamano_bytes ?? 0) / 1024),
     fecha: new Date(a.subido_en).toISOString().slice(0, 10),
   }))
@@ -171,7 +247,6 @@ const EnfoqueClientePage: React.FC = () => {
     campos: r.campos, nombreEncuestado: r.nombre_encuestado ?? '', fecha: r.fecha ?? '',
   }))
 
-  const [tipoSubida, setTipoSubida]                 = useState<TipoArchivo>('Encuesta Cliente')
   const [procesandoArchivos, setProcesandoArchivos] = useState(false)
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,21 +258,29 @@ const EnfoqueClientePage: React.FC = () => {
 
     for (const f of fileArray) {
       try {
+        const tipoDetectado = await detectarTipoArchivoAutomatico(f, encuestas)
         const uploaded = await uploadsService.upload(f)
         const archivoDB = await archivosEnfoqueService.create({
-          nombre: uploaded.nombre, tipo: tipoSubida, url: uploaded.url,
-          tipoMime: uploaded.tipoMime, tamanoBytes: uploaded.tamanoBytes,
+          nombre: uploaded.nombre,
+          tipo: tipoDetectado,
+          url: uploaded.url,
+          tipoMime: uploaded.tipoMime,
+          tamanoBytes: uploaded.tamanoBytes,
         })
 
-        const esEncuesta = tipoSubida === 'Encuesta Cliente' || tipoSubida === 'Encuesta Proveedor'
+        const esEncuesta = tipoDetectado === 'Encuesta Cliente' || tipoDetectado === 'Encuesta Proveedor'
         if (esEncuesta && f.type === 'application/pdf') {
           try {
             const { campos, nombre, fecha } = await leerRespuestasPDF(f)
             const detectado = detectarTipoRespuesta(campos, encuestas)
+            const tipoFinal = detectado !== 'desconocido'
+              ? detectado
+              : (tipoDetectado === 'Encuesta Cliente' ? 'cliente' : 'proveedor')
+
             await respuestasEncuestaService.create({
               archivoId: archivoDB.id,
               archivoNombre: f.name,
-              tipo: detectado !== 'desconocido' ? detectado : (tipoSubida === 'Encuesta Cliente' ? 'cliente' : 'proveedor'),
+              tipo: tipoFinal,
               campos,
               nombreEncuestado: nombre,
               fecha,
@@ -275,9 +358,28 @@ const EnfoqueClientePage: React.FC = () => {
   }
 
   /* ── Análisis DOFA generado por IA a partir de encuestas + PQRS ─ */
-  const [analisis, setAnalisis]           = useState<AnalisisEncuestasResult | null>(null)
+  const [analisis, setAnalisis] = useState<AnalisisEncuestasResult | null>(null)
+  const [documentosAnalizados, setDocumentosAnalizados] = useState<string[]>([])
   const [loadingAnalisis, setLoadingAnalisis] = useState(false)
   const [errorAnalisis, setErrorAnalisis] = useState<string | null>(null)
+
+  useEffect(() => {
+    const cargarAnalisisGuardado = async () => {
+      try {
+        const saved = await enfoqueClienteService.getAnalisis()
+        if (saved) {
+          setAnalisis({
+            resumenEjecutivo: saved.resumenEjecutivo,
+            dofa: saved.dofa
+          })
+          setDocumentosAnalizados(saved.documentos || [])
+        }
+      } catch (err) {
+        console.error('Error al cargar el análisis de enfoque al cliente persistente:', err)
+      }
+    }
+    cargarAnalisisGuardado()
+  }, [])
 
   const respuestasCliente   = respuestasEncuestas.filter(r => r.tipo === 'cliente')
   const respuestasProveedor = respuestasEncuestas.filter(r => r.tipo === 'proveedor')
@@ -291,13 +393,29 @@ const EnfoqueClientePage: React.FC = () => {
     try {
       const resumenClientes    = agregarRespuestas(encuestas?.clientes, respuestasCliente)
       const resumenProveedores = agregarRespuestas(encuestas?.proveedores, respuestasProveedor)
+      
+      const nombresDocumentos = [
+        ...archivos.map(a => `${a.tipo}: ${a.nombre}`),
+        ...pqrsList.map(p => `Registro de PQRS (${p.tipo}) de ${p.origen} - ${p.fecha}`)
+      ]
+
       const result = await enfoqueClienteService.analizarEncuestas({
         datosEmpresa,
         resumenClientes,
         resumenProveedores,
         pqrs: pqrsList.map(p => ({ tipo: p.tipo, descripcion: p.descripcion, estado: p.estado })),
+        documentos: nombresDocumentos,
       })
+
+      // Guardar el análisis en la base de datos para persistencia multi-dispositivo/sesión
+      await enfoqueClienteService.saveAnalisis({
+        resumenEjecutivo: result.resumenEjecutivo,
+        dofa: result.dofa,
+        documentos: nombresDocumentos
+      })
+
       setAnalisis(result)
+      setDocumentosAnalizados(nombresDocumentos)
     } catch (e: any) {
       setErrorAnalisis(e.message || 'Error al generar el análisis')
     } finally {
@@ -416,28 +534,20 @@ const EnfoqueClientePage: React.FC = () => {
         <div className="enf-tab-panel">
 
           <div className="enf-notice">
-            ℹ️ Los archivos y registros de esta sección se guardan únicamente en esta sesión del navegador
-            (no se almacenan en el servidor ni en la base de datos). La persistencia se habilitará más adelante.
+            ℹ️ Los archivos de encuestas y registros de PQRS se almacenan de manera persistente en la base de datos de la organización. La detección del tipo de documento es automática al subirlos.
           </div>
 
           {/* SUBIDA DE ARCHIVOS */}
           <div className="panel enf-upload-panel">
             <h3>📤 Subir encuestas respondidas y PQRS</h3>
             <div className="enf-upload-row">
-              <select value={tipoSubida} onChange={e => setTipoSubida(e.target.value as TipoArchivo)}>
-                <option value="Encuesta Cliente">Encuesta de Cliente respondida</option>
-                <option value="Encuesta Proveedor">Encuesta de Proveedor respondida</option>
-                <option value="PQRS">Documento de PQRS</option>
-                <option value="Otro">Otro documento</option>
-              </select>
               <label className="enf-upload-btn" title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>
                 {procesandoArchivos ? '⏳ Leyendo archivo(s)...' : '📎 Seleccionar archivo(s)'}
                 <input type="file" multiple accept="application/pdf" onChange={handleFileUpload} disabled={procesandoArchivos || !canEdit} style={{ display: 'none' }} />
               </label>
             </div>
             <p className="enf-upload-hint">
-              Si subes una encuesta generada por Governex (PDF interactivo), las respuestas se leen automáticamente
-              para alimentar el análisis DOFA.
+              Al seleccionar un archivo (por ejemplo, encuestas generadas por Governex u otros PDFs), la plataforma detectará su tipo de forma automática y extraerá las respuestas si corresponde.
             </p>
 
             {archivos.length === 0 ? (
@@ -461,7 +571,14 @@ const EnfoqueClientePage: React.FC = () => {
                         </td>
                         <td>{a.sizeKB} KB</td>
                         <td>{a.fecha}</td>
-                        <td>
+                        <td style={{ display: 'flex', gap: '0.3rem' }}>
+                          {a.url && (
+                            <PermissionGuard recurso="enfoque_cliente" accion="leer">
+                              <a href={a.url} download={a.nombre} target="_blank" rel="noopener noreferrer" className="btn-icon" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} title="Descargar archivo">
+                                ⬇️
+                              </a>
+                            </PermissionGuard>
+                          )}
                           <PermissionGuard recurso="enfoque_cliente" accion="eliminar" mode="hide">
                             <button className="btn-icon danger" onClick={() => eliminarArchivo(a.id)}>🗑️</button>
                           </PermissionGuard>
@@ -537,6 +654,16 @@ const EnfoqueClientePage: React.FC = () => {
             {analisis && (
               <>
                 <p className="enf-analisis-resumen">{analisis.resumenEjecutivo}</p>
+                {documentosAnalizados.length > 0 && (
+                  <div className="enf-documentos-analizados">
+                    <h4>📂 Documentos y fuentes incluidos en este análisis:</h4>
+                    <ul>
+                      {documentosAnalizados.map((doc, idx) => (
+                        <li key={idx}>📄 {doc}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <div className="enf-dofa-grid">
                   {DOFA_ORDEN.map(tipo => {
                     const { icon, clase } = DOFA_STYLE[tipo]

@@ -367,7 +367,14 @@ export const enfoqueClienteService = {
     resumenClientes: any
     resumenProveedores: any
     pqrs: { tipo: string; descripcion: string; estado: string }[]
+    documentos?: string[]
   }) => api.post<AnalisisEncuestasResult>('/api/gemini/analizar-encuestas-cliente', payload),
+
+  getAnalisis: () =>
+    api.get<AnalisisEncuestasResult & { documentos?: string[] } | null>('/api/enfoque-cliente/analisis'),
+
+  saveAnalisis: (body: AnalisisEncuestasResult & { documentos?: string[] }) =>
+    api.post<AnalisisEncuestasResult & { documentos?: string[] }>('/api/enfoque-cliente/analisis', body),
 }
 
 // ── CONTEXTO EMPRESA (§4.1, §5.3, §7.1) ─────────────────────

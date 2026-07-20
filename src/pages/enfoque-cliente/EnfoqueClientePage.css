@@ -170,4 +170,34 @@
 .enf-pqrs-confirm p { margin: 0.3rem 0; font-size: 0.9rem; color: #374151; }
 .enf-pqrs-confirm__hint { font-size: 0.8rem !important; color: #6b7280 !important; }
 
+/* ── Documentos Analizados ──────────────────────────────────── */
+.enf-documentos-analizados {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.6rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.enf-documentos-analizados h4 {
+  margin: 0 0 0.6rem 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+.enf-documentos-analizados ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.enf-documentos-analizados li {
+  font-size: 0.83rem;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 @media (max-width: 768px) { .enf-page { padding: 1rem; } }

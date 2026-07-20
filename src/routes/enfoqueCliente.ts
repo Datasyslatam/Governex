@@ -12,7 +12,7 @@ router.use(authMiddleware)
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/enfoque-cliente/pqrs
-router.get('/pqrs', async (req: AuthRequest, res: Response) => {
+router.get('/pqrs', requirePermission('enfoque_cliente', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM pqrs_enfoque_cliente WHERE tenant_id = $1 ORDER BY creado_en DESC`,
@@ -81,7 +81,7 @@ router.delete('/pqrs/:id', requirePermission('enfoque_cliente', 'eliminar'), asy
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/enfoque-cliente/archivos
-router.get('/archivos', async (req: AuthRequest, res: Response) => {
+router.get('/archivos', requirePermission('enfoque_cliente', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user!.tenantId
     const { rows } = await pool.query(
@@ -142,7 +142,7 @@ router.delete('/archivos/:id', requirePermission('enfoque_cliente', 'eliminar'),
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/enfoque-cliente/respuestas
-router.get('/respuestas', async (req: AuthRequest, res: Response) => {
+router.get('/respuestas', requirePermission('enfoque_cliente', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM respuestas_encuesta_satisfaccion WHERE tenant_id = $1 ORDER BY creado_en DESC`,
@@ -180,6 +180,63 @@ router.post('/respuestas', requirePermission('enfoque_cliente', 'crear'), async 
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Error al registrar respuesta de encuesta' })
+  }
+})
+
+/* ── Análisis DOFA Persistente ───────────────────────────────── */
+
+// GET /api/enfoque-cliente/analisis
+router.get('/analisis', requirePermission('enfoque_cliente', 'leer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT resumen_ejecutivo, dofa, documentos_analizados, creado_en 
+       FROM analisis_enfoque_cliente 
+       WHERE tenant_id = $1 
+       ORDER BY creado_en DESC LIMIT 1`,
+      [req.user!.tenantId]
+    )
+    if (rows.length === 0) {
+      return res.json(null)
+    }
+    res.json({
+      resumenEjecutivo: rows[0].resumen_ejecutivo,
+      dofa: rows[0].dofa,
+      documentos: rows[0].documentos_analizados,
+      creadoEn: rows[0].creado_en
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al obtener el análisis de enfoque al cliente' })
+  }
+})
+
+// POST /api/enfoque-cliente/analisis
+router.post('/analisis', requirePermission('enfoque_cliente', 'crear'), async (req: AuthRequest, res: Response) => {
+  const { resumenEjecutivo, dofa, documentos } = req.body
+  if (!resumenEjecutivo || !Array.isArray(dofa)) {
+    return res.status(400).json({ error: 'resumenEjecutivo y dofa son requeridos' })
+  }
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO analisis_enfoque_cliente (tenant_id, resumen_ejecutivo, dofa, documentos_analizados, creado_por)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [
+        req.user!.tenantId,
+        resumenEjecutivo,
+        JSON.stringify(dofa),
+        JSON.stringify(documentos || []),
+        req.user?.id || null
+      ]
+    )
+    res.status(201).json({
+      resumenEjecutivo: rows[0].resumen_ejecutivo,
+      dofa: rows[0].dofa,
+      documentos: rows[0].documentos_analizados,
+      creadoEn: rows[0].creado_en
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al guardar el análisis de enfoque al cliente' })
   }
 })
 
