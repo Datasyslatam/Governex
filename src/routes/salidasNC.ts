@@ -44,18 +44,28 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 // POST /api/salidas-nc
 router.post('/', requirePermission('salidas_nc', 'crear'), async (req: AuthRequest, res: Response) => {
   const { codigo, descripcion, proceso, detectado_en, disposicion,
-          responsable, fecha, accion_tomada, verificado_por, estado, nc_id } = req.body
+          responsable, fecha, accion_tomada, verificado_por, estado, nc_id,
+          cliente_informado, fecha_notificacion_cliente,
+          concesion_otorgada, concesion_autorizada_por, fecha_concesion,
+          observaciones_concesion } = req.body
   if (!codigo || !descripcion || !detectado_en || !disposicion) {
     return res.status(400).json({
       error: 'codigo, descripcion, detectado_en y disposicion son requeridos'
+    })
+  }
+  if (concesion_otorgada && !concesion_autorizada_por) {
+    return res.status(400).json({
+      error: 'concesion_autorizada_por es requerido cuando se otorga una concesión'
     })
   }
   try {
     const { rows } = await pool.query(
       `INSERT INTO salidas_nc
          (codigo, descripcion, proceso, detectado_en, disposicion,
-          responsable, fecha, accion_tomada, verificado_por, estado, nc_id, creado_por, tenant_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+          responsable, fecha, accion_tomada, verificado_por, estado, nc_id, creado_por, tenant_id,
+          cliente_informado, fecha_notificacion_cliente,
+          concesion_otorgada, concesion_autorizada_por, fecha_concesion, observaciones_concesion)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
       [
         codigo,
         descripcion,
@@ -70,6 +80,12 @@ router.post('/', requirePermission('salidas_nc', 'crear'), async (req: AuthReque
         nc_id           || null,
         req.user?.id    || null,
         req.user!.tenantId,
+        !!cliente_informado,
+        fecha_notificacion_cliente || null,
+        !!concesion_otorgada,
+        concesion_autorizada_por   || null,
+        fecha_concesion            || null,
+        observaciones_concesion    || null,
       ]
     )
     res.status(201).json(rows[0])
@@ -84,17 +100,32 @@ router.post('/', requirePermission('salidas_nc', 'crear'), async (req: AuthReque
 router.put('/:id', requirePermission('salidas_nc', 'editar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { descripcion, proceso, detectado_en, disposicion,
-          responsable, fecha, accion_tomada, verificado_por, estado, nc_id } = req.body
+          responsable, fecha, accion_tomada, verificado_por, estado, nc_id,
+          cliente_informado, fecha_notificacion_cliente,
+          concesion_otorgada, concesion_autorizada_por, fecha_concesion,
+          observaciones_concesion } = req.body
+  if (concesion_otorgada && !concesion_autorizada_por) {
+    return res.status(400).json({
+      error: 'concesion_autorizada_por es requerido cuando se otorga una concesión'
+    })
+  }
   try {
     const { rows } = await pool.query(
       `UPDATE salidas_nc
        SET descripcion=$1, proceso=$2, detectado_en=$3, disposicion=$4,
            responsable=$5, fecha=$6, accion_tomada=$7, verificado_por=$8,
-           estado=$9, nc_id=$10
-       WHERE id=$11 AND tenant_id=$12 RETURNING *`,
+           estado=$9, nc_id=$10,
+           cliente_informado=$11, fecha_notificacion_cliente=$12,
+           concesion_otorgada=$13, concesion_autorizada_por=$14,
+           fecha_concesion=$15, observaciones_concesion=$16
+       WHERE id=$17 AND tenant_id=$18 RETURNING *`,
       [descripcion, proceso || null, detectado_en, disposicion,
        responsable || null, fecha, accion_tomada || null,
-       verificado_por || null, estado, nc_id || null, id, req.user!.tenantId]
+       verificado_por || null, estado, nc_id || null,
+       !!cliente_informado, fecha_notificacion_cliente || null,
+       !!concesion_otorgada, concesion_autorizada_por || null,
+       fecha_concesion || null, observaciones_concesion || null,
+       id, req.user!.tenantId]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Salida NC no encontrada' })
     res.json(rows[0])

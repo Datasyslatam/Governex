@@ -1,9 +1,29 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import '../iso-module.css'
 import { useFetch } from '../../hooks/useFetch'
 import { salidasNCService } from '../../services'
 import { usePermissions } from '../../hooks/usePermissions'
 import PermissionGuard from '../../components/ui/PermissionGuard'
+import DonutChart from '../../components/charts/DonutChart'
+
+const DISPOSICION_COLOR: Record<string, string> = {
+  'Separar / Aislar': '#9ca3af',
+  'Reparar': '#3b82f6',
+  'Reprocesar': '#0ea5e9',
+  'Concesión al cliente': '#f59e0b',
+  'Devolver al proveedor': '#8b5cf6',
+  'Desechar': '#ef4444',
+}
+
+const empty = {
+  codigo: '', descripcion: '', proceso: '',
+  detectadoEn: 'Producción' as string, disposicion: 'Separar / Aislar' as string,
+  responsable: '', fecha: new Date().toISOString().slice(0, 10),
+  accionTomada: '', verificadoPor: '', estado: 'Abierta' as string,
+  clienteInformado: false, fechaNotificacionCliente: '',
+  concesionOtorgada: false, concesionAutorizadaPor: '',
+  fechaConcesion: '', observacionesConcesion: '',
+}
 
 const SalidasNCPage: React.FC = () => {
   const { canEdit, isReadOnly } = usePermissions('salidas_nc')
@@ -13,6 +33,9 @@ const SalidasNCPage: React.FC = () => {
     detectadoEn: r.detectado_en, disposicion: r.disposicion, responsable: r.responsable ?? '',
     fecha: r.fecha, accionTomada: r.accion_tomada ?? '', verificadoPor: r.verificado_por ?? '',
     estado: r.estado,
+    clienteInformado: !!r.cliente_informado, fechaNotificacionCliente: r.fecha_notificacion_cliente ?? '',
+    concesionOtorgada: !!r.concesion_otorgada, concesionAutorizadaPor: r.concesion_autorizada_por ?? '',
+    fechaConcesion: r.fecha_concesion ?? '', observacionesConcesion: r.observaciones_concesion ?? '',
   }))
 
   const [showModal, setShowModal] = useState(false)
@@ -21,14 +44,34 @@ const SalidasNCPage: React.FC = () => {
 
   const filtrados = filtro === 'todos' ? items : items.filter(i => i.estado === filtro)
 
+  // ── Datos para el gráfico: qué disposición reciben las salidas NC ──
+  const disposicionData = useMemo(() => {
+    const orden = ['Separar / Aislar', 'Reparar', 'Reprocesar', 'Concesión al cliente', 'Devolver al proveedor', 'Desechar']
+    return orden.map(d => ({
+      label: d,
+      value: items.filter(i => i.disposicion === d).length,
+      color: DISPOSICION_COLOR[d] || '#9ca3af',
+    }))
+  }, [items])
+
+  const totalConcesiones = items.filter(i => i.concesionOtorgada).length
+  const totalClienteInformado = items.filter(i => i.clienteInformado).length
+
   const guardar = async () => {
     if (!form.descripcion) return
+    if (form.concesionOtorgada && !form.concesionAutorizadaPor) {
+      alert('Indica quién autorizó la concesión.')
+      return
+    }
     try {
       await salidasNCService.create({
         codigo: form.codigo, descripcion: form.descripcion, proceso: form.proceso,
         detectado_en: form.detectadoEn, disposicion: form.disposicion, responsable: form.responsable,
         fecha: form.fecha, accion_tomada: form.accionTomada, verificado_por: form.verificadoPor,
         estado: form.estado,
+        cliente_informado: form.clienteInformado, fecha_notificacion_cliente: form.fechaNotificacionCliente || null,
+        concesion_otorgada: form.concesionOtorgada, concesion_autorizada_por: form.concesionAutorizadaPor || null,
+        fecha_concesion: form.fechaConcesion || null, observaciones_concesion: form.observacionesConcesion || null,
       })
       await refetch()
       setShowModal(false); setForm({ ...empty })
@@ -61,7 +104,40 @@ const SalidasNCPage: React.FC = () => {
 
       <div className="iso-info-box">
         <span className="iso-info-box__icon">📌</span>
-        <span><strong>Cláusula 8.7</strong> — La organización debe asegurarse de que las salidas que no sean conformes con sus requisitos se identifican y se controlan para prevenir su uso o entrega no intencionados. La disposición debe documentarse.</span>
+        <span><strong>Cláusula 8.7</strong> — La organización debe asegurarse de que las salidas que no sean conformes con sus requisitos se identifican y se controlan para prevenir su uso o entrega no intencionados. Cuando corresponda, debe informarse al cliente y documentarse la concesión o autorización con la que se acepta la salida.</span>
+      </div>
+
+      <div
+        style={{
+          background: '#fff',
+          border: '1px solid #e5e7eb',
+          borderRadius: '0.75rem',
+          padding: '1.25rem',
+          marginBottom: '1.25rem',
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          display: 'grid',
+          gridTemplateColumns: 'minmax(260px, auto) 1fr',
+          columnGap: '2.5rem',
+          rowGap: '1rem',
+          alignItems: 'start',
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#1b3a6b' }}>¿Qué sucede con las salidas no conformes? — Disposición</h3>
+          <DonutChart data={disposicionData} centerLabel="registros" />
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignContent: 'flex-start' }}>
+          <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.75rem 1rem', minWidth: '9rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#1b3a6b' }}>{totalClienteInformado}/{items.length}</div>
+            <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>Casos con cliente informado</div>
+          </div>
+          <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.75rem 1rem', minWidth: '9rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#1b3a6b' }}>{totalConcesiones}</div>
+            <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>Concesiones/autorizaciones otorgadas</div>
+          </div>
+        </div>
       </div>
 
       <div className="iso-topbar">
@@ -76,7 +152,7 @@ const SalidasNCPage: React.FC = () => {
       <div className="iso-table-wrapper">
         <table className="iso-table">
           <thead>
-            <tr><th>#</th><th>Código</th><th>Descripción</th><th>Proceso</th><th>Detectado en</th><th>Disposición</th><th>Responsable</th><th>Fecha</th><th>Acción tomada</th><th>Estado</th><th></th></tr>
+            <tr><th>#</th><th>Código</th><th>Descripción</th><th>Proceso</th><th>Detectado en</th><th>Disposición</th><th>Responsable</th><th>Fecha</th><th>Acción tomada</th><th>Cliente informado</th><th>Concesión / autorizada por</th><th>Estado</th><th></th></tr>
           </thead>
           <tbody>
             {filtrados.map((r, i) => (
@@ -90,6 +166,16 @@ const SalidasNCPage: React.FC = () => {
                 <td>{r.responsable}</td>
                 <td>{r.fecha}</td>
                 <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>{r.accionTomada}</td>
+                <td>
+                  {r.clienteInformado
+                    ? <span className="iso-badge verde">Sí{r.fechaNotificacionCliente ? ` · ${r.fechaNotificacionCliente}` : ''}</span>
+                    : <span className="iso-badge gris">No aplica / No</span>}
+                </td>
+                <td>
+                  {r.concesionOtorgada
+                    ? <span className="iso-badge amarillo" title={r.observacionesConcesion}>{r.concesionAutorizadaPor || 'Autorizada'}{r.fechaConcesion ? ` · ${r.fechaConcesion}` : ''}</span>
+                    : <span className="iso-badge gris">Sin concesión</span>}
+                </td>
                 <td><span className={`iso-badge ${r.estado === 'Cerrada' ? 'verde' : r.estado === 'En tratamiento' ? 'amarillo' : 'rojo'}`}>{r.estado}</span></td>
                 <td>
                   <PermissionGuard recurso="salidas_nc" accion="eliminar" mode="hide">
@@ -119,11 +205,11 @@ const SalidasNCPage: React.FC = () => {
               </div>
               <div className="iso-field"><label>Disposición</label>
                 <select value={form.disposicion} onChange={e => setForm(p => ({ ...p, disposicion: e.target.value as any }))} disabled={!canEdit}>
-                  <option>Reparar</option><option>Reprocesar</option><option>Concesión al cliente</option><option>Devolver al proveedor</option><option>Desechar</option>
+                  <option>Separar / Aislar</option><option>Reparar</option><option>Reprocesar</option><option>Concesión al cliente</option><option>Devolver al proveedor</option><option>Desechar</option>
                 </select>
               </div>
             </div>
-            <div className="iso-field"><label>Acción tomada</label><textarea rows={2} value={form.accionTomada} onChange={e => setForm(p => ({ ...p, accionTomada: e.target.value }))} disabled={!canEdit} /></div>
+            <div className="iso-field"><label>Acción tomada / corrección</label><textarea rows={2} value={form.accionTomada} onChange={e => setForm(p => ({ ...p, accionTomada: e.target.value }))} disabled={!canEdit} /></div>
             <div className="iso-form-row">
               <div className="iso-field"><label>Responsable</label><input type="text" value={form.responsable} onChange={e => setForm(p => ({ ...p, responsable: e.target.value }))} disabled={!canEdit} /></div>
               <div className="iso-field"><label>Fecha</label><input type="date" value={form.fecha} onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} disabled={!canEdit} /></div>
@@ -136,9 +222,39 @@ const SalidasNCPage: React.FC = () => {
                 </select>
               </div>
             </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '0.75rem 0' }} />
+            <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#1b3a6b' }}>§8.7.2 — Comunicación al cliente</p>
+            <div className="iso-form-row">
+              <div className="iso-field" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem' }}>
+                <input type="checkbox" checked={form.clienteInformado} onChange={e => setForm(p => ({ ...p, clienteInformado: e.target.checked }))} disabled={!canEdit} id="clienteInformado" />
+                <label htmlFor="clienteInformado" style={{ margin: 0 }}>Se informó al cliente de la no conformidad</label>
+              </div>
+              {form.clienteInformado && (
+                <div className="iso-field"><label>Fecha de notificación</label><input type="date" value={form.fechaNotificacionCliente} onChange={e => setForm(p => ({ ...p, fechaNotificacionCliente: e.target.value }))} disabled={!canEdit} /></div>
+              )}
+            </div>
+
+            <p style={{ margin: '0.75rem 0 0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#1b3a6b' }}>§8.7.1 c) — Concesión / autorización de aceptación</p>
+            <div className="iso-form-row">
+              <div className="iso-field" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem' }}>
+                <input type="checkbox" checked={form.concesionOtorgada} onChange={e => setForm(p => ({ ...p, concesionOtorgada: e.target.checked }))} disabled={!canEdit} id="concesionOtorgada" />
+                <label htmlFor="concesionOtorgada" style={{ margin: 0 }}>Se otorgó concesión / autorización para aceptar la salida</label>
+              </div>
+            </div>
+            {form.concesionOtorgada && (
+              <>
+                <div className="iso-form-row">
+                  <div className="iso-field"><label>Autorizada por *</label><input type="text" placeholder="Nombre / cargo de quien autoriza" value={form.concesionAutorizadaPor} onChange={e => setForm(p => ({ ...p, concesionAutorizadaPor: e.target.value }))} disabled={!canEdit} /></div>
+                  <div className="iso-field"><label>Fecha de concesión</label><input type="date" value={form.fechaConcesion} onChange={e => setForm(p => ({ ...p, fechaConcesion: e.target.value }))} disabled={!canEdit} /></div>
+                </div>
+                <div className="iso-field"><label>Observaciones de la concesión</label><textarea rows={2} placeholder="Condiciones acordadas, alcance de la autorización, etc." value={form.observacionesConcesion} onChange={e => setForm(p => ({ ...p, observacionesConcesion: e.target.value }))} disabled={!canEdit} /></div>
+              </>
+            )}
+
             <div className="iso-modal__footer">
               <button className="iso-btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="iso-btn-primary" onClick={guardar} disabled={!form.descripcion || !canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Guardar</button>
+              <button className="iso-btn-primary" onClick={guardar} disabled={!form.descripcion || !canEdit || (form.concesionOtorgada && !form.concesionAutorizadaPor)} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Guardar</button>
             </div>
           </div>
         </div>

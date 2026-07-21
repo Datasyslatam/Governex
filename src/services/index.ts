@@ -539,6 +539,9 @@ export interface SalidaNCItem {
   id: number; codigo?: string; descripcion: string; proceso?: string
   detectado_en: string; disposicion: string; responsable?: string; fecha: string
   accion_tomada?: string; verificado_por?: string; estado: string
+  cliente_informado?: boolean; fecha_notificacion_cliente?: string
+  concesion_otorgada?: boolean; concesion_autorizada_por?: string
+  fecha_concesion?: string; observaciones_concesion?: string
 }
 export const salidasNCService = {
   getAll: () => api.get<SalidaNCItem[]>('/api/salidas-nc'),
