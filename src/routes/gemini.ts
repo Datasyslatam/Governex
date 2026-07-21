@@ -174,7 +174,7 @@ router.post('/analizar-organigrama', requirePermission('contexto_empresa', 'crea
 
   } catch (err: any) {
     console.error('[Gemini] Error:', err)
-    return res.status(500).json({ error: err.message ?? 'Error al analizar con Gemini' })
+    return res.status(500).json({ error: err.message ?? 'Error al analizar con Governex IA' })
   }
 })
 

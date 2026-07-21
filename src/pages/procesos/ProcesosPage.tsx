@@ -369,8 +369,8 @@ const DofaQuadrant: React.FC<DofaQuadrantProps> = ({ title, subtitle, icon, vari
   </div>
 )
 
-/* ─────────────────── SPINNER OVERLAY ─────────────────── */
-const GeminiLoadingOverlay: React.FC = () => (
+/* ─── SPINNER OVERLAY ─────────────────── */
+const GovernexIALoadingOverlay: React.FC = () => (
   <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:9999 }}>
     <div style={{ background:'#fff',borderRadius:'1rem',padding:'2.5rem 3rem',display:'flex',flexDirection:'column',alignItems:'center',gap:'1rem',boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
       <div style={{ width:52,height:52,border:'5px solid #e2e8f0',borderTop:'5px solid #1a6ebd',borderRadius:'50%',animation:'spin 0.9s linear infinite' }} />
@@ -405,7 +405,7 @@ const ProcesosPage: React.FC = () => {
   const { canEdit, canCreate, canDelete } = usePermissions('procesos')
 
   const [aiAnalysis,    setAiAnalysis]    = useState<AiAnalysis | null>(globalAnalysis as any)
-  const [geminiLoading, setGeminiLoading] = useState(false)
+  const [governexIALoading, setGovernexIALoading] = useState(false)
   const [showEmpresaForm, setShowEmpresaForm] = useState(false)
   const [showActividadModal, setShowActividadModal] = useState(false)
 
@@ -430,9 +430,9 @@ const ProcesosPage: React.FC = () => {
   const { data: pestelDB,   loading: lPestel } = useFetch(procesosService.getPestel, [])
   const { data: dofaDB,     loading: lDofa }   = useFetch(procesosService.getDofa,   [])
 
-  /* ── Gemini call — estable (solo deps que no cambian cada render) */
-  const callGemini = useCallback(async (newMapa: MapaData, datos: DatosEmpresa) => {
-    setGeminiLoading(true)
+  /* ── Governex IA call — estable (solo deps que no cambian cada render) */
+  const callGovernexIA = useCallback(async (newMapa: MapaData, datos: DatosEmpresa) => {
+    setGovernexIALoading(true)
     try {
       const token = localStorage.getItem('governex_token')
       const BASE  = import.meta.env.VITE_API_URL || ''
@@ -475,7 +475,7 @@ const ProcesosPage: React.FC = () => {
     } catch (err: any) {
       Swal.fire({ icon:'error', title:'Error al analizar con Governex', text: err.message ?? 'Error inesperado' })
     } finally {
-      setGeminiLoading(false)
+      setGovernexIALoading(false)
     }
   }, [setDatosEmpresa, setGlobalAnalysis])
 
@@ -495,9 +495,9 @@ const ProcesosPage: React.FC = () => {
     const mapaActual = pendingMapaRef.current
     if (mapaActual) {
       pendingMapaRef.current = null
-      await callGemini(mapaActual, datos)
+      await callGovernexIA(mapaActual, datos)
     }
-  }, [callGemini])
+  }, [callGovernexIA])
 
   /* ── ESTABLE: cierre del modal ──────────────────────── */
   const handleEmpresaCancel = useCallback(() => {
@@ -529,7 +529,7 @@ const ProcesosPage: React.FC = () => {
 
     if (orgBase64) {
       // Hay organigrama: extraer procesos con la misma ruta que UploadAI imagen
-      setGeminiLoading(true)
+      setGovernexIALoading(true)
       try {
         const token = localStorage.getItem('governex_token')
         const BASE  = import.meta.env.VITE_API_URL || ''
@@ -542,11 +542,11 @@ const ProcesosPage: React.FC = () => {
         const generatedMapa: MapaData = await res.json()
         injectAIDetails(generatedMapa)
         setMapa(generatedMapa)
-        setGeminiLoading(false)
-        await callGemini(generatedMapa, datos)
+        setGovernexIALoading(false)
+        await callGovernexIA(generatedMapa, datos)
       } catch {
         // Fallback: analizar con mapa actual si falla la extracción
-        setGeminiLoading(false)
+        setGovernexIALoading(false)
         const fallbackMapa: MapaData = {
           cliente: 'Requisitos del Cliente y Contexto',
           satisfaccion: 'Satisfacción del Cliente',
@@ -556,14 +556,14 @@ const ProcesosPage: React.FC = () => {
         }
         injectAIDetails(fallbackMapa)
         setMapa(fallbackMapa)
-        await callGemini(fallbackMapa, datos)
+        await callGovernexIA(fallbackMapa, datos)
       }
     } else {
       // Sin organigrama: analizar directamente con los datos de empresa
       const mapaActual = mapa
-      await callGemini(mapaActual, datos)
+      await callGovernexIA(mapaActual, datos)
     }
-  }, [mapa, callGemini])
+  }, [mapa, callGovernexIA])
 
   /* ── Lista de procesos para el modal de actividad ────── */
   const procesosParaModal = React.useMemo(() => {
@@ -591,7 +591,7 @@ const ProcesosPage: React.FC = () => {
 
   return (
     <div className="page procesos-page">
-      {geminiLoading && <GeminiLoadingOverlay />}
+      {governexIALoading && <GovernexIALoadingOverlay />}
 
       {/* Modal empresa — callbacks estables, no se re-monta */}
       {showEmpresaForm && (

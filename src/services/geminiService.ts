@@ -244,7 +244,7 @@ export async function analyzeWithGemini(mapa: MapaData): Promise<GeminiAnalysis>
       }
     }
   }
-  throw new Error('Todos los modelos Gemini fallaron. Intenta nuevamente.');
+  throw new Error('Todos los modelos de Governex IA fallaron. Intenta nuevamente.');
 }
 
 // Helper that generates only the resource matrix (matrizRecursos)

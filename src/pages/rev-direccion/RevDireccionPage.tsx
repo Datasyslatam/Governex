@@ -553,7 +553,7 @@ const RevDireccionPage: React.FC = () => {
             <h4>Flujo de la Revisión</h4>
             <ol className="rev9-guide-steps">
               <li><strong>Insumos</strong> — El sistema carga automáticamente los datos del SGC</li>
-              <li><strong>Análisis IA</strong> — Gemini consolida y genera las salidas §9.3.3</li>
+              <li><strong>Análisis IA</strong> — Governex IA consolida y genera las salidas §9.3.3</li>
               <li><strong>Revisión</strong> — La dirección evalúa y edita las recomendaciones</li>
               <li><strong>Acta</strong> — Se registra formalmente con fecha y asistentes</li>
             </ol>
