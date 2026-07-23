@@ -16,7 +16,7 @@ export interface MapaData {
 
 export interface PestelRow    { factor:string; categoria:string; descripcion:string; impacto:'Alto'|'Medio'|'Bajo'; oportunidad:boolean }
 export interface DofaRow      { tipo:'Fortaleza'|'Oportunidad'|'Debilidad'|'Amenaza'; descripcion:string }
-export interface CaracterizacionRow { codigo:string; proceso:string; objetivo:string; entradas:string; salidas:string; indicador:string; responsable:string; estado:string }
+export interface CaracterizacionRow { codigo:string; proceso:string; objetivo:string; entradas:string; actividades?:string; salidas:string; indicador:string; indicadorEntrada?:string; indicadorActividad?:string; indicadorSalida?:string; riesgoEntrada?:string; opEntrada?:string; riesgoActividad?:string; opActividad?:string; riesgoSalida?:string; opSalida?:string; responsable:string; estado:string }
 export type TipoProceso = 'estrategico'|'misional'|'apoyo'
 export interface FilaMatriz   { id:number; proceso:string; tipo:TipoProceso; responsable:string; autoridad:string; funciones:string; recursos:string; rendicion:string; clausula:string }
 export interface FilaMatrizCargos {
@@ -96,7 +96,7 @@ La estructura JSON debe ser:
     { "tipo":"Fortaleza", "descripcion":"descripción concreta basada en procesos y datos reales" }
   ],
   "caracterizacion": [
-    { "codigo":"PE-01", "proceso":"nombre", "objetivo":"objetivo medible", "entradas":"...", "salidas":"...", "indicador":"KPI concreto", "responsable":"cargo", "estado":"Activo" }
+    { "codigo":"PE-01", "proceso":"nombre", "objetivo":"objetivo medible", "entradas":"...", "actividades":"...", "salidas":"...", "indicador":"KPI general", "indicadorEntrada":"...", "indicadorActividad":"...", "indicadorSalida":"...", "riesgoEntrada":"...", "opEntrada":"...", "riesgoActividad":"...", "opActividad":"...", "riesgoSalida":"...", "opSalida":"...", "responsable":"cargo", "estado":"Activo" }
   ],
   "matrizRoles": [
     { "id":1, "proceso":"nombre", "tipo":"estrategico", "responsable":"cargo", "autoridad":"quien autoriza", "funciones":"funciones principales", "recursos":"recursos necesarios", "rendicion":"a quien rinde cuentas", "clausula":"§5.1, §5.3" }
@@ -112,7 +112,7 @@ La estructura JSON debe ser:
 REGLAS:
 - pestel: exactamente 12 factores, mínimo 2 por letra PESTEL, mínimo 5 oportunidades y 5 amenazas. TODO específico para la empresa.
 - dofa: exactamente 4 Fortalezas, 4 Oportunidades, 4 Debilidades, 4 Amenazas. Basadas en los procesos y datos reales.
-- caracterizacion: una fila por cada proceso del mapa (estratégicos PE-xx, misionales PO-xx, apoyo PA-xx).
+- caracterizacion: una fila por cada proceso del mapa (estratégicos PE-xx, misionales PO-xx, apoyo PA-xx). Añade en cada uno actividades detalladas, indicadores para entrada, actividad y salida. Identifica riesgos y oportunidades para la entrada, actividad y salida, y colócalos en los campos correspondientes.
 - matrizRoles: una fila por proceso con cargos reales de la empresa.
 - matrizCargos: una fila por proceso. El campo "actividades" debe contener un array de 3 a 5 actividades concretas y específicas que se realizan en ese proceso. El campo "clausula" debe ser el código de la cláusula ISO 9001:2015 más relevante (ej: "§4.1", "§5.3", "§7.1", "§8.1"). El campo "clausulaDetalle" debe incluir el código y el nombre completo de la cláusula (ej: "§8.4 – Control de los procesos, productos y servicios suministrados externamente"). Usa las cláusulas reales de ISO 9001:2015.
 - indicadores: al menos un indicador por cada proceso para medir el cumplimiento del mismo y de los objetivos de calidad. "frecuencia" debe ser estrictamente una de: "Diaria", "Semanal", "Mensual", "Trimestral", "Semestral", "Anual".
@@ -271,4 +271,149 @@ export async function generateResourcesOnly(mapa: MapaData): Promise<FilaMatrizR
     } catch (_) { /* ignore and try next model */ }
   }
   throw new Error('Failed to generate matrizRecursos');
+}
+
+export async function generarDetalleProcesoManual(proceso: string, objetivo: string, entradas: string) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY no está configurada');
+
+  const prompt = `Eres un consultor experto en ISO 9001:2015. Se ha definido el siguiente proceso manualmente:
+- Proceso: ${proceso}
+- Objetivo: ${objetivo}
+- Entradas: ${entradas}
+
+Genera los detalles faltantes para caracterizar el proceso y la gestión de riesgos en formato JSON estrictamente.
+Estructura JSON esperada:
+{
+  "actividades": "Descripción de las actividades paso a paso",
+  "salidas": "Resultados esperados del proceso",
+  "indicador": "Indicador general para medir el desempeño global del proceso",
+  "indicadorEntrada": "Indicador para medir las entradas",
+  "indicadorActividad": "Indicador para medir las actividades",
+  "indicadorSalida": "Indicador para medir las salidas",
+  "riesgoEntrada": "Riesgo asociado a las entradas",
+  "opEntrada": "Oportunidad asociada a las entradas",
+  "riesgoActividad": "Riesgo asociado a las actividades",
+  "opActividad": "Oportunidad asociada a las actividades",
+  "riesgoSalida": "Riesgo asociado a las salidas",
+  "opSalida": "Oportunidad asociada a las salidas"
+}
+Devuelve ÚNICAMENTE el JSON sin markdown adicional.`;
+
+  for (const model of MODELS) {
+    try {
+      const body = buildGeminiBody(model, prompt, 2048);
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'x-goog-api-key':apiKey },
+        body: JSON.stringify(body)
+      });
+      const text = await response.text();
+      if (!response.ok) continue;
+      const data = JSON.parse(text);
+      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      const cleaned = raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+      return JSON.parse(cleaned);
+    } catch (error) {
+      console.error(`[Gemini] Error generarDetalleProcesoManual con ${model}:`, error);
+    }
+  }
+  throw new Error('Fallaron los modelos de Gemini');
+}
+
+export async function regenerarCaracterizacionCompleta(rows: CaracterizacionRow[]) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY no está configurada');
+
+  const prompt = `Eres un experto en ISO 9001:2015. Aquí tienes una lista de procesos de una empresa representados en formato JSON:
+${JSON.stringify(rows)}
+
+Para CADA UNO de ellos, si les faltan las actividades, salidas, o indicadores/riesgos/oportunidades específicos de (entrada, actividad, salida), complétalos de acuerdo a su información.
+Devuelve ÚNICAMENTE un array JSON con los objetos actualizados. Estructura esperada por objeto:
+{
+  "codigo": "...",
+  "proceso": "...",
+  "objetivo": "...",
+  "entradas": "...",
+  "actividades": "...",
+  "salidas": "...",
+  "indicador": "...",
+  "indicadorEntrada": "...",
+  "indicadorActividad": "...",
+  "indicadorSalida": "...",
+  "riesgoEntrada": "...",
+  "opEntrada": "...",
+  "riesgoActividad": "...",
+  "opActividad": "...",
+  "riesgoSalida": "...",
+  "opSalida": "...",
+  "responsable": "...",
+  "estado": "..."
+}
+Devuelve estrictamente el JSON (array de objetos) sin markdown adicional.`;
+
+  for (const model of MODELS) {
+    try {
+      const body = buildGeminiBody(model, prompt, 8192);
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'x-goog-api-key':apiKey },
+        body: JSON.stringify(body)
+      });
+      const text = await response.text();
+      if (!response.ok) continue;
+      const data = JSON.parse(text);
+      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      const cleaned = raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+      return JSON.parse(cleaned);
+    } catch (error) {
+      console.error(`[Gemini] Error regenerarCaracterizacionCompleta con ${model}:`, error);
+    }
+  }
+  throw new Error('Fallaron los modelos de Gemini al regenerar caracterización');
+}
+
+export async function regenerarMapaCompleto(rows: CaracterizacionRow[]) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY no está configurada');
+
+  const prompt = `Eres un experto en ISO 9001:2015. Tienes la siguiente tabla de caracterización de procesos:
+${JSON.stringify(rows)}
+
+Genera una matriz de roles y responsabilidades (Mapa de Procedimiento) asociando CADA UNO de los procesos de la tabla a sus funciones principales, autoridad y cláusula aplicable (por defecto §8.1 si no aplica otra). 
+Debes clasificar el tipo de proceso en 'estrategico', 'misional' o 'apoyo'.
+
+CRÍTICO: Debes generar EXACTAMENTE el mismo número de elementos que la tabla de entrada (no puedes omitir NINGÚN proceso). Cada objeto en la respuesta debe corresponder a un proceso de la tabla de entrada.
+
+Devuelve ÚNICAMENTE un array JSON con esta estructura por cada objeto:
+[
+  {
+    "proceso": "Nombre del proceso (igual que en caracterizacion)",
+    "tipo": "estrategico | misional | apoyo",
+    "responsable": "Rol responsable",
+    "clausula": "§...",
+    "funciones": "Descripción de funciones principales"
+  }
+]
+NO incluyas markdown, solo el array JSON.`;
+
+  for (const model of MODELS) {
+    try {
+      const body = buildGeminiBody(model, prompt, 8192);
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'x-goog-api-key':apiKey },
+        body: JSON.stringify(body)
+      });
+      const text = await response.text();
+      if (!response.ok) continue;
+      const data = JSON.parse(text);
+      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      const cleaned = raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+      return JSON.parse(cleaned);
+    } catch (error) {
+      console.error(`[Gemini] Error regenerarMapaCompleto con ${model}:`, error);
+    }
+  }
+  throw new Error('Fallaron los modelos de Gemini al regenerar mapa');
 }

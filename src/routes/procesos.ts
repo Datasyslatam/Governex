@@ -26,7 +26,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
 // POST /api/procesos
 router.post('/', requirePermission('procesos', 'crear'), async (req: AuthRequest, res: Response) => {
-  const { codigo, nombre, objetivo, entradas, salidas, indicador_kpi, responsable, tipo_id, estado } = req.body
+  const { codigo, nombre, objetivo, entradas, salidas, indicador_kpi, responsable, tipo_id, estado, actividades, indicadorEntrada, indicadorActividad, indicadorSalida, riesgoEntrada, opEntrada, riesgoActividad, opActividad, riesgoSalida, opSalida } = req.body
   if (!codigo || !nombre || !tipo_id) {
     return res.status(400).json({ error: 'codigo, nombre y tipo_id son requeridos' })
   }
@@ -40,10 +40,19 @@ router.post('/', requirePermission('procesos', 'crear'), async (req: AuthRequest
     if (!rowCount) return res.status(400).json({ error: 'tipo_id no pertenece a tu organización' })
 
     const { rows } = await pool.query(
-      `INSERT INTO procesos (codigo, nombre, objetivo, entradas, salidas, indicador_kpi, responsable, tipo_id, estado, tenant_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [codigo, nombre, objetivo || null, entradas || null, salidas || null,
-       indicador_kpi || null, responsable || null, tipo_id, estado || 'Activo', req.user!.tenantId]
+      `INSERT INTO procesos (
+        codigo, nombre, objetivo, entradas, salidas, indicador_kpi, responsable, tipo_id, estado, tenant_id,
+        actividades, indicador_entrada, indicador_actividad, indicador_salida, riesgo_entrada, op_entrada,
+        riesgo_actividad, op_actividad, riesgo_salida, op_salida
+       )
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING *`,
+      [
+        codigo, nombre, objetivo || null, entradas || null, salidas || null,
+        indicador_kpi || null, responsable || null, tipo_id, estado || 'Activo', req.user!.tenantId,
+        actividades || null, indicadorEntrada || null, indicadorActividad || null, indicadorSalida || null,
+        riesgoEntrada || null, opEntrada || null, riesgoActividad || null, opActividad || null,
+        riesgoSalida || null, opSalida || null
+      ]
     )
     res.status(201).json(rows[0])
   } catch (err: any) {
@@ -56,14 +65,23 @@ router.post('/', requirePermission('procesos', 'crear'), async (req: AuthRequest
 // PUT /api/procesos/:id
 router.put('/:id', requirePermission('procesos', 'editar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
-  const { nombre, objetivo, entradas, salidas, indicador_kpi, responsable, tipo_id, estado } = req.body
+  const { nombre, objetivo, entradas, salidas, indicador_kpi, responsable, tipo_id, estado, actividades, indicadorEntrada, indicadorActividad, indicadorSalida, riesgoEntrada, opEntrada, riesgoActividad, opActividad, riesgoSalida, opSalida } = req.body
   try {
     const { rows } = await pool.query(
-      `UPDATE procesos SET nombre=$1, objetivo=$2, entradas=$3, salidas=$4,
-       indicador_kpi=$5, responsable=$6, tipo_id=$7, estado=$8
+      `UPDATE procesos SET 
+         nombre=$1, objetivo=$2, entradas=$3, salidas=$4,
+         indicador_kpi=$5, responsable=$6, tipo_id=$7, estado=$8,
+         actividades=$11, indicador_entrada=$12, indicador_actividad=$13, indicador_salida=$14,
+         riesgo_entrada=$15, op_entrada=$16, riesgo_actividad=$17, op_actividad=$18,
+         riesgo_salida=$19, op_salida=$20
        WHERE id=$9 AND tenant_id=$10 RETURNING *`,
-      [nombre, objetivo || null, entradas || null, salidas || null,
-       indicador_kpi || null, responsable || null, tipo_id, estado, id, req.user!.tenantId]
+      [
+        nombre, objetivo || null, entradas || null, salidas || null,
+        indicador_kpi || null, responsable || null, tipo_id, estado, id, req.user!.tenantId,
+        actividades || null, indicadorEntrada || null, indicadorActividad || null, indicadorSalida || null,
+        riesgoEntrada || null, opEntrada || null, riesgoActividad || null, opActividad || null,
+        riesgoSalida || null, opSalida || null
+      ]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Proceso no encontrado' })
     res.json(rows[0])
@@ -135,5 +153,68 @@ router.post('/dofa', requirePermission('procesos', 'crear'), async (req: AuthReq
     res.status(500).json({ error: 'Error al crear entrada DOFA' })
   }
 })
+// POST /api/procesos/batch (Upsert de multiples procesos / Caracterización)
+router.post('/batch', requirePermission('procesos', 'crear'), async (req: AuthRequest, res: Response) => {
+  const { rows } = req.body;
+  if (!Array.isArray(rows)) return res.status(400).json({ error: 'Se requiere un array de filas' });
+
+  const tenantId = req.user!.tenantId;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // Obtener los tipos de proceso para el mapeo
+    const { rows: tipos } = await client.query('SELECT id, nombre FROM tipos_proceso WHERE tenant_id = $1', [tenantId]);
+    const tipoMap: Record<string, number> = {};
+    for (const t of tipos) tipoMap[t.nombre.toLowerCase()] = t.id;
+
+    const upserted = [];
+
+    for (const row of rows) {
+      if (!row.codigo || !row.proceso) continue;
+
+      let tipo_id: number;
+      if      (row.codigo.startsWith('PE')) tipo_id = tipoMap['estratégico'] ?? tipoMap['estrategico'] ?? 1;
+      else if (row.codigo.startsWith('PO')) tipo_id = tipoMap['misional']    ?? tipoMap['operacional']  ?? 2;
+      else                                  tipo_id = tipoMap['apoyo']       ?? tipoMap['soporte']      ?? 3;
+
+      const procRes = await client.query(
+        `INSERT INTO procesos (
+          codigo, nombre, objetivo, entradas, salidas, indicador_kpi, responsable, tipo_id, estado, tenant_id,
+          actividades, indicador_entrada, indicador_actividad, indicador_salida, riesgo_entrada, op_entrada,
+          riesgo_actividad, op_actividad, riesgo_salida, op_salida
+         )
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+         ON CONFLICT (tenant_id, codigo) DO UPDATE SET
+           nombre=EXCLUDED.nombre, objetivo=EXCLUDED.objetivo, entradas=EXCLUDED.entradas,
+           salidas=EXCLUDED.salidas, indicador_kpi=EXCLUDED.indicador_kpi,
+           responsable=EXCLUDED.responsable, tipo_id=EXCLUDED.tipo_id, estado=EXCLUDED.estado,
+           actividades=EXCLUDED.actividades, indicador_entrada=EXCLUDED.indicador_entrada,
+           indicador_actividad=EXCLUDED.indicador_actividad, indicador_salida=EXCLUDED.indicador_salida,
+           riesgo_entrada=EXCLUDED.riesgo_entrada, op_entrada=EXCLUDED.op_entrada,
+           riesgo_actividad=EXCLUDED.riesgo_actividad, op_actividad=EXCLUDED.op_actividad,
+           riesgo_salida=EXCLUDED.riesgo_salida, op_salida=EXCLUDED.op_salida
+         RETURNING *`,
+        [
+          row.codigo, row.proceso, row.objetivo, row.entradas, row.salidas,
+          row.indicador, row.responsable, tipo_id, row.estado ?? 'Activo', tenantId,
+          row.actividades ?? '', row.indicadorEntrada ?? '', row.indicadorActividad ?? '', row.indicadorSalida ?? '',
+          row.riesgoEntrada ?? '', row.opEntrada ?? '', row.riesgoActividad ?? '', row.opActividad ?? '',
+          row.riesgoSalida ?? '', row.opSalida ?? ''
+        ]
+      );
+      upserted.push(procRes.rows[0]);
+    }
+
+    await client.query('COMMIT');
+    res.status(200).json(upserted);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ error: 'Error al realizar el guardado masivo de procesos' });
+  } finally {
+    client.release();
+  }
+});
 
 export default router

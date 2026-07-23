@@ -1,7 +1,7 @@
 import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
-import { analyzeWithGemini, generateResourcesOnly, MapaData, DatosEmpresa, FilaMatrizCargos } from '../services/geminiService'
+import { analyzeWithGemini, generateResourcesOnly, MapaData, DatosEmpresa, FilaMatrizCargos, generarDetalleProcesoManual, regenerarCaracterizacionCompleta, regenerarMapaCompleto } from '../services/geminiService'
 import { requirePermission } from '../middleware/rbac'
 
 /** Allowed PESTEL factor codes as required by the DB constraint. */
@@ -117,15 +117,28 @@ router.post('/analizar-organigrama', requirePermission('contexto_empresa', 'crea
           else                                  tipo_id = tipoMap['apoyo']       ?? tipoMap['soporte']      ?? 3
 
           const procRes = await client.query(
-            `INSERT INTO procesos (codigo, nombre, objetivo, entradas, salidas, indicador_kpi, responsable, tipo_id, estado, tenant_id)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+            `INSERT INTO procesos (
+              codigo, nombre, objetivo, entradas, salidas, indicador_kpi, responsable, tipo_id, estado, tenant_id,
+              actividades, indicador_entrada, indicador_actividad, indicador_salida, riesgo_entrada, op_entrada, riesgo_actividad, op_actividad, riesgo_salida, op_salida
+             )
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
              ON CONFLICT (tenant_id, codigo) DO UPDATE SET
                nombre=EXCLUDED.nombre, objetivo=EXCLUDED.objetivo, entradas=EXCLUDED.entradas,
                salidas=EXCLUDED.salidas, indicador_kpi=EXCLUDED.indicador_kpi,
-               responsable=EXCLUDED.responsable, tipo_id=EXCLUDED.tipo_id, estado=EXCLUDED.estado
+               responsable=EXCLUDED.responsable, tipo_id=EXCLUDED.tipo_id, estado=EXCLUDED.estado,
+               actividades=EXCLUDED.actividades, indicador_entrada=EXCLUDED.indicador_entrada,
+               indicador_actividad=EXCLUDED.indicador_actividad, indicador_salida=EXCLUDED.indicador_salida,
+               riesgo_entrada=EXCLUDED.riesgo_entrada, op_entrada=EXCLUDED.op_entrada,
+               riesgo_actividad=EXCLUDED.riesgo_actividad, op_actividad=EXCLUDED.op_actividad,
+               riesgo_salida=EXCLUDED.riesgo_salida, op_salida=EXCLUDED.op_salida
              RETURNING id`,
-            [row.codigo, row.proceso, row.objetivo, row.entradas, row.salidas,
-             row.indicador, row.responsable, tipo_id, row.estado ?? 'Activo', tenantId]
+            [
+              row.codigo, row.proceso, row.objetivo, row.entradas, row.salidas,
+              row.indicador, row.responsable, tipo_id, row.estado ?? 'Activo', tenantId,
+              row.actividades ?? '', row.indicadorEntrada ?? '', row.indicadorActividad ?? '', row.indicadorSalida ?? '',
+              row.riesgoEntrada ?? '', row.opEntrada ?? '', row.riesgoActividad ?? '', row.opActividad ?? '',
+              row.riesgoSalida ?? '', row.opSalida ?? ''
+            ]
           )
           procesoIdMap[row.proceso.toLowerCase()] = procRes.rows[0].id
         }
@@ -1483,5 +1496,47 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
     return res.status(500).json({ error: 'Ocurrió un error al procesar la cotización.' })
   }
 })
+
+/* ── POST /api/gemini/generar-detalle-proceso ────────────────
+   Genera detalles (actividades, salidas, riesgos) para proceso manual */
+router.post('/generar-detalle-proceso', async (req: AuthRequest, res: Response) => {
+  const { proceso, objetivo, entradas } = req.body;
+  if (!proceso || !entradas) return res.status(400).json({ error: 'Se requiere proceso y entradas' });
+  try {
+    const data = await generarDetalleProcesoManual(proceso, objetivo, entradas);
+    res.json(data);
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/* ── POST /api/gemini/regenerar-caracterizacion ──────────────
+   Regenera toda la tabla completando campos faltantes */
+router.post('/regenerar-caracterizacion', async (req: AuthRequest, res: Response) => {
+  const { rows } = req.body;
+  if (!Array.isArray(rows)) return res.status(400).json({ error: 'Se requiere un array de filas' });
+  try {
+    const data = await regenerarCaracterizacionCompleta(rows);
+    res.json(data);
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/* ── POST /api/gemini/regenerar-mapa-procedimiento ───────────
+   Regenera el mapa de roles a partir de caracterizacion */
+router.post('/regenerar-mapa-procedimiento', async (req: AuthRequest, res: Response) => {
+  const { rows } = req.body;
+  if (!Array.isArray(rows)) return res.status(400).json({ error: 'Se requiere un array de filas' });
+  try {
+    const data = await regenerarMapaCompleto(rows);
+    res.json(data);
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 export default router

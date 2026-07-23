@@ -323,7 +323,7 @@ const RiesgosPage: React.FC = () => {
 
   const [filterTipo,   setFilterTipo]   = useState<'todos' | 'Riesgo' | 'Oportunidad'>('todos')
   const [filterNivel,  setFilterNivel]  = useState<'todos' | 'CRITICO' | 'TRATAMIENTO' | 'MONITOREO'>('todos')
-  const [filterFuente, setFilterFuente] = useState<'todos' | 'PESTEL' | 'DOFA' | 'ACTIVIDAD'>('todos')
+  const [filterFuente, setFilterFuente] = useState<'todos' | 'PESTEL' | 'DOFA' | 'ACTIVIDAD' | 'PLANIFICACION'>('todos')
   const [search,       setSearch]       = useState('')
 
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -409,7 +409,13 @@ const RiesgosPage: React.FC = () => {
   const riesgosFiltrados = useMemo(() => riesgosFinal.filter(r => {
     if (filterTipo   !== 'todos' && r.tipo   !== filterTipo)   return false
     if (filterNivel  !== 'todos' && r.estado !== filterNivel)  return false
-    if (filterFuente !== 'todos' && r.fuente !== filterFuente) return false
+    if (filterFuente !== 'todos') {
+      if (filterFuente === 'PLANIFICACION') {
+        if (!r.fuente.toLowerCase().startsWith('planificación')) return false
+      } else {
+        if (r.fuente !== filterFuente) return false
+      }
+    }
     if (search && !r.descripcion.toLowerCase().includes(search.toLowerCase()) &&
         !r.codigo.toLowerCase().includes(search.toLowerCase())) return false
     return true
@@ -590,6 +596,7 @@ const RiesgosPage: React.FC = () => {
               <option value="PESTEL">Solo PESTEL</option>
               <option value="DOFA">Solo DOFA</option>
               <option value="ACTIVIDAD">Solo Actividades (§4.1)</option>
+              <option value="PLANIFICACION">Solo Planificación (§8.1)</option>
             </select>
           </div>
 

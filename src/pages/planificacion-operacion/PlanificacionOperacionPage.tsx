@@ -17,9 +17,10 @@ import {
 } from '../../context/AIAnalysisContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import PermissionGuard from '../../components/ui/PermissionGuard'
+import { planificacionControlService, procesosService } from '../../services'
 
 /* ─────────────────────────── TIPOS LOCALES ─────────────────────── */
-type Tab = 'caracterizacion' | 'mapa' | 'manual' | 'riesgos'
+type Tab = 'caracterizacion' | 'mapa' | 'manual' | 'riesgos' | 'indicadores'
 
 /* ──────────────────────────── HELPERS ─────────────────────────── */
 const TIPO_LABEL: Record<TipoProceso, string> = {
@@ -212,8 +213,19 @@ const EmptyState: React.FC = () => (
 const TablaCaracterizacion: React.FC<{
   rows:        CaracterizacionRow[]
   actividades: ActividadEmpresa[]
-}> = ({ rows, actividades }) => {
+  canCreate:   boolean
+  onAddManual: (fila: CaracterizacionRow) => void
+  onRegenerar: () => void
+}> = ({ rows, actividades, canCreate, onAddManual, onRegenerar }) => {
   const [search, setSearch] = useState('')
+  const [showAdd, setShowAdd] = useState(false)
+  const [loadingAI, setLoadingAI] = useState(false)
+  
+  const [newManual, setNewManual] = useState<Partial<CaracterizacionRow>>({
+    codigo: '', proceso: '', objetivo: '', entradas: '', actividades: '',
+    salidas: '', indicador: '', indicadorEntrada: '', indicadorActividad: '',
+    indicadorSalida: '', responsable: '', estado: 'Activo'
+  })
 
   const filtered = rows.filter(r =>
     r.proceso.toLowerCase().includes(search.toLowerCase()) ||
@@ -223,6 +235,54 @@ const TablaCaracterizacion: React.FC<{
   const actIdx = (id: string) => {
     const i = actividades.findIndex(a => a.id === id)
     return i >= 0 ? String(i + 1).padStart(3, '0') : '001'
+  }
+
+  const handleGenerarIA = async () => {
+    if (!newManual.proceso || !newManual.entradas) {
+      alert('Debes ingresar al menos el Nombre del Proceso y las Entradas para generar con IA.')
+      return
+    }
+    setLoadingAI(true)
+    try {
+      const res = await planificacionControlService.generarDetalleProceso({
+        proceso: newManual.proceso,
+        objetivo: newManual.objetivo || '',
+        entradas: newManual.entradas
+      })
+      setNewManual(prev => ({
+        ...prev,
+        actividades: res.actividades || '',
+        salidas: res.salidas || '',
+        indicador: res.indicador || '',
+        indicadorEntrada: res.indicadorEntrada || '',
+        indicadorActividad: res.indicadorActividad || '',
+        indicadorSalida: res.indicadorSalida || '',
+        riesgoEntrada: res.riesgoEntrada,
+        opEntrada: res.opEntrada,
+        riesgoActividad: res.riesgoActividad,
+        opActividad: res.opActividad,
+        riesgoSalida: res.riesgoSalida,
+        opSalida: res.opSalida
+      }))
+    } catch (e: any) {
+      alert('Error al generar con IA: ' + e.message)
+    } finally {
+      setLoadingAI(false)
+    }
+  }
+
+  const handleSaveManual = () => {
+    if (!newManual.codigo || !newManual.proceso) {
+      alert('Código y Proceso son obligatorios.')
+      return
+    }
+    onAddManual(newManual as CaracterizacionRow)
+    setShowAdd(false)
+    setNewManual({
+      codigo: '', proceso: '', objetivo: '', entradas: '', actividades: '',
+      salidas: '', indicador: '', indicadorEntrada: '', indicadorActividad: '',
+      indicadorSalida: '', responsable: '', estado: 'Activo'
+    })
   }
 
   return (
@@ -240,30 +300,115 @@ const TablaCaracterizacion: React.FC<{
           Total procesos: <strong>{rows.length}</strong>
           {search && <span style={{ marginLeft: 8, color: '#6b7280' }}>· Mostrando {filtered.length}</span>}
         </div>
-        <input
-          type="text"
-          placeholder="🔍 Buscar proceso o responsable…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{
-            padding: '0.4rem 0.75rem', border: '1px solid #e5e7eb',
-            borderRadius: '0.5rem', fontSize: '0.82rem', outline: 'none', width: 220,
-          }}
-        />
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button
+            onClick={onRegenerar}
+            style={{
+              background: '#f59e0b', color: '#fff', border: 'none',
+              borderRadius: '0.5rem', padding: '0.4rem 0.9rem',
+              fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+            }}
+          >✨ Regenerar Tabla</button>
+          <input
+            type="text"
+            placeholder="🔍 Buscar proceso o responsable…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{
+              padding: '0.4rem 0.75rem', border: '1px solid #e5e7eb',
+              borderRadius: '0.5rem', fontSize: '0.82rem', outline: 'none', width: 220,
+            }}
+          />
+          {canCreate && (
+            <button
+              onClick={() => setShowAdd(s => !s)}
+              style={{
+                background: '#1b3a6b', color: '#fff', border: 'none',
+                borderRadius: '0.5rem', padding: '0.4rem 0.9rem',
+                fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+              }}
+            >＋ Ingresar Manualmente</button>
+          )}
+        </div>
       </div>
 
-      <div className="iso-table-wrapper">
-        <table className="iso-table">
+      {showAdd && canCreate && (
+        <div style={{
+          background: '#f0f9ff', border: '1px solid #bae6fd',
+          borderRadius: '0.6rem', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem',
+        }}>
+          <div style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.85rem' }}>➕ Ingresar Proceso Manualmente</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}>
+            <input placeholder="Código *" value={newManual.codigo}
+              onChange={e => setNewManual(p => ({ ...p, codigo: e.target.value }))}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
+            <input placeholder="Proceso *" value={newManual.proceso}
+              onChange={e => setNewManual(p => ({ ...p, proceso: e.target.value }))}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
+            <input placeholder="Responsable" value={newManual.responsable}
+              onChange={e => setNewManual(p => ({ ...p, responsable: e.target.value }))}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
+            <textarea placeholder="Objetivo" value={newManual.objetivo}
+              onChange={e => setNewManual(p => ({ ...p, objetivo: e.target.value }))}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem', gridColumn: '1 / 4' }} />
+            <textarea placeholder="Entradas *" value={newManual.entradas}
+              onChange={e => setNewManual(p => ({ ...p, entradas: e.target.value }))}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem', gridColumn: '1 / 4' }} />
+          </div>
+          
+          <button onClick={handleGenerarIA} disabled={loadingAI}
+            style={{ background: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '0.4rem', padding: '0.4rem', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', width: 'fit-content' }}>
+            {loadingAI ? 'Generando...' : '✨ Generar con Governex IA (Actividades, Salidas, Riesgos)'}
+          </button>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+            <textarea placeholder="Actividades" value={newManual.actividades}
+              onChange={e => setNewManual(p => ({ ...p, actividades: e.target.value }))}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
+            <textarea placeholder="Salidas" value={newManual.salidas}
+              onChange={e => setNewManual(p => ({ ...p, salidas: e.target.value }))}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
+            
+            <input placeholder="Indicador Entrada" value={newManual.indicadorEntrada}
+              onChange={e => setNewManual(p => ({ ...p, indicadorEntrada: e.target.value }))}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
+            <input placeholder="Indicador Actividad" value={newManual.indicadorActividad}
+              onChange={e => setNewManual(p => ({ ...p, indicadorActividad: e.target.value }))}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
+            <input placeholder="Indicador Salida" value={newManual.indicadorSalida}
+              onChange={e => setNewManual(p => ({ ...p, indicadorSalida: e.target.value }))}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
+            <input placeholder="Indicador General" value={newManual.indicador}
+              onChange={e => setNewManual(p => ({ ...p, indicador: e.target.value }))}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+            <button onClick={handleSaveManual}
+              style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: '0.4rem', padding: '0.38rem 0.9rem', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
+            >✔ Guardar Proceso</button>
+            <button onClick={() => setShowAdd(false)}
+              style={{ background: '#f3f4f6', color: '#6b7280', border: 'none', borderRadius: '0.4rem', padding: '0.38rem 0.9rem', fontSize: '0.82rem', cursor: 'pointer' }}
+            >✕ Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      <div className="iso-table-wrapper" style={{ overflowX: 'auto' }}>
+        <table className="iso-table" style={{ minWidth: 1200 }}>
           <thead>
             <tr>
               <th>Código</th><th>Proceso</th><th>Objetivo</th>
-              <th>Entradas</th><th>Salidas</th><th>Indicador</th>
+              <th>Entradas<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Entrada</span></th>
+              <th>Actividades<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Actividad</span></th>
+              <th>Salidas<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Salida</span></th>
+              <th>Indicador Gral.</th>
               <th>Responsable</th><th>Estado</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', color: '#9ca3af', padding: '1.5rem' }}>Sin resultados</td></tr>
+              <tr><td colSpan={9} style={{ textAlign: 'center', color: '#9ca3af', padding: '1.5rem' }}>Sin resultados</td></tr>
             ) : filtered.map(row => (
               <tr key={row.codigo}>
                 <td>
@@ -274,9 +419,19 @@ const TablaCaracterizacion: React.FC<{
                   }}>{row.codigo}</code>
                 </td>
                 <td style={{ fontWeight: 600, color: '#1b3a6b' }}>{row.proceso}</td>
-                <td style={{ fontSize: '0.8rem' }}>{row.objetivo}</td>
-                <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>{row.entradas}</td>
-                <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>{row.salidas}</td>
+                <td style={{ fontSize: '0.8rem' }}><TextoExpandible texto={row.objetivo} maxChars={80} /></td>
+                <td style={{ fontSize: '0.78rem' }}>
+                  <div style={{ color: '#6b7280', marginBottom: 4 }}><TextoExpandible texto={row.entradas} maxChars={80} /></div>
+                  {row.indicadorEntrada && <div style={{ fontSize: '0.7rem', color: '#0369a1', background: '#e0f2fe', padding: 2, borderRadius: 4 }}>🎯 {row.indicadorEntrada}</div>}
+                </td>
+                <td style={{ fontSize: '0.78rem' }}>
+                  <div style={{ color: '#6b7280', marginBottom: 4 }}><TextoExpandible texto={row.actividades || '—'} maxChars={80} /></div>
+                  {row.indicadorActividad && <div style={{ fontSize: '0.7rem', color: '#b45309', background: '#fef3c7', padding: 2, borderRadius: 4 }}>🎯 {row.indicadorActividad}</div>}
+                </td>
+                <td style={{ fontSize: '0.78rem' }}>
+                  <div style={{ color: '#6b7280', marginBottom: 4 }}><TextoExpandible texto={row.salidas} maxChars={80} /></div>
+                  {row.indicadorSalida && <div style={{ fontSize: '0.7rem', color: '#15803d', background: '#dcfce3', padding: 2, borderRadius: 4 }}>🎯 {row.indicadorSalida}</div>}
+                </td>
                 <td style={{ fontSize: '0.78rem' }}>{row.indicador}</td>
                 <td style={{ fontWeight: 500 }}>{row.responsable}</td>
                 <td><span className={`iso-badge ${estadoBadgeClass(row.estado)}`}>{row.estado}</span></td>
@@ -425,7 +580,8 @@ const MapaProcedimiento: React.FC<{
   onAdd:    (fila: Omit<FilaMapaDB, 'id'>) => void
   onUpdate: (id: number, patch: Partial<FilaMapaDB>) => void
   onDelete: (id: number) => void
-}> = ({ filas, empresa, sector, canCreate, canEdit, canDelete, onAdd, onUpdate, onDelete }) => {
+  onRegenerar?: () => void
+}> = ({ filas, empresa, sector, canCreate, canEdit, canDelete, onAdd, onUpdate, onDelete, onRegenerar }) => {
   const [search, setSearch]         = useState('')
   const [editingId, setEditingId]   = useState<number | null>(null)
   const [editValues, setEditValues] = useState<Partial<FilaMapaDB>>({})
@@ -500,6 +656,19 @@ const MapaProcedimiento: React.FC<{
             onChange={e => setSearch(e.target.value)}
             style={{ padding: '0.4rem 0.75rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', fontSize: '0.82rem', outline: 'none', width: 220 }}
           />
+          {onRegenerar && (
+            <button
+              onClick={onRegenerar}
+              className="btn-gemini-sparkle"
+              style={{
+                padding: '0.4rem 0.85rem', borderRadius: '0.5rem',
+                fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '0.4rem', border: 'none'
+              }}
+            >
+              ✨ Regenerar Mapa con Governex IA
+            </button>
+          )}
           {canCreate && (
             <button
               onClick={() => setShowAdd(s => !s)}
@@ -676,6 +845,7 @@ const ManualProcedimiento: React.FC<{
   })
 
   const filtered = filas.filter(r =>
+    (r.codigo || '').toLowerCase().includes(search.toLowerCase()) ||
     r.proceso.toLowerCase().includes(search.toLowerCase()) ||
     r.responsable.toLowerCase().includes(search.toLowerCase()) ||
     (r.clausula || '').toLowerCase().includes(search.toLowerCase())
@@ -1089,26 +1259,179 @@ const MatrizRiesgosActividades: React.FC<{
   )
 }
 
+/* ────────────── SUBCOMPONENTE: INDICADORES CARACTERIZACION ────── */
+const IndicadoresCaracterizacion: React.FC<{ rows: CaracterizacionRow[] }> = ({ rows }) => {
+  if (rows.length === 0) return <div className="iso-empty">No hay indicadores generados.</div>
+
+  const getTotal = () => {
+    let count = 0
+    rows.forEach(r => {
+      if (r.indicador) count++
+      if (r.indicadorEntrada) count++
+      if (r.indicadorActividad) count++
+      if (r.indicadorSalida) count++
+    })
+    return count
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div className="iso-info-box">
+        <span className="iso-info-box__icon">📈</span>
+        <span>
+          <strong>Indicadores de Procesos</strong> — Muestra los indicadores generales, de entrada, de actividades y de salida identificados en la tabla de caracterización.
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '1rem 1.5rem', minWidth: 200 }}>
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#2e86de' }}>{getTotal()}</div>
+          <div style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: 600 }}>Indicadores Totales</div>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+        {rows.map((r, i) => {
+          const hasInds = r.indicador || r.indicadorEntrada || r.indicadorActividad || r.indicadorSalida
+          if (!hasInds) return null
+
+          return (
+            <div key={i} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '1rem' }}>
+              <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, marginBottom: '0.2rem' }}>{r.codigo}</div>
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: '#1b3a6b', marginBottom: '1rem' }}>{r.proceso}</div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                {r.indicador && (
+                  <div style={{ background: '#f0fdf4', padding: '0.6rem', borderRadius: '0.4rem', borderLeft: '4px solid #22c55e' }}>
+                    <div style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 700, marginBottom: '0.2rem' }}>General</div>
+                    <div style={{ fontSize: '0.85rem', color: '#111827' }}>{r.indicador}</div>
+                  </div>
+                )}
+                {r.indicadorEntrada && (
+                  <div style={{ background: '#eff6ff', padding: '0.6rem', borderRadius: '0.4rem', borderLeft: '4px solid #3b82f6' }}>
+                    <div style={{ fontSize: '0.7rem', color: '#1e3a8a', fontWeight: 700, marginBottom: '0.2rem' }}>Entrada</div>
+                    <div style={{ fontSize: '0.85rem', color: '#111827' }}>{r.indicadorEntrada}</div>
+                  </div>
+                )}
+                {r.indicadorActividad && (
+                  <div style={{ background: '#fdf4ff', padding: '0.6rem', borderRadius: '0.4rem', borderLeft: '4px solid #d946ef' }}>
+                    <div style={{ fontSize: '0.7rem', color: '#86198f', fontWeight: 700, marginBottom: '0.2rem' }}>Actividad</div>
+                    <div style={{ fontSize: '0.85rem', color: '#111827' }}>{r.indicadorActividad}</div>
+                  </div>
+                )}
+                {r.indicadorSalida && (
+                  <div style={{ background: '#fffbeb', padding: '0.6rem', borderRadius: '0.4rem', borderLeft: '4px solid #f59e0b' }}>
+                    <div style={{ fontSize: '0.7rem', color: '#b45309', fontWeight: 700, marginBottom: '0.2rem' }}>Salida</div>
+                    <div style={{ fontSize: '0.85rem', color: '#111827' }}>{r.indicadorSalida}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 /* ─────────────────────────── PÁGINA PRINCIPAL ─────────────────── */
 const PlanificacionOperacionPage: React.FC = () => {
   const { canCreate, canEdit, canDelete } = usePermissions('planes_operacion')
   const {
-    analysis, actividades,
+    analysis, setAnalysis, actividades,
     addFilaMapaProcedimiento, updateFilaMapaProcedimiento, removeFilaMapaProcedimiento,
     addFilaManualProcedimiento, updateFilaManualProcedimiento, removeFilaManualProcedimiento,
   } = useAIAnalysis()
   const [activeTab, setActiveTab] = useState<Tab>('caracterizacion')
+  const [isRegenerating, setIsRegenerating] = useState(false)
 
   const caracterizacion: CaracterizacionRow[] = analysis?.caracterizacion ?? []
   const matrizRoles: FilaMapaDB[]            = analysis?.mapaProcedimiento ?? []
   const manualRows: FilaManualDB[]           = analysis?.manualProcedimiento ?? []
   const hasData = caracterizacion.length > 0 || matrizRoles.length > 0 || actividades.length > 0 || manualRows.length > 0
 
+  const handleAddManualCaracterizacion = async (fila: CaracterizacionRow) => {
+    if (!analysis) return
+    
+    // Guardar localmente
+    const newCaracterizacion = [...analysis.caracterizacion, fila]
+    setAnalysis({
+      ...analysis,
+      caracterizacion: newCaracterizacion
+    })
+    
+    // Guardar a base de datos de manera explícita (batch upsert de un solo elemento)
+    try {
+      await procesosService.batch({ rows: [fila] })
+    } catch (e: any) {
+      console.warn('No se pudo guardar la caracterización en la BD:', e)
+    }
+    
+    // Generar manual de procedimientos de inmediato para el nuevo proceso
+    addFilaManualProcedimiento({
+      codigo: fila.codigo,
+      proceso: fila.proceso,
+      objetivo: fila.objetivo,
+      entradas: fila.entradas,
+      salidas: fila.salidas,
+      indicador: fila.indicador,
+      responsable: fila.responsable,
+      estado: fila.estado,
+      clausula: '§8.1' // Cláusula por defecto para control operacional
+    })
+  }
+
+  const handleRegenerarCaracterizacion = async () => {
+    if (!analysis || analysis.caracterizacion.length === 0) return
+    try {
+      setIsRegenerating(true)
+      const res = await planificacionControlService.regenerarCaracterizacion({
+        rows: analysis.caracterizacion
+      })
+      setAnalysis({
+        ...analysis,
+        caracterizacion: res
+      })
+      // Guardar a base de datos
+      await procesosService.batch({ rows: res })
+      alert('Tabla regenerada y guardada exitosamente con Governex IA.')
+    } catch (e: any) {
+      alert('Error al regenerar: ' + e.message)
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
+
+  const handleRegenerarMapa = async () => {
+    if (!analysis || analysis.caracterizacion.length === 0) {
+      alert('Primero debes tener datos en la tabla de caracterización.')
+      return
+    }
+    try {
+      setIsRegenerating(true)
+      const res = await planificacionControlService.regenerarMapaProcedimiento({
+        rows: analysis.caracterizacion
+      })
+      setAnalysis({
+        ...analysis,
+        mapaProcedimiento: res
+      })
+      // Guardar en la base de datos
+      await planificacionControlService.postMapaProcedimiento(res)
+      alert('Mapa de procedimiento regenerado y guardado exitosamente con Governex IA.')
+    } catch (e: any) {
+      alert('Error al regenerar el mapa: ' + e.message)
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
+
   const TABS: { id: Tab; label: string; count?: number }[] = [
     { id: 'caracterizacion', label: '📋 Tabla de Caracterización', count: caracterizacion.length },
     { id: 'mapa',            label: '🗺️ Mapa de Procedimiento',    count: matrizRoles.length    },
     { id: 'manual',          label: '📖 Manual de Procedimiento',  count: manualRows.length     },
     { id: 'riesgos',         label: '⚠️ Riesgos de Actividades',   count: actividades.length    },
+    { id: 'indicadores',     label: '📈 Indicadores',              count: caracterizacion.length },
   ]
 
   return (
@@ -1187,27 +1510,34 @@ const PlanificacionOperacionPage: React.FC = () => {
           </div>
 
           {activeTab === 'caracterizacion' && (
-            <TablaCaracterizacion rows={caracterizacion} actividades={actividades} />
+            <TablaCaracterizacion
+              rows={caracterizacion}
+              actividades={actividades}
+              canCreate={canCreate()}
+              onAddManual={handleAddManualCaracterizacion}
+              onRegenerar={handleRegenerarCaracterizacion}
+            />
           )}
           {activeTab === 'mapa' && (
             <MapaProcedimiento
               filas={matrizRoles}
               empresa={analysis?.nombreEmpresa}
               sector={analysis?.sector}
-              canCreate={canCreate}
-              canEdit={canEdit}
-              canDelete={canDelete}
+              canCreate={canCreate()}
+              canEdit={canEdit()}
+              canDelete={canDelete()}
               onAdd={addFilaMapaProcedimiento}
               onUpdate={updateFilaMapaProcedimiento}
               onDelete={removeFilaMapaProcedimiento}
+              onRegenerar={handleRegenerarMapa}
             />
           )}
           {activeTab === 'manual' && (
             <ManualProcedimiento
               filas={manualRows}
-              canCreate={canCreate}
-              canEdit={canEdit}
-              canDelete={canDelete}
+              canCreate={canCreate()}
+              canEdit={canEdit()}
+              canDelete={canDelete()}
               onAdd={addFilaManualProcedimiento}
               onUpdate={updateFilaManualProcedimiento}
               onDelete={removeFilaManualProcedimiento}
@@ -1216,7 +1546,26 @@ const PlanificacionOperacionPage: React.FC = () => {
           {activeTab === 'riesgos' && (
             <MatrizRiesgosActividades actividades={actividades} analysis={analysis} />
           )}
+          {activeTab === 'indicadores' && (
+            <IndicadoresCaracterizacion rows={caracterizacion} />
+          )}
         </>
+      )}
+
+      {isRegenerating && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            fontSize: '3rem', animation: 'spin 2s linear infinite', marginBottom: '1rem',
+            background: 'linear-gradient(45deg, #FF6B6B, #4ECDC4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+          }}>✨</div>
+          <h2 style={{ color: '#1b3a6b', margin: 0 }}>Governex IA está trabajando en el análisis</h2>
+          <p style={{ color: '#6b7280', marginTop: '0.5rem' }}>Por favor espera unos segundos...</p>
+        </div>
       )}
     </div>
   )

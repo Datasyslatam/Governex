@@ -16,7 +16,7 @@ export interface Riesgo {
   estado: 'CRITICO' | 'TRATAMIENTO' | 'MONITOREO'
   responsable?: string; tipo: 'Riesgo' | 'Oportunidad'
   /* §6.1 — persistidos desde la Matriz de Riesgos y Oportunidades */
-  fuente?: 'PESTEL' | 'DOFA' | 'Recursos' | 'ACTIVIDAD'
+  fuente?: 'PESTEL' | 'DOFA' | 'Recursos' | 'ACTIVIDAD' | 'planificación.E' | 'planificación.A' | 'planificación.S'
   categoria?: string
   actividad_id?: string
   tratamiento?: string   // texto de "acciones" generado/editado para el riesgo
@@ -234,6 +234,7 @@ export const procesosService = {
   getAll:      ()                                         => api.get<Proceso[]>('/api/procesos'),
   create:      (body: Partial<Proceso>)                   => api.post<Proceso>('/api/procesos', body),
   update:      (id: number, body: Partial<Proceso>)       => api.put<Proceso>(`/api/procesos/${id}`, body),
+  batch:       (body: { rows: any[] })                    => api.post<any[]>('/api/procesos/batch', body),
   getPestel:   ()                                         => api.get<any[]>('/api/procesos/pestel'),
   addPestel:   (body: any)                                => api.post<any>('/api/procesos/pestel', body),
   getDofa:     ()                                         => api.get<any[]>('/api/procesos/dofa'),
@@ -694,4 +695,12 @@ export const planificacionControlService = {
     api.put<any>(`/api/contexto-empresa/manual-procedimiento/${id}`, body),
   deleteManualFila:         (id: number) =>
     api.delete<void>(`/api/contexto-empresa/manual-procedimiento/${id}`),
+
+  // ── IA Generación ──────────────────────────────────────────
+  generarDetalleProceso:    (body: { proceso: string; objetivo: string; entradas: string }) =>
+    api.post<any>('/api/gemini/generar-detalle-proceso', body),
+  regenerarCaracterizacion: (body: { rows: any[] }) =>
+    api.post<any[]>('/api/gemini/regenerar-caracterizacion', body),
+  regenerarMapaProcedimiento: (body: { rows: any[] }) =>
+    api.post<any[]>('/api/gemini/regenerar-mapa-procedimiento', body),
 }

@@ -46,8 +46,18 @@ export interface CaracterizacionRow {
   proceso:     string
   objetivo:    string
   entradas:    string
+  actividades?: string
   salidas:     string
   indicador:   string
+  indicadorEntrada?: string
+  indicadorActividad?: string
+  indicadorSalida?: string
+  riesgoEntrada?: string
+  opEntrada?: string
+  riesgoActividad?: string
+  opActividad?: string
+  riesgoSalida?: string
+  opSalida?: string
   responsable: string
   estado:      string
 }
@@ -175,7 +185,7 @@ export interface RiesgoDerivado {
   codigo:          string
   descripcion:     string
   tipo:            'Riesgo' | 'Oportunidad'
-  fuente:          'PESTEL' | 'DOFA' | 'Recursos' | 'ACTIVIDAD'
+  fuente:          'PESTEL' | 'DOFA' | 'Recursos' | 'ACTIVIDAD' | 'planificación.E' | 'planificación.A' | 'planificación.S'
   /** Categoría visible en la matriz — para actividades usa etiqueta "Actividad Propia" */
   categoria:       string
   /** Nombre completo de la actividad de origen (solo para fuente ACTIVIDAD) */
@@ -293,6 +303,16 @@ const mapCaracterizacionDB = (rows: any[]): CaracterizacionRow[] => rows.map(r =
   entradas: r.entradas ?? '', salidas: r.salidas ?? '',
   indicador: r.indicador_kpi ?? '', responsable: r.responsable ?? '',
   estado: r.estado ?? 'Activo',
+  actividades: r.actividades ?? '',
+  indicadorEntrada: r.indicador_entrada ?? '',
+  indicadorActividad: r.indicador_actividad ?? '',
+  indicadorSalida: r.indicador_salida ?? '',
+  riesgoEntrada: r.riesgo_entrada ?? '',
+  opEntrada: r.op_entrada ?? '',
+  riesgoActividad: r.riesgo_actividad ?? '',
+  opActividad: r.op_actividad ?? '',
+  riesgoSalida: r.riesgo_salida ?? '',
+  opSalida: r.op_salida ?? '',
 }))
 
   const mapMatrizCargos = (rows: any[]): FilaMatrizCargos[] => rows.map(r => ({
@@ -756,7 +776,7 @@ export const useAIAnalysis = (): AIAnalysisContextValue => {
 function generarAccion(
   tipo:        'Riesgo' | 'Oportunidad',
   categoria:   string,
-  fuente:      'PESTEL' | 'DOFA' | 'Recursos' | 'ACTIVIDAD',
+  fuente:      'PESTEL' | 'DOFA' | 'Recursos' | 'ACTIVIDAD' | 'planificación.E' | 'planificación.A' | 'planificación.S',
   nivel:       number,
   descripcion: string
 ): string {
@@ -1013,6 +1033,46 @@ export function derivarRiesgos(
           acciones:     generarAccion('Oportunidad', `Recursos - ${row.proceso}`, 'Recursos', nivel, row.oportunidad),
         })
       }
+    }
+  }
+
+  if (analysis.caracterizacion) {
+    for (const row of analysis.caracterizacion) {
+      const processName = row.proceso || 'Proceso no especificado';
+      
+      const addCaracterizacionRiesgoOp = (
+        desc: string | undefined, tipo: 'Riesgo' | 'Oportunidad',
+        fuente: 'planificación.E' | 'planificación.A' | 'planificación.S',
+        subcat: string
+      ) => {
+        if (desc && desc.trim() !== '' && desc.toLowerCase() !== 'n/a' && desc.toLowerCase() !== 'ninguno' && desc.toLowerCase() !== 'ninguna') {
+          const prob = tipo === 'Riesgo' ? 3 : 2;
+          const imp = tipo === 'Riesgo' ? 3 : 2;
+          const nivel = prob * imp;
+          riesgos.push({
+            codigo: codigoEstable(tipo === 'Riesgo' ? 'R' : 'OP', fuente, processName, desc),
+            descripcion: desc,
+            tipo,
+            fuente,
+            categoria: `Caracterización (${subcat}) - ${processName}`,
+            probabilidad: prob,
+            impacto: imp,
+            nivel,
+            estado: estadoDesdeNivel(nivel),
+            responsable: row.responsable || 'Director de Calidad',
+            acciones: generarAccion(tipo, `Caracterización (${subcat}) - ${processName}`, fuente, nivel, desc),
+          });
+        }
+      };
+
+      addCaracterizacionRiesgoOp(row.riesgoEntrada, 'Riesgo', 'planificación.E', 'Entrada');
+      addCaracterizacionRiesgoOp(row.opEntrada, 'Oportunidad', 'planificación.E', 'Entrada');
+      
+      addCaracterizacionRiesgoOp(row.riesgoActividad, 'Riesgo', 'planificación.A', 'Actividad');
+      addCaracterizacionRiesgoOp(row.opActividad, 'Oportunidad', 'planificación.A', 'Actividad');
+      
+      addCaracterizacionRiesgoOp(row.riesgoSalida, 'Riesgo', 'planificación.S', 'Salida');
+      addCaracterizacionRiesgoOp(row.opSalida, 'Oportunidad', 'planificación.S', 'Salida');
     }
   }
 
