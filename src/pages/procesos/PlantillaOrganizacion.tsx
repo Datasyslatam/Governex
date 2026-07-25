@@ -9,7 +9,7 @@ import React, { useRef, useState } from 'react'
 import Swal from 'sweetalert2'
 import { DatosEmpresa } from '../../context/AIAnalysisContext'
 import './PlantillaOrganizacion.css'
-import logoGovernex from "../../assets/logo-governex.png";
+import logoGovernex from "../../assets/LOGO Governex.png";
 import { uploadFile, openSignedFile } from '../../services/api'
 
 /* ── Props ─────────────────────────────────────────────────── */
@@ -390,11 +390,11 @@ const PlantillaOrganizacion: React.FC<Props> = ({ currentDatos, onDatosYOrganigr
           </ol>
         </div>`,
         confirmButtonText: 'Entendido',
-        confirmButtonColor: '#1a6ebd',
+        confirmButtonColor: '#030097',
         width: 520,
       })
     } catch {
-      Swal.fire({ icon: 'error', title: 'Error al generar la plantilla', confirmButtonColor: '#1a6ebd' })
+      Swal.fire({ icon: 'error', title: 'Error al generar la plantilla', confirmButtonColor: '#030097' })
     } finally {
       setGenerando(false)
     }
@@ -415,7 +415,7 @@ const PlantillaOrganizacion: React.FC<Props> = ({ currentDatos, onDatosYOrganigr
     const parsed = parsearCampos(campos)
 
     if (!parsed._ok) {
-      Swal.fire({ icon: 'warning', title: 'Campos incompletos', text: parsed._error, confirmButtonColor: '#1a6ebd' })
+      Swal.fire({ icon: 'warning', title: 'Campos incompletos', text: parsed._error, confirmButtonColor: '#030097' })
       setArchivo(null)
       return
     }
@@ -437,7 +437,7 @@ const PlantillaOrganizacion: React.FC<Props> = ({ currentDatos, onDatosYOrganigr
     datosEmpresa = { ...(datos as DatosEmpresa), pdfFormularioUrl: pdfUrl, pdfFormularioNombre: pdfNombre }
     setParseado({ datos: datosEmpresa })
   } catch {
-    Swal.fire({ icon: 'error', title: 'Error al procesar el formulario PDF', confirmButtonColor: '#1a6ebd' })
+    Swal.fire({ icon: 'error', title: 'Error al procesar el formulario PDF', confirmButtonColor: '#030097' })
     setArchivo(null)
     return
   } finally {
@@ -452,7 +452,7 @@ const PlantillaOrganizacion: React.FC<Props> = ({ currentDatos, onDatosYOrganigr
     setIdeario(textos)
     setIdearioEditado(textos)
   } catch {
-    Swal.fire({ icon: 'error', title: 'Error al generar el ideario', confirmButtonColor: '#1a6ebd' })
+    Swal.fire({ icon: 'error', title: 'Error al generar el ideario', confirmButtonColor: '#030097' })
   } finally {
     setGenerandoIdeario(false)
   }
@@ -467,7 +467,7 @@ const PlantillaOrganizacion: React.FC<Props> = ({ currentDatos, onDatosYOrganigr
       setIdeario(textos)
       setIdearioEditado(textos)
     } catch {
-      Swal.fire({ icon: 'error', title: 'Error al generar el ideario', confirmButtonColor: '#1a6ebd' })
+      Swal.fire({ icon: 'error', title: 'Error al generar el ideario', confirmButtonColor: '#030097' })
     } finally {
       setGenerandoIdeario(false)
     }
@@ -478,7 +478,7 @@ const PlantillaOrganizacion: React.FC<Props> = ({ currentDatos, onDatosYOrganigr
   const ext = `.${f.name.split('.').pop()?.toLowerCase() ?? ''}`
   if (!TIPOS_ORGANIGRAMA_PERMITIDOS.includes(f.type) && !EXT_ORGANIGRAMA_PERMITIDAS.includes(ext)) {
     Swal.fire({ icon: 'warning', title: 'Formato no soportado',
-      text: 'El organigrama debe ser PDF, JPG, JPEG, PNG o WEBP.', confirmButtonColor: '#1a6ebd' })
+      text: 'El organigrama debe ser PDF, JPG, JPEG, PNG o WEBP.', confirmButtonColor: '#030097' })
     return
   }
   setArchivoOrg(f); setOrganigrama(null); setCargandoOrg(true)
@@ -497,7 +497,7 @@ const PlantillaOrganizacion: React.FC<Props> = ({ currentDatos, onDatosYOrganigr
       url: subido?.url ?? '',
     })
   } catch {
-    Swal.fire({ icon: 'error', title: 'Error al leer el organigrama', confirmButtonColor: '#1a6ebd' })
+    Swal.fire({ icon: 'error', title: 'Error al leer el organigrama', confirmButtonColor: '#030097' })
     setArchivoOrg(null)
   } finally {
     setCargandoOrg(false)
@@ -515,7 +515,7 @@ const PlantillaOrganizacion: React.FC<Props> = ({ currentDatos, onDatosYOrganigr
       showCancelButton: true,
       confirmButtonText: 'Sí, analizar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#1a6ebd',
+      confirmButtonColor: '#030097',
       cancelButtonColor: '#6b7280'
     }).then((result) => {
       if (result.isConfirmed) {

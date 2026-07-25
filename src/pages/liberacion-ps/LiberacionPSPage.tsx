@@ -53,7 +53,7 @@ const LiberacionPSPage: React.FC = () => {
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           {(['Liberado','Retenido','Rechazado'] as const).map(d => (
             <div key={d} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.5rem 0.85rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1b3a6b' }}>{items.filter(i => i.decision === d).length}</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#030097' }}>{items.filter(i => i.decision === d).length}</div>
               <div style={{ fontSize: '0.68rem', color: '#6b7280' }}>{d}</div>
             </div>
           ))}
@@ -79,7 +79,7 @@ const LiberacionPSPage: React.FC = () => {
             {items.map((r, i) => (
               <tr key={r.id}>
                 <td style={{ color: '#9ca3af' }}>{i + 1}</td>
-                <td style={{ fontWeight: 600, color: '#1b3a6b', fontSize: '0.78rem' }}>{r.codigoOp}</td>
+                <td style={{ fontWeight: 600, color: '#030097', fontSize: '0.78rem' }}>{r.codigoOp}</td>
                 <td>{r.productoServicio}</td>
                 <td>{r.cliente}</td>
                 <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>{r.criteriosAceptacion}</td>

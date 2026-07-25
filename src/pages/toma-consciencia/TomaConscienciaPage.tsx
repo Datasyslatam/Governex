@@ -51,11 +51,11 @@ const TomaConscienciaPage: React.FC = () => {
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.6rem 1rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#2e86de' }}>{pct}%</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#FE7F03' }}>{pct}%</div>
             <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>Completados</div>
           </div>
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.6rem 1rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#1b3a6b' }}>{registros.length}</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#030097' }}>{registros.length}</div>
             <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>Total registros</div>
           </div>
         </div>
@@ -101,7 +101,7 @@ const TomaConscienciaPage: React.FC = () => {
             {filtrados.map((r, i) => (
               <tr key={r.id}>
                 <td style={{ color: '#9ca3af' }}>{i + 1}</td>
-                <td style={{ fontWeight: 600, color: '#1b3a6b' }}>{r.colaborador}</td>
+                <td style={{ fontWeight: 600, color: '#030097' }}>{r.colaborador}</td>
                 <td>{r.cargo}</td>
                 <td>{r.proceso}</td>
                 <td>{r.tema}</td>

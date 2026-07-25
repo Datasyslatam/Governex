@@ -167,7 +167,7 @@ const ComprasPage: React.FC = () => {
     if (estado === 'Recibido conforme') {
       Swal.fire({
         title: '¡Orden recibida conforme!', text: '¿Desea realizar la evaluación del proveedor ahora?',
-        icon: 'success', showCancelButton: true, confirmButtonColor: '#1b3a6b', cancelButtonColor: '#6e7d88',
+        icon: 'success', showCancelButton: true, confirmButtonColor: '#030097', cancelButtonColor: '#6e7d88',
         confirmButtonText: 'Sí, evaluar ahora', cancelButtonText: 'Más tarde',
       }).then((result) => {
         if (result.isConfirmed) setShowEvalModal({ visible: true, orden })
@@ -175,7 +175,7 @@ const ComprasPage: React.FC = () => {
     } else if (estado === 'Recibido no conforme') {
       Swal.fire({
         title: 'Orden No Conforme', text: 'La orden ha sido marcada como no conforme. Recuerde generar una salida no conforme.',
-        icon: 'error', confirmButtonColor: '#1b3a6b',
+        icon: 'error', confirmButtonColor: '#030097',
       })
     }
   }
@@ -321,7 +321,7 @@ const ComprasPage: React.FC = () => {
                   return (
                   <tr key={o.id}>
                     <td style={{ color: '#9ca3af' }}>{o.id}</td>
-                    <td style={{ fontWeight: 600, color: '#1b3a6b' }}>{o.proveedor}</td>
+                    <td style={{ fontWeight: 600, color: '#030097' }}>{o.proveedor}</td>
                     <td>{o.producto}</td>
                     <td>{o.cantidad} {o.unidad}</td>
                     <td>${o.total}</td>

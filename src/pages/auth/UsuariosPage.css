@@ -21,7 +21,7 @@
 .usuarios-page__title-block h1 {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
   margin: 0 0 0.25rem;
 }
 
@@ -34,7 +34,7 @@
 .usuarios-page__clause {
   display: inline-block;
   background: #e8f0fb;
-  color: #1b3a6b;
+  color: #030097;
   font-size: 0.72rem;
   font-weight: 700;
   border-radius: 999px;
@@ -64,13 +64,13 @@
 }
 
 .usuarios-tab-btn:hover {
-  color: #1b3a6b;
+  color: #030097;
 }
 
 .usuarios-tab-btn.active {
-  color: #1b3a6b;
+  color: #030097;
   font-weight: 700;
-  border-bottom-color: #2e86de;
+  border-bottom-color: #FE7F03;
 }
 
 /* Spinner / Loading */
@@ -79,7 +79,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  color: #2e86de;
+  color: #FE7F03;
   font-size: 0.88rem;
   font-weight: 600;
   padding: 3rem;
@@ -89,7 +89,7 @@
   width: 28px;
   height: 28px;
   border: 3px solid #bfdbfe;
-  border-top-color: #2e86de;
+  border-top-color: #FE7F03;
   border-radius: 50%;
   animation: user-spin 0.7s linear infinite;
 }
@@ -115,7 +115,7 @@
 }
 
 .usuarios-matrix-table thead tr {
-  background: #1b3a6b;
+  background: #030097;
   color: #fff;
 }
 
@@ -243,7 +243,7 @@
 .usuarios-modal h2 {
   font-size: 1.15rem;
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
   margin: 0;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid #f1f5f9;
@@ -293,7 +293,7 @@
 .usuarios-form input:focus,
 .usuarios-form select:focus {
   outline: none;
-  border-color: #2e86de;
+  border-color: #FE7F03;
   box-shadow: 0 0 0 3px rgba(46, 134, 222, 0.15);
 }
 
@@ -335,7 +335,7 @@
 .permisos-personalizacion-panel h3 {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
   margin: 0;
 }
 
@@ -448,7 +448,7 @@
 }
 
 .logs-search-input:focus {
-  border-color: #2e86de;
+  border-color: #FE7F03;
   box-shadow: 0 0 0 3px rgba(46, 134, 222, 0.15);
 }
 
@@ -502,7 +502,7 @@
 /* Global button styles matching the rest of the application */
 .btn-primary {
   padding: 0.45rem 1rem;
-  background: #2e86de;
+  background: #FE7F03;
   color: #fff;
   border: none;
   border-radius: 0.4rem;

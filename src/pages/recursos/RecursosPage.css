@@ -21,7 +21,7 @@
 .recursos-page__title-block h1 {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
   margin: 0 0 0.25rem;
 }
 
@@ -34,7 +34,7 @@
 .recursos-page__clause {
   display: inline-block;
   background: #e8f0fb;
-  color: #1b3a6b;
+  color: #030097;
   font-size: 0.72rem;
   font-weight: 700;
   border-radius: 999px;
@@ -63,7 +63,7 @@
 }
 
 .recursos-matriz-topbar__info strong {
-  color: #1b3a6b;
+  color: #030097;
 }
 
 .recursos-matriz-actions {
@@ -88,7 +88,7 @@
 }
 
 .recursos-matrix-table thead tr {
-  background: #1b3a6b;
+  background: #030097;
   color: #fff;
 }
 
@@ -145,7 +145,7 @@
 
 .recursos-cell-edit textarea:focus,
 .recursos-cell-edit input:focus {
-  outline: 2px solid #2e86de;
+  outline: 2px solid #FE7F03;
   border-color: transparent;
 }
 
@@ -164,7 +164,7 @@
 /* ── Buttons ────────────────────────────────────────────── */
 .btn-primary {
   padding: 0.45rem 1rem;
-  background: #2e86de;
+  background: #FE7F03;
   color: #fff;
   border: none;
   border-radius: 0.4rem;
@@ -263,7 +263,7 @@
 
 .recursos-empty-state h2 {
   font-size: 1.3rem;
-  color: #1b3a6b;
+  color: #030097;
   margin-bottom: 0.75rem;
 }
 
@@ -285,5 +285,5 @@
 }
 
 .recursos-empty-state__steps li strong {
-  color: #1b3a6b;
+  color: #030097;
 }

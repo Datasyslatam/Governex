@@ -1,6 +1,6 @@
 .topbar {
   height: 64px;
-  background-color: #1b3a6b;
+  background-color: var(--color-sidebar);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -41,7 +41,7 @@
   font-size: 0.8rem;
   cursor: pointer;
   background-color: #f0f4f8;
-  color: #1b3a6b;
+  color: var(--color-sidebar);
   font-weight: 500;
   transition: background 0.15s ease, color 0.15s ease;
 }

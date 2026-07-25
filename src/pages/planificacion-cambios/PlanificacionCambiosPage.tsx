@@ -623,7 +623,7 @@ const PlanificacionCambiosPage: React.FC = () => {
 
       {/* ── KPIs ────────────────────────────────────────── */}
       <div className="pc-kpis">
-        <KPICard value={total}       label="Total cambios"  color="#1a6ebd" icon="📋" />
+        <KPICard value={total}       label="Total cambios"  color="#030097" icon="📋" />
         <KPICard value={planif}      label="Planificados"   color="#7c3aed" icon="🗓️" />
         <KPICard value={ejecucion}   label="En ejecución"   color="#d97706" icon="⚙️" />
         <KPICard value={completados} label="Completados"    color="#059669" icon="✅" />
@@ -679,7 +679,7 @@ const PlanificacionCambiosPage: React.FC = () => {
           <div className="iso-empty">
             <div className="iso-empty__icon">🔍</div>
             Ningún cambio coincide con los filtros. <button
-              style={{ marginLeft:'0.5rem', background:'none', border:'none', color:'#1a6ebd', cursor:'pointer', textDecoration:'underline' }}
+              style={{ marginLeft:'0.5rem', background:'none', border:'none', color:'#030097', cursor:'pointer', textDecoration:'underline' }}
               onClick={() => { setFilterEstado('todos'); setFilterCat('todos'); setFilterImpacto('todos'); setSearch('') }}>
               Limpiar filtros
             </button>

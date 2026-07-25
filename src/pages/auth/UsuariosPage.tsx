@@ -264,7 +264,7 @@ const UsuariosPage: React.FC = () => {
                   {users.map((user, idx) => (
                     <tr key={user.id}>
                       <td style={{ color: '#9ca3af', fontWeight: 600 }}>{idx + 1}</td>
-                      <td style={{ fontWeight: 600, color: '#1b3a6b' }}>{user.nombre}</td>
+                      <td style={{ fontWeight: 600, color: '#030097' }}>{user.nombre}</td>
                       <td>{user.email}</td>
                       <td>
                         <span className={`rol-badge ${user.rol?.toLowerCase().replace(' ', '-')}`}>
@@ -362,7 +362,7 @@ const UsuariosPage: React.FC = () => {
                           {new Date(log.fecha_hora).toLocaleString()}
                         </td>
                         <td>
-                          <div style={{ fontWeight: 600, color: '#1b3a6b' }}>{log.usuario_nombre}</div>
+                          <div style={{ fontWeight: 600, color: '#030097' }}>{log.usuario_nombre}</div>
                           <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{log.usuario_email}</div>
                         </td>
                         <td>

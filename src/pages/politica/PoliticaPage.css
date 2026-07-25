@@ -63,7 +63,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  border-bottom: 2px solid #1a6ebd;
+  border-bottom: 2px solid #030097;
   padding-bottom: 1rem;
   margin-bottom: 2rem;
 }
@@ -85,7 +85,7 @@
   cursor: pointer;
   font-weight: 600;
 }
-.pol-btn-download:hover { background: #eef3fb; color: #1a6ebd; }
+.pol-btn-download:hover { background: #eef3fb; color: #030097; }
 
 .pol-doc-content {
   font-size: 1.05rem;
@@ -181,7 +181,7 @@
 .pol-progress-fill {
   height: 100%;
   border-radius: 999px;
-  background: #1a6ebd;
+  background: #030097;
 }
 
 .pol-sub-hdr {
@@ -250,7 +250,7 @@
 
 /* ── Banner política generada por IA ── */
 .pol-ia-banner {
-  border-left: 3px solid #1a6ebd;
+  border-left: 3px solid #030097;
   background: #f0f7ff;
   border-radius: 0 0.5rem 0.5rem 0;
   padding: 1rem 1.25rem;

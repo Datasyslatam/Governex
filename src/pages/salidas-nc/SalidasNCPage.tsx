@@ -95,7 +95,7 @@ const SalidasNCPage: React.FC = () => {
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           {(['Abierta','En tratamiento','Cerrada'] as const).map(e => (
             <div key={e} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.5rem 0.85rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1b3a6b' }}>{items.filter(i => i.estado === e).length}</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#030097' }}>{items.filter(i => i.estado === e).length}</div>
               <div style={{ fontSize: '0.68rem', color: '#6b7280' }}>{e}</div>
             </div>
           ))}
@@ -125,16 +125,16 @@ const SalidasNCPage: React.FC = () => {
         }}
       >
         <div style={{ minWidth: 0 }}>
-          <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#1b3a6b' }}>¿Qué sucede con las salidas no conformes? — Disposición</h3>
+          <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#030097' }}>¿Qué sucede con las salidas no conformes? — Disposición</h3>
           <DonutChart data={disposicionData} centerLabel="registros" />
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignContent: 'flex-start' }}>
           <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.75rem 1rem', minWidth: '9rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#1b3a6b' }}>{totalClienteInformado}/{items.length}</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#030097' }}>{totalClienteInformado}/{items.length}</div>
             <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>Casos con cliente informado</div>
           </div>
           <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.75rem 1rem', minWidth: '9rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#1b3a6b' }}>{totalConcesiones}</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#030097' }}>{totalConcesiones}</div>
             <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>Concesiones/autorizaciones otorgadas</div>
           </div>
         </div>
@@ -158,7 +158,7 @@ const SalidasNCPage: React.FC = () => {
             {filtrados.map((r, i) => (
               <tr key={r.id}>
                 <td style={{ color: '#9ca3af' }}>{i + 1}</td>
-                <td style={{ fontWeight: 600, color: '#1b3a6b', fontSize: '0.78rem' }}>{r.codigo}</td>
+                <td style={{ fontWeight: 600, color: '#030097', fontSize: '0.78rem' }}>{r.codigo}</td>
                 <td style={{ fontWeight: 500 }}>{r.descripcion}</td>
                 <td>{r.proceso}</td>
                 <td><span className="iso-badge azul">{r.detectadoEn}</span></td>
@@ -224,7 +224,7 @@ const SalidasNCPage: React.FC = () => {
             </div>
 
             <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '0.75rem 0' }} />
-            <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#1b3a6b' }}>§8.7.2 — Comunicación al cliente</p>
+            <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#030097' }}>§8.7.2 — Comunicación al cliente</p>
             <div className="iso-form-row">
               <div className="iso-field" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem' }}>
                 <input type="checkbox" checked={form.clienteInformado} onChange={e => setForm(p => ({ ...p, clienteInformado: e.target.checked }))} disabled={!canEdit} id="clienteInformado" />
@@ -235,7 +235,7 @@ const SalidasNCPage: React.FC = () => {
               )}
             </div>
 
-            <p style={{ margin: '0.75rem 0 0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#1b3a6b' }}>§8.7.1 c) — Concesión / autorización de aceptación</p>
+            <p style={{ margin: '0.75rem 0 0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#030097' }}>§8.7.1 c) — Concesión / autorización de aceptación</p>
             <div className="iso-form-row">
               <div className="iso-field" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem' }}>
                 <input type="checkbox" checked={form.concesionOtorgada} onChange={e => setForm(p => ({ ...p, concesionOtorgada: e.target.checked }))} disabled={!canEdit} id="concesionOtorgada" />

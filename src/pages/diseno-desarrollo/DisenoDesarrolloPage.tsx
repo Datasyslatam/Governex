@@ -272,12 +272,12 @@ const DisenoDesarrolloPage: React.FC = () => {
               <tr key={p.id}>
                 <td style={{ color: '#9ca3af' }}>{i + 1}</td>
                 <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>{p.entradas}</td>
-                <td style={{ fontWeight: 600, color: '#1b3a6b' }}>{p.desarrollo}</td>
+                <td style={{ fontWeight: 600, color: '#030097' }}>{p.desarrollo}</td>
                 <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>
                   {p.control ? p.control : (
                     <button
                       className="iso-btn-primary"
-                      style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', background: generatingRows.has(p.id) ? '#9ca3af' : '#1b3a6b' }}
+                      style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', background: generatingRows.has(p.id) ? '#9ca3af' : '#030097' }}
                       onClick={() => handleGenerateTableRow(p)}
                       disabled={generatingRows.has(p.id) || !canEdit}
                     >

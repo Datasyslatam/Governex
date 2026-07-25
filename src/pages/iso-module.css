@@ -20,7 +20,7 @@
 .iso-page__title-block h1 {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
   margin: 0 0 0.25rem;
 }
 .iso-page__title-block p {
@@ -31,7 +31,7 @@
 .iso-page__clause {
   display: inline-block;
   background: #e8f0fb;
-  color: #1b3a6b;
+  color: #030097;
   font-size: 0.72rem;
   font-weight: 700;
   border-radius: 999px;
@@ -60,8 +60,8 @@
   align-items: center;
   gap: 0.4rem;
 }
-.iso-tab-btn:hover { color: #1b3a6b; }
-.iso-tab-btn.active { color: #1b3a6b; font-weight: 600; border-bottom-color: #2e86de; }
+.iso-tab-btn:hover { color: #030097; }
+.iso-tab-btn.active { color: #030097; font-weight: 600; border-bottom-color: #FE7F03; }
 
 /* ── Cards grid ─────────────────────────────────────────── */
 .iso-cards-grid {
@@ -81,9 +81,9 @@
 }
 .iso-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
 .iso-card__icon { font-size: 1.8rem; line-height: 1; }
-.iso-card__title { font-size: 0.92rem; font-weight: 700; color: #1b3a6b; margin: 0; }
+.iso-card__title { font-size: 0.92rem; font-weight: 700; color: #030097; margin: 0; }
 .iso-card__desc  { font-size: 0.8rem; color: #6b7280; line-height: 1.5; }
-.iso-card__clause { font-size: 0.7rem; font-weight: 700; color: #2e86de; }
+.iso-card__clause { font-size: 0.7rem; font-weight: 700; color: #FE7F03; }
 
 /* ── Table ──────────────────────────────────────────────── */
 .iso-table-wrapper {
@@ -97,7 +97,7 @@
   border-collapse: collapse;
   font-size: 0.83rem;
 }
-.iso-table thead tr { background: #1b3a6b; color: #fff; }
+.iso-table thead tr { background: #030097; color: #fff; }
 .iso-table thead th { padding: 0.65rem 0.85rem; text-align: left; font-weight: 600; white-space: nowrap; border-right: 1px solid rgba(255,255,255,0.15); }
 .iso-table thead th:last-child { border-right: none; }
 .iso-table tbody tr:nth-child(even) { background: #f8fafc; }
@@ -118,7 +118,7 @@
 .iso-form-panel h2 {
   font-size: 1rem;
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
   margin: 0;
 }
 .iso-form-row {
@@ -150,7 +150,7 @@
 .iso-field input:focus,
 .iso-field select:focus,
 .iso-field textarea:focus {
-  outline: 2px solid #2e86de;
+  outline: 2px solid #FE7F03;
   border-color: transparent;
 }
 .iso-field textarea { resize: vertical; }
@@ -164,7 +164,7 @@
   gap: 0.75rem;
 }
 .iso-topbar__info { font-size: 0.83rem; color: #6b7280; }
-.iso-topbar__info strong { color: #1b3a6b; }
+.iso-topbar__info strong { color: #030097; }
 .iso-topbar__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
 /* ── Status badges ──────────────────────────────────────── */
@@ -200,7 +200,7 @@
 /* ── Buttons ────────────────────────────────────────────── */
 .iso-btn-primary {
   padding: 0.45rem 1rem;
-  background: #2e86de;
+  background: #FE7F03;
   color: #fff;
   border: none;
   border-radius: 0.4rem;
@@ -262,7 +262,7 @@
   max-height: 90vh;
   overflow-y: auto;
 }
-.iso-modal h2 { font-size: 1.05rem; font-weight: 700; color: #1b3a6b; margin: 0; }
+.iso-modal h2 { font-size: 1.05rem; font-weight: 700; color: #030097; margin: 0; }
 .iso-modal__footer { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.25rem; }
 
 /* ── Empty state ────────────────────────────────────────── */

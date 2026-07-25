@@ -18,8 +18,8 @@
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
 }
-.pv-tab-btn:hover { color: #1b3a6b; }
-.pv-tab-btn.active { color: #1b3a6b; font-weight: 600; border-bottom-color: #2e86de; }
+.pv-tab-btn:hover { color: #030097; }
+.pv-tab-btn.active { color: #030097; font-weight: 600; border-bottom-color: #FE7F03; }
 
 .pv-personal-grid {
   display: grid;
@@ -47,7 +47,7 @@
   align-items: center;
   gap: 0.25rem;
   background: #eef4ff;
-  color: #1b3a6b;
+  color: #030097;
   font-size: 0.72rem;
   font-weight: 600;
   padding: 0.15rem 0.5rem;
@@ -60,12 +60,12 @@
   gap: 0.1rem;
   font-size: 0.72rem;
 }
-.pv-link-badge__code { font-weight: 700; color: #1b3a6b; }
+.pv-link-badge__code { font-weight: 700; color: #030097; }
 .pv-link-badge__meta { color: #9ca3af; }
 .pv-link-empty { font-size: 0.75rem; color: #9ca3af; font-style: italic; }
 
 .pv-pc-summary { display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; }
-.pv-pc-count { font-weight: 700; color: #1b3a6b; }
+.pv-pc-count { font-weight: 700; color: #030097; }
 
 .pv-pc-table-wrapper { max-height: 260px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem; }
 .pv-pc-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
@@ -89,7 +89,7 @@
 .pv-section-title {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
   margin: 0.25rem 0 0;
 }
 

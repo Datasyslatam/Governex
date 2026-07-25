@@ -50,7 +50,7 @@
 /* Narrativo */
 .cop-narrativo {
   background: linear-gradient(135deg,#f0f7ff 0%,#f8f4ff 100%);
-  border: 1px solid #c7d9f5; border-left: 4px solid #2e86de;
+  border: 1px solid #c7d9f5; border-left: 4px solid #FE7F03;
   border-radius: 0.75rem; overflow: hidden;
 }
 .cop-narrativo__header {

@@ -193,7 +193,7 @@ const ProduccionServicioPage: React.FC = () => {
             {ordenes.map((o, i) => (
               <tr key={o.id}>
                 <td style={{ color: '#9ca3af' }}>{i + 1}</td>
-                <td style={{ fontWeight: 600, color: '#1b3a6b', fontSize: '0.78rem', cursor: 'pointer' }} onClick={() => openEdit(o)}>{o.codigo}</td>
+                <td style={{ fontWeight: 600, color: '#030097', fontSize: '0.78rem', cursor: 'pointer' }} onClick={() => openEdit(o)}>{o.codigo}</td>
                 <td>{o.producto_servicio}</td>
                 <td>{o.cliente}</td>
                 <td>

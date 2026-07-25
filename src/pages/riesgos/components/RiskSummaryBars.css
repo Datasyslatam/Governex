@@ -40,7 +40,7 @@
 
 .risk-summary-bars__bar--critical    { background: #d93025; }
 .risk-summary-bars__bar--high        { background: #f5944a; }
-.risk-summary-bars__bar--medium      { background: #e08a00; }
+.risk-summary-bars__bar--medium      { background: #FE7F03; }
 .risk-summary-bars__bar--low         { background: #1a9c5b; }
 .risk-summary-bars__bar--opportunity { background: #6644aa; }
 

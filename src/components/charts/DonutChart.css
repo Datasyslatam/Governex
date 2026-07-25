@@ -8,7 +8,7 @@
 .donut-chart__total {
   font-size: 1.4rem;
   font-weight: 700;
-  fill: #1b3a6b;
+  fill: #030097;
 }
 
 .donut-chart__caption {
@@ -47,5 +47,5 @@
 
 .donut-chart__legend-value {
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
 }

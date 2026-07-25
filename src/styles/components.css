@@ -14,7 +14,8 @@
 }
 
 .table thead {
-  background: #eef3fb;
+  background: var(--color-secondary);
+  color: #ffffff;
 }
 
 .table th,
@@ -43,8 +44,8 @@
 }
 
 .pill--warning {
-  background: rgba(224, 138, 0, 0.12);
-  color: #e08a00;
+  background: rgba(254, 127, 3, 0.12); /* #FE7F03 */
+  color: var(--color-warning);
 }
 
 .pill--danger {
@@ -67,7 +68,22 @@
 }
 
 .btn--primary {
-  background: #1a6ebd;
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.btn--secondary {
+  background: var(--color-secondary);
+  color: #ffffff;
+}
+
+.btn--accent {
+  background: var(--color-accent);
+  color: #1a2b45; /* Dark text for contrast */
+}
+
+.btn--warning {
+  background: var(--color-warning);
   color: #ffffff;
 }
 

@@ -80,14 +80,14 @@ const RolesPage: React.FC = () => {
       <div className="roles-tabs" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.5rem' }}>
         <button 
           className={`btn-secondary ${activeTab === 'roles' ? 'active-tab' : ''}`} 
-          style={{ background: activeTab === 'roles' ? '#1b3a6b' : 'transparent', color: activeTab === 'roles' ? '#fff' : '#6b7280', border: 'none', borderBottom: activeTab === 'roles' ? '2px solid #1b3a6b' : 'none', borderRadius: '0', padding: '0.5rem 1rem' }}
+          style={{ background: activeTab === 'roles' ? '#030097' : 'transparent', color: activeTab === 'roles' ? '#fff' : '#6b7280', border: 'none', borderBottom: activeTab === 'roles' ? '2px solid #030097' : 'none', borderRadius: '0', padding: '0.5rem 1rem' }}
           onClick={() => setActiveTab('roles')}
         >
           ⚓ Matriz de Roles
         </button>
         <button 
           className={`btn-secondary ${activeTab === 'cargos' ? 'active-tab' : ''}`} 
-          style={{ background: activeTab === 'cargos' ? '#1b3a6b' : 'transparent', color: activeTab === 'cargos' ? '#fff' : '#6b7280', border: 'none', borderBottom: activeTab === 'cargos' ? '2px solid #1b3a6b' : 'none', borderRadius: '0', padding: '0.5rem 1rem' }}
+          style={{ background: activeTab === 'cargos' ? '#030097' : 'transparent', color: activeTab === 'cargos' ? '#fff' : '#6b7280', border: 'none', borderBottom: activeTab === 'cargos' ? '2px solid #030097' : 'none', borderRadius: '0', padding: '0.5rem 1rem' }}
           onClick={() => setActiveTab('cargos')}
         >
           📋 Matriz de Cargos
@@ -177,7 +177,7 @@ const RolesPage: React.FC = () => {
                     {filasFiltradas.map((fila, idx) => (
                       <tr key={fila.id}>
                         <td style={{ color: '#9ca3af', fontWeight: 600 }}>{idx + 1}</td>
-                        <td style={{ fontWeight: 600, color: '#1b3a6b' }}>{fila.proceso}</td>
+                        <td style={{ fontWeight: 600, color: '#030097' }}>{fila.proceso}</td>
                         <td>
                           <span className={`proceso-tipo-badge ${fila.tipo}`}>
                             {fila.tipo === 'estrategico' ? 'Estratégico' : fila.tipo === 'misional' ? 'Misional' : 'Apoyo'}

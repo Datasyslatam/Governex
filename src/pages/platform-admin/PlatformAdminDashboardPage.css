@@ -39,7 +39,7 @@
 }
 
 .pa-dashboard__btn-primary {
-  background: var(--color-primary, #1a6ebd);
+  background: var(--color-primary, #030097);
   color: #fff;
 }
 
@@ -136,7 +136,7 @@
 
 .pa-dashboard__estado--suspendido {
   background: rgba(224, 138, 0, 0.1);
-  color: var(--color-warning, #e08a00);
+  color: var(--color-warning, #FE7F03);
 }
 
 .pa-dashboard__estado--cancelado {
@@ -161,8 +161,8 @@
   border-bottom: 2px solid transparent;
 }
 .pa-dashboard__tab--active {
-  color: var(--color-primary, #1a6ebd);
-  border-bottom-color: var(--color-primary, #1a6ebd);
+  color: var(--color-primary, #030097);
+  border-bottom-color: var(--color-primary, #030097);
 }
 .pa-dashboard__tab-actions {
   display: flex;
@@ -186,7 +186,7 @@
 .pa-dashboard__btn-link {
   background: none;
   border: none;
-  color: var(--color-primary, #1a6ebd);
+  color: var(--color-primary, #030097);
   font-weight: 600;
   cursor: pointer;
   padding: 0;
@@ -209,7 +209,7 @@
 
 .pa-dashboard__link-cell {
   cursor: pointer;
-  color: var(--color-primary, #1a6ebd);
+  color: var(--color-primary, #030097);
   font-weight: 600;
 }
 .pa-dashboard__link-cell:hover {
@@ -257,7 +257,7 @@
   flex-direction: column;
   gap: 0.25rem;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-  border-left: 4px solid var(--color-primary, #1a6ebd);
+  border-left: 4px solid var(--color-primary, #030097);
 }
 .pa-dashboard__stat-card--activo { border-left-color: #1ea05a; }
 .pa-dashboard__stat-card--suspendido { border-left-color: #e0a300; }
@@ -305,7 +305,7 @@
 }
 .pa-dashboard__bar-fill {
   height: 100%;
-  background: var(--color-primary, #1a6ebd);
+  background: var(--color-primary, #030097);
   border-radius: 999px;
   transition: width 0.3s ease;
 }
@@ -329,7 +329,7 @@
 .pa-dashboard__growth-bar {
   width: 100%;
   max-width: 32px;
-  background: var(--color-primary, #1a6ebd);
+  background: var(--color-primary, #030097);
   border-radius: 4px 4px 0 0;
 }
 .pa-dashboard__growth-count { font-size: 0.75rem; font-weight: 600; }

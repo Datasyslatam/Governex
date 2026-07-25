@@ -60,11 +60,11 @@ const MejoraContinuaPage: React.FC = () => {
             <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>Completadas</div>
           </div>
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.6rem 1rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#2e86de' }}>{enEjecucion}</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#FE7F03' }}>{enEjecucion}</div>
             <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>En ejecución</div>
           </div>
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.6rem 1rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#1b3a6b' }}>{items.length}</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#030097' }}>{items.length}</div>
             <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>Total iniciativas</div>
           </div>
         </div>
@@ -95,7 +95,7 @@ const MejoraContinuaPage: React.FC = () => {
             {filtrados.map((r, i) => (
               <tr key={r.id}>
                 <td style={{ color: '#9ca3af' }}>{i + 1}</td>
-                <td style={{ fontWeight: 600, color: '#1b3a6b', fontSize: '0.78rem' }}>{r.codigo}</td>
+                <td style={{ fontWeight: 600, color: '#030097', fontSize: '0.78rem' }}>{r.codigo}</td>
                 <td style={{ fontWeight: 500 }}>{r.titulo}</td>
                 <td><span className="iso-badge azul">{r.origen}</span></td>
                 <td>{r.proceso}</td>
@@ -105,7 +105,7 @@ const MejoraContinuaPage: React.FC = () => {
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     <div style={{ flex: 1, height: 6, background: '#e5e7eb', borderRadius: 999, minWidth: 60 }}>
-                      <div style={{ height: '100%', borderRadius: 999, background: r.avancePct === 100 ? '#10b981' : r.avancePct > 50 ? '#2e86de' : '#f59e0b', width: `${r.avancePct}%`, transition: 'width 0.3s' }} />
+                      <div style={{ height: '100%', borderRadius: 999, background: r.avancePct === 100 ? '#10b981' : r.avancePct > 50 ? '#FE7F03' : '#f59e0b', width: `${r.avancePct}%`, transition: 'width 0.3s' }} />
                     </div>
                     <span style={{ fontSize: '0.75rem', color: '#374151', fontWeight: 600 }}>{r.avancePct}%</span>
                   </div>

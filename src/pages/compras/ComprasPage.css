@@ -84,7 +84,7 @@
 .ficha-card__title {
   font-size: 1rem;
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
   margin: 0;
 }
 
@@ -147,7 +147,7 @@
   border-radius: 1rem;
   padding: 1.5rem;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
-  border-top: 4px solid #1b3a6b;
+  border-top: 4px solid #030097;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -162,7 +162,7 @@
 .eval-card__provider {
   font-size: 1.15rem;
   font-weight: 800;
-  color: #1b3a6b;
+  color: #030097;
   margin: 0;
 }
 

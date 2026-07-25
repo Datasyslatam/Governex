@@ -81,13 +81,13 @@ const RecursosPage: React.FC = () => {
 
       <nav className="procesos-tabs" style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', borderBottom: '2px solid #e5e7eb' }}>
         <button 
-          style={{ padding: '0.75rem 1.5rem', background: 'none', border: 'none', borderBottom: activeTab === 'matriz' ? '2px solid #1a6ebd' : '2px solid transparent', color: activeTab === 'matriz' ? '#1a6ebd' : '#6b7280', fontWeight: 600, cursor: 'pointer', marginBottom: '-2px' }}
+          style={{ padding: '0.75rem 1.5rem', background: 'none', border: 'none', borderBottom: activeTab === 'matriz' ? '2px solid #030097' : '2px solid transparent', color: activeTab === 'matriz' ? '#030097' : '#6b7280', fontWeight: 600, cursor: 'pointer', marginBottom: '-2px' }}
           onClick={() => setActiveTab('matriz')}
         >
           🔋 Matriz de Recursos
         </button>
         <button 
-          style={{ padding: '0.75rem 1.5rem', background: 'none', border: 'none', borderBottom: activeTab === 'criterios' ? '2px solid #1a6ebd' : '2px solid transparent', color: activeTab === 'criterios' ? '#1a6ebd' : '#6b7280', fontWeight: 600, cursor: 'pointer', marginBottom: '-2px' }}
+          style={{ padding: '0.75rem 1.5rem', background: 'none', border: 'none', borderBottom: activeTab === 'criterios' ? '2px solid #030097' : '2px solid transparent', color: activeTab === 'criterios' ? '#030097' : '#6b7280', fontWeight: 600, cursor: 'pointer', marginBottom: '-2px' }}
           onClick={() => setActiveTab('criterios')}
         >
           📘 Evaluación y Riesgos
@@ -158,7 +158,7 @@ const RecursosPage: React.FC = () => {
                 {filas.map((fila, idx) => (
                   <tr key={fila.id}>
                     <td style={{ color: '#9ca3af', fontWeight: 600 }}>{idx + 1}</td>
-                    <td style={{ fontWeight: 600, color: '#1b3a6b' }}>{fila.proceso}</td>
+                    <td style={{ fontWeight: 600, color: '#030097' }}>{fila.proceso}</td>
                     {COLS.map(col => {
                       const isEditing = editingCell?.id === fila.id && editingCell?.col === col.key
                       const val = fila[col.key]
@@ -202,7 +202,7 @@ const RecursosPage: React.FC = () => {
       {activeTab === 'criterios' && (
         <div className="recursos-criterios">
           <div className="panel" style={{ background: '#fff', borderRadius: '0.75rem', padding: '1.5rem', border: '1px solid #e5e7eb', marginBottom: '2rem' }}>
-            <h3 style={{ color: '#1b3a6b', marginBottom: '0.5rem' }}>Tabla de Riesgos y Oportunidades</h3>
+            <h3 style={{ color: '#030097', marginBottom: '0.5rem' }}>Tabla de Riesgos y Oportunidades</h3>
             <p style={{marginBottom: '1.5rem', color: '#6b7280', fontSize: '0.9rem', lineHeight: 1.5}}>
               Matriz de identificación y análisis de riesgos derivados de los recursos y ambiente de trabajo.
             </p>
@@ -210,15 +210,15 @@ const RecursosPage: React.FC = () => {
               <table className="recursos-matrix-table" style={{width: '100%', minWidth: 900}}>
                 <thead>
                   <tr>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Proceso</th>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Recurso o Ambiente Evaluado</th>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Hallazgo</th>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Riesgo</th>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Impacto</th>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Probabilidad</th>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Nivel de Riesgo</th>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Oportunidad</th>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Acción</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Proceso</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Recurso o Ambiente Evaluado</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Hallazgo</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Riesgo</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Impacto</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Probabilidad</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Nivel de Riesgo</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Oportunidad</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Acción</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -242,7 +242,7 @@ const RecursosPage: React.FC = () => {
           </div>
 
           <div className="panel" style={{ background: '#fff', borderRadius: '0.75rem', padding: '1.5rem', border: '1px solid #e5e7eb' }}>
-            <h3 style={{ color: '#1b3a6b', marginBottom: '0.5rem' }}>Evaluación del Ambiente de Operación</h3>
+            <h3 style={{ color: '#030097', marginBottom: '0.5rem' }}>Evaluación del Ambiente de Operación</h3>
             <p style={{marginBottom: '0.5rem', color: '#6b7280', fontSize: '0.9rem', lineHeight: 1.5}}>
               Calificación cuantitativa de las variables del ambiente por proceso.
             </p>
@@ -253,13 +253,13 @@ const RecursosPage: React.FC = () => {
               <table className="recursos-matrix-table" style={{width: '100%'}}>
                 <thead>
                   <tr>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Proceso</th>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Variable Social</th>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Variable Psicológica</th>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Variable Física</th>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Calificación Promedio</th>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Nivel de Riesgo</th>
-                    <th style={{background: '#1b3a6b', color: 'white', padding: '0.6rem'}}>Acción Requerida</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Proceso</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Variable Social</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Variable Psicológica</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Variable Física</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Calificación Promedio</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Nivel de Riesgo</th>
+                    <th style={{background: '#030097', color: 'white', padding: '0.6rem'}}>Acción Requerida</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -270,7 +270,7 @@ const RecursosPage: React.FC = () => {
                       <td style={{textAlign:'center'}}>{f.varSocial}</td>
                       <td style={{textAlign:'center'}}>{f.varPsicologica}</td>
                       <td style={{textAlign:'center'}}>{f.varFisica}</td>
-                      <td style={{textAlign:'center', fontWeight:600, color: '#1b3a6b'}}>{f.calificacionPromedio}</td>
+                      <td style={{textAlign:'center', fontWeight:600, color: '#030097'}}>{f.calificacionPromedio}</td>
                       <td style={{textAlign:'center'}}><span className={`pill ${f.nivelRiesgoVerde==='Crítico'?'pill--danger':f.nivelRiesgoVerde==='Alto'?'pill--warning':f.nivelRiesgoVerde==='Medio'?'pill--warning':'pill--success'}`}>{f.nivelRiesgoVerde}</span></td>
                       <td>{f.accionRequerida}</td>
                     </tr>

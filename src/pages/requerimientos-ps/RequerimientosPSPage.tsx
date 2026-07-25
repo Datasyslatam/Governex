@@ -168,7 +168,7 @@ const PanelEducativa: React.FC<{ ficha: FichaTecnica; onChange: (f: FichaTecnica
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
       <div style={{ background:'#f8fafc', border:'1px solid #e5e7eb', borderRadius:'0.5rem', padding:'1rem', display:'flex', flexDirection:'column', gap:'0.75rem' }}>
-        <p style={{ margin:0, fontWeight:700, fontSize:'0.82rem', color:'#1b3a6b' }}>📂 Datos generales del área</p>
+        <p style={{ margin:0, fontWeight:700, fontSize:'0.82rem', color:'#030097' }}>📂 Datos generales del área</p>
         <div className="iso-form-row">
           <div className="iso-field"><label>Institución / Cliente</label><input readOnly={isReadOnly()} value={ficha.cliente} onChange={e => set('cliente', e.target.value)} /></div>
           <div className="iso-field"><label>Área / Asignatura</label><input readOnly={isReadOnly()} value={ficha.areaAsignatura} onChange={e => set('areaAsignatura', e.target.value)} /></div>
@@ -178,7 +178,7 @@ const PanelEducativa: React.FC<{ ficha: FichaTecnica; onChange: (f: FichaTecnica
         <div className="iso-field"><label>Observaciones</label><textarea readOnly={isReadOnly()} rows={2} value={ficha.observaciones} onChange={e => set('observaciones', e.target.value)} /></div>
       </div>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <p style={{ margin:0, fontWeight:700, fontSize:'0.82rem', color:'#1b3a6b' }}>
+        <p style={{ margin:0, fontWeight:700, fontSize:'0.82rem', color:'#030097' }}>
           📚 Cursos / Grados
           <span style={{ marginLeft:'0.5rem', background:'#dbeafe', color:'#1e40af', padding:'0.1rem 0.55rem', borderRadius:999, fontSize:'0.72rem', fontWeight:700 }}>{ficha.totalHorasSemana}h/semana</span>
         </p>
@@ -227,7 +227,7 @@ const PanelEducativa: React.FC<{ ficha: FichaTecnica; onChange: (f: FichaTecnica
         )
       })}
       <div style={{ background:'#f8fafc', border:'1px solid #e5e7eb', borderRadius:'0.5rem', padding:'1rem', display:'flex', flexDirection:'column', gap:'0.75rem' }}>
-        <p style={{ margin:0, fontWeight:700, fontSize:'0.82rem', color:'#1b3a6b' }}>🗂️ Control del documento</p>
+        <p style={{ margin:0, fontWeight:700, fontSize:'0.82rem', color:'#030097' }}>🗂️ Control del documento</p>
         <div className="iso-form-row">
           <div className="iso-field"><label>Elaborado por</label><input readOnly={isReadOnly()} value={ficha.elaboradoPor} onChange={e => set('elaboradoPor', e.target.value)} /></div>
           <div className="iso-field"><label>Aprobado por</label><input readOnly={isReadOnly()} value={ficha.aprobadoPor} onChange={e => set('aprobadoPor', e.target.value)} /></div>
@@ -300,9 +300,9 @@ const ModalVerFicha: React.FC<{ ficha: FichaTecnica; onClose: () => void; onEdit
         {isEdu ? (
           <>
             {ficha.objetivoGeneral && <div style={{ background:'#f0f6ff', border:'1px solid #bfdbfe', borderRadius:'0.5rem', padding:'0.75rem', fontSize:'0.82rem' }}><strong style={{ color:'#1e40af' }}>🎯 Objetivo:</strong><p style={{ margin:'0.25rem 0 0', color:'#374151' }}>{ficha.objetivoGeneral}</p></div>}
-            {ficha.competencias && <div style={{ fontSize:'0.82rem' }}><strong style={{ color:'#1b3a6b' }}>💡 Competencias:</strong> {ficha.competencias}</div>}
+            {ficha.competencias && <div style={{ fontSize:'0.82rem' }}><strong style={{ color:'#030097' }}>💡 Competencias:</strong> {ficha.competencias}</div>}
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <strong style={{ fontSize:'0.85rem', color:'#1b3a6b' }}>📚 Cursos ({ficha.unidadesCurriculares.length})</strong>
+              <strong style={{ fontSize:'0.85rem', color:'#030097' }}>📚 Cursos ({ficha.unidadesCurriculares.length})</strong>
               <span style={{ fontSize:'0.78rem', background:'#dbeafe', color:'#1e40af', padding:'0.15rem 0.6rem', borderRadius:999, fontWeight:700 }}>Total: {ficha.totalHorasSemana}h/semana</span>
             </div>
             {ficha.unidadesCurriculares.map((u, i) => {
@@ -676,7 +676,7 @@ const RequerimientosPSPage: React.FC = () => {
       {tieneItems && (
         <div style={{ display:'flex', gap:'1rem', flexWrap:'wrap' }}>
           {[
-            { label:'Revisiones', value:items.length, icon:'📝', color:'#1b3a6b' },
+            { label:'Revisiones', value:items.length, icon:'📝', color:'#030097' },
             { label:'Fichas técnicas', value:cantFichas, icon:'✨', color:'#6d28d9' },
             { label:'Aprobados', value:items.filter(r=>r.estado==='Aprobado').length, icon:'✅', color:'#059669' },
             { label:'Pendientes', value:items.filter(r=>r.estado==='Pendiente').length, icon:'⏳', color:'#d97706' },
@@ -700,7 +700,7 @@ const RequerimientosPSPage: React.FC = () => {
           {!sinContexto && (
             <button
               className="iso-btn-primary"
-              style={{ background:'linear-gradient(90deg,#7c3aed,#2e86de)', display:'flex', alignItems:'center', gap:'0.4rem' }}
+              style={{ background:'linear-gradient(90deg,#7c3aed,#FE7F03)', display:'flex', alignItems:'center', gap:'0.4rem' }}
               onClick={generarMatrizConIA}
               disabled={loadingMatriz || !canCreate}
               title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}
@@ -744,7 +744,7 @@ const RequerimientosPSPage: React.FC = () => {
           {!tieneItems ? (
         <div style={{ background:'#fff', border:'2px dashed #e5e7eb', borderRadius:'0.8rem', padding:'3.5rem 2rem', textAlign:'center', display:'flex', flexDirection:'column', alignItems:'center', gap:'0.9rem' }}>
           <span style={{ fontSize:'3rem' }}>{esEducativo ? '🎓' : '📋'}</span>
-          <p style={{ margin:0, fontWeight:700, fontSize:'1.05rem', color:'#1b3a6b' }}>
+          <p style={{ margin:0, fontWeight:700, fontSize:'1.05rem', color:'#030097' }}>
             La matriz de revisiones se genera automáticamente con IA
           </p>
           <p style={{ margin:0, fontSize:'0.85rem', color:'#6b7280', maxWidth:460 }}>
@@ -756,7 +756,7 @@ const RequerimientosPSPage: React.FC = () => {
           {!sinContexto && (
             <button
               className="iso-btn-primary"
-              style={{ marginTop:'0.5rem', background:'linear-gradient(90deg,#7c3aed,#2e86de)', fontSize:'0.95rem', padding:'0.6rem 1.5rem' }}
+              style={{ marginTop:'0.5rem', background:'linear-gradient(90deg,#7c3aed,#FE7F03)', fontSize:'0.95rem', padding:'0.6rem 1.5rem' }}
               onClick={generarMatrizConIA}
               disabled={loadingMatriz}
             >
@@ -794,7 +794,7 @@ const RequerimientosPSPage: React.FC = () => {
                         {r.generadoConIA && <AIBadge />}
                       </div>
                     </td>
-                    <td style={{ fontWeight:600, color:'#1b3a6b' }}>{r.cliente}</td>
+                    <td style={{ fontWeight:600, color:'#030097' }}>{r.cliente}</td>
                     <td>{r.productoServicio}</td>
                     <td style={{ fontSize:'0.78rem', color:'#6b7280' }}>{r.requisitosCliente}</td>
                     <td style={{ fontSize:'0.78rem', color:'#6b7280' }}>{r.requisitosLegales}</td>

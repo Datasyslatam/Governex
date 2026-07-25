@@ -9,17 +9,17 @@ export const theme = {
     textMuted: "#7A8FA6",
 
     // Sidebar / topbar
-    sidebar: "#1B3A6B",
-    sidebarAlt: "#162F58",
+    sidebar: "#030097",
+    sidebarAlt: "#02007a",
 
     // Primarios
-    primary: "#1A6EBD",
-    primaryAlt: "#2E86DE",
+    primary: "#030097",
+    primaryAlt: "#5E4AAC",
 
     // Semáforo
-    success: "#1A9C5B",
-    warning: "#E08A00",
-    danger: "#D93025",
+    success: "#1A9C5B", // Keeping semantic green
+    warning: "#FE7F03", // Orange from palette
+    danger: "#D93025", // Keeping semantic red
 
     // Grises
     gray100: "#F8FAFC",

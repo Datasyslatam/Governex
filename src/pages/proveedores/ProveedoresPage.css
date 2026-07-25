@@ -78,7 +78,7 @@
 }
 
 .prov-table__code { font-weight: 700; color: #1a2b45; font-size: 0.85rem; }
-.prov-table__title { font-weight: 600; color: #1a6ebd; font-size: 0.9rem; }
+.prov-table__title { font-weight: 600; color: #030097; font-size: 0.9rem; }
 .prov-table__type { font-size: 0.8rem; color: #4a5e78; }
 .prov-table__date, .prov-table__next { font-size: 0.8rem; color: #7a8fa6; }
 
@@ -96,7 +96,7 @@
 }
 
 .score-good { background: #1a9c5b; }
-.score-warn { background: #e08a00; }
+.score-warn { background: #FE7F03; }
 .score-bad { background: #d93025; }
 
 .prov-table__actions {
@@ -119,7 +119,7 @@
 
 .btn-evaluar {
   background: #f8fafc;
-  color: #1a6ebd;
+  color: #030097;
   font-weight: 600;
   font-size: 0.8rem;
   padding: 0.3rem 0.6rem;
@@ -128,7 +128,7 @@
 
 .btn-evaluar:hover {
   background: #eef3fb;
-  border-color: #1a6ebd;
+  border-color: #030097;
 }
 
 /* ── Side panel ── */
@@ -163,7 +163,7 @@
 }
 
 .prov-eval-card-header strong { font-size: 0.9rem; color: #1a2b45; }
-.prov-eval-total { font-size: 0.85rem; font-weight: 700; color: #1a6ebd; }
+.prov-eval-total { font-size: 0.85rem; font-weight: 700; color: #030097; }
 
 .prov-eval-details {
   display: grid;
@@ -315,7 +315,7 @@
 
 .modal-body .input:focus {
   outline: none;
-  border-color: #1a6ebd;
+  border-color: #030097;
   box-shadow: 0 0 0 3px rgba(26, 110, 189, 0.12);
   background: #ffffff;
 }
@@ -328,7 +328,7 @@
 
 .modal-body input[type="range"] {
   width: 100%;
-  accent-color: #1a6ebd;
+  accent-color: #030097;
   margin-top: 0.25rem;
 }
 
@@ -357,7 +357,7 @@
 }
 
 .modal-footer .btn--primary {
-  background: #1a6ebd;
+  background: #030097;
   color: #ffffff;
   border: none;
   padding: 0.5rem 1.4rem;

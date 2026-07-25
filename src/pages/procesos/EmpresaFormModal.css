@@ -5,7 +5,7 @@
 /* ── Variables ─────────────────────────────────────────────── */
 :root {
   --ctx-navy:    #0f2b4b;
-  --ctx-blue:    #1a6ebd;
+  --ctx-blue:    #030097;
   --ctx-blue-lt: #e8f1fb;
   --ctx-border:  #e2e8f0;
   --ctx-text:    #1e3a5a;
@@ -27,7 +27,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  background: linear-gradient(135deg, #0f2b4b 0%, #1a6ebd 100%);
+  background: linear-gradient(135deg, #0f2b4b 0%, #030097 100%);
   border-radius: var(--ctx-radius);
   padding: 20px 24px;
   color: #fff;
@@ -190,7 +190,7 @@
 }
 
 /* Colores por variante */
-.ctx-textblock--mision   { border-top: 3px solid #1a6ebd; }
+.ctx-textblock--mision   { border-top: 3px solid #030097; }
 .ctx-textblock--vision   { border-top: 3px solid #7c3aed; }
 .ctx-textblock--politica { border-top: 3px solid #059669; }
 

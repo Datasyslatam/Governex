@@ -328,16 +328,16 @@ const UploadAI: React.FC<{ onSave: (m: MapaData) => void; onCancel: () => void }
         const generated: MapaData = await res.json()
         injectAIDetails(generated); setLoading(false)
         const total = generated.estrategicos.length + generated.misionales.length + generated.apoyo.length
-        Swal.fire({ icon:'success', title:'¡Organigrama procesado!', html:`<p>Governex Vision analizó <b>${file.name}</b> e identificó <b>${total} procesos</b>. Ahora completa los datos de tu empresa.</p>`, confirmButtonText:'Continuar', confirmButtonColor:'#1a6ebd' }).then(() => onSave(generated))
+        Swal.fire({ icon:'success', title:'¡Organigrama procesado!', html:`<p>Governex Vision analizó <b>${file.name}</b> e identificó <b>${total} procesos</b>. Ahora completa los datos de tu empresa.</p>`, confirmButtonText:'Continuar', confirmButtonColor:'#030097' }).then(() => onSave(generated))
       } catch {
         setLoading(false)
         const generated: MapaData = { cliente:'Requisitos del Cliente y Contexto', satisfaccion:'Satisfacción del Cliente', estrategicos:[{nombre:'Gerencia General'},{nombre:'Gestión de Calidad'},{nombre:'Planeación Estratégica'}], misionales:[{nombre:'Desarrollo de Producto'},{nombre:'Producción / Operaciones'},{nombre:'Ventas y Atención al Cliente'}], apoyo:[{nombre:'Talento Humano'},{nombre:'Finanzas y Contabilidad'},{nombre:'Compras y Logística'},{nombre:'TI e Infraestructura'}] }
         injectAIDetails(generated)
-        Swal.fire({ icon:'info', title:'Usando procesos base', html:`<p>No se pudo leer el organigrama. Se usarán procesos base.</p>`, confirmButtonText:'Continuar', confirmButtonColor:'#1a6ebd' }).then(() => onSave(generated))
+        Swal.fire({ icon:'info', title:'Usando procesos base', html:`<p>No se pudo leer el organigrama. Se usarán procesos base.</p>`, confirmButtonText:'Continuar', confirmButtonColor:'#030097' }).then(() => onSave(generated))
       }
     } else {
       const reader = new FileReader()
-      reader.onload = (ev) => { const content = ev.target?.result as string ?? ''; const generatedMapa = parseContent(content); injectAIDetails(generatedMapa); setLoading(false); const total = generatedMapa.estrategicos.length + generatedMapa.misionales.length + generatedMapa.apoyo.length; Swal.fire({ icon:'success', title:'¡Documento procesado!', html:`<p>Se analizó <b>${file.name}</b> e identificaron <b>${total} procesos</b>.</p>`, confirmButtonText:'Continuar', confirmButtonColor:'#1a6ebd' }).then(() => onSave(generatedMapa)) }
+      reader.onload = (ev) => { const content = ev.target?.result as string ?? ''; const generatedMapa = parseContent(content); injectAIDetails(generatedMapa); setLoading(false); const total = generatedMapa.estrategicos.length + generatedMapa.misionales.length + generatedMapa.apoyo.length; Swal.fire({ icon:'success', title:'¡Documento procesado!', html:`<p>Se analizó <b>${file.name}</b> e identificaron <b>${total} procesos</b>.</p>`, confirmButtonText:'Continuar', confirmButtonColor:'#030097' }).then(() => onSave(generatedMapa)) }
       reader.onerror = () => { setLoading(false); Swal.fire({ icon:'error', title:'Error al leer el archivo' }) }
       reader.readAsText(file, 'utf-8')
     }
@@ -373,7 +373,7 @@ const DofaQuadrant: React.FC<DofaQuadrantProps> = ({ title, subtitle, icon, vari
 const GovernexIALoadingOverlay: React.FC = () => (
   <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:9999 }}>
     <div style={{ background:'#fff',borderRadius:'1rem',padding:'2.5rem 3rem',display:'flex',flexDirection:'column',alignItems:'center',gap:'1rem',boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
-      <div style={{ width:52,height:52,border:'5px solid #e2e8f0',borderTop:'5px solid #1a6ebd',borderRadius:'50%',animation:'spin 0.9s linear infinite' }} />
+      <div style={{ width:52,height:52,border:'5px solid #e2e8f0',borderTop:'5px solid #030097',borderRadius:'50%',animation:'spin 0.9s linear infinite' }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <div style={{ textAlign:'center' }}>
         <div style={{ fontWeight:700,fontSize:'1.1rem',color:'#1a2b45' }}>Analizando con Governex IA</div>
@@ -470,7 +470,7 @@ const ProcesosPage: React.FC = () => {
           ✅ <b>${data.matrizRecursos?.length ?? 0}</b> evaluaciones de recursos y ambiente<br>
           ✅ <b>${data.indicadores?.length ?? 0}</b> indicadores de proceso y desempeño<br>
           ✅ Contexto organizacional narrativo</p>`,
-        confirmButtonText: 'Ver resultados', confirmButtonColor: '#1a6ebd',
+        confirmButtonText: 'Ver resultados', confirmButtonColor: '#030097',
       }).then(() => setActiveTab('contexto'))
     } catch (err: any) {
       Swal.fire({ icon:'error', title:'Error al analizar con Governex', text: err.message ?? 'Error inesperado' })
@@ -627,8 +627,8 @@ const ProcesosPage: React.FC = () => {
           <div className="procesos-kpi"><span className="procesos-kpi__value">{mapa.misionales.length}</span><span className="procesos-kpi__label">Misionales</span></div>
           <div className="procesos-kpi"><span className="procesos-kpi__value">{mapa.apoyo.length}</span><span className="procesos-kpi__label">De Apoyo</span></div>
           {aiAnalysis && (
-            <div className="procesos-kpi" style={{ borderLeft:'3px solid #1a6ebd' }}>
-              <span className="procesos-kpi__value" style={{ color:'#1a6ebd' }}>✓</span>
+            <div className="procesos-kpi" style={{ borderLeft:'3px solid #030097' }}>
+              <span className="procesos-kpi__value" style={{ color:'#030097' }}>✓</span>
               <span className="procesos-kpi__label">Analizado por IA</span>
             </div>
           )}
@@ -700,7 +700,7 @@ const ProcesosPage: React.FC = () => {
             <div className="procesos-section-header">
               <div>
                 <h3 className="procesos-section-title">Análisis PESTEL</h3>
-                <p className="procesos-section-desc">Análisis del contexto externo · Cláusula 4.1{aiAnalysis && <span style={{ marginLeft:8,color:'#1a6ebd',fontWeight:600 }}>— Generado por Governex IA ✓</span>}</p>
+                <p className="procesos-section-desc">Análisis del contexto externo · Cláusula 4.1{aiAnalysis && <span style={{ marginLeft:8,color:'#030097',fontWeight:600 }}>— Generado por Governex IA ✓</span>}</p>
               </div>
               <span className="pill pill--muted">{pestelData.length} factores identificados</span>
             </div>
@@ -735,7 +735,7 @@ const ProcesosPage: React.FC = () => {
             <div className="procesos-section-header">
               <div>
                 <h3 className="procesos-section-title">Matriz DOFA</h3>
-                <p className="procesos-section-desc">Análisis interno y externo · Cláusula 4.1 y 6.1{aiAnalysis && <span style={{ marginLeft:8,color:'#1a6ebd',fontWeight:600 }}>— Generado por Governex IA ✓</span>}</p>
+                <p className="procesos-section-desc">Análisis interno y externo · Cláusula 4.1 y 6.1{aiAnalysis && <span style={{ marginLeft:8,color:'#030097',fontWeight:600 }}>— Generado por Governex IA ✓</span>}</p>
               </div>
             </div>
             {lDofa && !aiAnalysis ? <div style={{ padding:'1rem',opacity:0.5 }}>Cargando DOFA...</div> : (
@@ -759,7 +759,7 @@ const ProcesosPage: React.FC = () => {
               <p className="procesos-section-desc">
                 Fichas de entradas, salidas e indicadores · Cláusula 4.4
                 {aiAnalysis && (
-                  <span style={{ marginLeft: 8, color: '#1a6ebd', fontWeight: 600 }}>
+                  <span style={{ marginLeft: 8, color: '#030097', fontWeight: 600 }}>
                     — Generado por Governex IA ✓
                   </span>
                 )}

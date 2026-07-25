@@ -66,13 +66,13 @@
 }
 
 .audit-tabs__tab:hover {
-  color: #1a6ebd;
+  color: #030097;
   background: rgba(26,110,189,0.04);
 }
 
 .audit-tabs__tab--active {
-  color: #1a6ebd;
-  border-bottom-color: #1a6ebd;
+  color: #030097;
+  border-bottom-color: #030097;
   background: rgba(26,110,189,0.06);
 }
 
@@ -133,7 +133,7 @@
 
 .filter-input:focus, .filter-select:focus {
   outline: none;
-  border-color: #1a6ebd;
+  border-color: #030097;
   box-shadow: 0 0 0 3px rgba(26, 110, 189, 0.1);
 }
 
@@ -159,7 +159,7 @@
 
 .toggle-btn.active {
   background: #ffffff;
-  color: #1a6ebd;
+  color: #030097;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
@@ -198,7 +198,7 @@
 
 .audit-table__code {
   font-weight: 700;
-  color: #1a6ebd;
+  color: #030097;
   white-space: nowrap;
 }
 
@@ -233,11 +233,11 @@
 .audit-progress__fill {
   height: 100%;
   border-radius: 999px;
-  background: #1a6ebd;
+  background: #030097;
 }
 
 .audit-progress__fill.bg-success { background: #1a9c5b; }
-.audit-progress__fill.bg-primary { background: #1a6ebd; }
+.audit-progress__fill.bg-primary { background: #030097; }
 
 .audit-progress__text {
   font-size: 0.75rem;

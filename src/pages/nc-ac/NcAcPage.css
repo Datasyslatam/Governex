@@ -73,9 +73,9 @@
 }
 
 .kpi-mini-value.danger { color: #d93025; }
-.kpi-mini-value.warning { color: #e08a00; }
+.kpi-mini-value.warning { color: #FE7F03; }
 .kpi-mini-value.success { color: #1a9c5b; }
-.kpi-mini-value.primary { color: #1a6ebd; }
+.kpi-mini-value.primary { color: #030097; }
 
 /* ── Tabs ── */
 .ncac-tabs {
@@ -101,13 +101,13 @@
 }
 
 .ncac-tabs__tab:hover {
-  color: #1a6ebd;
+  color: #030097;
   background: rgba(26,110,189,0.04);
 }
 
 .ncac-tabs__tab--active {
-  color: #1a6ebd;
-  border-bottom-color: #1a6ebd;
+  color: #030097;
+  border-bottom-color: #030097;
   background: rgba(26,110,189,0.06);
 }
 
@@ -152,7 +152,7 @@
 
 .ncac-table__code {
   font-weight: 700;
-  color: #1a6ebd;
+  color: #030097;
   white-space: nowrap;
 }
 
@@ -184,7 +184,7 @@
 }
 
 .ncac-severity--critical { color: #d93025; background: rgba(217,48,37,0.1); }
-.ncac-severity--high { color: #e08a00; background: rgba(224,138,0,0.1); }
+.ncac-severity--high { color: #FE7F03; background: rgba(224,138,0,0.1); }
 .ncac-severity--low { color: #1a9c5b; background: rgba(26,156,91,0.1); }
 
 .ncac-efficacy {
@@ -193,7 +193,7 @@
   color: #5f6f8a;
 }
 .ncac-efficacy--good { color: #1a9c5b; font-weight: 700; }
-.ncac-efficacy--pending { color: #e08a00; }
+.ncac-efficacy--pending { color: #FE7F03; }
 
 .ncac-table__actions {
   display: flex;

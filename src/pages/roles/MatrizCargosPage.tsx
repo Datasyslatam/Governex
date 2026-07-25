@@ -204,7 +204,7 @@ const MatrizCargosPage: React.FC<MatrizCargosProps> = ({ isSubTab }) => {
                 {filasFiltradas.map((fila, idx) => (
                   <tr key={fila.id}>
                     <td style={{ color: '#9ca3af', fontWeight: 600 }}>{idx + 1}</td>
-                    <td style={{ fontWeight: 600, color: '#1b3a6b' }}>{fila.proceso}</td>
+                    <td style={{ fontWeight: 600, color: '#030097' }}>{fila.proceso}</td>
                     <td>
                       <span className={`proceso-tipo-badge ${fila.tipo}`}>
                         {fila.tipo === 'estrategico' ? 'Estratégico' : fila.tipo === 'misional' ? 'Misional' : 'Apoyo'}

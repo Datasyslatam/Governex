@@ -21,7 +21,7 @@
 .cargos-page__title-block h1 {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
   margin: 0 0 0.25rem;
 }
 
@@ -34,7 +34,7 @@
 .cargos-page__clause {
   display: inline-block;
   background: #e8f0fb;
-  color: #1b3a6b;
+  color: #030097;
   font-size: 0.72rem;
   font-weight: 700;
   border-radius: 999px;
@@ -63,7 +63,7 @@
 }
 
 .cargos-matriz-topbar__info strong {
-  color: #1b3a6b;
+  color: #030097;
 }
 
 .cargos-matriz-actions {
@@ -88,7 +88,7 @@
 }
 
 .cargos-matrix-table thead tr {
-  background: #1b3a6b;
+  background: #030097;
   color: #fff;
 }
 
@@ -162,7 +162,7 @@
 .cargos-cell-edit textarea:focus,
 .cargos-cell-edit input:focus,
 .cargos-cell-edit select:focus {
-  outline: 2px solid #2e86de;
+  outline: 2px solid #FE7F03;
   border-color: transparent;
 }
 
@@ -226,7 +226,7 @@
 
 .cargos-empty-state h2 {
   font-size: 1.3rem;
-  color: #1b3a6b;
+  color: #030097;
   margin-bottom: 0.75rem;
 }
 
@@ -248,7 +248,7 @@
 }
 
 .cargos-empty-state__steps li strong {
-  color: #1b3a6b;
+  color: #030097;
 }
 
 /* ── AI Banner ──────────────────────────────────────────── */
@@ -294,7 +294,7 @@
 .cargos-modal h2 {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
   margin: 0;
 }
 
@@ -321,7 +321,7 @@
 .cargos-modal input:focus,
 .cargos-modal select:focus,
 .cargos-modal textarea:focus {
-  outline: 2px solid #2e86de;
+  outline: 2px solid #FE7F03;
   border-color: transparent;
 }
 

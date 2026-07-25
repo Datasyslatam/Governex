@@ -21,7 +21,7 @@
 .roles-page__title-block h1 {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
   margin: 0 0 0.25rem;
 }
 
@@ -34,7 +34,7 @@
 .roles-page__clause {
   display: inline-block;
   background: #e8f0fb;
-  color: #1b3a6b;
+  color: #030097;
   font-size: 0.72rem;
   font-weight: 700;
   border-radius: 999px;
@@ -65,12 +65,12 @@
   gap: 0.4rem;
 }
 
-.roles-tab-btn:hover { color: #1b3a6b; }
+.roles-tab-btn:hover { color: #030097; }
 
 .roles-tab-btn.active {
-  color: #1b3a6b;
+  color: #030097;
   font-weight: 600;
-  border-bottom-color: #2e86de;
+  border-bottom-color: #FE7F03;
 }
 
 /* ── Organigrama panel ──────────────────────────────────── */
@@ -95,7 +95,7 @@
 }
 
 .roles-org-upload-card:hover {
-  border-color: #2e86de;
+  border-color: #FE7F03;
   background: #f0f6ff;
 }
 
@@ -107,7 +107,7 @@
 .roles-org-upload-card h3 {
   font-size: 1rem;
   font-weight: 600;
-  color: #1b3a6b;
+  color: #030097;
   margin: 0;
 }
 
@@ -185,7 +185,7 @@
 }
 
 .roles-matriz-topbar__info strong {
-  color: #1b3a6b;
+  color: #030097;
 }
 
 .roles-matriz-actions {
@@ -210,7 +210,7 @@
 }
 
 .roles-matrix-table thead tr {
-  background: #1b3a6b;
+  background: #030097;
   color: #fff;
 }
 
@@ -293,7 +293,7 @@
 
 .roles-cell-edit textarea:focus,
 .roles-cell-edit input:focus {
-  outline: 2px solid #2e86de;
+  outline: 2px solid #FE7F03;
   border-color: transparent;
 }
 
@@ -312,7 +312,7 @@
 /* ── Buttons ────────────────────────────────────────────── */
 .btn-primary {
   padding: 0.45rem 1rem;
-  background: #2e86de;
+  background: #FE7F03;
   color: #fff;
   border: none;
   border-radius: 0.4rem;
@@ -408,7 +408,7 @@
 .roles-modal h2 {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
   margin: 0;
 }
 
@@ -432,7 +432,7 @@
 
 .roles-modal input:focus,
 .roles-modal select:focus {
-  outline: 2px solid #2e86de;
+  outline: 2px solid #FE7F03;
   border-color: transparent;
 }
 
@@ -484,7 +484,7 @@
   display: block;
   font-size: 0.95rem;
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
   margin-bottom: 0.2rem;
 }
 
@@ -497,7 +497,7 @@
 
 /* Botón generar IA */
 .btn-ai-generate {
-  background: linear-gradient(135deg, #2e86de 0%, #1a5fa8 100%);
+  background: linear-gradient(135deg, #FE7F03 0%, #1a5fa8 100%);
   color: #fff;
   border: none;
   border-radius: 0.5rem;
@@ -531,7 +531,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: #2e86de;
+  color: #FE7F03;
   font-size: 0.88rem;
   font-weight: 600;
 }
@@ -540,7 +540,7 @@
   width: 20px;
   height: 20px;
   border: 2.5px solid #bfdbfe;
-  border-top-color: #2e86de;
+  border-top-color: #FE7F03;
   border-radius: 50%;
   animation: roles-spin 0.7s linear infinite;
   flex-shrink: 0;
@@ -605,7 +605,7 @@
 
 .roles-empty-state h2 {
   font-size: 1.3rem;
-  color: #1b3a6b;
+  color: #030097;
   margin-bottom: 0.75rem;
 }
 
@@ -627,5 +627,5 @@
 }
 
 .roles-empty-state__steps li strong {
-  color: #1b3a6b;
+  color: #030097;
 }

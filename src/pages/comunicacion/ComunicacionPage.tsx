@@ -50,11 +50,11 @@ const ComunicacionPage: React.FC = () => {
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.6rem 1rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#1b3a6b' }}>{items.filter(i => i.tipo === 'Interna').length}</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#030097' }}>{items.filter(i => i.tipo === 'Interna').length}</div>
             <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>Internas</div>
           </div>
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.6rem 1rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#2e86de' }}>{items.filter(i => i.tipo === 'Externa').length}</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#FE7F03' }}>{items.filter(i => i.tipo === 'Externa').length}</div>
             <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>Externas</div>
           </div>
         </div>
@@ -98,7 +98,7 @@ const ComunicacionPage: React.FC = () => {
             {filtrados.map((r, i) => (
               <tr key={r.id}>
                 <td style={{ color: '#9ca3af' }}>{i + 1}</td>
-                <td style={{ fontWeight: 600, color: '#1b3a6b' }}>{r.que}</td>
+                <td style={{ fontWeight: 600, color: '#030097' }}>{r.que}</td>
                 <td style={{ fontSize: '0.8rem' }}>{r.cuando}</td>
                 <td>{r.quien}</td>
                 <td>{r.aQuien}</td>

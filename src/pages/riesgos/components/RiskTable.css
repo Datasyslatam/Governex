@@ -33,7 +33,7 @@
 
 .risk-table__code {
   font-weight: 600;
-  color: #1a6ebd !important;
+  color: #030097 !important;
 }
 
 /* Level badge */
@@ -50,8 +50,8 @@
 }
 
 .risk-table__level--critical { background: #d93025; }
-.risk-table__level--high     { background: #e08a00; }
-.risk-table__level--medium   { background: #1a6ebd; }
+.risk-table__level--high     { background: #FE7F03; }
+.risk-table__level--medium   { background: #030097; }
 .risk-table__level--low      { background: #1a9c5b; }
 
 /* Status badges */

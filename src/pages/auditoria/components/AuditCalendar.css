@@ -48,7 +48,7 @@
   line-height: 1;
   transition: all 0.15s;
 }
-.cal-nav-btn:hover { background: #eef3fb; border-color: #1a6ebd; color: #1a6ebd; }
+.cal-nav-btn:hover { background: #eef3fb; border-color: #030097; color: #030097; }
 
 .cal-today-btn {
   padding: 0.3rem 0.75rem;
@@ -61,7 +61,7 @@
   cursor: pointer;
   transition: all 0.15s;
 }
-.cal-today-btn:hover { background: #eef3fb; border-color: #1a6ebd; color: #1a6ebd; }
+.cal-today-btn:hover { background: #eef3fb; border-color: #030097; color: #030097; }
 
 /* ── Legend ── */
 .cal-legend {
@@ -124,7 +124,7 @@
   align-self: flex-start;
 }
 .cal-day__num--today {
-  background: #1a6ebd;
+  background: #030097;
   color: #fff;
   width: 22px;
   height: 22px;
@@ -177,7 +177,7 @@
 .cal-event.event--running {
   background: #fef3c7;
   color: #92400e;
-  border-left: 3px solid #e08a00;
+  border-left: 3px solid #FE7F03;
 }
 .cal-event.event--closed {
   background: #d1fae5;

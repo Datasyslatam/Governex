@@ -51,7 +51,7 @@ function fechaFin(fechaInicio: string, duracionDias: number): string {
 
 const STATUS_COLOR: Record<string, string> = {
   "Planificada":  "#64748b",
-  "En Ejecución": "#e08a00",
+  "En Ejecución": "#FE7F03",
   "Cerrada":      "#1a9c5b",
 };
 

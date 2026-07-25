@@ -185,7 +185,7 @@ const EmptyState: React.FC = () => (
   }}>
     <div style={{ fontSize: '3.5rem' }}>🏗️</div>
     <div>
-      <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1b3a6b', margin: '0 0 0.5rem' }}>
+      <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#030097', margin: '0 0 0.5rem' }}>
         Sin análisis disponible
       </h2>
       <p style={{ fontSize: '0.88rem', color: '#6b7280', maxWidth: 480, margin: '0 auto' }}>
@@ -323,7 +323,7 @@ const TablaCaracterizacion: React.FC<{
             <button
               onClick={() => setShowAdd(s => !s)}
               style={{
-                background: '#1b3a6b', color: '#fff', border: 'none',
+                background: '#030097', color: '#fff', border: 'none',
                 borderRadius: '0.5rem', padding: '0.4rem 0.9rem',
                 fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
               }}
@@ -418,7 +418,7 @@ const TablaCaracterizacion: React.FC<{
                     fontSize: '0.78rem', fontWeight: 700,
                   }}>{row.codigo}</code>
                 </td>
-                <td style={{ fontWeight: 600, color: '#1b3a6b' }}>{row.proceso}</td>
+                <td style={{ fontWeight: 600, color: '#030097' }}>{row.proceso}</td>
                 <td style={{ fontSize: '0.8rem' }}><TextoExpandible texto={row.objetivo} maxChars={80} /></td>
                 <td style={{ fontSize: '0.78rem' }}>
                   <div style={{ color: '#6b7280', marginBottom: 4 }}><TextoExpandible texto={row.entradas} maxChars={80} /></div>
@@ -449,7 +449,7 @@ const TablaCaracterizacion: React.FC<{
             padding: '0.75rem 0', borderTop: '2px solid #e8edf4', marginBottom: '0.85rem',
           }}>
             <div>
-              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#1b3a6b' }}>
+              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#030097' }}>
                 ⚙️ Actividades de la Empresa — §4.1 / §8.1
               </h4>
               <p style={{ margin: '0.15rem 0 0', fontSize: '0.78rem', color: '#6b7280' }}>
@@ -637,7 +637,7 @@ const MapaProcedimiento: React.FC<{
         })}
         {empresa && (
           <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.6rem 1.1rem' }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1b3a6b' }}>{empresa}</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#030097' }}>{empresa}</div>
             {sector && <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>{sector}</div>}
           </div>
         )}
@@ -673,7 +673,7 @@ const MapaProcedimiento: React.FC<{
             <button
               onClick={() => setShowAdd(s => !s)}
               style={{
-                background: '#1b3a6b', color: '#fff', border: 'none',
+                background: '#030097', color: '#fff', border: 'none',
                 borderRadius: '0.5rem', padding: '0.4rem 0.9rem',
                 fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
               }}
@@ -758,7 +758,7 @@ const MapaProcedimiento: React.FC<{
                       }}>{TIPO_LABEL[tipo] || tipo}</span>
                     )}
                   </td>
-                  <td style={{ fontWeight: 600, color: '#1b3a6b' }}>
+                  <td style={{ fontWeight: 600, color: '#030097' }}>
                     {isEditing && canEdit ? (
                       <input value={editValues.proceso ?? f.proceso}
                         onChange={e => setEditValues(p => ({ ...p, proceso: e.target.value }))}
@@ -778,7 +778,7 @@ const MapaProcedimiento: React.FC<{
                         onChange={e => setEditValues(p => ({ ...p, clausula: e.target.value }))}
                         style={{ width: '100%', padding: '0.3rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.82rem' }} />
                     ) : f.clausula ? (
-                      <span style={{ background: '#e8f0fb', color: '#1b3a6b', padding: '0.15rem 0.45rem', borderRadius: 999, fontSize: '0.72rem', fontWeight: 600 }}>{f.clausula}</span>
+                      <span style={{ background: '#e8f0fb', color: '#030097', padding: '0.15rem 0.45rem', borderRadius: 999, fontSize: '0.72rem', fontWeight: 600 }}>{f.clausula}</span>
                     ) : <em style={{ color: '#9ca3af' }}>—</em>}
                   </td>
                   <td style={{ fontSize: '0.8rem', color: '#4b5563' }}>
@@ -895,7 +895,7 @@ const ManualProcedimiento: React.FC<{
           />
           {canCreate && (
             <button onClick={() => setShowAdd(s => !s)}
-              style={{ background: '#1b3a6b', color: '#fff', border: 'none', borderRadius: '0.5rem', padding: '0.4rem 0.9rem', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
+              style={{ background: '#030097', color: '#fff', border: 'none', borderRadius: '0.5rem', padding: '0.4rem 0.9rem', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
             >＋ Agregar</button>
           )}
         </div>
@@ -970,7 +970,7 @@ const ManualProcedimiento: React.FC<{
                         onChange={e => setEditValues(p => ({ ...p, codigo: e.target.value }))}
                         style={{ width: '80px', padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.78rem' }} />
                     ) : (
-                      <code style={{ background: '#1b3a6b', color: '#fff', fontSize: '0.72rem', fontWeight: 700, padding: '0.2rem 0.55rem', borderRadius: 4, display: 'inline-block' }}>{row.codigo}</code>
+                      <code style={{ background: '#030097', color: '#fff', fontSize: '0.72rem', fontWeight: 700, padding: '0.2rem 0.55rem', borderRadius: 4, display: 'inline-block' }}>{row.codigo}</code>
                     )}
                   </td>
                   <td>
@@ -990,7 +990,7 @@ const ManualProcedimiento: React.FC<{
                       </div>
                     ) : (
                       <>
-                        <div style={{ fontWeight: 700, color: '#1b3a6b', fontSize: '0.85rem', marginBottom: 4 }}>{row.proceso}</div>
+                        <div style={{ fontWeight: 700, color: '#030097', fontSize: '0.85rem', marginBottom: 4 }}>{row.proceso}</div>
                         <div style={{ fontSize: '0.74rem', color: '#6b7280' }}>👤 <strong>Resp:</strong> {row.responsable || '—'}</div>
                         <div style={{ marginTop: 4 }}><span className={`iso-badge ${estadoBadgeClass(row.estado)}`}>{row.estado}</span></div>
                       </>
@@ -1036,7 +1036,7 @@ const ManualProcedimiento: React.FC<{
                         onChange={e => setEditValues(p => ({ ...p, clausula: e.target.value }))}
                         style={{ width: '100%', padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.78rem' }} />
                     ) : row.clausula ? (
-                      <span style={{ background: '#e8f0fb', color: '#1b3a6b', padding: '0.15rem 0.45rem', borderRadius: 999, fontSize: '0.72rem', fontWeight: 600, display: 'inline-block' }}>{row.clausula}</span>
+                      <span style={{ background: '#e8f0fb', color: '#030097', padding: '0.15rem 0.45rem', borderRadius: 999, fontSize: '0.72rem', fontWeight: 600, display: 'inline-block' }}>{row.clausula}</span>
                     ) : <em style={{ color: '#9ca3af' }}>—</em>}
                   </td>
                   {(canEdit || canDelete) && (
@@ -1285,7 +1285,7 @@ const IndicadoresCaracterizacion: React.FC<{ rows: CaracterizacionRow[] }> = ({ 
 
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
         <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '1rem 1.5rem', minWidth: 200 }}>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#2e86de' }}>{getTotal()}</div>
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#FE7F03' }}>{getTotal()}</div>
           <div style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: 600 }}>Indicadores Totales</div>
         </div>
       </div>
@@ -1298,7 +1298,7 @@ const IndicadoresCaracterizacion: React.FC<{ rows: CaracterizacionRow[] }> = ({ 
           return (
             <div key={i} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '1rem' }}>
               <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, marginBottom: '0.2rem' }}>{r.codigo}</div>
-              <div style={{ fontSize: '1rem', fontWeight: 700, color: '#1b3a6b', marginBottom: '1rem' }}>{r.proceso}</div>
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: '#030097', marginBottom: '1rem' }}>{r.proceso}</div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                 {r.indicador && (
@@ -1442,11 +1442,11 @@ const PlanificacionOperacionPage: React.FC = () => {
           <p>
             Tabla de caracterización, mapa y manual de procedimiento, y matriz de riesgos de actividades
             {analysis?.nombreEmpresa && (
-              <> · <strong style={{ color: '#1b3a6b' }}>{analysis.nombreEmpresa}</strong></>
+              <> · <strong style={{ color: '#030097' }}>{analysis.nombreEmpresa}</strong></>
             )}
             {analysis?.sector && (
               <span style={{
-                marginLeft: 8, background: '#e8f0fb', color: '#1b3a6b',
+                marginLeft: 8, background: '#e8f0fb', color: '#030097',
                 fontSize: '0.72rem', fontWeight: 700, borderRadius: 999,
                 padding: '0.15rem 0.55rem',
               }}>{analysis.sector}</span>
@@ -1458,7 +1458,7 @@ const PlanificacionOperacionPage: React.FC = () => {
         {hasData && (
           <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
             {[
-              { val: caracterizacion.length,                                     lbl: 'Procesos',     color: '#1b3a6b' },
+              { val: caracterizacion.length,                                     lbl: 'Procesos',     color: '#030097' },
               { val: matrizRoles.filter(f => f.tipo === 'estrategico').length,   lbl: 'Estratégicos', color: '#1e40af' },
               { val: matrizRoles.filter(f => f.tipo === 'misional').length,      lbl: 'Misionales',   color: '#166534' },
               { val: matrizRoles.filter(f => f.tipo === 'apoyo').length,         lbl: 'Apoyo',        color: '#854d0e' },
@@ -1499,7 +1499,7 @@ const PlanificacionOperacionPage: React.FC = () => {
                 {t.label}
                 {t.count !== undefined && t.count > 0 && (
                   <span style={{
-                    background: activeTab === t.id ? '#2e86de' : '#e5e7eb',
+                    background: activeTab === t.id ? '#FE7F03' : '#e5e7eb',
                     color:      activeTab === t.id ? '#fff'     : '#6b7280',
                     fontSize: '0.68rem', fontWeight: 700,
                     padding: '0.1rem 0.45rem', borderRadius: 999, marginLeft: 4,
@@ -1563,7 +1563,7 @@ const PlanificacionOperacionPage: React.FC = () => {
             fontSize: '3rem', animation: 'spin 2s linear infinite', marginBottom: '1rem',
             background: 'linear-gradient(45deg, #FF6B6B, #4ECDC4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
           }}>✨</div>
-          <h2 style={{ color: '#1b3a6b', margin: 0 }}>Governex IA está trabajando en el análisis</h2>
+          <h2 style={{ color: '#030097', margin: 0 }}>Governex IA está trabajando en el análisis</h2>
           <p style={{ color: '#6b7280', marginTop: '0.5rem' }}>Por favor espera unos segundos...</p>
         </div>
       )}

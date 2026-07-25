@@ -644,7 +644,7 @@ const RiesgosPage: React.FC = () => {
                         </span>
                       </td>
                       <td>
-                        <span className={`risk-table__fuente risk-table__fuente--${r.fuente.toLowerCase()}`}>
+                        <span className={`risk-table__fuente risk-table__fuente--${(r.fuente || '').toLowerCase()}`}>
                           {r.fuente}
                         </span>
                       </td>
@@ -664,7 +664,7 @@ const RiesgosPage: React.FC = () => {
                       </td>
                       <td>
                         <select
-                          className={`risk-table__estado-select risk-table__estado-select--${r.estado.toLowerCase()}`}
+                          className={`risk-table__estado-select risk-table__estado-select--${(r.estado || '').toLowerCase()}`}
                           value={r.estado}
                           onChange={e => changeEstado(r.codigo, e.target.value as RiesgoDerivado['estado'])}
                           disabled={!canEdit}

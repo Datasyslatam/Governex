@@ -87,7 +87,7 @@
 
 .comp-table__name { font-weight: 700; color: #1a2b45; font-size: 0.9rem; }
 .comp-table__cargo { font-weight: 600; color: #4a5e78; font-size: 0.85rem; }
-.comp-table__process { font-size: 0.85rem; color: #1a6ebd; }
+.comp-table__process { font-size: 0.85rem; color: #030097; }
 .comp-table__date { font-size: 0.8rem; color: #7a8fa6; }
 
 .comp-brecha {
@@ -98,7 +98,7 @@
   font-weight: 700;
 }
 .brecha-0 { color: #1a9c5b; background: rgba(26,156,91,0.1); }
-.brecha-low { color: #e08a00; background: rgba(224,138,0,0.1); }
+.brecha-low { color: #FE7F03; background: rgba(224,138,0,0.1); }
 .brecha-high { color: #d93025; background: rgba(217,48,37,0.1); }
 
 .comp-table__actions {

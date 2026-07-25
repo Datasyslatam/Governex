@@ -24,7 +24,7 @@
 
 .document-table__code {
   font-weight: 600;
-  color: #1a6ebd;
+  color: #030097;
 }
 
 .document-table__status {
@@ -40,7 +40,7 @@
 
 .document-table__status--En-Revisión {
   background: rgba(224, 138, 0, 0.12);
-  color: #e08a00;
+  color: #FE7F03;
 }
 
 .document-table__status--Borrador {

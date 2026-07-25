@@ -97,7 +97,7 @@
   min-width: 180px;
   transition: border-color 0.18s;
 }
-.oc-search:focus { border-color: #2e86de; }
+.oc-search:focus { border-color: #FE7F03; }
 
 .oc-filter-select {
   padding: 0.42rem 0.65rem;
@@ -141,7 +141,7 @@
   font-family: monospace;
   font-weight: 700;
   font-size: 0.82rem;
-  color: #2e86de;
+  color: #FE7F03;
   white-space: nowrap;
 }
 .oc-draft-tag {
@@ -199,7 +199,7 @@
 .oc-freq {
   display: inline-block;
   background: #e0f0ff;
-  color: #1a6ebd;
+  color: #030097;
   font-size: 0.71rem;
   font-weight: 600;
   padding: 0.15rem 0.5rem;
@@ -257,7 +257,7 @@
 }
 .oc-expand-label {
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
   white-space: nowrap;
 }
 
@@ -266,7 +266,7 @@
   margin: 0 0 0.4rem;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #1b3a6b;
+  color: #030097;
 }
 .oc-med-table {
   width: 100%;
@@ -278,7 +278,7 @@
   border: 1px solid #e5e7eb;
 }
 .oc-med-table th {
-  background: #1b3a6b;
+  background: #030097;
   color: #fff;
   padding: 0.4rem 0.7rem;
   text-align: left;
@@ -332,7 +332,7 @@
   color: #4a5e78; font-size: 0.88rem; line-height: 2;
 }
 .oc-empty-cta {
-  display: inline-block; background: #1a6ebd; color: #fff;
+  display: inline-block; background: #030097; color: #fff;
   border-radius: 999px; padding: 0.65rem 1.4rem;
   font-size: 0.88rem; font-weight: 600; text-decoration: none;
   transition: background 0.18s;

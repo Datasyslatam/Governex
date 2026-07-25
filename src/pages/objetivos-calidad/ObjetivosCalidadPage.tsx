@@ -724,7 +724,7 @@ const ObjetivosCalidadPage: React.FC = () => {
 
       {/* ── KPIs ────────────────────────────────────────────────── */}
       <div className="oc-kpis">
-        <KPICard value={objetivos.length} label="Total objetivos"   color="#1a6ebd" />
+        <KPICard value={objetivos.length} label="Total objetivos"   color="#030097" />
         <KPICard value={confirmados}      label="Confirmados"        color="#059669" />
         <KPICard value={borradores}       label="Borradores IA"      color="#d97706" />
         <KPICard value={enProgreso}       label="En progreso"        color="#7c3aed" />

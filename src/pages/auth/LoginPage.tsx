@@ -4,7 +4,7 @@ import React, { useState } from 'react'
   import { usePlatformAdminAuth } from '../../context/PlatformAdminAuthContext'
   import { authService } from '../../services'
   import './LoginPage.css'
-  import logoGovernex from '../../assets/logo-governex.png'
+  import logoGovernex from '../../assets/LOGO Governex.png'
 
   const LoginPage: React.FC = () => {
     const { login }   = useAuth()
@@ -50,9 +50,7 @@ import React, { useState } from 'react'
         <div className="login__left">
           <div className="login__brand">
             <div className="login__brand-icon" aria-hidden="true">
-              <div className="login__brand-icon" aria-hidden="true">
-                <img src={logoGovernex}/>
-              </div>
+              <img src={logoGovernex} alt="Governex Logo" />
             </div>
             <p>Impulsamos la Gobernanza Digital</p>
             <div className="login__divider" />

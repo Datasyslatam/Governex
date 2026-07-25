@@ -65,7 +65,7 @@
   padding: 0.6rem 1.2rem;
   border: none;
   border-radius: 0.5rem;
-  background: var(--color-primary, #1a6ebd);
+  background: var(--color-primary, #030097);
   color: #fff;
   font-weight: 600;
   cursor: pointer;
@@ -95,7 +95,7 @@
 .tdm-btn-link {
   background: none;
   border: none;
-  color: var(--color-primary, #1a6ebd);
+  color: var(--color-primary, #030097);
   font-weight: 600;
   cursor: pointer;
   font-size: 0.82rem;

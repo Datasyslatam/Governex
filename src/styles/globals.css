@@ -12,10 +12,12 @@
   --color-text-main: #1a2b45;
   --color-text-secondary: #4a5e78;
   --color-text-muted: #7a8fa6;
-  --color-sidebar: #1b3a6b;
-  --color-primary: #1a6ebd;
+  --color-sidebar: #030097;
+  --color-primary: #030097;
+  --color-secondary: #5E4AAC;
+  --color-accent: #FFD700;
   --color-success: #1a9c5b;
-  --color-warning: #e08a00;
+  --color-warning: #FE7F03;
   --color-danger: #d93025;
 }
 
