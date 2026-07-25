@@ -189,13 +189,44 @@ REGLAS:
 const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest'];
 
 /**
+ * Helper para reparar JSONs incompletos/truncados por límites de tokens de salida.
+ */
+function tryRepairTruncatedJson(str: string): string {
+  let trimmed = str.trim();
+  if (trimmed.endsWith(',')) trimmed = trimmed.slice(0, -1);
+  
+  const quoteCount = (trimmed.match(/"/g) || []).length;
+  if (quoteCount % 2 !== 0) {
+    trimmed += '"';
+  }
+
+  const openBraces = (trimmed.match(/\{/g) || []).length - (trimmed.match(/\}/g) || []).length;
+  const openBrackets = (trimmed.match(/\[/g) || []).length - (trimmed.match(/\]/g) || []).length;
+
+  for (let i = 0; i < Math.max(0, openBrackets); i++) trimmed += ']';
+  for (let i = 0; i < Math.max(0, openBraces); i++) trimmed += '}';
+
+  return trimmed;
+}
+
+function safeParseJson<T = any>(jsonString: string): T {
+  try {
+    return JSON.parse(jsonString);
+  } catch (err) {
+    console.warn('[Gemini] JSON.parse falló en primera instancia. Intentando reparar JSON trunco...');
+    const repaired = tryRepairTruncatedJson(jsonString);
+    return JSON.parse(repaired);
+  }
+}
+
+/**
  * Helper: builds the request body for a Gemini model, applying the
  * thinkingBudget: 0 fix for gemini-2.5-* models to prevent JSON truncation.
  */
 function buildGeminiBody(model: string, prompt: string, maxOutputTokens: number) {
   const body: any = {
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature:0.4, topP:0.9, maxOutputTokens, responseMimeType:'application/json' },
+    generationConfig: { temperature: 0.3, topP: 0.9, maxOutputTokens, responseMimeType: 'application/json' },
   };
   // Disable thinking tokens for gemini-2.5 models to avoid truncated JSON
   if (model.startsWith('gemini-2.5')) {
@@ -212,23 +243,48 @@ export async function analyzeWithGemini(mapa: MapaData): Promise<GeminiAnalysis>
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         console.log(`[Gemini] ${model} | intento ${attempt}`);
-        const body = buildGeminiBody(model, buildPrompt(mapa), 8192);
+        const body = buildGeminiBody(model, buildPrompt(mapa), 16384);
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json', 'x-goog-api-key':apiKey },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
           body: JSON.stringify(body)
         });
+
         const text = await response.text();
-        if (response.status === 503) { await new Promise(r => setTimeout(r, attempt * 2000)); continue; }
-        if (!response.ok) { console.error(`[Gemini] Error ${model}:`, text); continue; }
+
+        if (response.status === 429) {
+          console.warn(`[Gemini] Límite de cuota superado (429) en ${model}. Esperando ${attempt * 4}s antes de reintentar...`);
+          await new Promise(r => setTimeout(r, attempt * 4000));
+          continue;
+        }
+
+        if (response.status === 503) {
+          await new Promise(r => setTimeout(r, attempt * 2000));
+          continue;
+        }
+
+        if (!response.ok) {
+          console.error(`[Gemini] Error ${model}:`, text);
+          continue;
+        }
+
         const data = JSON.parse(text);
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-        const cleaned = rawText.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
-        const parsed = JSON.parse(cleaned);
+        const candidate = data?.candidates?.[0];
+
+        if (candidate?.finishReason === 'MAX_TOKENS') {
+          console.warn(`[Gemini] La respuesta de ${model} alcanzó MAX_TOKENS y fue truncada.`);
+        }
+
+        const rawText = candidate?.content?.parts?.[0]?.text ?? '';
+        const cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+
+        const parsed = safeParseJson<any>(cleaned);
+
         if ((!parsed.matrizRoles?.length || !parsed.pestel?.length || !parsed.dofa?.length || !parsed.caracterizacion?.length) && attempt < 3) {
           console.warn(`[${model}] JSON incompleto (faltan matrices principales), reintentando...`);
           continue;
         }
+
         return {
           pestel:            Array.isArray(parsed.pestel)          ? parsed.pestel          : [],
           dofa:              Array.isArray(parsed.dofa)            ? parsed.dofa            : [],
