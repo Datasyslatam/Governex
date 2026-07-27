@@ -217,9 +217,9 @@ router.post('/batch', requirePermission('procesos', 'crear'), async (req: AuthRe
   }
 });
 
-router.delete('/:codigo', requirePermission('procesos', 'eliminar'), async (req, res) => {
+router.delete('/:codigo', requirePermission('procesos', 'eliminar'), async (req: AuthRequest, res: Response) => {
   try {
-    const { rowCount } = await pool.query('DELETE FROM procesos WHERE codigo= AND tenant_id=', [req.params.codigo, req.user.tenantId]);
+    const { rowCount } = await pool.query('DELETE FROM procesos WHERE codigo=$1 AND tenant_id=$2', [req.params.codigo, req.user!.tenantId]);
     if (rowCount === 0) return res.status(404).json({ error: 'No encontrado' });
     res.json({ message: 'Eliminado' });
   } catch (err) {
