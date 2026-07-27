@@ -234,6 +234,7 @@ export const procesosService = {
   getAll:      ()                                         => api.get<Proceso[]>('/api/procesos'),
   create:      (body: Partial<Proceso>)                   => api.post<Proceso>('/api/procesos', body),
   update:      (id: number, body: Partial<Proceso>)       => api.put<Proceso>(`/api/procesos/${id}`, body),
+  delete:      (codigo: string)                           => api.delete(`/api/procesos/${codigo}`),
   batch:       (body: { rows: any[] })                    => api.post<any[]>('/api/procesos/batch', body),
   getPestel:   ()                                         => api.get<any[]>('/api/procesos/pestel'),
   addPestel:   (body: any)                                => api.post<any>('/api/procesos/pestel', body),

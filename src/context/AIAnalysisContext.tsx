@@ -240,6 +240,7 @@ interface AIAnalysisContextValue {
   updateProyectoDiseno: (id: string, p: ProyectoDiseno) => void
   removeProyectoDiseno: (id: string) => void
   clearAnalysis:   () => void
+  removeCaracterizacion: (codigo: string) => void
   updateFilaMatrizRoles:  (id: number, patch: Partial<FilaMatriz>) => void
   addFilaMatrizRoles:     (fila: Omit<FilaMatriz, 'id'>) => void
   removeFilaMatrizRoles:  (id: number) => void
@@ -579,6 +580,16 @@ const mapCaracterizacionDB = (rows: any[]): CaracterizacionRow[] => rows.map(r =
     contextoEmpresaService.deleteDatos().catch(() => {})
   }
 
+  const removeCaracterizacion = (codigo: string) => {
+    setAnalysisState(prev => {
+      if (!prev) return prev
+      const next = { ...prev, caracterizacion: prev.caracterizacion.filter(c => c.codigo !== codigo) }
+      try { sessionStorage.setItem('governex_ai_analysis', JSON.stringify(next)) } catch {}
+      return next
+    })
+    procesosService.delete(codigo).catch(e => console.warn('Error al eliminar caracterizacion en BD', e))
+  }
+
   /* ── Matriz de Roles: edición granular por fila, persistida en BD ── */
 const updateFilaMatrizRoles = (id: number, patch: Partial<FilaMatriz>) => {
   const prevAnalysis = analysis
@@ -755,6 +766,7 @@ const removeFilaMatrizCargos = (id: number) => {
     setAnalysis, setDatosEmpresa, setActividades, setProyectosDiseno,
     addActividad, removeActividad,
     addProyectoDiseno, updateProyectoDiseno, removeProyectoDiseno,
+    removeCaracterizacion,
     updateFilaMatrizRoles, addFilaMatrizRoles, removeFilaMatrizRoles,
     updateFilaMatrizCargos, addFilaMatrizCargos, removeFilaMatrizCargos,
     addFilaMapaProcedimiento, updateFilaMapaProcedimiento, removeFilaMapaProcedimiento,

@@ -216,7 +216,9 @@ const TablaCaracterizacion: React.FC<{
   canCreate:   boolean
   onAddManual: (fila: CaracterizacionRow) => void
   onRegenerar: () => void
-}> = ({ rows, actividades, canCreate, onAddManual, onRegenerar }) => {
+  onDelete?:   (codigo: string) => void
+  onDeleteActividad?: (id: string) => void
+}> = ({ rows, actividades, canCreate, onAddManual, onRegenerar, onDelete, onDeleteActividad }) => {
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [loadingAI, setLoadingAI] = useState(false)
@@ -404,6 +406,7 @@ const TablaCaracterizacion: React.FC<{
               <th>Salidas<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Salida</span></th>
               <th>Indicador Gral.</th>
               <th>Responsable</th><th>Estado</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -435,6 +438,20 @@ const TablaCaracterizacion: React.FC<{
                 <td style={{ fontSize: '0.78rem' }}>{row.indicador}</td>
                 <td style={{ fontWeight: 500 }}>{row.responsable}</td>
                 <td><span className={`iso-badge ${estadoBadgeClass(row.estado)}`}>{row.estado}</span></td>
+                <td>
+                  {onDelete && (
+                    <button
+                      title="Eliminar registro"
+                      onClick={() => onDelete(row.codigo)}
+                      style={{
+                        background: 'transparent', border: 'none', cursor: 'pointer',
+                        fontSize: '1rem', padding: '0.2rem', opacity: 0.6
+                      }}
+                      onMouseOver={e => e.currentTarget.style.opacity = '1'}
+                      onMouseOut={e => e.currentTarget.style.opacity = '0.6'}
+                    >🗑️</button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -479,6 +496,7 @@ const TablaCaracterizacion: React.FC<{
                   <th>Riesgos</th>
                   <th>Oportunidades</th>
                   <th>Registrada</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -556,6 +574,20 @@ const TablaCaracterizacion: React.FC<{
                       </td>
                       <td style={{ fontSize: '0.75rem', color: '#9ca3af', whiteSpace: 'nowrap' }}>
                         {new Date(act.creadaEn).toLocaleDateString('es-CO')}
+                      </td>
+                      <td>
+                        {onDeleteActividad && (
+                          <button
+                            title="Eliminar actividad"
+                            onClick={() => onDeleteActividad(act.id)}
+                            style={{
+                              background: 'transparent', border: 'none', cursor: 'pointer',
+                              fontSize: '1rem', padding: '0.2rem', opacity: 0.6
+                            }}
+                            onMouseOver={e => e.currentTarget.style.opacity = '1'}
+                            onMouseOut={e => e.currentTarget.style.opacity = '0.6'}
+                          >🗑️</button>
+                        )}
                       </td>
                     </tr>
                   )
@@ -1338,9 +1370,10 @@ const IndicadoresCaracterizacion: React.FC<{ rows: CaracterizacionRow[] }> = ({ 
 const PlanificacionOperacionPage: React.FC = () => {
   const { canCreate, canEdit, canDelete } = usePermissions('planes_operacion')
   const {
-    analysis, setAnalysis, actividades, addActividad,
+    analysis, setAnalysis, actividades, addActividad, removeActividad,
     addFilaMapaProcedimiento, updateFilaMapaProcedimiento, removeFilaMapaProcedimiento,
     addFilaManualProcedimiento, updateFilaManualProcedimiento, removeFilaManualProcedimiento,
+    removeCaracterizacion
   } = useAIAnalysis()
   const [activeTab, setActiveTab] = useState<Tab>('caracterizacion')
   const [isRegenerating, setIsRegenerating] = useState(false)
@@ -1531,6 +1564,16 @@ const PlanificacionOperacionPage: React.FC = () => {
               canCreate={canCreate()}
               onAddManual={handleAddManualCaracterizacion}
               onRegenerar={handleRegenerarCaracterizacion}
+              onDelete={(codigo) => {
+                if (confirm('¿Estás seguro de eliminar este proceso de la tabla de caracterización?')) {
+                  removeCaracterizacion(codigo)
+                }
+              }}
+              onDeleteActividad={(id) => {
+                if (confirm('¿Estás seguro de eliminar esta actividad?')) {
+                  removeActividad(id)
+                }
+              }}
             />
           )}
           {activeTab === 'mapa' && (

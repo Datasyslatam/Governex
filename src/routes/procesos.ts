@@ -217,4 +217,14 @@ router.post('/batch', requirePermission('procesos', 'crear'), async (req: AuthRe
   }
 });
 
+router.delete('/:codigo', requirePermission('procesos', 'eliminar'), async (req, res) => {
+  try {
+    const { rowCount } = await pool.query('DELETE FROM procesos WHERE codigo= AND tenant_id=', [req.params.codigo, req.user.tenantId]);
+    if (rowCount === 0) return res.status(404).json({ error: 'No encontrado' });
+    res.json({ message: 'Eliminado' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al eliminar' });
+  }
+});
+
 export default router
