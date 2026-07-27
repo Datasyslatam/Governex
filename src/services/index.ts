@@ -468,6 +468,8 @@ export interface FichaTecnicaCompraDB {
   unidad_medida?: string; cantidad_minima?: string
   documentos_requeridos: { nombre: string; url: string }[]
   responsable?: string; fecha_creacion: string
+  variables_criticas?: string // JSON string
+  proveedor_id?: number
 }
 
 export const fichasTecnicasService = {
@@ -475,6 +477,7 @@ export const fichasTecnicasService = {
   create: (body: any) => api.post<FichaTecnicaCompraDB>('/api/compras/fichas-tecnicas', body),
   update: (id: number, body: any) => api.put<FichaTecnicaCompraDB>(`/api/compras/fichas-tecnicas/${id}`, body),
   delete: (id: number) => api.delete<void>(`/api/compras/fichas-tecnicas/${id}`),
+  generarFichaOrdenIA: (body: any) => api.post<any>('/api/gemini/generar-ficha-orden', body),
 }
 
 export const evaluacionesOrdenCompraService = {

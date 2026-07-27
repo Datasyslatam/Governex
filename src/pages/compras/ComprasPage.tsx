@@ -3,7 +3,7 @@ import '../iso-module.css'
 import './ComprasPage.css' // Nuevos estilos específicos
 import Swal from 'sweetalert2'
 import { useFetch } from '../../hooks/useFetch'
-import { fichasTecnicasService, evaluacionesOrdenCompraService, uploadsService, ordenesCompraService } from '../../services'
+import { fichasTecnicasService, evaluacionesOrdenCompraService, uploadsService, ordenesCompraService, proveedoresService } from '../../services'
 import { usePermissions } from '../../hooks/usePermissions'
 import PermissionGuard from '../../components/ui/PermissionGuard'
 
@@ -25,6 +25,7 @@ interface OrdenCompra {
   requisitos: string
   responsable: string
   estado: EstadoOrden
+  proveedor_id?: number
 }
 
 interface FichaTecnica {
@@ -37,6 +38,8 @@ interface FichaTecnica {
   documentosRequeridos: string[] // Cambiado a array para soportar múltiples archivos adjuntos
   responsable: string
   fechaCreacion: string
+  variablesCriticas?: { nombre: string; medicion: string }[]
+  proveedorId?: number
 }
 
 interface EvaluacionProveedor {
@@ -52,6 +55,7 @@ interface EvaluacionProveedor {
   puntajeGlobal: number // 0-100
   observaciones: string
   fechaEvaluacion: string
+  variablesEvaluadas?: { nombre: string; valor: string; cumple: boolean }[]
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -84,10 +88,11 @@ const ComprasPage: React.FC = () => {
     id: r.id, proveedor: r.proveedor, producto: r.producto, cantidad: r.cantidad ?? '',
     unidad: r.unidad ?? '', precioUnit: r.precio_unit ?? '', total: r.total ?? '',
     fechaEmision: r.fecha_emision ?? '', fechaEntrega: r.fecha_entrega ?? '',
-    requisitos: r.requisitos ?? '', responsable: r.responsable ?? '', estado: r.estado,
+    requisitos: r.requisitos ?? '', responsable: r.responsable ?? '', estado: r.estado, proveedor_id: r.proveedor_id
   }))
   const { data: fichasDB, refetch: refetchFichas } = useFetch(fichasTecnicasService.getAll, [])
   const { data: evaluacionesDB, refetch: refetchEvaluaciones } = useFetch(evaluacionesOrdenCompraService.getAll, [])
+  const { data: proveedoresDB } = useFetch(proveedoresService.getAll, [])
 
   const fichas: FichaTecnica[] = fichasDB.map(f => ({
     id: f.id, nombre: f.nombre, descripcion: f.descripcion ?? '',
@@ -95,6 +100,8 @@ const ComprasPage: React.FC = () => {
     cantidadMinima: f.cantidad_minima ?? '',
     documentosRequeridos: (f.documentos_requeridos ?? []).map(d => d.nombre),
     responsable: f.responsable ?? '', fechaCreacion: f.fecha_creacion,
+    variablesCriticas: f.variables_criticas ? JSON.parse(f.variables_criticas) : undefined,
+    proveedorId: f.proveedor_id
   }))
 
   const evaluaciones: EvaluacionProveedor[] = evaluacionesDB.map((e: any) => ({
@@ -103,6 +110,7 @@ const ComprasPage: React.FC = () => {
     precio: e.precio, capacidadRespuesta: e.capacidad_respuesta,
     puntajeGlobal: e.puntaje_global, observaciones: e.observaciones ?? '',
     fechaEvaluacion: e.fecha_evaluacion,
+    variablesEvaluadas: e.variables_evaluadas ? JSON.parse(e.variables_evaluadas) : undefined
   }))
 
   // Estados de modales
@@ -111,13 +119,13 @@ const ComprasPage: React.FC = () => {
   const [showEvalModal, setShowEvalModal]   = useState<{ visible: boolean, orden?: OrdenCompra }>({ visible: false })
 
   // Estados de formularios
-  const emptyOrden = { proveedor: '', producto: '', cantidad: '', unidad: '', precioUnit: '', total: '', fechaEmision: '', fechaEntrega: '', requisitos: '', responsable: '', estado: 'Pendiente' as const }
+  const emptyOrden = { nitProveedor: '', proveedor: '', producto: '', cantidad: '', unidad: '', precioUnit: '', total: '', fechaEmision: '', fechaEntrega: '', requisitos: '', responsable: '', estado: 'Pendiente' as const }
   const [formOrden, setFormOrden] = useState({ ...emptyOrden })
 
   const emptyFicha = { nombre: '', descripcion: '', especificaciones: '', unidadMedida: '', cantidadMinima: '', documentosRequeridos: [] as { nombre: string; url: string }[], responsable: '', fechaCreacion: new Date().toISOString().split('T')[0] }
   const [formFicha, setFormFicha] = useState({ ...emptyFicha })
 
-  const emptyEval = { calidad: 5, tiempoEntrega: 'Cumplió' as 'Cumplió' | 'No cumplió', diasRetraso: 0, precio: 'Igual' as 'Igual' | 'Mayor' | 'Menor', capacidadRespuesta: 5, observaciones: '' }
+  const emptyEval = { calidad: 5, tiempoEntrega: 'Cumplió' as 'Cumplió' | 'No cumplió', diasRetraso: 0, precio: 'Igual' as 'Igual' | 'Mayor' | 'Menor', capacidadRespuesta: 5, observaciones: '', variablesEvaluadas: [] as { nombre: string; valor: string; cumple: boolean }[] }
   const [formEval, setFormEval] = useState({ ...emptyEval })
 
   const [filtroEstado, setFiltroEstado] = useState('todos')
@@ -129,7 +137,7 @@ const ComprasPage: React.FC = () => {
     if (!formOrden.proveedor || !formOrden.producto) return
     try {
       await ordenesCompraService.create({
-        proveedor: formOrden.proveedor, producto: formOrden.producto, cantidad: formOrden.cantidad,
+        nit_proveedor: formOrden.nitProveedor, proveedor: formOrden.proveedor, producto: formOrden.producto, cantidad: formOrden.cantidad,
         unidad: formOrden.unidad, precio_unit: formOrden.precioUnit, total: formOrden.total,
         fecha_emision: formOrden.fechaEmision, fecha_entrega: formOrden.fechaEntrega,
         requisitos: formOrden.requisitos, responsable: formOrden.responsable, estado: formOrden.estado,
@@ -138,6 +146,38 @@ const ComprasPage: React.FC = () => {
       setShowOrdenModal(false); setFormOrden({ ...emptyOrden })
     } catch (e: any) { alert(e.message) }
   }
+
+  const generarFichaDesdeOrden = async (o: OrdenCompra) => {
+    Swal.fire({
+      title: 'Generando Ficha Técnica...',
+      text: 'Governex IA está analizando la orden y definiendo las variables críticas medibles.',
+      allowOutsideClick: false,
+      didOpen: () => { Swal.showLoading() }
+    })
+    try {
+      const data = await fichasTecnicasService.generarFichaOrdenIA({
+        proveedor: o.proveedor, producto: o.producto, cantidad: o.cantidad, unidad: o.unidad, requisitos: o.requisitos
+      })
+      if (!data || !data.nombre) throw new Error('La IA no pudo generar la ficha correctamente')
+      
+      const proveedorItem = proveedoresDB.find((p: any) => p.razon === o.proveedor)
+      const proveedor_id = proveedorItem ? proveedorItem.id : undefined
+
+      // Save it directly
+      await fichasTecnicasService.create({
+        nombre: data.nombre, descripcion: data.descripcion, especificaciones: data.especificaciones,
+        unidadMedida: data.unidadMedida, cantidadMinima: data.cantidadMinima, documentosRequeridos: data.documentosRequeridos,
+        variablesCriticas: data.variablesCriticas,
+        proveedor_id
+      })
+      await refetchFichas()
+      Swal.fire('¡Ficha Generada!', 'La IA ha generado la ficha técnica y las variables críticas.', 'success')
+      setActiveTab('fichas')
+    } catch (e: any) {
+      Swal.fire('Error', e.message || 'Error al generar la ficha técnica con IA', 'error')
+    }
+  }
+
   const eliminarOrden = (id: number) => {
     Swal.fire({
       title: '¿Eliminar orden?', text: 'Esta acción no se puede deshacer.', icon: 'warning',
@@ -149,6 +189,22 @@ const ComprasPage: React.FC = () => {
         await refetchOrdenes()
       }
     })
+  }
+
+  const openEvalModal = (orden: OrdenCompra) => {
+    // Buscar si existe una Ficha Técnica para este proveedor
+    const fichaAsociada = fichas.find(f => {
+      if (orden.proveedor_id && f.proveedorId === orden.proveedor_id) return true;
+      return f.nombre.toLowerCase().includes(orden.producto.toLowerCase()) || orden.producto.toLowerCase().includes(f.nombre.toLowerCase());
+    })
+    
+    let varsEvals: { nombre: string; valor: string; cumple: boolean }[] = []
+    if (fichaAsociada && fichaAsociada.variablesCriticas) {
+      varsEvals = fichaAsociada.variablesCriticas.map(vc => ({ nombre: vc.nombre, valor: '', cumple: true }))
+    }
+
+    setFormEval({ ...emptyEval, variablesEvaluadas: varsEvals })
+    setShowEvalModal({ visible: true, orden })
   }
 
   const setEstadoOrden = async (orden: OrdenCompra, estado: EstadoOrden) => {
@@ -170,7 +226,7 @@ const ComprasPage: React.FC = () => {
         icon: 'success', showCancelButton: true, confirmButtonColor: '#030097', cancelButtonColor: '#6e7d88',
         confirmButtonText: 'Sí, evaluar ahora', cancelButtonText: 'Más tarde',
       }).then((result) => {
-        if (result.isConfirmed) setShowEvalModal({ visible: true, orden })
+        if (result.isConfirmed) openEvalModal(orden)
       })
     } else if (estado === 'Recibido no conforme') {
       Swal.fire({
@@ -254,6 +310,7 @@ const ComprasPage: React.FC = () => {
         calidad: formEval.calidad, tiempoEntrega: formEval.tiempoEntrega, diasRetraso: formEval.diasRetraso,
         precio: formEval.precio, capacidadRespuesta: formEval.capacidadRespuesta,
         puntajeGlobal: puntaje, observaciones: formEval.observaciones,
+        variables_evaluadas: formEval.variablesEvaluadas
       })
       await refetchEvaluaciones()
       setShowEvalModal({ visible: false })
@@ -290,7 +347,7 @@ const ComprasPage: React.FC = () => {
       <div className="iso-tabs">
         <button className={`iso-tab-btn ${activeTab === 'ordenes' ? 'active' : ''}`} onClick={() => setActiveTab('ordenes')}>🛒 Órdenes de Compra</button>
         <button className={`iso-tab-btn ${activeTab === 'fichas' ? 'active' : ''}`} onClick={() => setActiveTab('fichas')}>📄 Fichas Técnicas</button>
-        <button className={`iso-tab-btn ${activeTab === 'evaluaciones' ? 'active' : ''}`} onClick={() => setActiveTab('evaluaciones')}>⭐ Evaluación de Proveedores</button>
+        <button className={`iso-tab-btn ${activeTab === 'evaluaciones' ? 'active' : ''}`} onClick={() => setActiveTab('evaluaciones')}>⭐ Evaluación de Productos/Servicios</button>
       </div>
 
       {/* ────────────────────────────────────────────────────────
@@ -341,13 +398,16 @@ const ComprasPage: React.FC = () => {
                           </>
                         )}
                         {o.estado === 'Recibido conforme' && !isEvaluada && (
-                          <button className="orden-action-btn evaluar" onClick={() => setShowEvalModal({ visible: true, orden: o })} title="Evaluar proveedor">
+                          <button className="orden-action-btn evaluar" onClick={() => openEvalModal(o)} title="Evaluar proveedor">
                             ⭐ Evaluar
                           </button>
                         )}
                         {o.estado === 'Recibido conforme' && isEvaluada && (
                           <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600, background: '#d1fae5', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>✓ Evaluado</span>
                         )}
+                        <button className="orden-action-btn" onClick={() => generarFichaDesdeOrden(o)} title="Generar Ficha Técnica con IA" style={{ background: 'linear-gradient(90deg,#7c3aed,#FE7F03)', color: 'white', border: 'none' }}>
+                          ✨ Ficha IA
+                        </button>
                         <button className="iso-btn-icon danger" style={{ marginLeft: 'auto' }} onClick={() => eliminarOrden(o.id)}>🗑️</button>
                       </div>
                     </td>
@@ -414,6 +474,19 @@ const ComprasPage: React.FC = () => {
                       )}
                     </div>
                   </div>
+
+                  {f.variablesCriticas && f.variablesCriticas.length > 0 && (
+                    <div className="ficha-info-row" style={{ marginTop: '0.4rem' }}>
+                      <span className="label">Variables Críticas (IA)</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                        {f.variablesCriticas.map((vc, idx) => (
+                          <span key={idx} className="ficha-file-badge" style={{ background: '#fef3c7', color: '#b45309' }}>
+                            {vc.nombre} ({vc.medicion})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -494,6 +567,7 @@ const ComprasPage: React.FC = () => {
           <div className="iso-modal" onClick={e => e.stopPropagation()}>
             <h2>➕ Nueva orden de compra</h2>
             <div className="iso-form-row">
+              <div className="iso-field"><label>NIT Proveedor</label><input type="text" placeholder="EJ: 900112321" value={formOrden.nitProveedor} onChange={e => setFormOrden(p => ({ ...p, nitProveedor: e.target.value }))} /></div>
               <div className="iso-field"><label>Proveedor *</label><input type="text" value={formOrden.proveedor} onChange={e => setFormOrden(p => ({ ...p, proveedor: e.target.value }))} /></div>
               <div className="iso-field"><label>Producto / Servicio *</label>
                 <input type="text" value={formOrden.producto} onChange={e => setFormOrden(p => ({ ...p, producto: e.target.value }))} />
@@ -623,7 +697,36 @@ const ComprasPage: React.FC = () => {
               </div>
             </div>
             
-            <div className="iso-field">
+            {formEval.variablesEvaluadas && formEval.variablesEvaluadas.length > 0 && (
+              <div style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#f9fafb' }}>
+                <h4 style={{ margin: '0 0 1rem 0', color: '#111827', fontSize: '0.9rem' }}>Variables Críticas del Producto (IA)</h4>
+                {formEval.variablesEvaluadas.map((ve, idx) => (
+                  <div key={idx} className="iso-form-row" style={{ marginBottom: '0.5rem' }}>
+                    <div className="iso-field" style={{ flex: 2 }}>
+                      <label>{ve.nombre}</label>
+                      <input type="text" placeholder="Valor medido / Observación" value={ve.valor} onChange={(e) => {
+                        const newVars = [...formEval.variablesEvaluadas!]
+                        newVars[idx].valor = e.target.value
+                        setFormEval(p => ({ ...p, variablesEvaluadas: newVars }))
+                      }} />
+                    </div>
+                    <div className="iso-field" style={{ flex: 1 }}>
+                      <label>¿Cumple?</label>
+                      <select value={ve.cumple ? 'true' : 'false'} onChange={(e) => {
+                        const newVars = [...formEval.variablesEvaluadas!]
+                        newVars[idx].cumple = e.target.value === 'true'
+                        setFormEval(p => ({ ...p, variablesEvaluadas: newVars }))
+                      }}>
+                        <option value="true">Sí cumple</option>
+                        <option value="false">No cumple</option>
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="iso-field" style={{ marginTop: '1rem' }}>
               <label>Observaciones generales</label>
               <textarea rows={2} value={formEval.observaciones} onChange={e => setFormEval(p => ({ ...p, observaciones: e.target.value }))} />
             </div>

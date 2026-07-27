@@ -1538,5 +1538,63 @@ router.post('/regenerar-mapa-procedimiento', async (req: AuthRequest, res: Respo
     res.status(500).json({ error: error.message });
   }
 });
+/* ── POST /api/gemini/generar-ficha-orden ────────────────────
+   Genera ficha técnica y variables críticas desde una Orden de Compra */
+router.post('/generar-ficha-orden', async (req: AuthRequest, res: Response) => {
+  const { proveedor, producto, cantidad, unidad, requisitos } = req.body
+
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+  const prompt = `Eres un experto técnico en ISO 9001:2015. 
+Se ha creado una Orden de Compra con la siguiente información:
+- PROVEEDOR: ${proveedor}
+- PRODUCTO/SERVICIO: ${producto}
+- CANTIDAD: ${cantidad} ${unidad}
+- REQUISITOS: ${requisitos}
+
+Necesito que generes la Ficha Técnica de este producto/servicio y definas las VARIABLES CRÍTICAS que deberán ser medidas posteriormente para evaluar si el proveedor cumple.
+
+Genera una respuesta ÚNICAMENTE en JSON válido con el siguiente formato, sin backticks ni markdown:
+{
+  "nombre": "Nombre ajustado del producto/servicio",
+  "descripcion": "Descripción y uso detallado del insumo/servicio",
+  "especificaciones": "Especificaciones técnicas precisas (Normas, dimensiones, composición, etc.)",
+  "unidadMedida": "Unidad de medida sugerida",
+  "cantidadMinima": "Cantidad mínima de stock sugerida",
+  "documentosRequeridos": ["Certificado de calidad", "Ficha de seguridad"],
+  "variablesCriticas": [
+    { "nombre": "Nombre de la variable (Ej: Tolerancia dimensional)", "medicion": "Cómo se mide (Ej: Calibrador pie de rey +/- 0.5mm)" }
+  ]
+}`
+
+  const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+
+  for (const model of MODELS) {
+    try {
+      const body: any = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
+      }
+      if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!response.ok) continue
+      const data = await response.json()
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+      if (!text) continue
+      const parsed = JSON.parse(text)
+      return res.json(parsed)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  return res.status(500).json({ error: 'No se pudo generar la ficha técnica con ningún modelo disponible' })
+})
 
 export default router

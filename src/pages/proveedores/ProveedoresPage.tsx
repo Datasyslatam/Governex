@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useRef } from 'react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import './ProveedoresPage.css'
 import { useFetch } from '../../hooks/useFetch'
-import { proveedoresService, Proveedor } from '../../services'
+import { proveedoresService, evaluacionesOrdenCompraService, Proveedor } from '../../services'
 import { usePermissions } from '../../hooks/usePermissions'
 import PermissionGuard from '../../components/ui/PermissionGuard'
 
@@ -25,6 +26,7 @@ const ProveedoresPage: React.FC = () => {
   const [saving, setSaving]                 = useState(false)
   const [generatingIA, setGeneratingIA]     = useState(false)
   const [evalHistory, setEvalHistory]       = useState<any[]>([])
+  const [evalOrdenesHistory, setEvalOrdenesHistory] = useState<any[]>([])
   const [showReport, setShowReport]         = useState(false)
   const [reportData, setReportData]         = useState<any>(null)
   const [showModalHistorial, setShowModalHistorial] = useState(false)
@@ -57,6 +59,11 @@ const ProveedoresPage: React.FC = () => {
     try {
       const hist = await proveedoresService.getEvaluaciones(p.id)
       setEvalHistory(hist)
+      
+      const allOrdenEvals = await evaluacionesOrdenCompraService.getAll()
+      const provOrdenEvals = allOrdenEvals.filter((e: any) => e.proveedor.toLowerCase() === p.razon.toLowerCase())
+      setEvalOrdenesHistory(provOrdenEvals)
+
       setShowModalHistorial(true)
     } catch (e) { console.error(e) }
   }
@@ -149,6 +156,8 @@ const ProveedoresPage: React.FC = () => {
     }
   }, [evalProvId, evalData, refetch])
 
+  const [activeTab, setActiveTab] = useState<'proveedores' | 'ranking'>('proveedores')
+
   const provSuspendidos = proveedores.filter(p => p.estado === 'Suspendido')
   const evalProvNombre  = proveedores.find(p => p.id === evalProvId)?.razon || ''
 
@@ -171,9 +180,19 @@ const ProveedoresPage: React.FC = () => {
         </div>
       </header>
 
-      <div className="prov-layout">
-        <div className="prov-main-col panel">
-          <div className="prov-toolbar">
+      <div className="iso-tabs" style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.5rem' }}>
+        <button className={`iso-tab ${activeTab === 'proveedores' ? 'active' : ''}`} onClick={() => setActiveTab('proveedores')} style={{ background: 'none', border: 'none', fontSize: '1.1rem', cursor: 'pointer', fontWeight: activeTab === 'proveedores' ? 600 : 400, color: activeTab === 'proveedores' ? '#030097' : '#6b7280', borderBottom: activeTab === 'proveedores' ? '2px solid #030097' : '2px solid transparent' }}>
+          Lista de Proveedores
+        </button>
+        <button className={`iso-tab ${activeTab === 'ranking' ? 'active' : ''}`} onClick={() => setActiveTab('ranking')} style={{ background: 'none', border: 'none', fontSize: '1.1rem', cursor: 'pointer', fontWeight: activeTab === 'ranking' ? 600 : 400, color: activeTab === 'ranking' ? '#030097' : '#6b7280', borderBottom: activeTab === 'ranking' ? '2px solid #030097' : '2px solid transparent' }}>
+          Ranking y Desempeño
+        </button>
+      </div>
+
+      {activeTab === 'proveedores' ? (
+        <div className="prov-layout">
+          <div className="prov-main-col panel">
+            <div className="prov-toolbar">
             <div className="prov-search">
               <input type="text" className="input prov-search__input"
                 placeholder="Buscar por Razón Social o NIT..."
@@ -296,6 +315,48 @@ const ProveedoresPage: React.FC = () => {
           )}
         </div>
       </div>
+      ) : (
+        <div className="prov-layout">
+          <div className="prov-main-col panel" style={{ gridColumn: 'span 12' }}>
+            <h3 style={{ marginBottom: '1rem' }}>Ranking de Proveedores</h3>
+            <table className="table prov-table">
+              <thead>
+                <tr>
+                  <th>Pos.</th><th>Proveedor</th><th>Puntaje Global (Promedio)</th><th>Última Evaluación</th><th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {proveedores
+                  .filter(p => p.ultima_evaluacion)
+                  .sort((a, b) => (b.ultima_evaluacion?.total || 0) - (a.ultima_evaluacion?.total || 0))
+                  .map((prov, idx) => (
+                    <tr key={prov.id}>
+                      <td style={{ fontWeight: 'bold', fontSize: '1.2rem', color: idx === 0 ? '#fbbf24' : idx === 1 ? '#9ca3af' : idx === 2 ? '#b45309' : '#6b7280' }}>
+                        #{idx + 1}
+                      </td>
+                      <td style={{ fontWeight: 600 }}>{prov.razon}</td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <div style={{ flex: 1, background: '#e5e7eb', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: `${prov.ultima_evaluacion?.total || 0}%`, background: (prov.ultima_evaluacion?.total || 0) >= 80 ? '#10b981' : (prov.ultima_evaluacion?.total || 0) >= 60 ? '#f59e0b' : '#ef4444', height: '100%' }}></div>
+                          </div>
+                          <span style={{ fontWeight: 'bold' }}>{prov.ultima_evaluacion?.total || 0}/100</span>
+                        </div>
+                      </td>
+                      <td>{prov.ultima_evaluacion?.fecha || '—'}</td>
+                      <td>
+                        <span className={`pill ${prov.estado === 'Aprobado' ? 'pill--success' : prov.estado === 'Condicional' ? 'pill--warning' : 'pill--danger'}`}>{prov.estado}</span>
+                      </td>
+                    </tr>
+                  ))}
+                {proveedores.filter(p => p.ultima_evaluacion).length === 0 && (
+                  <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem', opacity: 0.5 }}>No hay proveedores con evaluaciones para generar el ranking.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Modal nuevo/editar proveedor */}
       {showModalNuevo && (
@@ -307,7 +368,7 @@ const ProveedoresPage: React.FC = () => {
             </div>
             <div className="modal-body">
               <label>NIT *</label>
-              <input type="text" className="input" disabled={!!editingId} readOnly={isReadOnly()}
+              <input type="text" className="input" readOnly={isReadOnly()}
                 value={formData.nit || ''}
                 onChange={e => setFormData(f => ({ ...f, nit: e.target.value }))} />
               <label>Razón Social *</label>
@@ -411,6 +472,47 @@ const ProveedoresPage: React.FC = () => {
               <button className="modal-close" onClick={() => setShowModalHistorial(false)}>✕</button>
             </div>
             <div className="modal-body">
+              <div style={{ marginBottom: '2rem' }}>
+                <h4 style={{ marginBottom: '1rem', color: '#1a2b45' }}>Desempeño Global Histórico</h4>
+                {evalHistory.length > 0 ? (
+                  <div style={{ height: 250, width: '100%', background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #d1dce8' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={[...evalHistory].reverse()} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                        <XAxis dataKey="fecha" stroke="#6b7280" fontSize={12} tickLine={false} />
+                        <YAxis domain={[0, 100]} stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
+                        <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                        <Legend />
+                        <Line type="monotone" name="Puntaje Total" dataKey="total" stroke="#030097" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <p style={{ color: '#6b7280' }}>No hay evaluaciones globales suficientes para graficar.</p>
+                )}
+              </div>
+
+              <div style={{ marginBottom: '2rem' }}>
+                <h4 style={{ marginBottom: '1rem', color: '#1a2b45' }}>Cumplimiento de Variables Críticas (Órdenes de Compra)</h4>
+                {evalOrdenesHistory.length > 0 ? (
+                  <div style={{ height: 250, width: '100%', background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #d1dce8' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={[...evalOrdenesHistory].reverse()} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                        <XAxis dataKey="fecha_evaluacion" stroke="#6b7280" fontSize={12} tickLine={false} />
+                        <YAxis domain={[0, 100]} stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
+                        <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                        <Legend />
+                        <Line type="monotone" name="Puntaje de Orden" dataKey="puntaje_global" stroke="#FE7F03" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <p style={{ color: '#6b7280' }}>No hay evaluaciones de órdenes de compra con variables críticas.</p>
+                )}
+              </div>
+
+              <h4 style={{ marginBottom: '1rem', color: '#1a2b45' }}>Registro Detallado de Evaluaciones Globales</h4>
               {evalHistory.length === 0 ? (
                 <p>No hay evaluaciones previas para este proveedor.</p>
               ) : (

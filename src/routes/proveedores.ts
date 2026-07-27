@@ -49,12 +49,12 @@ router.post('/', requirePermission('proveedores', 'crear'), async (req: AuthRequ
 // PUT /api/proveedores/:id
 router.put('/:id', requirePermission('proveedores', 'editar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
-  const { razon, tipo, estado, prox_eval, periodicidad_evaluacion, email } = req.body
+  const { nit, razon, tipo, estado, prox_eval, periodicidad_evaluacion, email } = req.body
   try {
     const { rows } = await pool.query(
-      `UPDATE proveedores SET razon=$1, tipo=$2, estado=$3, prox_eval=$4, periodicidad_evaluacion=$5, email=$6
-       WHERE id=$7 AND tenant_id=$8 RETURNING *`,
-      [razon, tipo || null, estado, prox_eval || null, periodicidad_evaluacion || 'Anual', email || null, id, req.user!.tenantId]
+      `UPDATE proveedores SET nit=$1, razon=$2, tipo=$3, estado=$4, prox_eval=$5, periodicidad_evaluacion=$6, email=$7
+       WHERE id=$8 AND tenant_id=$9 RETURNING *`,
+      [nit, razon, tipo || null, estado, prox_eval || null, periodicidad_evaluacion || 'Anual', email || null, id, req.user!.tenantId]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Proveedor no encontrado' })
     res.json(rows[0])
@@ -80,10 +80,11 @@ router.post('/:id/evaluaciones', requirePermission('proveedores', 'crear'), asyn
 
     // Insertar evaluación
     const { rows } = await pool.query(
-      `INSERT INTO proveedor_evaluaciones (proveedor_id, evaluador, calidad, entrega, precio, servicio, fecha, precio_mercado, precio_proveedor, debilidades, generada_con_ia, tenant_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+      `INSERT INTO proveedor_evaluaciones (proveedor_id, evaluador, calidad, entrega, precio, servicio, fecha, precio_mercado, precio_proveedor, debilidades, generada_con_ia, tenant_id, variables_evaluadas)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
       [id, evaluador || null, calidad, entrega, precio, servicio,
-       fecha || new Date().toISOString().slice(0, 10), precio_mercado || null, precio_proveedor || null, debilidades || null, generada_con_ia || false, tenantId]
+       fecha || new Date().toISOString().slice(0, 10), precio_mercado || null, precio_proveedor || null, debilidades || null, generada_con_ia || false, tenantId,
+       req.body.variables_evaluadas ? JSON.stringify(req.body.variables_evaluadas) : null]
     )
     // Actualizar estado del proveedor según puntaje total
     const dbTotal = rows[0].total

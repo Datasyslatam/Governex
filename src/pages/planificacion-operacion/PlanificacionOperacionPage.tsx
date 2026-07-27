@@ -1338,7 +1338,7 @@ const IndicadoresCaracterizacion: React.FC<{ rows: CaracterizacionRow[] }> = ({ 
 const PlanificacionOperacionPage: React.FC = () => {
   const { canCreate, canEdit, canDelete } = usePermissions('planes_operacion')
   const {
-    analysis, setAnalysis, actividades,
+    analysis, setAnalysis, actividades, addActividad,
     addFilaMapaProcedimiento, updateFilaMapaProcedimiento, removeFilaMapaProcedimiento,
     addFilaManualProcedimiento, updateFilaManualProcedimiento, removeFilaManualProcedimiento,
   } = useAIAnalysis()
@@ -1379,6 +1379,21 @@ const PlanificacionOperacionPage: React.FC = () => {
       estado: fila.estado,
       clausula: '§8.1' // Cláusula por defecto para control operacional
     })
+
+    // Generar la Actividad para la Matriz de Riesgos
+    if (fila.actividades) {
+      addActividad({
+        id: crypto.randomUUID(),
+        nombre: fila.actividades.substring(0, 100), // Nombre descriptivo basado en la actividad (truncado si es muy largo)
+        proceso: fila.proceso,
+        responsable: fila.responsable,
+        objetivo: fila.objetivo,
+        indicador: fila.indicadorActividad || fila.indicador || '',
+        entradas: fila.entradas ? [{ id: crypto.randomUUID(), valor: fila.entradas }] : [],
+        salidas: fila.salidas ? [{ id: crypto.randomUUID(), valor: fila.salidas }] : [],
+        creadaEn: new Date().toISOString()
+      })
+    }
   }
 
   const handleRegenerarCaracterizacion = async () => {

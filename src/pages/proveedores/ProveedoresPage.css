@@ -66,9 +66,9 @@
 
 .prov-table th {
   font-weight: 600;
-  color: #5f6f8a;
+  color: #ffffff;
   text-align: left;
-  padding-bottom: 0.8rem;
+  padding: 0.8rem 0.6rem;
 }
 
 .prov-table td {

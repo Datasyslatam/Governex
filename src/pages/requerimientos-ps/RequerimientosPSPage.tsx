@@ -410,10 +410,20 @@ const RequerimientosPSPage: React.FC = () => {
   /* ── 1. GENERAR MATRIZ DE REVISIONES CON IA ── */
   const generarMatrizConIA = async () => {
     if (!datosEmpresa) return
+    if (!window.confirm('¿Estás seguro de que deseas regenerar toda la matriz con Governex IA? Esto eliminará la información actual y la reemplazará.')) return;
+    
     setLoadingMatriz(true); setErrorMsg(null)
     try {
       const data = await apiPost('/api/gemini/generar-revisiones-requisitos', { datosEmpresa })
       if (!Array.isArray(data.revisiones) || data.revisiones.length === 0) throw new Error('La IA no devolvió revisiones válidas')
+
+      // Eliminar registros previos
+      for (const req of items) {
+        if (req.fichaTecnicaId) {
+          try { await fichasTecnicasPSService.delete(req.fichaTecnicaId) } catch (e) { console.error(e) }
+        }
+        try { await requerimientosPSService.delete(req.id) } catch (e) { console.error(e) }
+      }
 
       const tipo: 'educativa' | 'general' = esEducativo ? 'educativa' : 'general'
 
@@ -705,7 +715,7 @@ const RequerimientosPSPage: React.FC = () => {
               disabled={loadingMatriz || !canCreate}
               title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}
             >
-              ✨ {tieneItems ? 'Regenerar matriz con IA' : 'Generar matriz con IA'}
+              ✨ {tieneItems ? 'Regenerar matriz con Governex IA' : 'Generar matriz con Governex IA'}
             </button>
           )}
           {/* Botón secundario — agregar manual (solo si ya hay matriz) */}
