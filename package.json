@@ -10,6 +10,7 @@
     "dev:frontend": "vite",
     "dev:backend": "tsx watch src/index.ts",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "migrate": "tsx run_migration.ts",
     "build": "node node_modules/typescript/bin/tsc -p tsconfig.server.json && node -e \"require('fs').writeFileSync('dist-server/package.json', JSON.stringify({type:'commonjs'}))\" && node node_modules/vite/bin/vite.js build",
     "start": "node dist-server/index.js",
     "typecheck": "tsc --noEmit"

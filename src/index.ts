@@ -14,6 +14,7 @@ import indicadoresRouter        from './routes/indicadores'
 import proveedoresRouter        from './routes/proveedores'
 import procesosRouter           from './routes/procesos'
 import competenciasRouter       from './routes/competencias'
+import perfilesCargoRouter      from './routes/perfilesCargo'
 import { politicaRouter, revDireccionRouter } from './routes/otrosModulos'
 
 // ── Módulos ISO adicionales ─────────────────────────────────
@@ -59,6 +60,7 @@ app.use('/api/indicadores',           indicadoresRouter)
 app.use('/api/proveedores',           proveedoresRouter)
 app.use('/api/procesos',              procesosRouter)
 app.use('/api/competencias',          competenciasRouter)
+app.use('/api/perfiles-cargo',        perfilesCargoRouter)
 app.use('/api/politica',              politicaRouter)
 app.use('/api/rev-direccion',         revDireccionRouter)
 app.use('/api/planes-operacion',      planesOperacionRouter)

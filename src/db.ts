@@ -16,3 +16,8 @@ export const pool = new Pool({
 pool.on('error', (err) => {
   console.error('Error inesperado en pool de PostgreSQL:', err)
 })
+
+// Auto-run migration
+pool.query(`ALTER TABLE plan_formacion ADD COLUMN IF NOT EXISTS guia_markdown TEXT;`)
+  .then(() => console.log('✅ Migración: Columna guia_markdown verificada'))
+  .catch((e) => console.error('❌ Error en migración:', e))

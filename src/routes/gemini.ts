@@ -14,33 +14,33 @@ const VALID_PESTEL_FACTORS = new Set(['P', 'E', 'S', 'T', 'A', 'L'])
  * Falls back to 'P' when the value cannot be resolved.
  */
 function mapPestelFactor(raw: string | undefined | null): 'P' | 'E' | 'S' | 'T' | 'A' | 'L' {
-  if (!raw) return 'P'
+    if (!raw) return 'P'
 
-  const normalised = raw.trim().toUpperCase()
+    const normalised = raw.trim().toUpperCase()
 
-  // Already a valid single-letter code
-  if (VALID_PESTEL_FACTORS.has(normalised)) {
-    return normalised as 'P' | 'E' | 'S' | 'T' | 'A' | 'L'
-  }
+    // Already a valid single-letter code
+    if (VALID_PESTEL_FACTORS.has(normalised)) {
+        return normalised as 'P' | 'E' | 'S' | 'T' | 'A' | 'L'
+    }
 
-  // Map full category names (Spanish & English) to their codes
-  const lower = raw.trim().toLowerCase()
-  if (lower.startsWith('pol'))  return 'P'   // Político / Political
-  if (lower.startsWith('eco'))  return 'E'   // Económico / Economic
-  if (lower.startsWith('soc'))  return 'S'   // Social
-  if (lower.startsWith('tec'))  return 'T'   // Tecnológico / Technological
-  if (lower.startsWith('amb') || lower.startsWith('env')) return 'A'  // Ambiental / Environmental
-  if (lower.startsWith('leg'))  return 'L'   // Legal
+    // Map full category names (Spanish & English) to their codes
+    const lower = raw.trim().toLowerCase()
+    if (lower.startsWith('pol')) return 'P'   // Político / Political
+    if (lower.startsWith('eco')) return 'E'   // Económico / Economic
+    if (lower.startsWith('soc')) return 'S'   // Social
+    if (lower.startsWith('tec')) return 'T'   // Tecnológico / Technological
+    if (lower.startsWith('amb') || lower.startsWith('env')) return 'A'  // Ambiental / Environmental
+    if (lower.startsWith('leg')) return 'L'   // Legal
 
-  // Last-resort: try the first character if it happens to be valid
-  const firstChar = normalised.charAt(0)
-  if (VALID_PESTEL_FACTORS.has(firstChar)) {
-    return firstChar as 'P' | 'E' | 'S' | 'T' | 'A' | 'L'
-  }
+    // Last-resort: try the first character if it happens to be valid
+    const firstChar = normalised.charAt(0)
+    if (VALID_PESTEL_FACTORS.has(firstChar)) {
+        return firstChar as 'P' | 'E' | 'S' | 'T' | 'A' | 'L'
+    }
 
-  // Fallback — default to 'P' to satisfy the DB constraint
-  console.warn(`[Gemini] mapPestelFactor: unrecognised factor "${raw}", defaulting to 'P'`)
-  return 'P'
+    // Fallback — default to 'P' to satisfy the DB constraint
+    console.warn(`[Gemini] mapPestelFactor: unrecognised factor "${raw}", defaulting to 'P'`)
+    return 'P'
 }
 
 const router = Router()
@@ -48,76 +48,76 @@ router.use(authMiddleware)
 
 /* POST /api/gemini/analizar-organigrama */
 router.post('/analizar-organigrama', requirePermission('contexto_empresa', 'crear'), async (req: AuthRequest, res: Response) => {
-  const { mapa, nombreEmpresa, sector, datosEmpresa, guardarEnBD = true } = req.body as {
-    mapa: MapaData; nombreEmpresa?: string; sector?: string
-    datosEmpresa?: DatosEmpresa; guardarEnBD?: boolean
-  }
+    const { mapa, nombreEmpresa, sector, datosEmpresa, guardarEnBD = true } = req.body as {
+        mapa: MapaData; nombreEmpresa?: string; sector?: string
+        datosEmpresa?: DatosEmpresa; guardarEnBD?: boolean
+    }
 
-  if (!mapa || !Array.isArray(mapa.estrategicos)) {
-    return res.status(400).json({ error: 'Se requiere un objeto mapa con estrategicos, misionales y apoyo' })
-  }
+    if (!mapa || !Array.isArray(mapa.estrategicos)) {
+        return res.status(400).json({ error: 'Se requiere un objeto mapa con estrategicos, misionales y apoyo' })
+    }
 
-  const mapaConInfo: MapaData = {
-    ...mapa,
-    nombreEmpresa: datosEmpresa?.nombreEmpresa ?? nombreEmpresa,
-    sector:        datosEmpresa?.sector        ?? sector,
-    datosEmpresa,
-  }
+    const mapaConInfo: MapaData = {
+        ...mapa,
+        nombreEmpresa: datosEmpresa?.nombreEmpresa ?? nombreEmpresa,
+        sector: datosEmpresa?.sector ?? sector,
+        datosEmpresa,
+    }
 
-  try {
-    console.log('[Gemini] Iniciando análisis concurrente (Principal + Recursos)...');
-    const [analysis, matrizRecursos] = await Promise.all([
-      analyzeWithGemini(mapaConInfo),
-      generateResourcesOnly(mapaConInfo).catch(e => {
-        console.error('[Gemini] Error al generar matriz de recursos separada:', e);
-        return [];
-      })
-    ]);
+    try {
+        console.log('[Gemini] Iniciando análisis concurrente (Principal + Recursos)...');
+        const [analysis, matrizRecursos] = await Promise.all([
+            analyzeWithGemini(mapaConInfo),
+            generateResourcesOnly(mapaConInfo).catch(e => {
+                console.error('[Gemini] Error al generar matriz de recursos separada:', e);
+                return [];
+            })
+        ]);
 
-    // Combinar el resultado
-    analysis.matrizRecursos = matrizRecursos;
-    console.log(`[Gemini] Análisis completado. Roles: ${analysis.matrizRoles?.length}, Recursos: ${analysis.matrizRecursos?.length}`);
+        // Combinar el resultado
+        analysis.matrizRecursos = matrizRecursos;
+        console.log(`[Gemini] Análisis completado. Roles: ${analysis.matrizRoles?.length}, Recursos: ${analysis.matrizRecursos?.length}`);
 
-    if (guardarEnBD) {
-      const tenantId = req.user!.tenantId
-      const client = await pool.connect()
-      try {
-        await client.query('BEGIN')
-        // BUG CORREGIDO: los 4 DELETE/UPDATE de este bloque no filtraban por
-        // tenant_id — un usuario de CUALQUIER tenant que corriera este
-        // análisis borraba/sobreescribía el PESTEL, DOFA, indicadores y
-        // política de calidad de TODOS los tenants de Governex.
-        await client.query('DELETE FROM pestel WHERE tenant_id = $1', [tenantId])
-        await client.query('DELETE FROM dofa WHERE tenant_id = $1', [tenantId])
+        if (guardarEnBD) {
+            const tenantId = req.user!.tenantId
+            const client = await pool.connect()
+            try {
+                await client.query('BEGIN')
+                // BUG CORREGIDO: los 4 DELETE/UPDATE de este bloque no filtraban por
+                // tenant_id — un usuario de CUALQUIER tenant que corriera este
+                // análisis borraba/sobreescribía el PESTEL, DOFA, indicadores y
+                // política de calidad de TODOS los tenants de Governex.
+                await client.query('DELETE FROM pestel WHERE tenant_id = $1', [tenantId])
+                await client.query('DELETE FROM dofa WHERE tenant_id = $1', [tenantId])
 
-        for (const row of analysis.pestel) {
-          const factorChar = mapPestelFactor(row.factor)
-          await client.query(
-            `INSERT INTO pestel (factor, categoria, descripcion, impacto, oportunidad, tenant_id) VALUES ($1,$2,$3,$4,$5,$6)`,
-            [factorChar, row.categoria, row.descripcion, row.impacto, row.oportunidad, tenantId]
-          )
-        }
+                for (const row of analysis.pestel) {
+                    const factorChar = mapPestelFactor(row.factor)
+                    await client.query(
+                        `INSERT INTO pestel (factor, categoria, descripcion, impacto, oportunidad, tenant_id) VALUES ($1,$2,$3,$4,$5,$6)`,
+                        [factorChar, row.categoria, row.descripcion, row.impacto, row.oportunidad, tenantId]
+                    )
+                }
 
-        for (const row of analysis.dofa) {
-          await client.query(`INSERT INTO dofa (tipo, descripcion, tenant_id) VALUES ($1,$2,$3)`, [row.tipo, row.descripcion, tenantId])
-        }
+                for (const row of analysis.dofa) {
+                    await client.query(`INSERT INTO dofa (tipo, descripcion, tenant_id) VALUES ($1,$2,$3)`, [row.tipo, row.descripcion, tenantId])
+                }
 
-        // tipos_proceso también es por-tenant desde la migración; se filtra
-        // el catálogo para no mapear contra los tipos de otra empresa.
-        const { rows: tipos } = await client.query('SELECT id, nombre FROM tipos_proceso WHERE tenant_id = $1', [tenantId])
-        const tipoMap: Record<string, number> = {}
-        for (const t of tipos) tipoMap[t.nombre.toLowerCase()] = t.id
+                // tipos_proceso también es por-tenant desde la migración; se filtra
+                // el catálogo para no mapear contra los tipos de otra empresa.
+                const { rows: tipos } = await client.query('SELECT id, nombre FROM tipos_proceso WHERE tenant_id = $1', [tenantId])
+                const tipoMap: Record<string, number> = {}
+                for (const t of tipos) tipoMap[t.nombre.toLowerCase()] = t.id
 
-        const procesoIdMap: Record<string, number> = {}
+                const procesoIdMap: Record<string, number> = {}
 
-        for (const row of analysis.caracterizacion) {
-          let tipo_id: number
-          if      (row.codigo.startsWith('PE')) tipo_id = tipoMap['estratégico'] ?? tipoMap['estrategico'] ?? 1
-          else if (row.codigo.startsWith('PO')) tipo_id = tipoMap['misional']    ?? tipoMap['operacional']  ?? 2
-          else                                  tipo_id = tipoMap['apoyo']       ?? tipoMap['soporte']      ?? 3
+                for (const row of analysis.caracterizacion) {
+                    let tipo_id: number
+                    if (row.codigo.startsWith('PE')) tipo_id = tipoMap['estratégico'] ?? tipoMap['estrategico'] ?? 1
+                    else if (row.codigo.startsWith('PO')) tipo_id = tipoMap['misional'] ?? tipoMap['operacional'] ?? 2
+                    else tipo_id = tipoMap['apoyo'] ?? tipoMap['soporte'] ?? 3
 
-          const procRes = await client.query(
-            `INSERT INTO procesos (
+                    const procRes = await client.query(
+                        `INSERT INTO procesos (
               codigo, nombre, objetivo, entradas, salidas, indicador_kpi, responsable, tipo_id, estado, tenant_id,
               actividades, indicador_entrada, indicador_actividad, indicador_salida, riesgo_entrada, op_entrada, riesgo_actividad, op_actividad, riesgo_salida, op_salida
              )
@@ -132,79 +132,79 @@ router.post('/analizar-organigrama', requirePermission('contexto_empresa', 'crea
                riesgo_actividad=EXCLUDED.riesgo_actividad, op_actividad=EXCLUDED.op_actividad,
                riesgo_salida=EXCLUDED.riesgo_salida, op_salida=EXCLUDED.op_salida
              RETURNING id`,
-            [
-              row.codigo, row.proceso, row.objetivo, row.entradas, row.salidas,
-              row.indicador, row.responsable, tipo_id, row.estado ?? 'Activo', tenantId,
-              row.actividades ?? '', row.indicadorEntrada ?? '', row.indicadorActividad ?? '', row.indicadorSalida ?? '',
-              row.riesgoEntrada ?? '', row.opEntrada ?? '', row.riesgoActividad ?? '', row.opActividad ?? '',
-              row.riesgoSalida ?? '', row.opSalida ?? ''
-            ]
-          )
-          procesoIdMap[row.proceso.toLowerCase()] = procRes.rows[0].id
-        }
+                        [
+                            row.codigo, row.proceso, row.objetivo, row.entradas, row.salidas,
+                            row.indicador, row.responsable, tipo_id, row.estado ?? 'Activo', tenantId,
+                            row.actividades ?? '', row.indicadorEntrada ?? '', row.indicadorActividad ?? '', row.indicadorSalida ?? '',
+                            row.riesgoEntrada ?? '', row.opEntrada ?? '', row.riesgoActividad ?? '', row.opActividad ?? '',
+                            row.riesgoSalida ?? '', row.opSalida ?? ''
+                        ]
+                    )
+                    procesoIdMap[row.proceso.toLowerCase()] = procRes.rows[0].id
+                }
 
-        if (analysis.indicadores && analysis.indicadores.length > 0) {
-          // Eliminar los indicadores anteriores de ESTE tenant antes de generar los nuevos
-          await client.query('DELETE FROM indicador_mediciones WHERE tenant_id = $1', [tenantId]);
-          await client.query('DELETE FROM indicadores WHERE tenant_id = $1', [tenantId]);
+                if (analysis.indicadores && analysis.indicadores.length > 0) {
+                    // Eliminar los indicadores anteriores de ESTE tenant antes de generar los nuevos
+                    await client.query('DELETE FROM indicador_mediciones WHERE tenant_id = $1', [tenantId]);
+                    await client.query('DELETE FROM indicadores WHERE tenant_id = $1', [tenantId]);
 
-          for (const ind of analysis.indicadores) {
-            const procId = procesoIdMap[(ind.proceso || '').toLowerCase()] || null
-            const validFreqs = ['Diaria','Semanal','Mensual','Trimestral','Semestral','Anual']
-            let freq = ind.frecuencia;
-            if (!validFreqs.includes(freq)) {
-              freq = 'Mensual'; // Fallback
-            }
+                    for (const ind of analysis.indicadores) {
+                        const procId = procesoIdMap[(ind.proceso || '').toLowerCase()] || null
+                        const validFreqs = ['Diaria', 'Semanal', 'Mensual', 'Trimestral', 'Semestral', 'Anual']
+                        let freq = ind.frecuencia;
+                        if (!validFreqs.includes(freq)) {
+                            freq = 'Mensual'; // Fallback
+                        }
 
-            await client.query(
-              `INSERT INTO indicadores (codigo, titulo, proceso_id, frecuencia, meta, activo, tenant_id)
+                        await client.query(
+                            `INSERT INTO indicadores (codigo, titulo, proceso_id, frecuencia, meta, activo, tenant_id)
                VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-              [ind.codigo, ind.titulo, procId, freq, ind.meta, true, tenantId]
-            )
-          }
-        }
+                            [ind.codigo, ind.titulo, procId, freq, ind.meta, true, tenantId]
+                        )
+                    }
+                }
 
-        // Auto-publicar Política de Calidad si está presente en datosEmpresa
-        if (datosEmpresa && datosEmpresa.politicaCalidad) {
-          await client.query(`UPDATE politica_calidad SET estado='Obsoleto' WHERE estado='Vigente' AND tenant_id=$1`, [tenantId]);
-          await client.query(
-            `INSERT INTO politica_calidad (version, contenido, estado, fecha_vigencia, aprobado_por, tenant_id)
+                // Auto-publicar Política de Calidad si está presente en datosEmpresa
+                if (datosEmpresa && datosEmpresa.politicaCalidad) {
+                    await client.query(`UPDATE politica_calidad SET estado='Obsoleto' WHERE estado='Vigente' AND tenant_id=$1`, [tenantId]);
+                    await client.query(
+                        `INSERT INTO politica_calidad (version, contenido, estado, fecha_vigencia, aprobado_por, tenant_id)
              VALUES ($1, $2, $3, CURRENT_DATE, NULL, $4)`,
-            ['v1.0', datosEmpresa.politicaCalidad, 'Vigente', tenantId]
-          );
+                        ['v1.0', datosEmpresa.politicaCalidad, 'Vigente', tenantId]
+                    );
+                }
+
+                await client.query('COMMIT')
+            } catch (dbErr) {
+                await client.query('ROLLBACK')
+                console.error('[Gemini] Error BD:', dbErr)
+            } finally {
+                client.release()
+            }
         }
 
-        await client.query('COMMIT')
-      } catch (dbErr) {
-        await client.query('ROLLBACK')
-        console.error('[Gemini] Error BD:', dbErr)
-      } finally {
-        client.release()
-      }
+        return res.json(analysis)
+
+    } catch (err: any) {
+        console.error('[Gemini] Error:', err)
+        return res.status(500).json({ error: err.message ?? 'Error al analizar con Governex IA' })
     }
-
-    return res.json(analysis)
-
-  } catch (err: any) {
-    console.error('[Gemini] Error:', err)
-    return res.status(500).json({ error: err.message ?? 'Error al analizar con Governex IA' })
-  }
 })
 
 /* ── POST /api/gemini/generar-ideario ──────────────────────────
    Genera Misión, Visión y Política de Calidad ISO 9001:2015
    a partir de los datos del formulario organizacional.            */
 router.post('/generar-ideario', async (req: AuthRequest, res: Response) => {
-  const { datosEmpresa } = req.body as { datosEmpresa: DatosEmpresa }
+    const { datosEmpresa } = req.body as { datosEmpresa: DatosEmpresa }
 
-  if (!datosEmpresa?.nombreEmpresa) {
-    return res.status(400).json({ error: 'Se requiere al menos el nombre de la empresa' })
-  }
+    if (!datosEmpresa?.nombreEmpresa) {
+        return res.status(400).json({ error: 'Se requiere al menos el nombre de la empresa' })
+    }
 
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
 
-  const prompt = `Eres un consultor experto en ISO 9001:2015 y estrategia organizacional.
+    const prompt = `Eres un consultor experto en ISO 9001:2015 y estrategia organizacional.
 Con base en la siguiente información de la empresa, genera textos profesionales, específicos y alineados con la norma ISO 9001:2015.
 
 DATOS DE LA EMPRESA:
@@ -236,73 +236,73 @@ Requisitos:
 - La política de calidad debe ser detallada, extensa y apta para publicarse oficialmente como la Política Institucional ISO 9001.
 - IMPORTANTE: Estás generando un JSON estricto. NO USES saltos de línea reales (Enter) en los textos. Si necesitas separar párrafos, usa explícitamente el separador || (dos barras verticales). Todo el texto debe ser continuo.`
 
-  const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest']
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
 
-  for (const model of MODELS) {
-    try {
-      const body: any = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 8192,
-          responseMimeType: 'application/json',
-        },
-      }
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-          body:    JSON.stringify(body),
+    for (const model of MODELS) {
+        try {
+            const body: any = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    temperature: 0.4,
+                    maxOutputTokens: 8192,
+                    responseMimeType: 'application/json',
+                },
+            }
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                    body: JSON.stringify(body),
+                }
+            )
+            if (!response.ok) {
+                console.error(`[Ideario] ${model} respondió ${response.status}`)
+                continue
+            }
+
+            const data = await response.json()
+            const finishReason = data?.candidates?.[0]?.finishReason
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+
+            if (!rawText) {
+                console.error(`[Ideario] ${model} devolvió texto vacío (finishReason: ${finishReason})`)
+                continue
+            }
+
+            const parsed = parsearIdearioJSON(rawText)
+
+            if (parsed?.mision && parsed?.vision && parsed?.politicaCalidad) {
+                return res.json({
+                    mision: parsed.mision.replace(/\|\|/g, '\n\n'),
+                    vision: parsed.vision.replace(/\|\|/g, '\n\n'),
+                    politicaCalidad: parsed.politicaCalidad.replace(/\|\|/g, '\n\n'),
+                })
+            }
+
+            console.error(`[Ideario] ${model} devolvió JSON incompleto/no parseable (finishReason: ${finishReason})`)
+        } catch (err) {
+            console.error(`[Ideario] Error ${model}:`, err)
         }
-      )
-      if (!response.ok) {
-        console.error(`[Ideario] ${model} respondió ${response.status}`)
-        continue
-      }
-
-      const data         = await response.json()
-      const finishReason = data?.candidates?.[0]?.finishReason
-      const rawText      = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-
-      if (!rawText) {
-        console.error(`[Ideario] ${model} devolvió texto vacío (finishReason: ${finishReason})`)
-        continue
-      }
-
-      const parsed = parsearIdearioJSON(rawText)
-
-      if (parsed?.mision && parsed?.vision && parsed?.politicaCalidad) {
-        return res.json({
-          mision:          parsed.mision.replace(/\|\|/g, '\n\n'),
-          vision:          parsed.vision.replace(/\|\|/g, '\n\n'),
-          politicaCalidad: parsed.politicaCalidad.replace(/\|\|/g, '\n\n'),
-        })
-      }
-
-      console.error(`[Ideario] ${model} devolvió JSON incompleto/no parseable (finishReason: ${finishReason})`)
-    } catch (err) {
-      console.error(`[Ideario] Error ${model}:`, err)
     }
-  }
 
-  return res.status(500).json({ error: 'No se pudo generar el ideario con ningún modelo disponible' })
+    return res.status(500).json({ error: 'No se pudo generar el ideario con ningún modelo disponible' })
 })
 
 /* ── POST /api/gemini/generar-control-diseno ──────────────────
    Genera el control y verificación de diseño a partir de la
    actividad (Cláusula 8.3).                                     */
 router.post('/generar-control-diseno', async (req: AuthRequest, res: Response) => {
-  const { nombre, proceso, entradas, salidas } = req.body
+    const { nombre, proceso, entradas, salidas } = req.body
 
-  if (!nombre || !entradas || !salidas) {
-    return res.status(400).json({ error: 'Se requiere nombre, entradas y salidas de la actividad.' })
-  }
+    if (!nombre || !entradas || !salidas) {
+        return res.status(400).json({ error: 'Se requiere nombre, entradas y salidas de la actividad.' })
+    }
 
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
 
-  const prompt = `Eres un consultor experto en ISO 9001:2015, especializado en la Cláusula 8.3 (Diseño y desarrollo de los productos y servicios).
+    const prompt = `Eres un consultor experto en ISO 9001:2015, especializado en la Cláusula 8.3 (Diseño y desarrollo de los productos y servicios).
 
 Se ha identificado la siguiente actividad que requiere diseño/desarrollo:
 - Actividad: ${nombre}
@@ -318,40 +318,40 @@ Responde ÚNICAMENTE con JSON válido:
   "control": "El texto del control aquí"
 }`
 
-  const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest']
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
 
-  for (const model of MODELS) {
-    try {
-      const body: any = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 1024, responseMimeType: 'application/json' },
-      }
-      if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+    for (const model of MODELS) {
+        try {
+            const body: any = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.3, maxOutputTokens: 1024, responseMimeType: 'application/json' },
+            }
+            if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }
-      )
-      if (!response.ok) { console.error(`[ControlDiseno] ${model} → ${response.status}`); continue }
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+                { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }
+            )
+            if (!response.ok) { console.error(`[ControlDiseno] ${model} → ${response.status}`); continue }
 
-      const data    = await response.json()
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-      if (!rawText) continue
+            const data = await response.json()
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+            if (!rawText) continue
 
-      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
-      const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
-      if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+            let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+            const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+            if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
 
-      const parsed = JSON.parse(cleaned)
-      if (!parsed.control) continue
+            const parsed = JSON.parse(cleaned)
+            if (!parsed.control) continue
 
-      return res.json({ control: parsed.control })
-    } catch (err) {
-      console.error(`[ControlDiseno] Error ${model}:`, err)
+            return res.json({ control: parsed.control })
+        } catch (err) {
+            console.error(`[ControlDiseno] Error ${model}:`, err)
+        }
     }
-  }
 
-  return res.status(500).json({ error: 'No se pudo generar el control con ningún modelo' })
+    return res.status(500).json({ error: 'No se pudo generar el control con ningún modelo' })
 })
 
 /* ── Parser tolerante para la respuesta JSON del ideario ──────
@@ -359,34 +359,34 @@ Responde ÚNICAMENTE con JSON válido:
    viene truncado (string sin cerrar), intenta repararlo cerrando
    comillas/llaves pendientes antes de hacer JSON.parse.           */
 function parsearIdearioJSON(rawText: string): { mision?: string; vision?: string; politicaCalidad?: string } | null {
-  let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+    let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
 
-  const start = cleaned.indexOf('{')
-  const end   = cleaned.lastIndexOf('}')
-  if (start === -1) return null
-  if (end > start) cleaned = cleaned.slice(start, end + 1)
-  else cleaned = cleaned.slice(start)
-
-  try {
-    return JSON.parse(cleaned)
-  } catch {
-    // Intento de reparación: si quedó una cadena sin cerrar (truncado),
-    // cerramos la comilla y las llaves pendientes.
-    let repaired = cleaned
-
-    const quoteCount = (repaired.match(/(?<!\\)"/g) || []).length
-    if (quoteCount % 2 !== 0) repaired += '"'
-
-    const openBraces  = (repaired.match(/{/g) || []).length
-    const closeBraces = (repaired.match(/}/g) || []).length
-    repaired += '}'.repeat(Math.max(0, openBraces - closeBraces))
+    const start = cleaned.indexOf('{')
+    const end = cleaned.lastIndexOf('}')
+    if (start === -1) return null
+    if (end > start) cleaned = cleaned.slice(start, end + 1)
+    else cleaned = cleaned.slice(start)
 
     try {
-      return JSON.parse(repaired)
+        return JSON.parse(cleaned)
     } catch {
-      return null
+        // Intento de reparación: si quedó una cadena sin cerrar (truncado),
+        // cerramos la comilla y las llaves pendientes.
+        let repaired = cleaned
+
+        const quoteCount = (repaired.match(/(?<!\\)"/g) || []).length
+        if (quoteCount % 2 !== 0) repaired += '"'
+
+        const openBraces = (repaired.match(/{/g) || []).length
+        const closeBraces = (repaired.match(/}/g) || []).length
+        repaired += '}'.repeat(Math.max(0, openBraces - closeBraces))
+
+        try {
+            return JSON.parse(repaired)
+        } catch {
+            return null
+        }
     }
-  }
 }
 
 /* ── POST /api/gemini/generar-encuestas-satisfaccion ─────────────
@@ -394,16 +394,16 @@ function parsearIdearioJSON(rawText: string): { mision?: string; vision?: string
    - Clientes:    sobre el producto/servicio entregado
    - Proveedores: sobre la relación y cumplimiento contractual    */
 router.post('/generar-encuestas-satisfaccion', async (req: AuthRequest, res: Response) => {
-  const { datosEmpresa } = req.body as { datosEmpresa: DatosEmpresa }
+    const { datosEmpresa } = req.body as { datosEmpresa: DatosEmpresa }
 
-  if (!datosEmpresa?.nombreEmpresa) {
-    return res.status(400).json({ error: 'Se requieren los datos de la empresa (módulo 4.1)' })
-  }
+    if (!datosEmpresa?.nombreEmpresa) {
+        return res.status(400).json({ error: 'Se requieren los datos de la empresa (módulo 4.1)' })
+    }
 
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
 
-  const prompt = `Eres un consultor experto en ISO 9001:2015, cláusula 5.1.2 (Enfoque al cliente) y diseño de encuestas de satisfacción.
+    const prompt = `Eres un consultor experto en ISO 9001:2015, cláusula 5.1.2 (Enfoque al cliente) y diseño de encuestas de satisfacción.
 
 DATOS DE LA EMPRESA:
 - Nombre: ${datosEmpresa.nombreEmpresa}
@@ -466,43 +466,43 @@ REGLAS:
 - Las preguntas deben ser específicas al sector/productos/servicios de la empresa, no genéricas.
 - JSON completo y válido, sin truncar.`
 
-  const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest']
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
 
-  for (const model of MODELS) {
-    try {
-      const body: any = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.4, maxOutputTokens: 4096, responseMimeType: 'application/json' },
-      }
-      if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+    for (const model of MODELS) {
+        try {
+            const body: any = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.4, maxOutputTokens: 4096, responseMimeType: 'application/json' },
+            }
+            if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }
-      )
-      if (!response.ok) { console.error(`[Encuestas] ${model} → ${response.status}`); continue }
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+                { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }
+            )
+            if (!response.ok) { console.error(`[Encuestas] ${model} → ${response.status}`); continue }
 
-      const data    = await response.json()
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-      if (!rawText) continue
+            const data = await response.json()
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+            if (!rawText) continue
 
-      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
-      const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
-      if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+            let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+            const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+            if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
 
-      const parsed = JSON.parse(cleaned)
-      if (!parsed.clientes?.categorias?.length || !parsed.proveedores?.categorias?.length) {
-        console.warn(`[Encuestas] ${model} JSON incompleto, reintentando con siguiente modelo...`)
-        continue
-      }
+            const parsed = JSON.parse(cleaned)
+            if (!parsed.clientes?.categorias?.length || !parsed.proveedores?.categorias?.length) {
+                console.warn(`[Encuestas] ${model} JSON incompleto, reintentando con siguiente modelo...`)
+                continue
+            }
 
-      return res.json({ clientes: parsed.clientes, proveedores: parsed.proveedores })
-    } catch (err) {
-      console.error(`[Encuestas] Error ${model}:`, err)
+            return res.json({ clientes: parsed.clientes, proveedores: parsed.proveedores })
+        } catch (err) {
+            console.error(`[Encuestas] Error ${model}:`, err)
+        }
     }
-  }
 
-  return res.status(500).json({ error: 'No se pudieron generar las encuestas con ningún modelo disponible' })
+    return res.status(500).json({ error: 'No se pudieron generar las encuestas con ningún modelo disponible' })
 })
 
 /* ── POST /api/gemini/analizar-encuestas-cliente ──────────────────
@@ -510,27 +510,27 @@ REGLAS:
    proveedores) junto con los registros de PQRS, y genera un DOFA
    específico basado en evidencia real (§5.1.2, §9.1.2, §6.1).      */
 router.post('/analizar-encuestas-cliente', async (req: AuthRequest, res: Response) => {
-  const { datosEmpresa, resumenClientes, resumenProveedores, pqrs, documentos } = req.body as {
-    datosEmpresa?: DatosEmpresa
-    resumenClientes?: any
-    resumenProveedores?: any
-    pqrs?: { tipo: string; descripcion: string; estado: string }[]
-    documentos?: string[]
-  }
+    const { datosEmpresa, resumenClientes, resumenProveedores, pqrs, documentos } = req.body as {
+        datosEmpresa?: DatosEmpresa
+        resumenClientes?: any
+        resumenProveedores?: any
+        pqrs?: { tipo: string; descripcion: string; estado: string }[]
+        documentos?: string[]
+    }
 
-  const sinDatos =
-    (!resumenClientes || resumenClientes.totalEncuestas === 0) &&
-    (!resumenProveedores || resumenProveedores.totalEncuestas === 0) &&
-    (!pqrs || pqrs.length === 0)
+    const sinDatos =
+        (!resumenClientes || resumenClientes.totalEncuestas === 0) &&
+        (!resumenProveedores || resumenProveedores.totalEncuestas === 0) &&
+        (!pqrs || pqrs.length === 0)
 
-  if (sinDatos) {
-    return res.status(400).json({ error: 'No hay encuestas respondidas ni PQRS registradas para analizar' })
-  }
+    if (sinDatos) {
+        return res.status(400).json({ error: 'No hay encuestas respondidas ni PQRS registradas para analizar' })
+    }
 
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
 
-  const prompt = `Eres un consultor ISO 9001:2015 experto en análisis de la voz del cliente y análisis DOFA (cláusulas 5.1.2, 9.1.2 y 6.1).
+    const prompt = `Eres un consultor ISO 9001:2015 experto en análisis de la voz del cliente y análisis DOFA (cláusulas 5.1.2, 9.1.2 y 6.1).
 
 EMPRESA: ${datosEmpresa?.nombreEmpresa ?? 'No especificada'} — Sector: ${datosEmpresa?.sector ?? 'No especificado'}
 
@@ -566,51 +566,51 @@ REGLAS:
 - Sé específico: cita categorías, calificaciones promedio o quejas concretas cuando sea posible.
 - JSON completo y válido, sin truncar.`
 
-  const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
 
-  for (const model of MODELS) {
-    try {
-      const body: any = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.4, maxOutputTokens: 3000, responseMimeType: 'application/json' },
-      }
-      if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+    for (const model of MODELS) {
+        try {
+            const body: any = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.4, maxOutputTokens: 3000, responseMimeType: 'application/json' },
+            }
+            if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }
-      )
-      if (!response.ok) { console.error(`[AnalisisEncuestas] ${model} → ${response.status}`); continue }
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+                { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }
+            )
+            if (!response.ok) { console.error(`[AnalisisEncuestas] ${model} → ${response.status}`); continue }
 
-      const data    = await response.json()
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-      if (!rawText) continue
+            const data = await response.json()
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+            if (!rawText) continue
 
-      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
-      const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
-      if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+            let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+            const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+            if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
 
-      const parsed = JSON.parse(cleaned)
-      if (!Array.isArray(parsed.dofa) || parsed.dofa.length === 0) continue
+            const parsed = JSON.parse(cleaned)
+            if (!Array.isArray(parsed.dofa) || parsed.dofa.length === 0) continue
 
-      return res.json({ resumenEjecutivo: parsed.resumenEjecutivo ?? '', dofa: parsed.dofa })
-    } catch (err) {
-      console.error(`[AnalisisEncuestas] Error ${model}:`, err)
+            return res.json({ resumenEjecutivo: parsed.resumenEjecutivo ?? '', dofa: parsed.dofa })
+        } catch (err) {
+            console.error(`[AnalisisEncuestas] Error ${model}:`, err)
+        }
     }
-  }
 
-  return res.status(500).json({ error: 'No se pudo generar el análisis con ningún modelo disponible' })
+    return res.status(500).json({ error: 'No se pudo generar el análisis con ningún modelo disponible' })
 })
 
 /* POST /api/gemini/extraer-procesos-imagen */
 router.post('/extraer-procesos-imagen', async (req: AuthRequest, res: Response) => {
-  const { base64, mimeType } = req.body as { base64:string; mimeType:string; fileName:string }
-  if (!base64 || !mimeType) return res.status(400).json({ error: 'Se requiere base64 y mimeType' })
+    const { base64, mimeType } = req.body as { base64: string; mimeType: string; fileName: string }
+    if (!base64 || !mimeType) return res.status(400).json({ error: 'Se requiere base64 y mimeType' })
 
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
 
-  const prompt = `Analiza este organigrama o documento organizacional e identifica todos los procesos, áreas o departamentos.
+    const prompt = `Analiza este organigrama o documento organizacional e identifica todos los procesos, áreas o departamentos.
 Clasifícalos en:
 - estrategicos: Gerencia, Dirección, Calidad, Estrategia, Planificación, Mejora
 - misionales: Producción, Operaciones, Ventas, Comercial, Servicio al Cliente, Diseño
@@ -625,60 +625,60 @@ Responde ÚNICAMENTE con JSON válido:
   "apoyo":        [{ "nombre":"..." }]
 }`
 
-  const body = {
-    contents: [{ parts: [{ inline_data:{ mime_type:mimeType, data:base64 } }, { text:prompt }] }],
-    generationConfig: { temperature:0.2, maxOutputTokens:1024, responseMimeType:'application/json' },
-  }
+    const body = {
+        contents: [{ parts: [{ inline_data: { mime_type: mimeType, data: base64 } }, { text: prompt }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 1024, responseMimeType: 'application/json' },
+    }
 
-  const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest']
-  for (const model of MODELS) {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        { method:'POST', headers:{ 'Content-Type':'application/json', 'x-goog-api-key':apiKey }, body:JSON.stringify(body) }
-      )
-      if (!response.ok) continue
-      const data    = await response.json()
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-      const cleaned = rawText.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim()
-      const parsed  = JSON.parse(cleaned)
-      if (parsed.estrategicos || parsed.misionales || parsed.apoyo) {
-        return res.json({
-          cliente:      parsed.cliente      || 'Requisitos del Cliente y Contexto',
-          satisfaccion: parsed.satisfaccion || 'Satisfacción del Cliente',
-          estrategicos: Array.isArray(parsed.estrategicos) ? parsed.estrategicos : [],
-          misionales:   Array.isArray(parsed.misionales)   ? parsed.misionales   : [],
-          apoyo:        Array.isArray(parsed.apoyo)         ? parsed.apoyo        : [],
-        })
-      }
-    } catch (err) { console.error(`[Vision] Error ${model}:`, err) }
-  }
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    for (const model of MODELS) {
+        try {
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+                { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }
+            )
+            if (!response.ok) continue
+            const data = await response.json()
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+            const cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+            const parsed = JSON.parse(cleaned)
+            if (parsed.estrategicos || parsed.misionales || parsed.apoyo) {
+                return res.json({
+                    cliente: parsed.cliente || 'Requisitos del Cliente y Contexto',
+                    satisfaccion: parsed.satisfaccion || 'Satisfacción del Cliente',
+                    estrategicos: Array.isArray(parsed.estrategicos) ? parsed.estrategicos : [],
+                    misionales: Array.isArray(parsed.misionales) ? parsed.misionales : [],
+                    apoyo: Array.isArray(parsed.apoyo) ? parsed.apoyo : [],
+                })
+            }
+        } catch (err) { console.error(`[Vision] Error ${model}:`, err) }
+    }
 
-  return res.json({
-    cliente: 'Requisitos del Cliente y Contexto', satisfaccion: 'Satisfacción del Cliente',
-    estrategicos: [{ nombre:'Gerencia General' },{ nombre:'Gestión de Calidad' },{ nombre:'Planeación Estratégica' }],
-    misionales:   [{ nombre:'Producción / Operaciones' },{ nombre:'Ventas y Atención al Cliente' }],
-    apoyo:        [{ nombre:'Talento Humano' },{ nombre:'Finanzas y Contabilidad' },{ nombre:'TI e Infraestructura' }],
-  })
+    return res.json({
+        cliente: 'Requisitos del Cliente y Contexto', satisfaccion: 'Satisfacción del Cliente',
+        estrategicos: [{ nombre: 'Gerencia General' }, { nombre: 'Gestión de Calidad' }, { nombre: 'Planeación Estratégica' }],
+        misionales: [{ nombre: 'Producción / Operaciones' }, { nombre: 'Ventas y Atención al Cliente' }],
+        apoyo: [{ nombre: 'Talento Humano' }, { nombre: 'Finanzas y Contabilidad' }, { nombre: 'TI e Infraestructura' }],
+    })
 })
 
 /* ── POST /api/gemini/generar-revisiones-requisitos ─────────────────
    A partir del contexto §4.1 genera la matriz completa de revisiones
    de requisitos (productos/servicios × clientes) con sus campos ISO. */
 router.post('/generar-revisiones-requisitos', async (req: AuthRequest, res: Response) => {
-  const { datosEmpresa } = req.body as { datosEmpresa: DatosEmpresa }
+    const { datosEmpresa } = req.body as { datosEmpresa: DatosEmpresa }
 
-  if (!datosEmpresa?.nombreEmpresa) {
-    return res.status(400).json({ error: 'Se requieren los datos de la empresa del módulo 4.1' })
-  }
+    if (!datosEmpresa?.nombreEmpresa) {
+        return res.status(400).json({ error: 'Se requieren los datos de la empresa del módulo 4.1' })
+    }
 
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
 
-  const esEducativa = ['Educación', 'educacion', 'educativ', 'colegio', 'escuel', 'universid', 'instituc']
-    .some(k => (datosEmpresa.sector ?? '').toLowerCase().includes(k))
+    const esEducativa = ['Educación', 'educacion', 'educativ', 'colegio', 'escuel', 'universid', 'instituc']
+        .some(k => (datosEmpresa.sector ?? '').toLowerCase().includes(k))
 
-  const prompt = `Eres un consultor ISO 9001:2015 experto en la cláusula 8.2 (Requisitos para productos y servicios).
+    const prompt = `Eres un consultor ISO 9001:2015 experto en la cláusula 8.2 (Requisitos para productos y servicios).
 
 CONTEXTO DE LA ORGANIZACIÓN (módulo 4.1):
 - Nombre: ${datosEmpresa.nombreEmpresa}
@@ -752,40 +752,40 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown, con esta estru
   ]
 }`
 
-  const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest']
-  for (const model of MODELS) {
-    try {
-      const body: any = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 8192,
-          responseMimeType: 'application/json',
-        },
-      }
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }
-      )
-      if (!response.ok) { console.error(`[Revisiones] ${model} → ${response.status}`); continue }
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    for (const model of MODELS) {
+        try {
+            const body: any = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    temperature: 0.3,
+                    maxOutputTokens: 8192,
+                    responseMimeType: 'application/json',
+                },
+            }
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+                { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }
+            )
+            if (!response.ok) { console.error(`[Revisiones] ${model} → ${response.status}`); continue }
 
-      const data    = await response.json()
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-      if (!rawText) continue
+            const data = await response.json()
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+            if (!rawText) continue
 
-      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
-      const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
-      if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+            let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+            const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+            if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
 
-      const parsed = JSON.parse(cleaned)
-      if (!Array.isArray(parsed.revisiones) || parsed.revisiones.length === 0) continue
+            const parsed = JSON.parse(cleaned)
+            if (!Array.isArray(parsed.revisiones) || parsed.revisiones.length === 0) continue
 
-      return res.json({ revisiones: parsed.revisiones })
-    } catch (err) {
-      console.error(`[Revisiones] Error ${model}:`, err)
+            return res.json({ revisiones: parsed.revisiones })
+        } catch (err) {
+            console.error(`[Revisiones] Error ${model}:`, err)
+        }
     }
-  }
-  return res.status(500).json({ error: 'No se pudo generar la matriz con ningún modelo disponible' })
+    return res.status(500).json({ error: 'No se pudo generar la matriz con ningún modelo disponible' })
 })
 
 /* ── POST /api/gemini/generar-ficha-tecnica ──────────────────────
@@ -793,23 +793,23 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown, con esta estru
    (área/asignatura con cursos, contenido programático e intensidad
    horaria) a partir de los datos del contexto organizacional (§4.1). */
 router.post('/generar-ficha-tecnica', async (req: AuthRequest, res: Response) => {
-  const { datosEmpresa, cliente, productoServicio, tipo } = req.body as {
-    datosEmpresa: DatosEmpresa
-    cliente: string
-    productoServicio: string
-    tipo: 'educativa' | 'general'
-  }
+    const { datosEmpresa, cliente, productoServicio, tipo } = req.body as {
+        datosEmpresa: DatosEmpresa
+        cliente: string
+        productoServicio: string
+        tipo: 'educativa' | 'general'
+    }
 
-  if (!datosEmpresa?.nombreEmpresa) {
-    return res.status(400).json({ error: 'Se requieren los datos de la empresa' })
-  }
+    if (!datosEmpresa?.nombreEmpresa) {
+        return res.status(400).json({ error: 'Se requieren los datos de la empresa' })
+    }
 
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
 
-  const esEducativa = tipo === 'educativa'
+    const esEducativa = tipo === 'educativa'
 
-  const promptGeneral = `Eres un consultor ISO 9001:2015 experto en elaboración de fichas técnicas de productos y servicios.
+    const promptGeneral = `Eres un consultor ISO 9001:2015 experto en elaboración de fichas técnicas de productos y servicios.
 
 DATOS DE LA ORGANIZACIÓN:
 - Nombre: ${datosEmpresa.nombreEmpresa}
@@ -837,7 +837,7 @@ Responde ÚNICAMENTE con JSON válido (sin backticks, sin markdown):
   "observaciones": "Observaciones adicionales relevantes para el SGC"
 }`
 
-  const promptEducativo = `Eres un consultor ISO 9001:2015 especializado en instituciones educativas y diseño curricular.
+    const promptEducativo = `Eres un consultor ISO 9001:2015 especializado en instituciones educativas y diseño curricular.
 
 DATOS DE LA INSTITUCIÓN:
 - Nombre: ${datosEmpresa.nombreEmpresa}
@@ -891,98 +891,98 @@ IMPORTANTE:
 - La intensidadHoraria debe ser un número entero (horas por semana), típicamente 2-5h/semana según la asignatura
 - El contenidoProgramatico debe ser específico y detallado para cada grado`
 
-  const prompt = esEducativa ? promptEducativo : promptGeneral
-  const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest']
-  let rateLimitHit = false
+    const prompt = esEducativa ? promptEducativo : promptGeneral
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    let rateLimitHit = false
 
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    rateLimitHit = false
-    for (const model of MODELS) {
-      try {
-        const body: any = {
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.35,
-            maxOutputTokens: esEducativa ? 4096 : 2048,
-            responseMimeType: 'application/json',
-          },
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        rateLimitHit = false
+        for (const model of MODELS) {
+            try {
+                const body: any = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        temperature: 0.35,
+                        maxOutputTokens: esEducativa ? 4096 : 2048,
+                        responseMimeType: 'application/json',
+                    },
+                }
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                        body: JSON.stringify(body),
+                    }
+                )
+                if (!response.ok) {
+                    console.error(`[FichaTecnica] ${model} respondió ${response.status}`)
+                    if (response.status === 429) rateLimitHit = true
+                    continue
+                }
+
+                const data = await response.json()
+                const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+                if (!rawText) { console.error(`[FichaTecnica] ${model} devolvió vacío`); continue }
+
+                // Limpiar y parsear
+                let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+                const start = cleaned.indexOf('{')
+                const end = cleaned.lastIndexOf('}')
+                if (start !== -1 && end > start) cleaned = cleaned.slice(start, end + 1)
+
+                const parsed = JSON.parse(cleaned)
+
+                if (esEducativa) {
+                    if (!parsed.areaAsignatura || !Array.isArray(parsed.unidadesCurriculares)) {
+                        console.error(`[FichaTecnica] ${model} JSON educativo incompleto`)
+                        continue
+                    }
+                    // Calcular totalHorasSemana
+                    const totalHoras = parsed.unidadesCurriculares.reduce(
+                        (acc: number, u: any) => acc + (Number(u.intensidadHoraria) || 0), 0
+                    )
+                    return res.json({ ...parsed, totalHorasSemana: totalHoras })
+                } else {
+                    if (!parsed.descripcion) {
+                        console.error(`[FichaTecnica] ${model} JSON general incompleto`)
+                        continue
+                    }
+                    return res.json(parsed)
+                }
+            } catch (err) {
+                console.error(`[FichaTecnica] Error ${model}:`, err)
+            }
         }
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-          {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-            body:    JSON.stringify(body),
-          }
-        )
-        if (!response.ok) {
-          console.error(`[FichaTecnica] ${model} respondió ${response.status}`)
-          if (response.status === 429) rateLimitHit = true
-          continue
+
+        if (rateLimitHit && attempt < 3) {
+            console.log(`[FichaTecnica] 429 Límite alcanzado, esperando 15s antes del reintento ${attempt}/3...`)
+            await new Promise(r => setTimeout(r, 15000))
+        } else if (!rateLimitHit) {
+            break
         }
-
-        const data     = await response.json()
-        const rawText  = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-        if (!rawText) { console.error(`[FichaTecnica] ${model} devolvió vacío`); continue }
-
-        // Limpiar y parsear
-        let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
-        const start = cleaned.indexOf('{')
-        const end   = cleaned.lastIndexOf('}')
-        if (start !== -1 && end > start) cleaned = cleaned.slice(start, end + 1)
-
-        const parsed = JSON.parse(cleaned)
-
-        if (esEducativa) {
-          if (!parsed.areaAsignatura || !Array.isArray(parsed.unidadesCurriculares)) {
-            console.error(`[FichaTecnica] ${model} JSON educativo incompleto`)
-            continue
-          }
-          // Calcular totalHorasSemana
-          const totalHoras = parsed.unidadesCurriculares.reduce(
-            (acc: number, u: any) => acc + (Number(u.intensidadHoraria) || 0), 0
-          )
-          return res.json({ ...parsed, totalHorasSemana: totalHoras })
-        } else {
-          if (!parsed.descripcion) {
-            console.error(`[FichaTecnica] ${model} JSON general incompleto`)
-            continue
-          }
-          return res.json(parsed)
-        }
-      } catch (err) {
-        console.error(`[FichaTecnica] Error ${model}:`, err)
-      }
     }
-    
-    if (rateLimitHit && attempt < 3) {
-      console.log(`[FichaTecnica] 429 Límite alcanzado, esperando 15s antes del reintento ${attempt}/3...`)
-      await new Promise(r => setTimeout(r, 15000))
-    } else if (!rateLimitHit) {
-      break
-    }
-  }
 
-  if (rateLimitHit) {
-    return res.status(429).json({ error: 'Has alcanzado el límite de uso gratuito de la IA. Por favor, espera un minuto antes de volver a intentarlo.' })
-  }
-  return res.status(500).json({ error: 'No se pudo generar la ficha técnica con ningún modelo disponible' })
+    if (rateLimitHit) {
+        return res.status(429).json({ error: 'Has alcanzado el límite de uso gratuito de la IA. Por favor, espera un minuto antes de volver a intentarlo.' })
+    }
+    return res.status(500).json({ error: 'No se pudo generar la ficha técnica con ningún modelo disponible' })
 })
 
 /* ── POST /api/gemini/analizar-rev-direccion ──────────────────────
    Consolida todos los insumos del SGC y genera las salidas de la
    Revisión por la Dirección según ISO 9001:2015 §9.3.3            */
 router.post('/analizar-rev-direccion', async (req: AuthRequest, res: Response) => {
-  const {
-    riesgos, indicadores, noConformidades, accionesCorrectivas,
-    auditorias, hallazgos, proveedores, objetivosCalidad,
-    pestel, dofa, matrizRecursos, contextoNarrativo, datosEmpresa,
-  } = req.body
+    const {
+        riesgos, indicadores, noConformidades, accionesCorrectivas,
+        auditorias, hallazgos, proveedores, objetivosCalidad,
+        pestel, dofa, matrizRecursos, contextoNarrativo, datosEmpresa,
+    } = req.body
 
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
 
-  const prompt = `Eres un consultor experto en ISO 9001:2015, especialista en la cláusula 9.3 (Revisión por la Dirección).
+    const prompt = `Eres un consultor experto en ISO 9001:2015, especialista en la cláusula 9.3 (Revisión por la Dirección).
 Analiza los siguientes datos reales del Sistema de Gestión de Calidad y genera las SALIDAS de la revisión según §9.3.3.
 
 EMPRESA: ${datosEmpresa?.nombreEmpresa ?? 'No especificada'} — Sector: ${datosEmpresa?.sector ?? 'No especificado'}
@@ -1057,83 +1057,83 @@ REGLAS:
 - Sé específico: menciona datos concretos (porcentajes, cantidades, nombres de indicadores).
 - JSON completo y válido, sin truncar.`
 
-  const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
 
-  for (const model of MODELS) {
-    try {
-      const body: any = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.35,
-          maxOutputTokens: 4096,
-          responseMimeType: 'application/json',
-        },
-      }
-      if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+    for (const model of MODELS) {
+        try {
+            const body: any = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    temperature: 0.35,
+                    maxOutputTokens: 4096,
+                    responseMimeType: 'application/json',
+                },
+            }
+            if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-          body:    JSON.stringify(body),
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                    body: JSON.stringify(body),
+                }
+            )
+            if (!response.ok) { console.error(`[RevDireccion] ${model} → ${response.status}`); continue }
+
+            const data = await response.json()
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+            if (!rawText) { console.error(`[RevDireccion] ${model} devolvió texto vacío`); continue }
+
+            let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+            const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+            if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+
+            const parsed = JSON.parse(cleaned)
+
+            if (
+                !Array.isArray(parsed.oportunidadesMejora) || !parsed.oportunidadesMejora.length ||
+                !Array.isArray(parsed.necesidadesCambioSGC) || !parsed.necesidadesCambioSGC.length ||
+                !Array.isArray(parsed.necesidadesRecursos) || !parsed.necesidadesRecursos.length
+            ) {
+                console.warn(`[RevDireccion] ${model} JSON incompleto, probando siguiente modelo...`)
+                continue
+            }
+
+            return res.json({
+                resumenEjecutivo: parsed.resumenEjecutivo ?? '',
+                oportunidadesMejora: parsed.oportunidadesMejora,
+                necesidadesCambioSGC: parsed.necesidadesCambioSGC,
+                necesidadesRecursos: parsed.necesidadesRecursos,
+                conclusionGeneral: parsed.conclusionGeneral ?? '',
+            })
+        } catch (err) {
+            console.error(`[RevDireccion] Error ${model}:`, err)
         }
-      )
-      if (!response.ok) { console.error(`[RevDireccion] ${model} → ${response.status}`); continue }
-
-      const data    = await response.json()
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-      if (!rawText) { console.error(`[RevDireccion] ${model} devolvió texto vacío`); continue }
-
-      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
-      const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
-      if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
-
-      const parsed = JSON.parse(cleaned)
-
-      if (
-        !Array.isArray(parsed.oportunidadesMejora)    || !parsed.oportunidadesMejora.length ||
-        !Array.isArray(parsed.necesidadesCambioSGC)   || !parsed.necesidadesCambioSGC.length ||
-        !Array.isArray(parsed.necesidadesRecursos)    || !parsed.necesidadesRecursos.length
-      ) {
-        console.warn(`[RevDireccion] ${model} JSON incompleto, probando siguiente modelo...`)
-        continue
-      }
-
-      return res.json({
-        resumenEjecutivo:      parsed.resumenEjecutivo      ?? '',
-        oportunidadesMejora:   parsed.oportunidadesMejora,
-        necesidadesCambioSGC:  parsed.necesidadesCambioSGC,
-        necesidadesRecursos:   parsed.necesidadesRecursos,
-        conclusionGeneral:     parsed.conclusionGeneral     ?? '',
-      })
-    } catch (err) {
-      console.error(`[RevDireccion] Error ${model}:`, err)
     }
-  }
 
-  return res.status(500).json({ error: 'No se pudo generar el análisis con ningún modelo disponible' })
+    return res.status(500).json({ error: 'No se pudo generar el análisis con ningún modelo disponible' })
 })
 
 /* ── POST /api/gemini/generar-objetivo-indicador ─────────────────
    Genera Objetivo e Indicador de una actividad empresarial (§4.1/§8.1)
    Sustituye la llamada directa a Anthropic que hacía ActividadModal.tsx  */
 router.post('/generar-objetivo-indicador', async (req: AuthRequest, res: Response) => {
-  const { nombre, proceso, responsable, entradas, salidas } = req.body as {
-    nombre:      string
-    proceso?:    string
-    responsable: string
-    entradas:    string[]
-    salidas:     string[]
-  }
+    const { nombre, proceso, responsable, entradas, salidas } = req.body as {
+        nombre: string
+        proceso?: string
+        responsable: string
+        entradas: string[]
+        salidas: string[]
+    }
 
-  if (!nombre?.trim())      return res.status(400).json({ error: 'Se requiere el nombre de la actividad' })
-  if (!responsable?.trim()) return res.status(400).json({ error: 'Se requiere el responsable' })
+    if (!nombre?.trim()) return res.status(400).json({ error: 'Se requiere el nombre de la actividad' })
+    if (!responsable?.trim()) return res.status(400).json({ error: 'Se requiere el responsable' })
 
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
 
-  const prompt = `Eres un experto en ISO 9001:2015. Dado el siguiente registro de actividad empresarial, genera:
+    const prompt = `Eres un experto en ISO 9001:2015. Dado el siguiente registro de actividad empresarial, genera:
 1. Un OBJETIVO claro y medible para la actividad (máximo 2 oraciones).
 2. Un INDICADOR de desempeño concreto con fórmula o criterio de medición (máximo 1 oración).
 
@@ -1141,56 +1141,56 @@ Actividad: "${nombre}"
 Proceso asociado: "${proceso || 'No especificado'}"
 Responsable: "${responsable}"
 Entradas: ${entradas.length > 0 ? entradas.map(e => `"${e}"`).join(', ') : 'No especificadas'}
-Salidas:  ${salidas.length  > 0 ? salidas.map(s  => `"${s}"`).join(', ') : 'No especificadas'}
+Salidas:  ${salidas.length > 0 ? salidas.map(s => `"${s}"`).join(', ') : 'No especificadas'}
 
 Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
 {"objetivo":"...","indicador":"..."}`
 
-  const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
 
-  for (const model of MODELS) {
-    try {
-      const body: any = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature:      0.35,
-          maxOutputTokens:  512,
-          responseMimeType: 'application/json',
-        },
-      }
-      if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+    for (const model of MODELS) {
+        try {
+            const body: any = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    temperature: 0.35,
+                    maxOutputTokens: 512,
+                    responseMimeType: 'application/json',
+                },
+            }
+            if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-          body:    JSON.stringify(body),
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                    body: JSON.stringify(body),
+                }
+            )
+            if (!response.ok) { console.error(`[ObjetivoIndicador] ${model} → ${response.status}`); continue }
+
+            const data = await response.json()
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+            if (!rawText) { console.error(`[ObjetivoIndicador] ${model} devolvió texto vacío`); continue }
+
+            let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+            const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+            if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+
+            const parsed = JSON.parse(cleaned)
+            if (!parsed.objetivo || !parsed.indicador) {
+                console.warn(`[ObjetivoIndicador] ${model} JSON incompleto`)
+                continue
+            }
+
+            return res.json({ objetivo: parsed.objetivo, indicador: parsed.indicador })
+        } catch (err) {
+            console.error(`[ObjetivoIndicador] Error ${model}:`, err)
         }
-      )
-      if (!response.ok) { console.error(`[ObjetivoIndicador] ${model} → ${response.status}`); continue }
-
-      const data    = await response.json()
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-      if (!rawText) { console.error(`[ObjetivoIndicador] ${model} devolvió texto vacío`); continue }
-
-      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
-      const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
-      if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
-
-      const parsed = JSON.parse(cleaned)
-      if (!parsed.objetivo || !parsed.indicador) {
-        console.warn(`[ObjetivoIndicador] ${model} JSON incompleto`)
-        continue
-      }
-
-      return res.json({ objetivo: parsed.objetivo, indicador: parsed.indicador })
-    } catch (err) {
-      console.error(`[ObjetivoIndicador] Error ${model}:`, err)
     }
-  }
 
-  return res.status(500).json({ error: 'No se pudo generar el objetivo e indicador con ningún modelo disponible' })
+    return res.status(500).json({ error: 'No se pudo generar el objetivo e indicador con ningún modelo disponible' })
 })
 
 /* ── POST /api/gemini/generar-evaluacion-proveedor ─────────────────
@@ -1198,12 +1198,12 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
    (adaptado a 4: calidad, entrega, precio, servicio) comparando
    precios y resultados obtenidos anteriormente. */
 router.post('/generar-evaluacion-proveedor', async (req: AuthRequest, res: Response) => {
-  const { proveedor, tipoSuministro, historial, precioMercado, precioProveedor, puntajesPrevios } = req.body
+    const { proveedor, tipoSuministro, historial, precioMercado, precioProveedor, puntajesPrevios } = req.body
 
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
 
-  const prompt = `Eres un auditor experto en cadena de suministro y en ISO 9001:2015.
+    const prompt = `Eres un auditor experto en cadena de suministro y en ISO 9001:2015.
 Necesito que evalúes al siguiente proveedor basándote en la información histórica, los precios del mercado y en una puntuación preliminar ingresada por el evaluador interno.
 
 PROVEEDOR: ${proveedor}
@@ -1231,88 +1231,88 @@ Responde ÚNICAMENTE con JSON válido, sin markdown ni backticks:
   "debilidades": "Texto detallado con las debilidades y el plan de acción sugerido para el proveedor. Usa un tono formal corporativo."
 }`
 
-  const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
 
-  for (const model of MODELS) {
-    try {
-      const body: any = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 1024,
-          responseMimeType: 'application/json',
-        },
-      }
-      if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+    for (const model of MODELS) {
+        try {
+            const body: any = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    temperature: 0.3,
+                    maxOutputTokens: 1024,
+                    responseMimeType: 'application/json',
+                },
+            }
+            if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-          body:    JSON.stringify(body),
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                    body: JSON.stringify(body),
+                }
+            )
+            if (!response.ok) { console.error(`[EvalProveedor] ${model} → ${response.status}`); continue }
+
+            const data = await response.json()
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+            if (!rawText) continue
+
+            let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+            const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+            if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+
+            const parsed = JSON.parse(cleaned)
+            if (typeof parsed.calidad !== 'number') continue
+
+            return res.json(parsed)
+        } catch (err) {
+            console.error(`[EvalProveedor] Error ${model}:`, err)
         }
-      )
-      if (!response.ok) { console.error(`[EvalProveedor] ${model} → ${response.status}`); continue }
-
-      const data    = await response.json()
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-      if (!rawText) continue
-
-      let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
-      const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
-      if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
-
-      const parsed = JSON.parse(cleaned)
-      if (typeof parsed.calidad !== 'number') continue
-
-      return res.json(parsed)
-    } catch (err) {
-      console.error(`[EvalProveedor] Error ${model}:`, err)
     }
-  }
 
-  return res.status(500).json({ error: 'No se pudo generar la evaluación con la IA' })
+    return res.status(500).json({ error: 'No se pudo generar la evaluación con la IA' })
 })
 /* ── POST /api/gemini/generar-matriz-legal-ps ──────────────────────
    Genera la matriz legal, normas y permisos para RF-018. */
 router.post('/generar-matriz-legal-ps', async (req: AuthRequest, res: Response) => {
-  const { datosEmpresa, productoServicio, fileUrl } = req.body
+    const { datosEmpresa, productoServicio, fileUrl } = req.body
 
-  if (!datosEmpresa?.nombreEmpresa || !productoServicio) {
-    return res.status(400).json({ error: 'Se requieren los datos de la empresa y el producto/servicio' })
-  }
-
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
-
-  let extraContext = ''
-  let inlineData: any = null
-
-  if (fileUrl) {
-    try {
-      const fRes = await fetch(fileUrl)
-      if (fRes.ok) {
-        const buffer = await fRes.arrayBuffer()
-        if (fileUrl.toLowerCase().endsWith('.docx')) {
-          const mammoth = require('mammoth')
-          const result = await mammoth.extractRawText({ buffer: Buffer.from(buffer) })
-          extraContext = `\n\nCONTENIDO DEL DOCUMENTO ADJUNTO (CONTRATO/ORDEN):\n${result.value}`
-        } else if (fileUrl.toLowerCase().endsWith('.pdf')) {
-          inlineData = {
-            mimeType: 'application/pdf',
-            data: Buffer.from(buffer).toString('base64')
-          }
-        } else {
-          extraContext = `\n\n(El usuario adjuntó un archivo pero no es PDF ni DOCX, es: ${fileUrl})`
-        }
-      }
-    } catch (e) {
-      console.error('[MatrizLegal] Error al procesar archivo:', e)
+    if (!datosEmpresa?.nombreEmpresa || !productoServicio) {
+        return res.status(400).json({ error: 'Se requieren los datos de la empresa y el producto/servicio' })
     }
-  }
 
-  const prompt = `Eres un consultor experto en ISO 9001:2015, cumplimiento legal y regulatorio comercial en Colombia.
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+    let extraContext = ''
+    let inlineData: any = null
+
+    if (fileUrl) {
+        try {
+            const fRes = await fetch(fileUrl)
+            if (fRes.ok) {
+                const buffer = await fRes.arrayBuffer()
+                if (fileUrl.toLowerCase().endsWith('.docx')) {
+                    const mammoth = require('mammoth')
+                    const result = await mammoth.extractRawText({ buffer: Buffer.from(buffer) })
+                    extraContext = `\n\nCONTENIDO DEL DOCUMENTO ADJUNTO (CONTRATO/ORDEN):\n${result.value}`
+                } else if (fileUrl.toLowerCase().endsWith('.pdf')) {
+                    inlineData = {
+                        mimeType: 'application/pdf',
+                        data: Buffer.from(buffer).toString('base64')
+                    }
+                } else {
+                    extraContext = `\n\n(El usuario adjuntó un archivo pero no es PDF ni DOCX, es: ${fileUrl})`
+                }
+            }
+        } catch (e) {
+            console.error('[MatrizLegal] Error al procesar archivo:', e)
+        }
+    }
+
+    const prompt = `Eres un consultor experto en ISO 9001:2015, cumplimiento legal y regulatorio comercial en Colombia.
 
 DATOS DE LA EMPRESA:
 - Nombre: ${datosEmpresa.nombreEmpresa}
@@ -1331,92 +1331,92 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
   "matrizLegal": "Texto detallado (2-3 párrafos) mencionando las leyes, normas, resoluciones y permisos exactos requeridos para comercializar este producto en Colombia."
 }`
 
-  const MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-pro']
-  let rateLimitHit = false
+    const MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-pro']
+    let rateLimitHit = false
 
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    rateLimitHit = false
-    for (const model of MODELS) {
-      try {
-        const parts: any[] = [{ text: prompt }]
-        if (inlineData) parts.push({ inlineData })
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        rateLimitHit = false
+        for (const model of MODELS) {
+            try {
+                const parts: any[] = [{ text: prompt }]
+                if (inlineData) parts.push({ inlineData })
 
-        const body: any = {
-          contents: [{ parts }],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 2048,
-            responseMimeType: 'application/json',
-          },
+                const body: any = {
+                    contents: [{ parts }],
+                    generationConfig: {
+                        temperature: 0.3,
+                        maxOutputTokens: 2048,
+                        responseMimeType: 'application/json',
+                    },
+                }
+
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                        body: JSON.stringify(body),
+                    }
+                )
+                if (!response.ok) {
+                    console.error(`[MatrizLegal] ${model} → ${response.status}`)
+                    if (response.status === 429) rateLimitHit = true
+                    continue
+                }
+
+                const data = await response.json()
+                const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+                if (!rawText) continue
+
+                let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+                const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+                if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+
+                const parsed = JSON.parse(cleaned)
+                if (!parsed.matrizLegal) continue
+
+                return res.json({ matrizLegal: parsed.matrizLegal })
+            } catch (err) {
+                console.error(`[MatrizLegal] Error ${model}:`, err)
+            }
         }
 
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-          {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-            body:    JSON.stringify(body),
-          }
-        )
-        if (!response.ok) { 
-          console.error(`[MatrizLegal] ${model} → ${response.status}`)
-          if (response.status === 429) rateLimitHit = true
-          continue 
+        if (rateLimitHit && attempt < 3) {
+            console.log(`[MatrizLegal] 429 Límite alcanzado, esperando 15s antes del reintento ${attempt}/3...`)
+            await new Promise(r => setTimeout(r, 15000))
+        } else if (!rateLimitHit) {
+            break
         }
-
-        const data    = await response.json()
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-        if (!rawText) continue
-
-        let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
-        const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
-        if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
-
-        const parsed = JSON.parse(cleaned)
-        if (!parsed.matrizLegal) continue
-
-        return res.json({ matrizLegal: parsed.matrizLegal })
-      } catch (err) {
-        console.error(`[MatrizLegal] Error ${model}:`, err)
-      }
     }
-    
-    if (rateLimitHit && attempt < 3) {
-      console.log(`[MatrizLegal] 429 Límite alcanzado, esperando 15s antes del reintento ${attempt}/3...`)
-      await new Promise(r => setTimeout(r, 15000))
-    } else if (!rateLimitHit) {
-      break
-    }
-  }
 
-  if (rateLimitHit) {
-    return res.status(429).json({ error: 'Has alcanzado el límite de uso gratuito de la IA. Por favor, espera un minuto antes de volver a intentarlo.' })
-  }
-  return res.status(500).json({ error: 'No se pudo generar la matriz legal con la IA' })
+    if (rateLimitHit) {
+        return res.status(429).json({ error: 'Has alcanzado el límite de uso gratuito de la IA. Por favor, espera un minuto antes de volver a intentarlo.' })
+    }
+    return res.status(500).json({ error: 'No se pudo generar la matriz legal con la IA' })
 })
 
 // POST /api/gemini/extraer-cotizacion-ps
 router.post('/extraer-cotizacion-ps', async (req: AuthRequest, res: Response) => {
-  const { datosEmpresa, productoServicio, fileUrl } = req.body
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'Falta GEMINI_API_KEY' })
+    const { datosEmpresa, productoServicio, fileUrl } = req.body
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'Falta GEMINI_API_KEY' })
 
-  try {
-    let inlineData = null
-    if (fileUrl) {
-      try {
-        const fileRes = await fetch(fileUrl)
-        if (fileRes.ok) {
-          const buffer = await fileRes.arrayBuffer()
-          const mimeType = fileRes.headers.get('content-type') || 'application/pdf'
-          inlineData = { data: Buffer.from(buffer).toString('base64'), mimeType }
+    try {
+        let inlineData = null
+        if (fileUrl) {
+            try {
+                const fileRes = await fetch(fileUrl)
+                if (fileRes.ok) {
+                    const buffer = await fileRes.arrayBuffer()
+                    const mimeType = fileRes.headers.get('content-type') || 'application/pdf'
+                    inlineData = { data: Buffer.from(buffer).toString('base64'), mimeType }
+                }
+            } catch (err) {
+                console.error('Error fetching file for cotizacion extraction:', err)
+            }
         }
-      } catch (err) {
-        console.error('Error fetching file for cotizacion extraction:', err)
-      }
-    }
 
-    const prompt = `Eres un asistente de inteligencia artificial para un sistema de gestión ISO 9001:2015.
+        const prompt = `Eres un asistente de inteligencia artificial para un sistema de gestión ISO 9001:2015.
     
 EMPRESA: ${datosEmpresa?.nombreEmpresa || 'No especificada'}
 PRODUCTO/SERVICIO: ${productoServicio}
@@ -1430,123 +1430,123 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
   "cotizacion": "Texto extraído y resumido (1-2 párrafos)."
 }`
 
-    const MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-pro']
-    let rateLimitHit = false
+        const MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-pro']
+        let rateLimitHit = false
 
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      rateLimitHit = false
-      for (const model of MODELS) {
-        try {
-          const parts: any[] = [{ text: prompt }]
-          if (inlineData) parts.push({ inlineData })
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            rateLimitHit = false
+            for (const model of MODELS) {
+                try {
+                    const parts: any[] = [{ text: prompt }]
+                    if (inlineData) parts.push({ inlineData })
 
-          const body: any = {
-            contents: [{ parts }],
-            generationConfig: {
-              temperature: 0.3,
-              maxOutputTokens: 2048,
-              responseMimeType: 'application/json',
-            },
-          }
+                    const body: any = {
+                        contents: [{ parts }],
+                        generationConfig: {
+                            temperature: 0.3,
+                            maxOutputTokens: 2048,
+                            responseMimeType: 'application/json',
+                        },
+                    }
 
-          const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-            {
-              method:  'POST',
-              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-              body:    JSON.stringify(body),
+                    const response = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                            body: JSON.stringify(body),
+                        }
+                    )
+                    if (!response.ok) {
+                        if (response.status === 429) rateLimitHit = true
+                        continue
+                    }
+
+                    const data = await response.json()
+                    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+                    if (!rawText) continue
+
+                    let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+                    const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+                    if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+
+                    const parsed = JSON.parse(cleaned)
+                    if (!parsed.cotizacion) continue
+
+                    return res.json({ cotizacion: parsed.cotizacion })
+                } catch (err) {
+                    console.error(`[ExtraerCotizacion] Error ${model}:`, err)
+                }
             }
-          )
-          if (!response.ok) { 
-            if (response.status === 429) rateLimitHit = true
-            continue 
-          }
 
-          const data    = await response.json()
-          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-          if (!rawText) continue
-
-          let cleaned = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
-          const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
-          if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
-
-          const parsed = JSON.parse(cleaned)
-          if (!parsed.cotizacion) continue
-
-          return res.json({ cotizacion: parsed.cotizacion })
-        } catch (err) {
-          console.error(`[ExtraerCotizacion] Error ${model}:`, err)
+            if (rateLimitHit && attempt < 3) {
+                await new Promise(r => setTimeout(r, 15000))
+            } else if (!rateLimitHit) {
+                break
+            }
         }
-      }
-      
-      if (rateLimitHit && attempt < 3) {
-        await new Promise(r => setTimeout(r, 15000))
-      } else if (!rateLimitHit) {
-        break
-      }
-    }
 
-    if (rateLimitHit) {
-      return res.status(429).json({ error: 'Has alcanzado el límite de uso gratuito de la IA.' })
-    }
+        if (rateLimitHit) {
+            return res.status(429).json({ error: 'Has alcanzado el límite de uso gratuito de la IA.' })
+        }
 
-    return res.status(500).json({ error: 'No se pudo generar la extracción.' })
-  } catch (error: any) {
-    console.error('Error en extraer-cotizacion-ps:', error)
-    return res.status(500).json({ error: 'Ocurrió un error al procesar la cotización.' })
-  }
+        return res.status(500).json({ error: 'No se pudo generar la extracción.' })
+    } catch (error: any) {
+        console.error('Error en extraer-cotizacion-ps:', error)
+        return res.status(500).json({ error: 'Ocurrió un error al procesar la cotización.' })
+    }
 })
 
 /* ── POST /api/gemini/generar-detalle-proceso ────────────────
    Genera detalles (actividades, salidas, riesgos) para proceso manual */
 router.post('/generar-detalle-proceso', async (req: AuthRequest, res: Response) => {
-  const { proceso, objetivo, entradas } = req.body;
-  if (!proceso || !entradas) return res.status(400).json({ error: 'Se requiere proceso y entradas' });
-  try {
-    const data = await generarDetalleProcesoManual(proceso, objetivo, entradas);
-    res.json(data);
-  } catch (error: any) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
-  }
+    const { proceso, objetivo, entradas } = req.body;
+    if (!proceso || !entradas) return res.status(400).json({ error: 'Se requiere proceso y entradas' });
+    try {
+        const data = await generarDetalleProcesoManual(proceso, objetivo, entradas);
+        res.json(data);
+    } catch (error: any) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 /* ── POST /api/gemini/regenerar-caracterizacion ──────────────
    Regenera toda la tabla completando campos faltantes */
 router.post('/regenerar-caracterizacion', async (req: AuthRequest, res: Response) => {
-  const { rows } = req.body;
-  if (!Array.isArray(rows)) return res.status(400).json({ error: 'Se requiere un array de filas' });
-  try {
-    const data = await regenerarCaracterizacionCompleta(rows);
-    res.json(data);
-  } catch (error: any) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
-  }
+    const { rows } = req.body;
+    if (!Array.isArray(rows)) return res.status(400).json({ error: 'Se requiere un array de filas' });
+    try {
+        const data = await regenerarCaracterizacionCompleta(rows);
+        res.json(data);
+    } catch (error: any) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 /* ── POST /api/gemini/regenerar-mapa-procedimiento ───────────
    Regenera el mapa de roles a partir de caracterizacion */
 router.post('/regenerar-mapa-procedimiento', async (req: AuthRequest, res: Response) => {
-  const { rows } = req.body;
-  if (!Array.isArray(rows)) return res.status(400).json({ error: 'Se requiere un array de filas' });
-  try {
-    const data = await regenerarMapaCompleto(rows);
-    res.json(data);
-  } catch (error: any) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
-  }
+    const { rows } = req.body;
+    if (!Array.isArray(rows)) return res.status(400).json({ error: 'Se requiere un array de filas' });
+    try {
+        const data = await regenerarMapaCompleto(rows);
+        res.json(data);
+    } catch (error: any) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
 });
 /* ── POST /api/gemini/generar-ficha-orden ────────────────────
    Genera ficha técnica y variables críticas desde una Orden de Compra */
 router.post('/generar-ficha-orden', async (req: AuthRequest, res: Response) => {
-  const { proveedor, producto, cantidad, unidad, requisitos } = req.body
+    const { proveedor, producto, cantidad, unidad, requisitos } = req.body
 
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
 
-  const prompt = `Eres un experto técnico en ISO 9001:2015. 
+    const prompt = `Eres un experto técnico en ISO 9001:2015. 
 Se ha creado una Orden de Compra con la siguiente información:
 - PROVEEDOR: ${proveedor}
 - PRODUCTO/SERVICIO: ${producto}
@@ -1568,33 +1568,227 @@ Genera una respuesta ÚNICAMENTE en JSON válido con el siguiente formato, sin b
   ]
 }`
 
-  const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
 
-  for (const model of MODELS) {
-    try {
-      const body: any = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
-      }
-      if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+    for (const model of MODELS) {
+        try {
+            const body: any = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
+            }
+            if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      if (!response.ok) continue
-      const data = await response.json()
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text
-      if (!text) continue
-      const parsed = JSON.parse(text)
-      return res.json(parsed)
-    } catch (e) {
-      console.error(e)
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            })
+            if (!response.ok) continue
+            const data = await response.json()
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+            if (!text) continue
+            const parsed = JSON.parse(text)
+            return res.json(parsed)
+        } catch (e) {
+            console.error(e)
+        }
     }
-  }
 
-  return res.status(500).json({ error: 'No se pudo generar la ficha técnica con ningún modelo disponible' })
+    return res.status(500).json({ error: 'No se pudo generar la ficha técnica con ningún modelo disponible' })
+})
+
+/* ── POST /api/gemini/analizar-manual-funciones ──────────────────
+   Analiza el PDF del manual de funciones y extrae los requisitos
+   del perfil de cargo (educación, formación, experiencia).         */
+router.post('/analizar-manual-funciones', requirePermission('competencias', 'crear'), async (req: AuthRequest, res: Response) => {
+    const { base64, mimeType } = req.body
+    if (!base64 || !mimeType) return res.status(400).json({ error: 'Se requiere el archivo PDF en base64' })
+
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+    const prompt = `Analiza este manual de funciones (en PDF) y extrae los requisitos exigidos para el cargo.
+Si no encuentras una sección explícita de requisitos, infiere los requisitos básicos recomendables basándote en las funciones descritas en el manual.
+Devuelve EXACTAMENTE un JSON con esta estructura (sin markdown, solo el JSON):
+{
+  "educacion": "Título o nivel académico exigido o recomendado (ej. Profesional en Ingeniería)",
+  "formacion": "Conocimientos específicos adicionales (ej. ISO 9001, Excel, Maquinaria pesada)",
+  "experiencia": "Tiempo y tipo de experiencia requerida o recomendada"
+}`
+
+    const body = {
+        contents: [{ parts: [{ inline_data: { mime_type: mimeType, data: base64 } }, { text: prompt }] }],
+        generationConfig: { temperature: 0.3, responseMimeType: 'application/json' },
+    }
+
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+    for (const model of MODELS) {
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            })
+            if (!response.ok) continue
+            const data = await response.json()
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+            if (!text) continue
+
+            // Parser tolerante
+            let cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+            const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}')
+            if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1)
+
+            const parsed = JSON.parse(cleaned)
+            return res.json(parsed)
+        } catch (e) {
+            console.error(`[AnalizarManual] Error con modelo ${model}:`, e)
+        }
+    }
+    return res.status(500).json({ error: 'No se pudo analizar el manual con ningún modelo' })
+})
+
+/* ── POST /api/gemini/generar-checklist-perfil ──────────────────
+   A partir del perfil extraído y el manual, genera las listas de 
+   chequeo de desempeño y conocimiento.                             */
+router.post('/generar-checklist-perfil', requirePermission('competencias', 'editar'), async (req: AuthRequest, res: Response) => {
+    const { base64, mimeType, educacion, formacion, experiencia } = req.body
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+    const prompt = `Basándote en el documento adjunto (Manual de Funciones) y los requisitos del cargo:
+- Educación: ${educacion}
+- Formación: ${formacion}
+- Experiencia: ${experiencia}
+
+Genera dos listas de chequeo (checklists) para evaluar a una persona en este cargo:
+1. "desempeno": 5-8 ítems medibles sobre sus responsabilidades prácticas (ej: "Cumple con los tiempos de entrega", "Maneja adecuadamente la maquinaria").
+2. "conocimiento": 5-8 ítems sobre lo que debe saber (ej: "Conoce la normativa ISO 9001", "Demuestra dominio del software contable").
+
+Responde ÚNICAMENTE en JSON válido:
+{
+  "desempeno": ["Item 1", "Item 2"],
+  "conocimiento": ["Item 1", "Item 2"]
+}`
+
+    const body: any = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.3, responseMimeType: 'application/json' },
+    }
+    if (base64 && mimeType) {
+        body.contents[0].parts.unshift({ inline_data: { mime_type: mimeType, data: base64 } })
+    }
+
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+    for (const model of MODELS) {
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            })
+            if (!response.ok) continue
+            const data = await response.json()
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+            if (!text) continue
+            return res.json(JSON.parse(text))
+        } catch (e) {
+            console.error(e)
+        }
+    }
+    return res.status(500).json({ error: 'No se generaron listas de chequeo' })
+})
+
+/* ── POST /api/gemini/generar-plan-capacitacion-ia ────────────────
+   Toma las listas de chequeo, necesidades adicionales y genera el
+   Plan de Capacitación personalizado (temas).                       */
+router.post('/generar-plan-capacitacion-ia', requirePermission('competencias', 'editar'), async (req: AuthRequest, res: Response) => {
+    const { cargo, checklistDesempeno, checklistConocimiento, necesidades } = req.body
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+    const prompt = `Eres un experto en Recursos Humanos e ISO 9001. Diseña un Plan de Capacitación Integral para el cargo de "${cargo}".
+Considera los siguientes inputs para identificar brechas potenciales que necesitan entrenamiento:
+- Checklist de Desempeño: ${JSON.stringify(checklistDesempeno)}
+- Checklist de Conocimiento: ${JSON.stringify(checklistConocimiento)}
+- Necesidades adicionales (detectadas en el día a día): ${JSON.stringify(necesidades)}
+
+Genera UN SOLO tema principal que englobe de manera integral todo lo necesario para la capacitación y formación completa del personal en este cargo.
+Devuelve EXACTAMENTE un JSON con un arreglo de strings llamado "temas" que contenga UN ÚNICO elemento con el título de este plan integral. Por ejemplo:
+{
+  "temas": ["Plan Integral de Entrenamiento y Capacitación para Operarios de Maquinaria"]
+}`
+
+    const body = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.3, responseMimeType: 'application/json' },
+    }
+
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+    for (const model of MODELS) {
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            })
+            if (!response.ok) continue
+            const data = await response.json()
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+            if (!text) continue
+            return res.json(JSON.parse(text))
+        } catch (e) {
+            console.error(e)
+        }
+    }
+    return res.status(500).json({ error: 'No se pudo generar el plan de capacitación' })
+})
+/* ── POST /api/gemini/generar-guia-capacitacion ──────────────────
+   Genera una guía/syllabus en Markdown para el plan de capacitación */
+router.post('/generar-guia-capacitacion', requirePermission('competencias', 'crear'), async (req: AuthRequest, res: Response) => {
+    const { plan_id, tema } = req.body
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+    const prompt = `Eres un experto formador y consultor senior en Recursos Humanos e ISO 9001. Tu misión es desarrollar TODO el material didáctico y el contenido de una capacitación completa, no solo el temario. 
+Se ha programado la siguiente capacitación para el personal:
+TEMA: "${tema}"
+
+Genera una GUÍA DE CAPACITACIÓN O MANUAL DEL PARTICIPANTE completamente desarrollada en formato Markdown estructurado. Esta guía debe servir como el material de estudio directo o el guion completo para el facilitador.
+Debe incluir:
+- Título principal
+- Objetivos de Aprendizaje claros
+- **Desarrollo completo de los Módulos/Temas**: No hagas listas cortas. Redacta la teoría fundamental, ejemplos prácticos, pasos a seguir, buenas prácticas y recomendaciones para cada módulo del tema. Explica los conceptos a fondo.
+- Metodología sugerida para enseñar esto en la práctica
+- Formato de Evaluación de Eficacia (preguntas concretas o actividades prácticas para evaluar si aprendieron)
+
+Devuelve ÚNICAMENTE el código Markdown (sin backticks iniciales ni finales, sin la palabra markdown, solo el texto plano en markdown puro). Desarrolla el texto de forma extensa y profesional.`
+
+    const body = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.5 },
+    }
+
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+    for (const model of MODELS) {
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            })
+            if (!response.ok) continue
+            const data = await response.json()
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+            if (!text) continue
+
+            let markdown = text.trim()
+            if (markdown.startsWith('\`\`\`markdown')) markdown = markdown.substring(11)
+            else if (markdown.startsWith('\`\`\`')) markdown = markdown.substring(3)
+            if (markdown.endsWith('\`\`\`')) markdown = markdown.substring(0, markdown.length - 3)
+
+            markdown = markdown.trim()
+            if (plan_id) {
+                await pool.query('UPDATE plan_formacion SET guia_markdown = $1 WHERE id = $2', [markdown, plan_id])
+            }
+            return res.json({ guia: markdown })
+        } catch (e) {
+            console.error(e)
+        }
+    }
+    return res.status(500).json({ error: 'No se pudo generar la guía de capacitación' })
 })
 
 export default router

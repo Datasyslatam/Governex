@@ -1,4 +1,4 @@
-import { Router, Response } from 'express'
+﻿import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/rbac'
@@ -96,16 +96,16 @@ router.get('/plan-formacion', async (req: AuthRequest, res: Response) => {
 })
 
 router.post('/plan-formacion', requirePermission('competencias', 'crear'), async (req: AuthRequest, res: Response) => {
-  const { tema, fecha, estado, asistentes_ids } = req.body
+  const { tema, fecha, estado, asistentes_ids, perfil_cargo_id, generado_con_ia } = req.body
   if (!tema) return res.status(400).json({ error: 'tema es requerido' })
   const tenantId = req.user!.tenantId
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
     const { rows } = await client.query(
-      `INSERT INTO plan_formacion (tema, fecha, estado, tenant_id)
-       VALUES ($1,$2,$3,$4) RETURNING *`,
-      [tema, fecha || null, estado || 'Planificado', tenantId]
+      `INSERT INTO plan_formacion (tema, fecha, estado, perfil_cargo_id, generado_con_ia, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [tema, fecha || null, estado || 'Planificado', perfil_cargo_id || null, generado_con_ia || false, tenantId]
     )
     const planId = rows[0].id
     if (Array.isArray(asistentes_ids) && asistentes_ids.length > 0) {
@@ -148,6 +148,51 @@ router.put('/plan-formacion/:id', requirePermission('competencias', 'editar'), a
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Error al actualizar plan' })
+  }
+})
+
+router.delete('/personal/:id', requirePermission('competencias', 'eliminar'), async (req: AuthRequest, res: Response) => {
+  const client = await pool.connect()
+  try {
+    const { id } = req.params
+    await client.query('BEGIN')
+    await client.query('DELETE FROM evaluaciones_competencia WHERE personal_id=$1 AND tenant_id=$2', [id, req.user!.tenantId])
+    await client.query('DELETE FROM formacion_asistentes WHERE personal_id=$1 AND tenant_id=$2', [id, req.user!.tenantId])
+    const { rowCount } = await client.query('DELETE FROM personal WHERE id=$1 AND tenant_id=$2', [id, req.user!.tenantId])
+    if (!rowCount) {
+      await client.query('ROLLBACK')
+      return res.status(404).json({ error: 'Personal no encontrado' })
+    }
+    await client.query('COMMIT')
+    res.json({ message: 'Personal eliminado' })
+  } catch (err) {
+    await client.query('ROLLBACK')
+    console.error(err)
+    res.status(500).json({ error: 'Error al eliminar personal' })
+  } finally {
+    client.release()
+  }
+})
+
+router.delete('/plan-formacion/:id', requirePermission('competencias', 'eliminar'), async (req: AuthRequest, res: Response) => {
+  const client = await pool.connect()
+  try {
+    const { id } = req.params
+    await client.query('BEGIN')
+    await client.query('DELETE FROM formacion_asistentes WHERE plan_id=$1 AND tenant_id=$2', [id, req.user!.tenantId])
+    const { rowCount } = await client.query('DELETE FROM plan_formacion WHERE id=$1 AND tenant_id=$2', [id, req.user!.tenantId])
+    if (!rowCount) {
+      await client.query('ROLLBACK')
+      return res.status(404).json({ error: 'Plan no encontrado' })
+    }
+    await client.query('COMMIT')
+    res.json({ message: 'Plan eliminado' })
+  } catch (err) {
+    await client.query('ROLLBACK')
+    console.error(err)
+    res.status(500).json({ error: 'Error al eliminar plan' })
+  } finally {
+    client.release()
   }
 })
 
