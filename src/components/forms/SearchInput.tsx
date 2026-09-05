@@ -11,10 +11,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
   ...rest
 }) => {
   return (
-    <div className={`search-input ${className}`.trim()}>
-      <span className="search-input__icon">🔍</span>
-      <input className="search-input__field" {...rest} />
-    </div>
+    <div className={`search-input ${className}`.trim()}> <span className="search-input__icon"></span> <input className="search-input__field" {...rest} /> </div>
   );
 };
 

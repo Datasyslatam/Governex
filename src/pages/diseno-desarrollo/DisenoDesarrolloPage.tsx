@@ -223,57 +223,26 @@ const DisenoDesarrolloPage: React.FC = () => {
   return (
     <div className="iso-page">
       {/* ── Header ── */}
-      <div className="iso-page__header">
-        <div className="iso-page__title-block">
-          <h1>⚙️ Diseño y Desarrollo</h1>
-          <p>Control y seguimiento del diseño y desarrollo de productos y servicios</p>
-          <span className="iso-page__clause">Cláusula 8.3</span>
-        </div>
-      </div>
-
-      <div className="iso-info-box">
-        <span className="iso-info-box__icon">📌</span>
-        <span>
-          <strong>Cláusula 8.3</strong> — La organización debe establecer, implementar y mantener
+      <div className="iso-page__header"> <div className="iso-page__title-block"> <h1>Diseño y Desarrollo</h1> <p>Control y seguimiento del diseño y desarrollo de productos y servicios</p> <span className="iso-page__clause">Cláusula 8.3</span> </div> </div> <div className="iso-info-box"> <span className="iso-info-box__icon"></span> <span> <strong>Cláusula 8.3</strong> — La organización debe establecer, implementar y mantener
           un proceso de diseño y desarrollo, con etapas de planificación, entradas, controles,
           salidas, y cambios documentados.
-        </span>
-      </div>
+        </span> </div>
 
 
 
       {/* ── Barra superior ── */}
-      <div className="iso-topbar">
-        <div className="iso-topbar__info">
+      <div className="iso-topbar"> <div className="iso-topbar__info">
           Proyectos activos: <strong>{proyectosDiseno.filter(p => p.etapa !== 'Completado').length}</strong> &nbsp;·&nbsp;
-          Completados: <strong>{proyectosDiseno.filter(p => p.etapa === 'Completado').length}</strong>
-        </div>
-        <button className="iso-btn-primary" onClick={handleCreateManual} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Diseño y Desarrollo</button>
-      </div>
+          Completados: <strong>{proyectosDiseno.filter(p => p.etapa === 'Completado').length}</strong> </div> <button className="iso-btn-primary" onClick={handleCreateManual} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>＋ Diseño y Desarrollo</button> </div>
 
       {/* ── Tabla ── */}
-      <div className="iso-table-wrapper">
-        <table className="iso-table">
-          <thead>
-            <tr>
-              <th>#</th><th>Entradas</th><th>Desarrollo</th><th>Control</th>
-              <th>Responsable</th><th>Inicio</th><th>Entrega</th><th>Etapa</th>
-              <th>Estado</th><th style={{ minWidth: '70px' }}></th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="iso-table-wrapper"> <table className="iso-table"> <thead> <tr> <th>#</th><th>Entradas</th><th>Desarrollo</th><th>Control</th> <th>Responsable</th><th>Inicio</th><th>Entrega</th><th>Etapa</th> <th>Estado</th><th style={{ minWidth: '70px' }}></th> </tr> </thead> <tbody>
             {proyectosDiseno.length === 0 ? (
-              <tr>
-                <td colSpan={10} style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+              <tr> <td colSpan={10} style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
                   No hay proyectos de diseño registrados
-                </td>
-              </tr>
+                </td> </tr>
             ) : proyectosDiseno.map((p, i) => (
-              <tr key={p.id}>
-                <td style={{ color: '#9ca3af' }}>{i + 1}</td>
-                <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>{p.entradas}</td>
-                <td style={{ fontWeight: 600, color: '#030097' }}>{p.desarrollo}</td>
-                <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>
+              <tr key={p.id}> <td style={{ color: '#9ca3af' }}>{i + 1}</td> <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>{p.entradas}</td> <td style={{ fontWeight: 600, color: '#030097' }}>{p.desarrollo}</td> <td style={{ fontSize: '0.78rem', color: '#6b7280' }}>
                   {p.control ? p.control : (
                     <button
                       className="iso-btn-primary"
@@ -281,15 +250,10 @@ const DisenoDesarrolloPage: React.FC = () => {
                       onClick={() => handleGenerateTableRow(p)}
                       disabled={generatingRows.has(p.id) || !canEdit}
                     >
-                      {generatingRows.has(p.id) ? '⏳ Generando...' : '✨ Generar'}
+                      {generatingRows.has(p.id) ? 'Generando...' : 'Generar'}
                     </button>
                   )}
-                </td>
-                <td>{p.responsable}</td>
-                <td>{p.fechaInicio || <em style={{ color: '#d1d5db' }}>—</em>}</td>
-                <td>{p.fechaEntrega || <em style={{ color: '#d1d5db' }}>—</em>}</td>
-                <td>
-                  <select
+                </td> <td>{p.responsable}</td> <td>{p.fechaInicio || <em style={{ color: '#d1d5db' }}>—</em>}</td> <td>{p.fechaEntrega || <em style={{ color: '#d1d5db' }}>—</em>}</td> <td> <select
                     className={`iso-badge ${etapaColor[p.etapa]}`}
                     style={{ border: 'none', cursor: 'pointer', outline: 'none', fontWeight: 'bold' }}
                     value={p.etapa}
@@ -297,10 +261,7 @@ const DisenoDesarrolloPage: React.FC = () => {
                     disabled={!canEdit}
                   >
                     {ETAPAS.map(et => <option key={et} value={et} style={{ color: '#000', background: '#fff' }}>{et}</option>)}
-                  </select>
-                </td>
-                <td>
-                  <select
+                  </select> </td> <td> <select
                     className={`iso-badge ${p.estado === 'En tiempo' ? 'verde' : p.estado === 'En riesgo' ? 'amarillo' : 'rojo'}`}
                     style={{ border: 'none', cursor: 'pointer', outline: 'none', fontWeight: 'bold' }}
                     value={p.estado}
@@ -308,39 +269,13 @@ const DisenoDesarrolloPage: React.FC = () => {
                     disabled={!canEdit}
                   >
                     {ESTADOS.map(es => <option key={es} value={es} style={{ color: '#000', background: '#fff' }}>{es}</option>)}
-                  </select>
-                </td>
-                <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  <button className="iso-btn-icon" onClick={() => handleEdit(p)} style={{ marginRight: '0.25rem' }} disabled={!canEdit}>✏️</button>
-                  <PermissionGuard recurso="diseno_desarrollo" accion="eliminar" mode="hide">
-                    <button className="iso-btn-icon danger" onClick={() => eliminar(p.id)}>🗑️</button>
-                  </PermissionGuard>
-                </td>
-              </tr>
+                  </select> </td> <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}> <button className="iso-btn-icon" onClick={() => handleEdit(p)} style={{ marginRight: '0.25rem' }} disabled={!canEdit}></button> <PermissionGuard recurso="diseno_desarrollo" accion="eliminar" mode="hide"> <button className="iso-btn-icon danger" onClick={() => eliminar(p.id)}></button> </PermissionGuard> </td> </tr>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </tbody> </table> </div>
 
       {/* ═══════ MODAL ═══════ */}
       {showModal && (
-        <div className="iso-modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="iso-modal" onClick={e => e.stopPropagation()}>
-            <h2>{form.id ? '✏️ Editar Proyecto de Diseño' : '➕ Nuevo Proyecto de Diseño'}</h2>
-
-            <div className="iso-field">
-              <label>Entradas del diseño *</label>
-              <textarea rows={2} value={form.entradas} onChange={e => setForm(p => ({ ...p, entradas: e.target.value }))} disabled={!canEdit} />
-            </div>
-
-            <div className="iso-field">
-              <label>Desarrollo *</label>
-              <textarea rows={2} value={form.desarrollo} onChange={e => setForm(p => ({ ...p, desarrollo: e.target.value }))} disabled={!canEdit} />
-            </div>
-
-            <div className="iso-field">
-              <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Control (Verificación y Validación)</span>
+        <div className="iso-modal-overlay" onClick={() => setShowModal(false)}> <div className="iso-modal" onClick={e => e.stopPropagation()}> <h2>{form.id ? 'Editar Proyecto de Diseño' : 'Nuevo Proyecto de Diseño'}</h2> <div className="iso-field"> <label>Entradas del diseño *</label> <textarea rows={2} value={form.entradas} onChange={e => setForm(p => ({ ...p, entradas: e.target.value }))} disabled={!canEdit} /> </div> <div className="iso-field"> <label>Desarrollo *</label> <textarea rows={2} value={form.desarrollo} onChange={e => setForm(p => ({ ...p, desarrollo: e.target.value }))} disabled={!canEdit} /> </div> <div className="iso-field"> <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}> <span>Control (Verificación y Validación)</span>
                 {canEdit && (
                   <button
                     type="button"
@@ -349,11 +284,10 @@ const DisenoDesarrolloPage: React.FC = () => {
                     onClick={handleGenerateModal}
                     disabled={isGeneratingControl || !form.desarrollo || !form.entradas}
                   >
-                    {isGeneratingControl ? '⏳ Generando...' : '✨ Generar con IA'}
+                    {isGeneratingControl ? 'Generando...' : 'Generar con IA'}
                   </button>
                 )}
-              </label>
-              <textarea
+              </label> <textarea
                 rows={3}
                 value={form.control}
                 onChange={e => setForm(p => ({ ...p, control: e.target.value }))}
@@ -368,58 +302,26 @@ const DisenoDesarrolloPage: React.FC = () => {
                   {errorControl}
                 </div>
               )}
-            </div>
-
-            <div className="iso-field">
-              <label>Responsable</label>
-              <input
+            </div> <div className="iso-field"> <label>Responsable</label> <input
                 type="text"
                 value={form.responsable}
                 onChange={e => setForm(p => ({ ...p, responsable: e.target.value }))}
                 disabled={!canEdit}
-              />
-            </div>
-
-            <div className="iso-form-row">
-              <div className="iso-field">
-                <label>Fecha inicio</label>
-                <input type="date" value={form.fechaInicio} onChange={e => setForm(p => ({ ...p, fechaInicio: e.target.value }))} disabled={!canEdit} />
-              </div>
-              <div className="iso-field">
-                <label>Fecha entrega</label>
-                <input type="date" value={form.fechaEntrega} onChange={e => setForm(p => ({ ...p, fechaEntrega: e.target.value }))} disabled={!canEdit} />
-              </div>
-            </div>
-
-            <div className="iso-form-row">
-              <div className="iso-field">
-                <label>Etapa actual</label>
-                <select value={form.etapa} onChange={e => setForm(p => ({ ...p, etapa: e.target.value as any }))} disabled={!canEdit}>
+              /> </div> <div className="iso-form-row"> <div className="iso-field"> <label>Fecha inicio</label> <input type="date" value={form.fechaInicio} onChange={e => setForm(p => ({ ...p, fechaInicio: e.target.value }))} disabled={!canEdit} /> </div> <div className="iso-field"> <label>Fecha entrega</label> <input type="date" value={form.fechaEntrega} onChange={e => setForm(p => ({ ...p, fechaEntrega: e.target.value }))} disabled={!canEdit} /> </div> </div> <div className="iso-form-row"> <div className="iso-field"> <label>Etapa actual</label> <select value={form.etapa} onChange={e => setForm(p => ({ ...p, etapa: e.target.value as any }))} disabled={!canEdit}>
                   {ETAPAS.map(et => <option key={et} value={et}>{et}</option>)}
-                </select>
-              </div>
-              <div className="iso-field">
-                <label>Estado</label>
-                <select value={form.estado} onChange={e => setForm(p => ({ ...p, estado: e.target.value as any }))} disabled={!canEdit}>
+                </select> </div> <div className="iso-field"> <label>Estado</label> <select value={form.estado} onChange={e => setForm(p => ({ ...p, estado: e.target.value as any }))} disabled={!canEdit}>
                   {ESTADOS.map(es => <option key={es} value={es}>{es}</option>)}
-                </select>
-              </div>
-            </div>
-
-            <div className="iso-modal__footer">
-              <button className="iso-btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
+                </select> </div> </div> <div className="iso-modal__footer"> <button className="iso-btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
               {canEdit && (
                 <button
                   className="iso-btn-primary"
                   onClick={guardar}
                   disabled={!form.entradas || !form.desarrollo || isGeneratingControl}
                 >
-                  {form.id ? '💾 Guardar Cambios' : '＋ Guardar Proyecto'}
+                  {form.id ? 'Guardar Cambios' : '＋ Guardar Proyecto'}
                 </button>
               )}
-            </div>
-          </div>
-        </div>
+            </div> </div> </div>
       )}
     </div>
   )

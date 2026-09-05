@@ -39,34 +39,13 @@ const rows: NcRow[] = [
 
 const NcTable: React.FC = () => {
   return (
-    <table className="nc-table">
-      <thead>
-        <tr>
-          <th>Código</th>
-          <th>Descripción</th>
-          <th>Origen</th>
-          <th>Cláusula</th>
-          <th>Vence</th>
-          <th>Estado</th>
-        </tr>
-      </thead>
-      <tbody>
+    <table className="nc-table"> <thead> <tr> <th>Código</th> <th>Descripción</th> <th>Origen</th> <th>Cláusula</th> <th>Vence</th> <th>Estado</th> </tr> </thead> <tbody>
         {rows.map((n, idx) => (
-          <tr key={n.code} className={idx % 2 === 0 ? "nc-table__row--alt" : ""}>
-            <td className="nc-table__code">{n.code}</td>
-            <td>{n.description}</td>
-            <td>{n.origin}</td>
-            <td>{n.clause}</td>
-            <td>{n.due}</td>
-            <td>
-              <span className={`nc-table__status nc-table__status--${n.status}`}>
+          <tr key={n.code} className={idx % 2 === 0 ? "nc-table__row--alt" : ""}> <td className="nc-table__code">{n.code}</td> <td>{n.description}</td> <td>{n.origin}</td> <td>{n.clause}</td> <td>{n.due}</td> <td> <span className={`nc-table__status nc-table__status--${n.status}`}>
                 {n.status}
-              </span>
-            </td>
-          </tr>
+              </span> </td> </tr>
         ))}
-      </tbody>
-    </table>
+      </tbody> </table>
   );
 };
 

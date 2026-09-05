@@ -6,13 +6,11 @@ const cols = ["Bajo", "Medio", "Alto"];
 
 const Heatmap: React.FC = () => {
   return (
-    <div className="heatmap">
-      <div className="heatmap__labels heatmap__labels--rows">
+    <div className="heatmap"> <div className="heatmap__labels heatmap__labels--rows">
         {rows.map(r => (
           <span key={r}>{r}</span>
         ))}
-      </div>
-      <div className="heatmap__grid">
+      </div> <div className="heatmap__grid">
         {rows.map((row, rIndex) => (
           <div className="heatmap__row" key={row}>
             {cols.map((col, cIndex) => {
@@ -33,13 +31,11 @@ const Heatmap: React.FC = () => {
             })}
           </div>
         ))}
-      </div>
-      <div className="heatmap__labels heatmap__labels--cols">
+      </div> <div className="heatmap__labels heatmap__labels--cols">
         {cols.map(c => (
           <span key={c}>{c}</span>
         ))}
-      </div>
-    </div>
+      </div> </div>
   );
 };
 

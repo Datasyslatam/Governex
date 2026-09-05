@@ -12,16 +12,10 @@ const BarChart: React.FC<Props> = ({ categories, values }) => {
   return (
     <div className="bar-chart">
       {categories.map((cat, i) => (
-        <div key={cat} className="bar-chart__item">
-          <div className="bar-chart__bar-bg">
-            <div
+        <div key={cat} className="bar-chart__item"> <div className="bar-chart__bar-bg"> <div
               className="bar-chart__bar"
               style={{ height: `${(values[i] / max) * 100}%` }}
-            />
-          </div>
-          <div className="bar-chart__value">{values[i]}%</div>
-          <div className="bar-chart__label">{cat}</div>
-        </div>
+            /> </div> <div className="bar-chart__value">{values[i]}%</div> <div className="bar-chart__label">{cat}</div> </div>
       ))}
     </div>
   );

@@ -12,19 +12,5 @@ import { LayoutProvider } from "./context/LayoutContext";
 import { AIAnalysisProvider } from "./context/AIAnalysisContext";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <PlatformAdminAuthProvider>
-            <AIAnalysisProvider>
-              <LayoutProvider>
-                <App />
-              </LayoutProvider>
-            </AIAnalysisProvider>
-          </PlatformAdminAuthProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </BrowserRouter>
-  </React.StrictMode>
+  <React.StrictMode> <BrowserRouter> <ThemeProvider> <AuthProvider> <PlatformAdminAuthProvider> <AIAnalysisProvider> <LayoutProvider> <App /> </LayoutProvider> </AIAnalysisProvider> </PlatformAdminAuthProvider> </AuthProvider> </ThemeProvider> </BrowserRouter> </React.StrictMode>
 );

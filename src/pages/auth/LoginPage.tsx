@@ -4,7 +4,7 @@ import React, { useState } from 'react'
   import { usePlatformAdminAuth } from '../../context/PlatformAdminAuthContext'
   import { authService } from '../../services'
   import './LoginPage.css'
-  import logoGovernex from '../../assets/LOGO Governex.png'
+  import logoGovernex from '../../assets/logo_governex1.png'
 
   const LoginPage: React.FC = () => {
     const { login }   = useAuth()
@@ -46,27 +46,7 @@ import React, { useState } from 'react'
     }
 
     return (
-      <div className="login">
-        <div className="login__left">
-          <div className="login__brand">
-            <div className="login__brand-icon" aria-hidden="true">
-              <img src={logoGovernex} alt="Governex Logo" />
-            </div>
-            <p>Impulsamos la Gobernanza Digital</p>
-            <div className="login__divider" />
-            <ul>
-              <li>Gestiona procesos bajo estándares ISO con seguimiento inteligente de indicadores</li>
-              <li>Automatiza tareas con IA para optimizar tiempos y reducir errores</li>
-              <li>Impulsa la transformación digital con análisis de datos y mejora contínua</li>
-            </ul>
-            <div className="login__brand-footer">© 2026 Governex · Barranquilla, Colombia</div>
-          </div>
-        </div>
-
-        <div className="login__right">
-          <div className="login__powered-by">Powered by Datasys · Latam Group</div>
-          <form className="login__card" onSubmit={handleSubmit}>
-            <h2>Iniciar Sesión</h2>
+      <div className="login"> <div className="login__left"> <div className="login__brand"> <div className="login__brand-icon" aria-hidden="true"> <img src={logoGovernex} alt="Governex Logo" /> </div> <p>Impulsamos la Gobernanza Digital</p> <div className="login__divider" /> <ul> <li>Gestiona procesos bajo estándares ISO con seguimiento inteligente de indicadores</li> <li>Automatiza tareas con IA para optimizar tiempos y reducir errores</li> <li>Impulsa la transformación digital con análisis de datos y mejora contínua</li> </ul> <div className="login__brand-footer">© 2026 Governex · Barranquilla, Colombia</div> </div> </div> <div className="login__right"> <div className="login__powered-by">Powered by Datasys · Latam Group</div> <form className="login__card" onSubmit={handleSubmit}> <h2>Iniciar Sesión</h2>
 
             {error && (
               <div style={{
@@ -84,27 +64,16 @@ import React, { useState } from 'react'
               <input type="email" value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="usuario@empresa.com"
-                disabled={loading} />
-            </label>
-
-            <label>
+                disabled={loading} /> </label> <label>
               Contraseña
               <input type="password" value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
-                disabled={loading} />
-            </label>
-
-            <button type="submit" className="login__submit" disabled={loading}>
+                disabled={loading} /> </label> <button type="submit" className="login__submit" disabled={loading}>
               {loading ? 'Ingresando...' : 'INGRESAR A GOVERNEX'}
-            </button>
-
-            <p className="login__helper">
+            </button> <p className="login__helper">
               Autenticación segura con JWT · Sesión de 8 horas
-            </p>
-          </form>
-        </div>
-      </div>
+            </p> </form> </div> </div>
     )
   }
 

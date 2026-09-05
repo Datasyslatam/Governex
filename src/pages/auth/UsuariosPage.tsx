@@ -209,12 +209,7 @@ const UsuariosPage: React.FC = () => {
   return (
     <div className="usuarios-page">
       {/* HEADER */}
-      <div className="usuarios-page__header">
-        <div className="usuarios-page__title-block">
-          <h1>👤 Gestión y Bitácora de Usuarios</h1>
-          <p>Administra los accesos, roles y audita todas las actividades ejecutadas en el SGC</p>
-          <span className="usuarios-page__clause">Administración SGC</span>
-        </div>
+      <div className="usuarios-page__header"> <div className="usuarios-page__title-block"> <h1> Gestión y Bitácora de Usuarios</h1> <p>Administra los accesos, roles y audita todas las actividades ejecutadas en el SGC</p> <span className="usuarios-page__clause">Administración SGC</span> </div>
         {activeTab === 'usuarios' && (
           <button className="btn-primary" onClick={handleCreateOpen}>
             ＋ Nuevo Usuario
@@ -223,60 +218,31 @@ const UsuariosPage: React.FC = () => {
       </div>
 
       {/* TABS */}
-      <div className="usuarios-page__tabs">
-        <button
+      <div className="usuarios-page__tabs"> <button
           className={`usuarios-tab-btn ${activeTab === 'usuarios' ? 'active' : ''}`}
           onClick={() => setActiveTab('usuarios')}
         >
-          👤 Usuarios Activos
-        </button>
-        <button
+           Usuarios Activos
+        </button> <button
           className={`usuarios-tab-btn ${activeTab === 'logs' ? 'active' : ''}`}
           onClick={() => setActiveTab('logs')}
         >
-          📋 Bitácora de Actividades (Logs)
-        </button>
-      </div>
+           Bitácora de Actividades (Logs)
+        </button> </div>
 
       {/* TAB 1: USUARIOS */}
       {activeTab === 'usuarios' && (
         <>
           {loading ? (
-            <div className="usuarios-loading">
-              <div className="usuarios-spinner" />
-              <p>Cargando lista de usuarios...</p>
-            </div>
+            <div className="usuarios-loading"> <div className="usuarios-spinner" /> <p>Cargando lista de usuarios...</p> </div>
           ) : (
-            <div className="usuarios-table-wrapper">
-              <table className="usuarios-matrix-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Nombre</th>
-                    <th>Email</th>
-                    <th>Rol</th>
-                    <th>Estado</th>
-                    <th>Permisos</th>
-                    <th style={{ width: '100px' }}>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <div className="usuarios-table-wrapper"> <table className="usuarios-matrix-table"> <thead> <tr> <th>#</th> <th>Nombre</th> <th>Email</th> <th>Rol</th> <th>Estado</th> <th>Permisos</th> <th style={{ width: '100px' }}>Acciones</th> </tr> </thead> <tbody>
                   {users.map((user, idx) => (
-                    <tr key={user.id}>
-                      <td style={{ color: '#9ca3af', fontWeight: 600 }}>{idx + 1}</td>
-                      <td style={{ fontWeight: 600, color: '#030097' }}>{user.nombre}</td>
-                      <td>{user.email}</td>
-                      <td>
-                        <span className={`rol-badge ${user.rol?.toLowerCase().replace(' ', '-')}`}>
+                    <tr key={user.id}> <td style={{ color: '#9ca3af', fontWeight: 600 }}>{idx + 1}</td> <td style={{ fontWeight: 600, color: '#030097' }}>{user.nombre}</td> <td>{user.email}</td> <td> <span className={`rol-badge ${user.rol?.toLowerCase().replace(' ', '-')}`}>
                           {user.rol}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`status-badge ${user.activo ? 'activo' : 'inactivo'}`}>
+                        </span> </td> <td> <span className={`status-badge ${user.activo ? 'activo' : 'inactivo'}`}>
                           {user.activo ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </td>
-                      <td>
+                        </span> </td> <td>
                         {user.tiene_permisos_personalizados ? (
                           <span className="permisos-badge personalizados">
                             Personalizados ({user.permisos_ids?.length || 0})
@@ -286,122 +252,64 @@ const UsuariosPage: React.FC = () => {
                             Por Defecto del Rol
                           </span>
                         )}
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '0.25rem' }}>
-                          <button
+                      </td> <td> <div style={{ display: 'flex', gap: '0.25rem' }}> <button
                             className="btn-icon"
                             onClick={() => handleEditOpen(user)}
                             title="Editar usuario"
-                          >
-                            ✏️
-                          </button>
-                          <button
+                          > </button> <button
                             className="btn-icon danger"
                             onClick={() => handleDelete(user.id, user.nombre)}
                             title="Eliminar usuario"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                          > </button> </div> </td> </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </tbody> </table> </div>
           )}
         </>
       )}
 
       {/* TAB 2: BITÁCORA DE ACTIVIDADES (LOGS) */}
       {activeTab === 'logs' && (
-        <div className="logs-panel">
-          <div className="logs-panel__toolbar">
-            <input
+        <div className="logs-panel"> <div className="logs-panel__toolbar"> <input
               type="text"
               placeholder="Buscar por usuario, rol, acción, detalle o recurso..."
               value={logsQuery}
               onChange={e => setLogsQuery(e.target.value)}
               className="logs-search-input"
-            />
-            <button className="btn-secondary" onClick={loadLogs} disabled={loadingLogs}>
-              🔄 Actualizar
-            </button>
-          </div>
+            /> <button className="btn-secondary" onClick={loadLogs} disabled={loadingLogs}>
+               Actualizar
+            </button> </div>
 
           {loadingLogs ? (
-            <div className="usuarios-loading">
-              <div className="usuarios-spinner" />
-              <p>Cargando bitácora de actividades...</p>
-            </div>
+            <div className="usuarios-loading"> <div className="usuarios-spinner" /> <p>Cargando bitácora de actividades...</p> </div>
           ) : (
-            <div className="usuarios-table-wrapper">
-              <table className="usuarios-matrix-table">
-                <thead>
-                  <tr>
-                    <th>Fecha y Hora</th>
-                    <th>Usuario</th>
-                    <th>Rol</th>
-                    <th>Acción</th>
-                    <th>Recurso</th>
-                    <th>Detalle</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <div className="usuarios-table-wrapper"> <table className="usuarios-matrix-table"> <thead> <tr> <th>Fecha y Hora</th> <th>Usuario</th> <th>Rol</th> <th>Acción</th> <th>Recurso</th> <th>Detalle</th> </tr> </thead> <tbody>
                   {filteredLogs.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                    <tr> <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
                         No se encontraron registros en la bitácora que coincidan con la búsqueda.
-                      </td>
-                    </tr>
+                      </td> </tr>
                   ) : (
                     filteredLogs.map(log => (
-                      <tr key={log.id}>
-                        <td style={{ whiteSpace: 'nowrap', color: '#4b5563', fontWeight: 500 }}>
+                      <tr key={log.id}> <td style={{ whiteSpace: 'nowrap', color: '#4b5563', fontWeight: 500 }}>
                           {new Date(log.fecha_hora).toLocaleString()}
-                        </td>
-                        <td>
-                          <div style={{ fontWeight: 600, color: '#030097' }}>{log.usuario_nombre}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{log.usuario_email}</div>
-                        </td>
-                        <td>
-                          <span className={`rol-badge ${log.usuario_rol?.toLowerCase().replace(' ', '-')}`}>
+                        </td> <td> <div style={{ fontWeight: 600, color: '#030097' }}>{log.usuario_nombre}</div> <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{log.usuario_email}</div> </td> <td> <span className={`rol-badge ${log.usuario_rol?.toLowerCase().replace(' ', '-')}`}>
                             {log.usuario_rol}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`accion-pill ${log.accion.toLowerCase().replace(/á/g, 'a').replace(/ó/g, 'o').replace(/ /g, '-')}`}>
+                          </span> </td> <td> <span className={`accion-pill ${log.accion.toLowerCase().replace(/á/g, 'a').replace(/ó/g, 'o').replace(/ /g, '-')}`}>
                             {log.accion}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="recurso-badge">
+                          </span> </td> <td> <span className="recurso-badge">
                             {log.recurso || 'sistema'}
-                          </span>
-                        </td>
-                        <td style={{ color: '#374151', fontSize: '0.8rem', lineHeight: '1.4' }}>
+                          </span> </td> <td style={{ color: '#374151', fontSize: '0.8rem', lineHeight: '1.4' }}>
                           {log.detalle}
-                        </td>
-                      </tr>
+                        </td> </tr>
                     ))
                   )}
-                </tbody>
-              </table>
-            </div>
+                </tbody> </table> </div>
           )}
         </div>
       )}
 
       {/* CREATE/EDIT MODAL */}
       {showModal && (
-        <div className="usuarios-modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="usuarios-modal" onClick={e => e.stopPropagation()}>
-            <h2>{isEditing ? '✏️ Editar Usuario' : '➕ Crear Nuevo Usuario'}</h2>
-            
-            <form onSubmit={handleSave} className="usuarios-form">
-              <div className="form-grid">
-                <label>
+        <div className="usuarios-modal-overlay" onClick={() => setShowModal(false)}> <div className="usuarios-modal" onClick={e => e.stopPropagation()}> <h2>{isEditing ? 'Editar Usuario' : ' Crear Nuevo Usuario'}</h2> <form onSubmit={handleSave} className="usuarios-form"> <div className="form-grid"> <label>
                   Nombre completo *
                   <input
                     type="text"
@@ -409,10 +317,7 @@ const UsuariosPage: React.FC = () => {
                     placeholder="Ej. Juan Pérez"
                     value={nombre}
                     onChange={e => setNombre(e.target.value)}
-                  />
-                </label>
-
-                <label>
+                  /> </label> <label>
                   Correo electrónico *
                   <input
                     type="email"
@@ -420,10 +325,7 @@ const UsuariosPage: React.FC = () => {
                     placeholder="juan@empresa.com"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                  />
-                </label>
-
-                <label>
+                  /> </label> <label>
                   Contraseña {isEditing ? '(dejar en blanco para no cambiar)' : '*'}
                   <input
                     type="password"
@@ -431,10 +333,7 @@ const UsuariosPage: React.FC = () => {
                     required={!isEditing}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                  />
-                </label>
-
-                <label>
+                  /> </label> <label>
                   Rol *
                   <select value={rolId} onChange={e => setRolId(Number(e.target.value))}>
                     {roles.map(role => (
@@ -442,45 +341,24 @@ const UsuariosPage: React.FC = () => {
                         {role.nombre}
                       </option>
                     ))}
-                  </select>
-                </label>
-              </div>
-
-              <div className="switch-row">
-                <label className="checkbox-label">
-                  <input
+                  </select> </label> </div> <div className="switch-row"> <label className="checkbox-label"> <input
                     type="checkbox"
                     checked={activo}
                     onChange={e => setActivo(e.target.checked)}
-                  />
-                  <span>Usuario Activo (Permite iniciar sesión)</span>
-                </label>
-
-                <label className="checkbox-label">
-                  <input
+                  /> <span>Usuario Activo (Permite iniciar sesión)</span> </label> <label className="checkbox-label"> <input
                     type="checkbox"
                     checked={tienePermisosPersonalizados}
                     onChange={e => setTienePermisosPersonalizados(e.target.checked)}
-                  />
-                  <span>Personalizar Permisos (Ignorar matriz por defecto del rol)</span>
-                </label>
-              </div>
+                  /> <span>Personalizar Permisos (Ignorar matriz por defecto del rol)</span> </label> </div>
 
               {tienePermisosPersonalizados && (
-                <div className="permisos-personalizacion-panel">
-                  <h3>🔑 Asignar Permisos Específicos</h3>
-                  <p className="permisos-helper-text">
+                <div className="permisos-personalizacion-panel"> <h3> Asignar Permisos Específicos</h3> <p className="permisos-helper-text">
                     Selecciona las acciones y recursos del sistema a los que este usuario tendrá acceso exclusivo.
-                  </p>
-                  
-                  <div className="permisos-recursos-lista">
+                  </p> <div className="permisos-recursos-lista">
                     {Object.entries(permissionsByResource).map(([recurso, list]) => (
-                      <div key={recurso} className="permisos-recurso-grupo">
-                        <h4>{recurso.toUpperCase().replace('_', ' ')}</h4>
-                        <div className="permisos-acciones-grid">
+                      <div key={recurso} className="permisos-recurso-grupo"> <h4>{recurso.toUpperCase().replace('_', ' ')}</h4> <div className="permisos-acciones-grid">
                           {list.map(p => (
-                            <label key={p.id} className="checkbox-label-mini">
-                              <input
+                            <label key={p.id} className="checkbox-label-mini"> <input
                                 type="checkbox"
                                 checked={selectedPermisosIds.includes(p.id)}
                                 onChange={e => {
@@ -490,30 +368,20 @@ const UsuariosPage: React.FC = () => {
                                     setSelectedPermisosIds(prev => prev.filter(id => id !== p.id))
                                   }
                                 }}
-                              />
-                              <span className={`accion-label ${p.accion}`}>
+                              /> <span className={`accion-label ${p.accion}`}>
                                 {p.accion}
-                              </span>
-                            </label>
+                              </span> </label>
                           ))}
-                        </div>
-                      </div>
+                        </div> </div>
                     ))}
-                  </div>
-                </div>
+                  </div> </div>
               )}
 
-              <div className="usuarios-modal__footer">
-                <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>
+              <div className="usuarios-modal__footer"> <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>
                   Cancelar
-                </button>
-                <button type="submit" className="btn-primary">
+                </button> <button type="submit" className="btn-primary">
                   {isEditing ? 'Guardar Cambios' : 'Crear Usuario'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+                </button> </div> </form> </div> </div>
       )}
     </div>
   )

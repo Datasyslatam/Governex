@@ -70,39 +70,7 @@ function showAuditDetail(aud: CalendarAudit) {
 
   Swal.fire({
     html: `
-      <div style="text-align:left;font-family:inherit">
-        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.1rem">
-          <span style="background:${color};color:#fff;padding:3px 12px;border-radius:999px;font-size:0.78rem;font-weight:700;letter-spacing:0.04em">${aud.estado}</span>
-          <span style="font-size:1rem;font-weight:800;color:#1a2b45">${aud.codigo}</span>
-        </div>
-
-        <div style="background:${bgColor};border:1px solid #e2e8f0;border-radius:0.5rem;padding:1rem;display:grid;grid-template-columns:1fr 1fr;gap:0.85rem">
-          <div>
-            <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Proceso</div>
-            <div style="font-size:0.88rem;font-weight:600;color:#1a2b45">${aud.proceso}</div>
-          </div>
-          <div>
-            <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Auditor Líder</div>
-            <div style="font-size:0.88rem;font-weight:600;color:#1a2b45">${aud.auditor}</div>
-          </div>
-          <div>
-            <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Fecha Inicio</div>
-            <div style="font-size:0.88rem;font-weight:600;color:#1a2b45">${fmt(aud.fechaInicio)}</div>
-          </div>
-          <div>
-            <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Fecha Fin</div>
-            <div style="font-size:0.88rem;font-weight:600;color:#1a2b45">${fechaFin(aud.fechaInicio, aud.duracionDias)}</div>
-          </div>
-          <div>
-            <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Duración</div>
-            <div style="font-size:0.88rem;font-weight:600;color:#1a2b45">${aud.duracionDias} día${aud.duracionDias !== 1 ? "s" : ""}</div>
-          </div>
-          <div>
-            <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Hallazgos</div>
-            <div style="margin-top:3px">${hallBadge}</div>
-          </div>
-        </div>
-      </div>
+      <div style="text-align:left;font-family:inherit"> <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.1rem"> <span style="background:${color};color:#fff;padding:3px 12px;border-radius:999px;font-size:0.78rem;font-weight:700;letter-spacing:0.04em">${aud.estado}</span> <span style="font-size:1rem;font-weight:800;color:#1a2b45">${aud.codigo}</span> </div> <div style="background:${bgColor};border:1px solid #e2e8f0;border-radius:0.5rem;padding:1rem;display:grid;grid-template-columns:1fr 1fr;gap:0.85rem"> <div> <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Proceso</div> <div style="font-size:0.88rem;font-weight:600;color:#1a2b45">${aud.proceso}</div> </div> <div> <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Auditor Líder</div> <div style="font-size:0.88rem;font-weight:600;color:#1a2b45">${aud.auditor}</div> </div> <div> <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Fecha Inicio</div> <div style="font-size:0.88rem;font-weight:600;color:#1a2b45">${fmt(aud.fechaInicio)}</div> </div> <div> <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Fecha Fin</div> <div style="font-size:0.88rem;font-weight:600;color:#1a2b45">${fechaFin(aud.fechaInicio, aud.duracionDias)}</div> </div> <div> <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Duración</div> <div style="font-size:0.88rem;font-weight:600;color:#1a2b45">${aud.duracionDias} día${aud.duracionDias !== 1 ? "s" : ""}</div> </div> <div> <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Hallazgos</div> <div style="margin-top:3px">${hallBadge}</div> </div> </div> </div>
     `,
     showConfirmButton: false,
     showCloseButton: true,
@@ -162,22 +130,10 @@ const AuditCalendar: React.FC<AuditCalendarProps> = ({ auditorias }) => {
   return (
     <div className="audit-calendar">
       {/* Navigation bar */}
-      <div className="calendar-nav-bar">
-        <div className="cal-nav-left">
-          <button className="cal-nav-btn" onClick={prevMonth}>‹</button>
-          <h4 className="cal-title">{MONTHS[currentMonth]} {currentYear}</h4>
-          <button className="cal-nav-btn" onClick={nextMonth}>›</button>
-          <button className="cal-today-btn" onClick={() => {
+      <div className="calendar-nav-bar"> <div className="cal-nav-left"> <button className="cal-nav-btn" onClick={prevMonth}>‹</button> <h4 className="cal-title">{MONTHS[currentMonth]} {currentYear}</h4> <button className="cal-nav-btn" onClick={nextMonth}>›</button> <button className="cal-today-btn" onClick={() => {
             setCurrentMonth(today.getMonth());
             setCurrentYear(today.getFullYear());
-          }}>Hoy</button>
-        </div>
-        <div className="cal-legend">
-          <span className="legend-item legend-item--planned">Planificada</span>
-          <span className="legend-item legend-item--running">En Ejecución</span>
-          <span className="legend-item legend-item--closed">Cerrada</span>
-        </div>
-      </div>
+          }}>Hoy</button> </div> <div className="cal-legend"> <span className="legend-item legend-item--planned">Planificada</span> <span className="legend-item legend-item--running">En Ejecución</span> <span className="legend-item legend-item--closed">Cerrada</span> </div> </div>
 
       {/* Calendar grid */}
       <div className="calendar-grid">
@@ -201,9 +157,7 @@ const AuditCalendar: React.FC<AuditCalendarProps> = ({ auditorias }) => {
             <div
               key={day}
               className={`cal-day ${isToday ? "cal-day--today" : ""} ${entries.length ? "cal-day--has-events" : ""}`}
-            >
-              <span className={`cal-day__num ${isToday ? "cal-day__num--today" : ""}`}>{day}</span>
-              <div className="cal-day__events">
+            > <span className={`cal-day__num ${isToday ? "cal-day__num--today" : ""}`}>{day}</span> <div className="cal-day__events">
                 {entries.map(({ audit, isStart, isEnd }) => (
                   <button
                     key={audit.codigo + day}
@@ -214,12 +168,10 @@ const AuditCalendar: React.FC<AuditCalendarProps> = ({ auditorias }) => {
                     {isStart ? audit.codigo : ""}
                   </button>
                 ))}
-              </div>
-            </div>
+              </div> </div>
           );
         })}
-      </div>
-    </div>
+      </div> </div>
   );
 };
 

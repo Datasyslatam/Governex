@@ -24,9 +24,7 @@ const DonutChart: React.FC<Props> = ({ data, size = 160, thickness = 24, centerL
   let cumulative = 0;
 
   return (
-    <div className="donut-chart">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle
+    <div className="donut-chart"> <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}> <circle
           cx={center}
           cy={center}
           r={radius}
@@ -66,19 +64,13 @@ const DonutChart: React.FC<Props> = ({ data, size = 160, thickness = 24, centerL
             {centerLabel}
           </text>
         )}
-      </svg>
-      <ul className="donut-chart__legend">
+      </svg> <ul className="donut-chart__legend">
         {data.map((d, i) => (
-          <li key={i}>
-            <span className="donut-chart__dot" style={{ background: d.color }} />
-            <span className="donut-chart__legend-label">{d.label}</span>
-            <span className="donut-chart__legend-value">
+          <li key={i}> <span className="donut-chart__dot" style={{ background: d.color }} /> <span className="donut-chart__legend-label">{d.label}</span> <span className="donut-chart__legend-value">
               {d.value} {total > 0 ? `(${Math.round((d.value / total) * 100)}%)` : ""}
-            </span>
-          </li>
+            </span> </li>
         ))}
-      </ul>
-    </div>
+      </ul> </div>
   );
 };
 

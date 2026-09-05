@@ -55,38 +55,24 @@ function estadoBadge(estado: string) {
 }
 
 function nivelBadge(nivel: number) {
-  if (nivel >= 15) return { cls: 'oc-nivel--critico',    label: '🔴 CRÍTICO' }
-  if (nivel >= 9)  return { cls: 'oc-nivel--alto',       label: '🟠 ALTO' }
-  if (nivel >= 4)  return { cls: 'oc-nivel--medio',      label: '🟡 MEDIO' }
-  return               { cls: 'oc-nivel--bajo',        label: '🟢 BAJO' }
+  if (nivel >= 15) return { cls: 'oc-nivel--critico',    label: ' CRÍTICO' }
+  if (nivel >= 9)  return { cls: 'oc-nivel--alto',       label: ' ALTO' }
+  if (nivel >= 4)  return { cls: 'oc-nivel--medio',      label: ' MEDIO' }
+  return               { cls: 'oc-nivel--bajo',        label: ' BAJO' }
 }
 
 /* ─── KPI Card ───────────────────────────────────────────────── */
 const KPICard: React.FC<{ value: string | number; label: string; color: string }> = ({ value, label, color }) => (
-  <div className="oc-kpi" style={{ borderTop: `3px solid ${color}` }}>
-    <span className="oc-kpi__value" style={{ color }}>{value}</span>
-    <span className="oc-kpi__label">{label}</span>
-  </div>
+  <div className="oc-kpi" style={{ borderTop: `3px solid ${color}` }}> <span className="oc-kpi__value" style={{ color }}>{value}</span> <span className="oc-kpi__label">{label}</span> </div>
 )
 
 /* ─── Empty State ────────────────────────────────────────────── */
 const EmptyState: React.FC = () => (
-  <div className="oc-empty-state">
-    <div className="oc-empty-state__icon">🎯</div>
-    <h3>Sin análisis de IA disponible</h3>
-    <p>
+  <div className="oc-empty-state"> <div className="oc-empty-state__icon"></div> <h3>Sin análisis de IA disponible</h3> <p>
       Para generar automáticamente los Objetivos de Calidad, primero debes completar
       el análisis con IA en el módulo <strong>"Contexto de la Organización"</strong>.
       Los objetivos se derivarán de los Riesgos y Oportunidades identificados en §6.1.
-    </p>
-    <ol className="oc-empty-state__steps">
-      <li>Ve al módulo <strong>Contexto de la Organización</strong> (§4)</li>
-      <li>Construye o carga el mapa de procesos</li>
-      <li>Haz clic en <strong>"Guardar y Analizar con IA"</strong></li>
-      <li>Regresa aquí — los objetivos se generarán automáticamente</li>
-    </ol>
-    <a href="/procesos" className="oc-empty-cta">Ir a Contexto de la Organización →</a>
-  </div>
+    </p> <ol className="oc-empty-state__steps"> <li>Ve al módulo <strong>Contexto de la Organización</strong> (§4)</li> <li>Construye o carga el mapa de procesos</li> <li>Haz clic en <strong>"Guardar y Analizar con IA"</strong></li> <li>Regresa aquí — los objetivos se generarán automáticamente</li> </ol> <a href="/procesos" className="oc-empty-cta">Ir a Contexto de la Organización →</a> </div>
 )
 
 /* ─── Modal de edición de un objetivo ───────────────────────── */
@@ -104,111 +90,26 @@ const EditModal: React.FC<EditModalProps> = ({ obj, onSave, onClose }) => {
   const { isReadOnly } = usePermissions('objetivos_calidad')
 
   return (
-    <div className="iso-modal-overlay" onClick={onClose}>
-      <div className="iso-modal oc-modal" onClick={e => e.stopPropagation()}>
-        <h2>✏️ Ajustar Objetivo — {form.codigo}</h2>
-        <p className="oc-modal__hint">
+    <div className="iso-modal-overlay" onClick={onClose}> <div className="iso-modal oc-modal" onClick={e => e.stopPropagation()}> <h2> Ajustar Objetivo — {form.codigo}</h2> <p className="oc-modal__hint">
           Revisa y ajusta los campos generados automáticamente antes de confirmar.
-        </p>
-
-        <div className="iso-form-row oc-form-row--full">
-          <div className="iso-field">
-            <label>Objetivo de Calidad *</label>
-            <textarea rows={3} value={form.objetivo} readOnly={isReadOnly()}
-              onChange={e => set('objetivo', e.target.value)} />
-          </div>
-        </div>
-
-        <div className="iso-form-row oc-form-row--full">
-          <div className="iso-field">
-            <label>Fuente — Riesgo / Oportunidad origen</label>
-            <textarea rows={2} value={form.fuente_riesgo_oportunidad} readOnly={isReadOnly()}
-              onChange={e => set('fuente_riesgo_oportunidad', e.target.value)} />
-          </div>
-        </div>
-
-        <div className="iso-form-row oc-form-row--full">
-          <div className="iso-field">
-            <label>Acción a desarrollar (Cómo) *</label>
-            <textarea rows={3} value={form.accion} readOnly={isReadOnly()}
-              onChange={e => set('accion', e.target.value)} />
-          </div>
-        </div>
-
-        <div className="iso-form-row">
-          <div className="iso-field">
-            <label>Indicador *</label>
-            <input value={form.indicador} onChange={e => set('indicador', e.target.value)} readOnly={isReadOnly()} />
-          </div>
-          <div className="iso-field">
-            <label>Meta *</label>
-            <input value={form.meta} onChange={e => set('meta', e.target.value)} readOnly={isReadOnly()} />
-          </div>
-        </div>
-
-        <div className="iso-form-row">
-          <div className="iso-field">
-            <label>Frecuencia de medición *</label>
-            <select value={form.frecuencia_medicion} disabled={isReadOnly()}
+        </p> <div className="iso-form-row oc-form-row--full"> <div className="iso-field"> <label>Objetivo de Calidad *</label> <textarea rows={3} value={form.objetivo} readOnly={isReadOnly()}
+              onChange={e => set('objetivo', e.target.value)} /> </div> </div> <div className="iso-form-row oc-form-row--full"> <div className="iso-field"> <label>Fuente — Riesgo / Oportunidad origen</label> <textarea rows={2} value={form.fuente_riesgo_oportunidad} readOnly={isReadOnly()}
+              onChange={e => set('fuente_riesgo_oportunidad', e.target.value)} /> </div> </div> <div className="iso-form-row oc-form-row--full"> <div className="iso-field"> <label>Acción a desarrollar (Cómo) *</label> <textarea rows={3} value={form.accion} readOnly={isReadOnly()}
+              onChange={e => set('accion', e.target.value)} /> </div> </div> <div className="iso-form-row"> <div className="iso-field"> <label>Indicador *</label> <input value={form.indicador} onChange={e => set('indicador', e.target.value)} readOnly={isReadOnly()} /> </div> <div className="iso-field"> <label>Meta *</label> <input value={form.meta} onChange={e => set('meta', e.target.value)} readOnly={isReadOnly()} /> </div> </div> <div className="iso-form-row"> <div className="iso-field"> <label>Frecuencia de medición *</label> <select value={form.frecuencia_medicion} disabled={isReadOnly()}
               onChange={e => set('frecuencia_medicion', e.target.value as FrecuenciaMedicion)}>
               {FRECUENCIAS.map(f => <option key={f}>{f}</option>)}
-            </select>
-          </div>
-          <div className="iso-field">
-            <label>Responsable *</label>
-            <input value={form.responsable} onChange={e => set('responsable', e.target.value)} readOnly={isReadOnly()} />
-          </div>
-        </div>
-
-        <div className="iso-form-row">
-          <div className="iso-field">
-            <label>Proceso relacionado</label>
-            <input value={form.proceso_relacionado} readOnly={isReadOnly()}
+            </select> </div> <div className="iso-field"> <label>Responsable *</label> <input value={form.responsable} onChange={e => set('responsable', e.target.value)} readOnly={isReadOnly()} /> </div> </div> <div className="iso-form-row"> <div className="iso-field"> <label>Proceso relacionado</label> <input value={form.proceso_relacionado} readOnly={isReadOnly()}
               onChange={e => set('proceso_relacionado', e.target.value)}
-              placeholder="Ej: Gestión de Calidad" />
-          </div>
-          <div className="iso-field">
-            <label>Recursos necesarios</label>
-            <input value={form.recursos} onChange={e => set('recursos', e.target.value)} readOnly={isReadOnly()} />
-          </div>
-        </div>
-
-        <div className="iso-form-row">
-          <div className="iso-field">
-            <label>Fecha inicio</label>
-            <input type="date" value={form.fecha_inicio} readOnly={isReadOnly()}
-              onChange={e => set('fecha_inicio', e.target.value)} />
-          </div>
-          <div className="iso-field">
-            <label>Fecha límite</label>
-            <input type="date" value={form.fecha_fin} readOnly={isReadOnly()}
-              onChange={e => set('fecha_fin', e.target.value)} />
-          </div>
-        </div>
-
-        <div className="iso-form-row">
-          <div className="iso-field">
-            <label>Estado</label>
-            <select value={form.estado} disabled={isReadOnly()}
-              onChange={e => set('estado', e.target.value as EstadoObjetivo)}>
-              <option>Pendiente</option>
-              <option>En Progreso</option>
-              <option>Cumplido</option>
-              <option>No Cumplido</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="iso-modal__footer">
-          <button className="iso-btn-secondary" onClick={onClose}>Cancelar</button>
+              placeholder="Ej: Gestión de Calidad" /> </div> <div className="iso-field"> <label>Recursos necesarios</label> <input value={form.recursos} onChange={e => set('recursos', e.target.value)} readOnly={isReadOnly()} /> </div> </div> <div className="iso-form-row"> <div className="iso-field"> <label>Fecha inicio</label> <input type="date" value={form.fecha_inicio} readOnly={isReadOnly()}
+              onChange={e => set('fecha_inicio', e.target.value)} /> </div> <div className="iso-field"> <label>Fecha límite</label> <input type="date" value={form.fecha_fin} readOnly={isReadOnly()}
+              onChange={e => set('fecha_fin', e.target.value)} /> </div> </div> <div className="iso-form-row"> <div className="iso-field"> <label>Estado</label> <select value={form.estado} disabled={isReadOnly()}
+              onChange={e => set('estado', e.target.value as EstadoObjetivo)}> <option>Pendiente</option> <option>En Progreso</option> <option>Cumplido</option> <option>No Cumplido</option> </select> </div> </div> <div className="iso-modal__footer"> <button className="iso-btn-secondary" onClick={onClose}>Cancelar</button>
           {!isReadOnly() && (
             <button className="iso-btn-primary" onClick={() => onSave({ ...form, _guardado: true })}>
-              ✅ Confirmar objetivo
+              Confirmar objetivo
             </button>
           )}
-        </div>
-      </div>
-    </div>
+        </div> </div> </div>
   )
 }
 
@@ -228,67 +129,24 @@ const MedicionModal: React.FC<MedicionModalProps> = ({ objetivo, onSave, onClose
   const { isReadOnly } = usePermissions('objetivos_calidad')
 
   return (
-    <div className="iso-modal-overlay" onClick={onClose}>
-      <div className="iso-modal" onClick={e => e.stopPropagation()}>
-        <h2>📊 Registrar Medición — {objetivo.codigo}</h2>
-        <p style={{ margin: 0, fontSize: '0.82rem', color: '#6b7280' }}>{objetivo.objetivo}</p>
-        <p style={{ margin: 0, fontSize: '0.8rem', color: '#4a5e78' }}>
-          Meta: <strong>{objetivo.meta}</strong> · Frecuencia: <strong>{objetivo.frecuencia_medicion}</strong>
-        </p>
-
-        <div className="iso-form-row">
-          <div className="iso-field">
-            <label>Período *</label>
-            <input value={form.periodo} readOnly={isReadOnly()}
+    <div className="iso-modal-overlay" onClick={onClose}> <div className="iso-modal" onClick={e => e.stopPropagation()}> <h2> Registrar Medición — {objetivo.codigo}</h2> <p style={{ margin: 0, fontSize: '0.82rem', color: '#6b7280' }}>{objetivo.objetivo}</p> <p style={{ margin: 0, fontSize: '0.8rem', color: '#4a5e78' }}>
+          Meta: <strong>{objetivo.meta}</strong> · Frecuencia: <strong>{objetivo.frecuencia_medicion}</strong> </p> <div className="iso-form-row"> <div className="iso-field"> <label>Período *</label> <input value={form.periodo} readOnly={isReadOnly()}
               onChange={e => setForm(p => ({ ...p, periodo: e.target.value }))}
-              placeholder="Q1 2025, Sem-1 2025, Ene 2025..." />
-          </div>
-          <div className="iso-field">
-            <label>Valor obtenido *</label>
-            <input type="number" step="0.01" value={form.valor} readOnly={isReadOnly()}
-              onChange={e => setForm(p => ({ ...p, valor: Number(e.target.value) }))} />
-          </div>
-        </div>
-
-        <div className="iso-form-row">
-          <div className="iso-field">
-            <label>Estado *</label>
-            <select value={form.estado} disabled={isReadOnly()}
-              onChange={e => setForm(p => ({ ...p, estado: e.target.value as EstadoMedicion }))}>
-              <option>En Progreso</option>
-              <option>Cumplido</option>
-              <option>No Cumplido</option>
-            </select>
-          </div>
-          <div className="iso-field">
-            <label>Fecha</label>
-            <input type="date" value={form.fecha} readOnly={isReadOnly()}
-              onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} />
-          </div>
-        </div>
-
-        <div className="iso-form-row oc-form-row--full">
-          <div className="iso-field">
-            <label>Comentario / Evidencia</label>
-            <textarea rows={2} value={form.comentario} readOnly={isReadOnly()}
+              placeholder="Q1 2025, Sem-1 2025, Ene 2025..." /> </div> <div className="iso-field"> <label>Valor obtenido *</label> <input type="number" step="0.01" value={form.valor} readOnly={isReadOnly()}
+              onChange={e => setForm(p => ({ ...p, valor: Number(e.target.value) }))} /> </div> </div> <div className="iso-form-row"> <div className="iso-field"> <label>Estado *</label> <select value={form.estado} disabled={isReadOnly()}
+              onChange={e => setForm(p => ({ ...p, estado: e.target.value as EstadoMedicion }))}> <option>En Progreso</option> <option>Cumplido</option> <option>No Cumplido</option> </select> </div> <div className="iso-field"> <label>Fecha</label> <input type="date" value={form.fecha} readOnly={isReadOnly()}
+              onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} /> </div> </div> <div className="iso-form-row oc-form-row--full"> <div className="iso-field"> <label>Comentario / Evidencia</label> <textarea rows={2} value={form.comentario} readOnly={isReadOnly()}
               onChange={e => setForm(p => ({ ...p, comentario: e.target.value }))}
-              placeholder="Observaciones, documentos de soporte..." />
-          </div>
-        </div>
-
-        <div className="iso-modal__footer">
-          <button className="iso-btn-secondary" onClick={onClose}>Cancelar</button>
+              placeholder="Observaciones, documentos de soporte..." /> </div> </div> <div className="iso-modal__footer"> <button className="iso-btn-secondary" onClick={onClose}>Cancelar</button>
           {!isReadOnly() && (
             <button className="iso-btn-primary" onClick={() => {
               if (!form.periodo) { alert('El período es obligatorio.'); return }
               onSave(form)
             }}>
-              💾 Guardar medición
+              Guardar medición
             </button>
           )}
-        </div>
-      </div>
-    </div>
+        </div> </div> </div>
   )
 }
 
@@ -306,121 +164,52 @@ const MatrizRow: React.FC<MatrizRowProps> = ({ obj, onEdit, onDelete, onMedir })
   const { canEdit, canDelete } = usePermissions('objetivos_calidad')
 
   return (
-    <>
-      <tr
+    <> <tr
         className={`oc-matrix-row ${!obj._guardado ? 'oc-matrix-row--borrador' : ''}`}
         onClick={() => setExpanded(v => !v)}
-        title={!obj._guardado ? 'Generado automáticamente — haz clic en ✏️ para confirmar' : ''}
-      >
-        <td>
-          <div className="oc-code-cell">
-            <span className="oc-matrix__code">{obj.codigo}</span>
+        title={!obj._guardado ? 'Generado automáticamente — haz clic en  para confirmar' : ''}
+      > <td> <div className="oc-code-cell"> <span className="oc-matrix__code">{obj.codigo}</span>
             {!obj._guardado && <span className="oc-draft-tag">Borrador</span>}
-          </div>
-        </td>
-        <td>
-          <span className={`oc-tipo ${obj.tipo_fuente === 'Oportunidad' ? 'oc-tipo--oportunidad' : 'oc-tipo--riesgo'}`}>
-            {obj.tipo_fuente === 'Oportunidad' ? '🚀' : '⚠️'} {obj.tipo_fuente}
-          </span>
-        </td>
-        <td>
-          <span className={`oc-nivel ${nivel.cls}`}>{nivel.label}</span>
-        </td>
-        <td className="oc-matrix__objetivo">{obj.objetivo}</td>
-        <td className="oc-matrix__accion">{obj.accion}</td>
-        <td style={{ fontSize: '0.8rem' }}>{obj.indicador}</td>
-        <td><strong style={{ fontSize: '0.82rem' }}>{obj.meta}</strong></td>
-        <td>
-          <span className="oc-freq">{obj.frecuencia_medicion}</span>
-        </td>
-        <td style={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{obj.responsable}</td>
-        <td>
-          <span className={`oc-badge ${estadoBadge(obj.estado)}`}>{obj.estado}</span>
-        </td>
-        <td onClick={e => e.stopPropagation()}>
-          <div className="oc-matrix__actions">
+          </div> </td> <td> <span className={`oc-tipo ${obj.tipo_fuente === 'Oportunidad' ? 'oc-tipo--oportunidad' : 'oc-tipo--riesgo'}`}>
+            {obj.tipo_fuente === 'Oportunidad' ? '' : ''} {obj.tipo_fuente}
+          </span> </td> <td> <span className={`oc-nivel ${nivel.cls}`}>{nivel.label}</span> </td> <td className="oc-matrix__objetivo">{obj.objetivo}</td> <td className="oc-matrix__accion">{obj.accion}</td> <td style={{ fontSize: '0.8rem' }}>{obj.indicador}</td> <td><strong style={{ fontSize: '0.82rem' }}>{obj.meta}</strong></td> <td> <span className="oc-freq">{obj.frecuencia_medicion}</span> </td> <td style={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{obj.responsable}</td> <td> <span className={`oc-badge ${estadoBadge(obj.estado)}`}>{obj.estado}</span> </td> <td onClick={e => e.stopPropagation()}> <div className="oc-matrix__actions">
             {obj._guardado && (
               <button className="iso-btn-icon" title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : "Registrar medición"}
-                onClick={() => onMedir(obj)} disabled={!canEdit}>📊</button>
+                onClick={() => onMedir(obj)} disabled={!canEdit}></button>
             )}
             <button className="iso-btn-icon" title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : (obj._guardado ? 'Editar' : 'Revisar y confirmar')}
               onClick={() => onEdit(obj)} disabled={!canEdit}>
-              {obj._guardado ? '✏️' : '✅'}
-            </button>
-            <PermissionGuard recurso="objetivos_calidad" accion="eliminar" mode="hide">
-              <button className="iso-btn-icon danger" title="Eliminar"
-                onClick={() => onDelete(obj.codigo)}>🗑️</button>
-            </PermissionGuard>
-          </div>
-        </td>
-      </tr>
+              {obj._guardado ? '' : ''}
+            </button> <PermissionGuard recurso="objetivos_calidad" accion="eliminar" mode="hide"> <button className="iso-btn-icon danger" title="Eliminar"
+                onClick={() => onDelete(obj.codigo)}></button> </PermissionGuard> </div> </td> </tr>
 
       {expanded && (
-        <tr className="oc-expand-row">
-          <td colSpan={11}>
-            <div className="oc-expand-content">
-              <div className="oc-expand-info">
-                <div className="oc-expand-field">
-                  <span className="oc-expand-label">R/O origen (§6.1):</span>
-                  <span>{obj.fuente_riesgo_oportunidad || '—'}</span>
-                </div>
-                <div className="oc-expand-field">
-                  <span className="oc-expand-label">Cód. R/O:</span>
-                  <span className="oc-matrix__code">{obj._riesgoCodigo}</span>
-                </div>
+        <tr className="oc-expand-row"> <td colSpan={11}> <div className="oc-expand-content"> <div className="oc-expand-info"> <div className="oc-expand-field"> <span className="oc-expand-label">R/O origen (§6.1):</span> <span>{obj.fuente_riesgo_oportunidad || '—'}</span> </div> <div className="oc-expand-field"> <span className="oc-expand-label">Cód. R/O:</span> <span className="oc-matrix__code">{obj._riesgoCodigo}</span> </div>
                 {obj.proceso_relacionado && (
-                  <div className="oc-expand-field">
-                    <span className="oc-expand-label">Proceso:</span>
-                    <span>{obj.proceso_relacionado}</span>
-                  </div>
+                  <div className="oc-expand-field"> <span className="oc-expand-label">Proceso:</span> <span>{obj.proceso_relacionado}</span> </div>
                 )}
                 {obj.recursos && (
-                  <div className="oc-expand-field">
-                    <span className="oc-expand-label">Recursos:</span>
-                    <span>{obj.recursos}</span>
-                  </div>
+                  <div className="oc-expand-field"> <span className="oc-expand-label">Recursos:</span> <span>{obj.recursos}</span> </div>
                 )}
                 {(obj.fecha_inicio || obj.fecha_fin) && (
-                  <div className="oc-expand-field">
-                    <span className="oc-expand-label">Vigencia:</span>
-                    <span>{obj.fecha_inicio || '—'} → {obj.fecha_fin || '—'}</span>
-                  </div>
+                  <div className="oc-expand-field"> <span className="oc-expand-label">Vigencia:</span> <span>{obj.fecha_inicio || '—'} → {obj.fecha_fin || '—'}</span> </div>
                 )}
               </div>
 
               {obj.mediciones.length > 0 ? (
-                <div className="oc-mediciones">
-                  <h4>Historial de mediciones</h4>
-                  <table className="oc-med-table">
-                    <thead>
-                      <tr>
-                        <th>Período</th><th>Valor</th><th>Estado</th>
-                        <th>Fecha</th><th>Comentario</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                <div className="oc-mediciones"> <h4>Historial de mediciones</h4> <table className="oc-med-table"> <thead> <tr> <th>Período</th><th>Valor</th><th>Estado</th> <th>Fecha</th><th>Comentario</th> </tr> </thead> <tbody>
                       {obj.mediciones.map((m, i) => (
-                        <tr key={m.id ?? i}>
-                          <td>{m.periodo}</td>
-                          <td><strong>{m.valor}</strong></td>
-                          <td><span className={`oc-badge ${estadoBadge(m.estado)}`}>{m.estado}</span></td>
-                          <td>{m.fecha ?? '—'}</td>
-                          <td>{m.comentario ?? '—'}</td>
-                        </tr>
+                        <tr key={m.id ?? i}> <td>{m.periodo}</td> <td><strong>{m.valor}</strong></td> <td><span className={`oc-badge ${estadoBadge(m.estado)}`}>{m.estado}</span></td> <td>{m.fecha ?? '—'}</td> <td>{m.comentario ?? '—'}</td> </tr>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
+                    </tbody> </table> </div>
               ) : obj._guardado ? (
-                <p className="oc-no-med">Sin mediciones aún. Usa 📊 para registrar la primera.</p>
+                <p className="oc-no-med">Sin mediciones aún. Usa  para registrar la primera.</p>
               ) : (
                 <p className="oc-no-med">
-                  ⚠️ Este objetivo fue generado automáticamente. Haz clic en <strong>✅</strong> para revisarlo y confirmarlo.
+                   Este objetivo fue generado automáticamente. Haz clic en <strong></strong> para revisarlo y confirmarlo.
                 </p>
               )}
-            </div>
-          </td>
-        </tr>
+            </div> </td> </tr>
       )}
     </>
   )
@@ -660,20 +449,7 @@ const ObjetivosCalidadPage: React.FC = () => {
   /* ── Sin análisis IA ────────────────────────────────────────── */
   if (!analysis) {
     return (
-      <div className="iso-page oc-page">
-        <header className="iso-page__header">
-          <div className="iso-page__title-block">
-            <nav className="oc-breadcrumb">
-              <span>Governex</span><span className="oc-breadcrumb__sep">›</span>
-              <span>Cap. 6.2</span><span className="oc-breadcrumb__sep">›</span>
-              <span className="oc-breadcrumb__active">Objetivos de Calidad</span>
-            </nav>
-            <h1>Objetivos de Calidad</h1>
-            <span className="iso-page__clause">Cláusula 6.2</span>
-          </div>
-        </header>
-        <EmptyState />
-      </div>
+      <div className="iso-page oc-page"> <header className="iso-page__header"> <div className="iso-page__title-block"> <nav className="oc-breadcrumb"> <span>Governex</span><span className="oc-breadcrumb__sep">›</span> <span>Cap. 6.2</span><span className="oc-breadcrumb__sep">›</span> <span className="oc-breadcrumb__active">Objetivos de Calidad</span> </nav> <h1>Objetivos de Calidad</h1> <span className="iso-page__clause">Cláusula 6.2</span> </div> </header> <EmptyState /> </div>
     )
   }
 
@@ -681,21 +457,10 @@ const ObjetivosCalidadPage: React.FC = () => {
   return (
     <div className="iso-page oc-page">
       {/* ── Header ─────────────────────────────────────────────── */}
-      <header className="iso-page__header">
-        <div className="iso-page__title-block">
-          <nav className="oc-breadcrumb">
-            <span>Governex</span><span className="oc-breadcrumb__sep">›</span>
-            <span>Cap. 6.2</span><span className="oc-breadcrumb__sep">›</span>
-            <span className="oc-breadcrumb__active">Objetivos de Calidad</span>
-          </nav>
-          <h1>Objetivos de Calidad</h1>
-          <p>Generados automáticamente desde los Riesgos y Oportunidades §6.1 · Cláusula 6.2</p>
-          <span className="iso-page__clause">Cláusula 6.2</span>
-        </div>
-        <div className="oc-header-actions">
+      <header className="iso-page__header"> <div className="iso-page__title-block"> <nav className="oc-breadcrumb"> <span>Governex</span><span className="oc-breadcrumb__sep">›</span> <span>Cap. 6.2</span><span className="oc-breadcrumb__sep">›</span> <span className="oc-breadcrumb__active">Objetivos de Calidad</span> </nav> <h1>Objetivos de Calidad</h1> <p>Generados automáticamente desde los Riesgos y Oportunidades §6.1 · Cláusula 6.2</p> <span className="iso-page__clause">Cláusula 6.2</span> </div> <div className="oc-header-actions">
           {borradores > 0 && (
             <button className="iso-btn-primary oc-btn-confirm-all" onClick={confirmarTodos} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>
-              ✅ Confirmar todos los borradores ({borradores})
+              Confirmar todos los borradores ({borradores})
             </button>
           )}
           <button
@@ -704,106 +469,51 @@ const ObjetivosCalidadPage: React.FC = () => {
             disabled={generando || !canCreate}
             title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : "Regenerar borradores desde el análisis IA actual"}
           >
-            {generando ? '⏳ Generando...' : '🔄 Regenerar desde §6.1'}
-          </button>
-        </div>
-      </header>
+            {generando ? 'Generando...' : ' Regenerar desde §6.1'}
+          </button> </div> </header>
 
       {/* ── Banner borradores ───────────────────────────────────── */}
       {borradores > 0 && (
-        <div className="oc-banner-borrador">
-          <span className="oc-banner-borrador__icon">🤖</span>
-          <div>
-            <strong>{borradores} objetivo{borradores > 1 ? 's' : ''} generado{borradores > 1 ? 's' : ''} automáticamente</strong>
+        <div className="oc-banner-borrador"> <span className="oc-banner-borrador__icon"></span> <div> <strong>{borradores} objetivo{borradores > 1 ? 's' : ''} generado{borradores > 1 ? 's' : ''} automáticamente</strong>
             {' '}a partir de los Riesgos y Oportunidades identificados en §6.1.
-            Revisa cada uno con <strong>✅</strong> y ajusta los campos antes de confirmar,
+            Revisa cada uno con <strong></strong> y ajusta los campos antes de confirmar,
             o usa <strong>"Confirmar todos"</strong> para guardarlos directamente.
-          </div>
-        </div>
+          </div> </div>
       )}
 
       {/* ── KPIs ────────────────────────────────────────────────── */}
-      <div className="oc-kpis">
-        <KPICard value={objetivos.length} label="Total objetivos"   color="#030097" />
-        <KPICard value={confirmados}      label="Confirmados"        color="#059669" />
-        <KPICard value={borradores}       label="Borradores IA"      color="#d97706" />
-        <KPICard value={enProgreso}       label="En progreso"        color="#7c3aed" />
-        <KPICard value={cumplidos}        label="Cumplidos"          color="#065f46" />
-        <KPICard value={`${pct}%`}        label="% Cumplimiento"     color="#1e40af" />
-      </div>
+      <div className="oc-kpis"> <KPICard value={objetivos.length} label="Total objetivos"   color="#030097" /> <KPICard value={confirmados}      label="Confirmados"        color="#059669" /> <KPICard value={borradores}       label="Borradores IA"      color="#d97706" /> <KPICard value={enProgreso}       label="En progreso"        color="#7c3aed" /> <KPICard value={cumplidos}        label="Cumplidos"          color="#065f46" /> <KPICard value={`${pct}%`}        label="% Cumplimiento"     color="#1e40af" /> </div>
 
       {/* ── Info ISO ────────────────────────────────────────────── */}
-      <div className="iso-info-box">
-        <span className="iso-info-box__icon">ℹ️</span>
-        <span>
+      <div className="iso-info-box"> <span className="iso-info-box__icon">ℹ</span> <span>
           Los <strong>Objetivos de Calidad</strong> (§6.2) se generaron automáticamente
           a partir de los Riesgos y Oportunidades identificados en §6.1. Cada objetivo
           incluye <em>qué se hará</em>, <em>cómo se medirá</em>, <em>quién es responsable</em>
           y <em>con qué frecuencia</em> se evaluará. Los marcados como <strong>Borrador</strong> deben
           ser revisados y confirmados antes de su seguimiento formal.
-        </span>
-      </div>
+        </span> </div>
 
       {/* ── Filtros ─────────────────────────────────────────────── */}
-      <div className="iso-topbar">
-        <span className="iso-topbar__info">
+      <div className="iso-topbar"> <span className="iso-topbar__info">
           Mostrando <strong>{filtered.length}</strong> de <strong>{objetivos.length}</strong> objetivos
-        </span>
-        <div className="iso-topbar__actions">
-          <input className="oc-search" type="text" placeholder="🔍 Buscar..."
-            value={search} onChange={e => setSearch(e.target.value)} />
-          <select className="oc-filter-select" value={filterTipo}
-            onChange={e => setFilterTipo(e.target.value)}>
-            <option value="todos">Todos los tipos</option>
-            <option value="Riesgo">⚠️ Riesgo</option>
-            <option value="Oportunidad">🚀 Oportunidad</option>
-          </select>
-          <select className="oc-filter-select" value={filterEstado}
-            onChange={e => setFilterEstado(e.target.value)}>
-            <option value="todos">Todos los estados</option>
-            <option value="Pendiente">Pendiente</option>
-            <option value="En Progreso">En Progreso</option>
-            <option value="Cumplido">Cumplido</option>
-            <option value="No Cumplido">No Cumplido</option>
-          </select>
-          <select className="oc-filter-select" value={filterGuard}
-            onChange={e => setFilterGuard(e.target.value)}>
-            <option value="todos">Todos</option>
-            <option value="confirmado">✅ Confirmados</option>
-            <option value="borrador">📝 Borradores IA</option>
-          </select>
-        </div>
-      </div>
+        </span> <div className="iso-topbar__actions"> <input className="oc-search" type="text" placeholder=" Buscar..."
+            value={search} onChange={e => setSearch(e.target.value)} /> <select className="oc-filter-select" value={filterTipo}
+            onChange={e => setFilterTipo(e.target.value)}> <option value="todos">Todos los tipos</option> <option value="Riesgo"> Riesgo</option> <option value="Oportunidad"> Oportunidad</option> </select> <select className="oc-filter-select" value={filterEstado}
+            onChange={e => setFilterEstado(e.target.value)}> <option value="todos">Todos los estados</option> <option value="Pendiente">Pendiente</option> <option value="En Progreso">En Progreso</option> <option value="Cumplido">Cumplido</option> <option value="No Cumplido">No Cumplido</option> </select> <select className="oc-filter-select" value={filterGuard}
+            onChange={e => setFilterGuard(e.target.value)}> <option value="todos">Todos</option> <option value="confirmado">Confirmados</option> <option value="borrador"> Borradores IA</option> </select> </div> </div>
 
       {/* ── Matriz ──────────────────────────────────────────────── */}
       <div className="iso-table-wrapper oc-matrix-wrapper">
         {loadingBD ? (
           <div className="iso-empty"><div className="iso-empty__icon">⏳</div>Cargando...</div>
         ) : filtered.length === 0 ? (
-          <div className="iso-empty">
-            <div className="iso-empty__icon">🎯</div>
+          <div className="iso-empty"> <div className="iso-empty__icon"></div>
             {objetivos.length === 0
               ? 'No se generaron objetivos. Verifica que el análisis IA tenga riesgos y oportunidades.'
               : 'Ningún objetivo coincide con los filtros.'}
           </div>
         ) : (
-          <table className="iso-table oc-matrix">
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Tipo</th>
-                <th>Nivel R/O</th>
-                <th>Objetivo de Calidad</th>
-                <th>Cómo (Acción)</th>
-                <th>Indicador</th>
-                <th>Meta</th>
-                <th>Frecuencia</th>
-                <th>Responsable</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
+          <table className="iso-table oc-matrix"> <thead> <tr> <th>Código</th> <th>Tipo</th> <th>Nivel R/O</th> <th>Objetivo de Calidad</th> <th>Cómo (Acción)</th> <th>Indicador</th> <th>Meta</th> <th>Frecuencia</th> <th>Responsable</th> <th>Estado</th> <th>Acciones</th> </tr> </thead> <tbody>
               {filtered.map(obj => (
                 <MatrizRow
                   key={obj.codigo}
@@ -813,8 +523,7 @@ const ObjetivosCalidadPage: React.FC = () => {
                   onMedir={o => setMedirItem(o)}
                 />
               ))}
-            </tbody>
-          </table>
+            </tbody> </table>
         )}
       </div>
 

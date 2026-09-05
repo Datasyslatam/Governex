@@ -17,8 +17,7 @@ const Card: React.FC<CardProps> = ({ title, subtitle, children, className = "" }
           {subtitle && <span className="ui-card__subtitle">{subtitle}</span>}
         </header>
       )}
-      <div className="ui-card__body">{children}</div>
-    </section>
+      <div className="ui-card__body">{children}</div> </section>
   );
 };
 

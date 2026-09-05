@@ -114,92 +114,40 @@ const TenantDetailModal: React.FC<Props> = ({ tenantId, onClose, onUpdated }) =>
   }
 
   return (
-    <div className="tdm-overlay" onClick={onClose}>
-      <div className="tdm-modal" onClick={e => e.stopPropagation()}>
-        <button className="tdm-close" onClick={onClose} aria-label="Cerrar">×</button>
+    <div className="tdm-overlay" onClick={onClose}> <div className="tdm-modal" onClick={e => e.stopPropagation()}> <button className="tdm-close" onClick={onClose} aria-label="Cerrar">×</button>
 
         {loading || !detail ? (
           <p>Cargando...</p>
         ) : (
-          <>
-            <h2>{detail.tenant.nombre}</h2>
-            <p className="tdm-subtitle">Tenant #{detail.tenant.id} · Creado el {new Date(detail.tenant.fecha_creacion).toLocaleDateString()}</p>
-
-            <section className="tdm-section">
-              <h3>Datos generales</h3>
-              <div className="tdm-form-grid">
-                <label>
+          <> <h2>{detail.tenant.nombre}</h2> <p className="tdm-subtitle">Tenant #{detail.tenant.id} · Creado el {new Date(detail.tenant.fecha_creacion).toLocaleDateString()}</p> <section className="tdm-section"> <h3>Datos generales</h3> <div className="tdm-form-grid"> <label>
                   Nombre de la empresa
-                  <input value={nombre} onChange={e => setNombre(e.target.value)} />
-                </label>
-                <label>
+                  <input value={nombre} onChange={e => setNombre(e.target.value)} /> </label> <label>
                   NIT
-                  <input value={nit} onChange={e => setNit(e.target.value)} />
-                </label>
-                <label>
+                  <input value={nit} onChange={e => setNit(e.target.value)} /> </label> <label>
                   Plan
-                  <select value={plan} onChange={e => setPlan(e.target.value as TenantSummary['plan'])}>
-                    <option value="Standard">Standard</option>
-                    <option value="Pro">Pro</option>
-                    <option value="Enterprise">Enterprise</option>
-                  </select>
-                </label>
-              </div>
-              <button className="tdm-btn-primary" onClick={handleSave} disabled={saving}>
+                  <select value={plan} onChange={e => setPlan(e.target.value as TenantSummary['plan'])}> <option value="Standard">Standard</option> <option value="Pro">Pro</option> <option value="Enterprise">Enterprise</option> </select> </label> </div> <button className="tdm-btn-primary" onClick={handleSave} disabled={saving}>
                 {saving ? 'Guardando...' : 'Guardar cambios'}
-              </button>
-            </section>
-
-            <section className="tdm-section">
-              <h3>Usuarios ({detail.usuarios.length})</h3>
-              <table className="tdm-table">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Email</th>
-                    <th>Rol</th>
-                    <th>Estado</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
+              </button> </section> <section className="tdm-section"> <h3>Usuarios ({detail.usuarios.length})</h3> <table className="tdm-table"> <thead> <tr> <th>Nombre</th> <th>Email</th> <th>Rol</th> <th>Estado</th> <th></th> </tr> </thead> <tbody>
                   {detail.usuarios.map(u => (
-                    <tr key={u.id}>
-                      <td>{u.nombre}</td>
-                      <td>{u.email}</td>
-                      <td>{u.rol_nombre}</td>
-                      <td>
-                        <span className={`tdm-badge tdm-badge--${u.activo ? 'activo' : 'inactivo'}`}>
+                    <tr key={u.id}> <td>{u.nombre}</td> <td>{u.email}</td> <td>{u.rol_nombre}</td> <td> <span className={`tdm-badge tdm-badge--${u.activo ? 'activo' : 'inactivo'}`}>
                           {u.activo ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="tdm-actions-cell">
-                          <button
+                        </span> </td> <td> <div className="tdm-actions-cell"> <button
                             className="tdm-btn-link"
                             onClick={() => handleImpersonate(u.id, u.nombre, u.email)}
                             disabled={!u.activo}
                             title={!u.activo ? 'Usuario inactivo' : undefined}
                           >
                             Ver como este usuario
-                          </button>
-                          <button className="tdm-btn-link" onClick={() => handleResetPassword(u.id, u.email)}>
+                          </button> <button className="tdm-btn-link" onClick={() => handleResetPassword(u.id, u.email)}>
                             Resetear contraseña
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                          </button> </div> </td> </tr>
                   ))}
                   {detail.usuarios.length === 0 && (
                     <tr><td colSpan={5}>Este tenant todavía no tiene usuarios.</td></tr>
                   )}
-                </tbody>
-              </table>
-            </section>
-          </>
+                </tbody> </table> </section> </>
         )}
-      </div>
-    </div>
+      </div> </div>
   )
 }
 

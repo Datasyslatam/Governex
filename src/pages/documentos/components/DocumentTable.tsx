@@ -39,39 +39,18 @@ const rows: DocumentRow[] = [
 
 const DocumentTable: React.FC = () => {
   return (
-    <table className="document-table">
-      <thead>
-        <tr>
-          <th>Código</th>
-          <th>Título del Documento</th>
-          <th>Tipo</th>
-          <th>Proceso</th>
-          <th>Versión</th>
-          <th>Estado</th>
-        </tr>
-      </thead>
-      <tbody>
+    <table className="document-table"> <thead> <tr> <th>Código</th> <th>Título del Documento</th> <th>Tipo</th> <th>Proceso</th> <th>Versión</th> <th>Estado</th> </tr> </thead> <tbody>
         {rows.map((d, idx) => (
           <tr
             key={d.code}
             className={idx % 2 === 0 ? "document-table__row--alt" : ""}
-          >
-            <td className="document-table__code">{d.code}</td>
-            <td>{d.title}</td>
-            <td>{d.type}</td>
-            <td>{d.process}</td>
-            <td>{d.version}</td>
-            <td>
-              <span
+          > <td className="document-table__code">{d.code}</td> <td>{d.title}</td> <td>{d.type}</td> <td>{d.process}</td> <td>{d.version}</td> <td> <span
                 className={`document-table__status document-table__status--${d.status.replace(/\s+/g, "-")}`}
               >
                 {d.status}
-              </span>
-            </td>
-          </tr>
+              </span> </td> </tr>
         ))}
-      </tbody>
-    </table>
+      </tbody> </table>
   );
 };
 

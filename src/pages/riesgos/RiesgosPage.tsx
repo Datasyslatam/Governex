@@ -46,23 +46,12 @@ interface RiesgoOverride {
 
 /* ── Pantalla vacía ─────────────────────────────────────────── */
 const EmptyState: React.FC = () => (
-  <div className="riesgos-empty-state">
-    <div className="riesgos-empty-state__icon">🔍</div>
-    <h3>No hay análisis disponible</h3>
-    <p>
+  <div className="riesgos-empty-state"> <div className="riesgos-empty-state__icon"></div> <h3>No hay análisis disponible</h3> <p>
       Para generar la Matriz de Riesgos y Oportunidades, primero debes completar el
       análisis con IA en el módulo <strong>"Contexto de la Organización"</strong>.
-    </p>
-    <ol className="riesgos-empty-state__steps">
-      <li>Ve al módulo <strong>Contexto de la Organización</strong> (§4 — Mapa de Procesos)</li>
-      <li>Construye o carga el mapa de procesos de tu organización</li>
-      <li>Haz clic en <strong>"Guardar y Analizar con IA"</strong></li>
-      <li>Regresa a este módulo para ver la matriz generada automáticamente</li>
-    </ol>
-    <a href="/procesos" className="riesgos-empty-cta">
+    </p> <ol className="riesgos-empty-state__steps"> <li>Ve al módulo <strong>Contexto de la Organización</strong> (§4 — Mapa de Procesos)</li> <li>Construye o carga el mapa de procesos de tu organización</li> <li>Haz clic en <strong>"Guardar y Analizar con IA"</strong></li> <li>Regresa a este módulo para ver la matriz generada automáticamente</li> </ol> <a href="/procesos" className="riesgos-empty-cta">
       Ir a Contexto de la Organización →
-    </a>
-  </div>
+    </a> </div>
 )
 
 /* ── Columna: Descripción desplegable ────────────────────────── */
@@ -81,18 +70,15 @@ const DescripcionCell: React.FC<DescripcionCellProps> = ({ texto }) => {
   }
 
   return (
-    <div className="risk-table__desc-wrap">
-      <span className="risk-table__desc-text">
+    <div className="risk-table__desc-wrap"> <span className="risk-table__desc-text">
         {expanded ? texto : `${texto.slice(0, MAX_CHARS)}…`}
-      </span>
-      <button
+      </span> <button
         className="risk-table__desc-toggle"
         onClick={() => setExpanded(prev => !prev)}
         title={expanded ? 'Colapsar' : 'Ver descripción completa'}
       >
         {expanded ? '▲ Ver menos' : '▼ Ver más'}
-      </button>
-    </div>
+      </button> </div>
   )
 }
 
@@ -104,15 +90,12 @@ interface AccionesCellProps {
 const AccionesCell: React.FC<AccionesCellProps> = ({ acciones, tipo }) => {
   const colorClass = tipo === 'Riesgo' ? 'risk-table__pill--mitigar' : 'risk-table__pill--aprovechar'
   const prefix     = tipo === 'Riesgo'
-    ? acciones.startsWith('ACCIÓN INMEDIATA') ? '🔴 ' : acciones.startsWith('PRIORITARIO') ? '🟠 ' : '🟡 '
-    : '🟢 '
+    ? acciones.startsWith('ACCIÓN INMEDIATA') ? ' ' : acciones.startsWith('PRIORITARIO') ? ' ' : ' '
+    : ' '
   return (
-    <div className="risk-table__acciones-cell">
-      <span className={`risk-table__pill ${colorClass}`}>
-        <span className="risk-table__pill-prefix">{prefix}</span>
+    <div className="risk-table__acciones-cell"> <span className={`risk-table__pill ${colorClass}`}> <span className="risk-table__pill-prefix">{prefix}</span>
         {acciones.replace(/^(ACCIÓN INMEDIATA|PRIORITARIO): /, '')}
-      </span>
-    </div>
+      </span> </div>
   )
 }
 
@@ -168,21 +151,20 @@ const EvidenciasCell: React.FC<EvidenciasCellProps> = ({ riesgoCodigo, evidencia
   const isImage = (f: EvidenciaFile) => f.type.startsWith('image/')
 
   const fileIcon = (f: EvidenciaFile) => {
-    if (f.type.startsWith('image/'))       return '🖼️'
-    if (f.type.includes('pdf'))            return '📄'
-    if (f.type.includes('word') || f.name.endsWith('.docx') || f.name.endsWith('.doc')) return '📝'
-    if (f.type.includes('sheet') || f.name.endsWith('.xlsx') || f.name.endsWith('.xls')) return '📊'
-    if (f.type.includes('presentation') || f.name.endsWith('.pptx')) return '📑'
-    if (f.type.includes('zip') || f.name.endsWith('.zip')) return '🗜️'
-    return '📎'
+    if (f.type.startsWith('image/'))       return ''
+    if (f.type.includes('pdf'))            return ''
+    if (f.type.includes('word') || f.name.endsWith('.docx') || f.name.endsWith('.doc')) return ''
+    if (f.type.includes('sheet') || f.name.endsWith('.xlsx') || f.name.endsWith('.xls')) return ''
+    if (f.type.includes('presentation') || f.name.endsWith('.pptx')) return ''
+    if (f.type.includes('zip') || f.name.endsWith('.zip')) return ''
+    return ''
   }
 
   const fmtSize = (b: number) =>
     b < 1024 ? `${b} B` : b < 1024*1024 ? `${(b/1024).toFixed(1)} KB` : `${(b/1024/1024).toFixed(1)} MB`
 
   return (
-    <div className="ev-cell">
-      <div
+    <div className="ev-cell"> <div
         className="ev-dropzone"
         onClick={canEdit ? (() => !uploading && inputRef.current?.click()) : undefined}
         style={{ cursor: canEdit ? 'pointer' : 'default' }}
@@ -194,13 +176,9 @@ const EvidenciasCell: React.FC<EvidenciasCellProps> = ({ riesgoCodigo, evidencia
           e.currentTarget.classList.remove('ev-dropzone--over')
           handleFiles(e.dataTransfer.files)
         }}
-      >
-        <span className="ev-dropzone__icon">{uploading ? '⏳' : '📎'}</span>
-        <span className="ev-dropzone__label">
+      > <span className="ev-dropzone__icon">{uploading ? '⏳' : ''}</span> <span className="ev-dropzone__label">
           {uploading ? 'Subiendo...' : evidencias.length === 0 ? 'Adjuntar evidencias' : '+  Añadir más'}
-        </span>
-      </div>
-      <input
+        </span> </div> <input
         ref={inputRef}
         type="file"
         multiple
@@ -218,24 +196,13 @@ const EvidenciasCell: React.FC<EvidenciasCellProps> = ({ riesgoCodigo, evidencia
               ) : (
                 <a href={f.dataUrl} target="_blank" rel="noreferrer" className="ev-item__icon" title={f.name}>{fileIcon(f)}</a>
               )}
-              <div className="ev-item__meta">
-                <span className="ev-item__name" title={f.name}>{f.name}</span>
-                <span className="ev-item__info">{fmtSize(f.size)} · {f.uploadedAt}</span>
-              </div>
-              <button className="ev-item__remove" onClick={() => removeFile(f.id)} title={canEdit ? "Quitar" : "Tu rol no tiene permiso para editar"} disabled={!canEdit}>✕</button>
-            </li>
+              <div className="ev-item__meta"> <span className="ev-item__name" title={f.name}>{f.name}</span> <span className="ev-item__info">{fmtSize(f.size)} · {f.uploadedAt}</span> </div> <button className="ev-item__remove" onClick={() => removeFile(f.id)} title={canEdit ? "Quitar" : "Tu rol no tiene permiso para editar"} disabled={!canEdit}></button> </li>
           ))}
         </ul>
       )}
 
       {preview && (
-        <div className="ev-preview-overlay" onClick={() => setPreview(null)}>
-          <div className="ev-preview-modal" onClick={e => e.stopPropagation()}>
-            <button className="ev-preview-close" onClick={() => setPreview(null)}>✕</button>
-            <img src={preview.dataUrl} alt={preview.name} className="ev-preview-img" />
-            <span className="ev-preview-name">{preview.name}</span>
-          </div>
-        </div>
+        <div className="ev-preview-overlay" onClick={() => setPreview(null)}> <div className="ev-preview-modal" onClick={e => e.stopPropagation()}> <button className="ev-preview-close" onClick={() => setPreview(null)}></button> <img src={preview.dataUrl} alt={preview.name} className="ev-preview-img" /> <span className="ev-preview-name">{preview.name}</span> </div> </div>
       )}
     </div>
   )
@@ -274,14 +241,9 @@ const EficaciaCell: React.FC<EficaciaCellProps> = ({ value, onChange }) => {
   }
 
   return (
-    <div className="ef-cell">
-      <div className="ef-bar-wrap" title={`${value}% — ${eficaciaLabel(value)}`}>
-        <div className={`ef-bar ef-bar--${variant}`} style={{ width: `${value}%` }} />
-      </div>
-      <div className="ef-footer">
+    <div className="ef-cell"> <div className="ef-bar-wrap" title={`${value}% — ${eficaciaLabel(value)}`}> <div className={`ef-bar ef-bar--${variant}`} style={{ width: `${value}%` }} /> </div> <div className="ef-footer">
         {editing ? (
-          <div className="ef-editor">
-            <input
+          <div className="ef-editor"> <input
               type="number"
               min={0} max={100}
               value={draft}
@@ -293,9 +255,7 @@ const EficaciaCell: React.FC<EficaciaCellProps> = ({ value, onChange }) => {
                 if (e.key === 'Enter') commit(draft)
                 if (e.key === 'Escape') setEditing(false)
               }}
-            />
-            <span className="ef-pct-label">%</span>
-          </div>
+            /> <span className="ef-pct-label">%</span> </div>
         ) : (
           <button
             className={`ef-badge ef-badge--${variant}`}
@@ -306,8 +266,7 @@ const EficaciaCell: React.FC<EficaciaCellProps> = ({ value, onChange }) => {
             {value}% · {eficaciaLabel(value)}
           </button>
         )}
-      </div>
-    </div>
+      </div> </div>
   )
 }
 
@@ -474,211 +433,77 @@ const RiesgosPage: React.FC = () => {
   const enTratamiento      = riesgosFinal.filter(r => r.estado === 'TRATAMIENTO').length
 
   if (!analysis) return (
-    <div className="page riesgos-page">
-      <header className="page__header riesgos-page__header">
-        <div className="riesgos-page__header-left">
-          <nav className="riesgos-page__breadcrumb">
-            <span>Governex</span><span className="riesgos-page__bc-sep">›</span>
-            <span>Cap. 6.1</span><span className="riesgos-page__bc-sep">›</span>
-            <span className="riesgos-page__breadcrumb-active">Pensamiento basado en riesgos</span>
-          </nav>
-          <h2>Matriz de Riesgos y Oportunidades</h2>
-        </div>
-      </header>
-      <EmptyState />
-    </div>
+    <div className="page riesgos-page"> <header className="page__header riesgos-page__header"> <div className="riesgos-page__header-left"> <nav className="riesgos-page__breadcrumb"> <span>Governex</span><span className="riesgos-page__bc-sep">›</span> <span>Cap. 6.1</span><span className="riesgos-page__bc-sep">›</span> <span className="riesgos-page__breadcrumb-active">Pensamiento basado en riesgos</span> </nav> <h2>Matriz de Riesgos y Oportunidades</h2> </div> </header> <EmptyState /> </div>
   )
 
   return (
-    <div className="page riesgos-page">
-      <header className="page__header riesgos-page__header">
-        <div className="riesgos-page__header-left">
-          <nav className="riesgos-page__breadcrumb">
-            <span>Governex</span><span className="riesgos-page__bc-sep">›</span>
-            <span>Cap. 6.1</span><span className="riesgos-page__bc-sep">›</span>
-            <span className="riesgos-page__breadcrumb-active">Pensamiento basado en riesgos</span>
-          </nav>
-          <h2>Matriz de Riesgos y Oportunidades</h2>
-          <span className="riesgos-page__ai-badge">
-            ✨ Generado con IA · {riesgosFinal.length} elementos identificados
-          </span>
-        </div>
-      </header>
+    <div className="page riesgos-page"> <header className="page__header riesgos-page__header"> <div className="riesgos-page__header-left"> <nav className="riesgos-page__breadcrumb"> <span>Governex</span><span className="riesgos-page__bc-sep">›</span> <span>Cap. 6.1</span><span className="riesgos-page__bc-sep">›</span> <span className="riesgos-page__breadcrumb-active">Pensamiento basado en riesgos</span> </nav> <h2>Matriz de Riesgos y Oportunidades</h2> <span className="riesgos-page__ai-badge">
+            Generado con IA · {riesgosFinal.length} elementos identificados
+          </span> </div> </header>
 
       {/* KPIs */}
-      <div className="riesgos-kpis">
-        <div className="riesgos-kpi riesgos-kpi--risk">
-          <span className="riesgos-kpi__value">{totalRiesgos}</span>
-          <span className="riesgos-kpi__label">Riesgos identificados</span>
-        </div>
-        <div className="riesgos-kpi riesgos-kpi--critical">
-          <span className="riesgos-kpi__value">{criticos}</span>
-          <span className="riesgos-kpi__label">Riesgos críticos</span>
-        </div>
-        <div className="riesgos-kpi riesgos-kpi--treatment">
-          <span className="riesgos-kpi__value">{enTratamiento}</span>
-          <span className="riesgos-kpi__label">En tratamiento</span>
-        </div>
-        <div className="riesgos-kpi riesgos-kpi--opportunity">
-          <span className="riesgos-kpi__value">{totalOportunidades}</span>
-          <span className="riesgos-kpi__label">Oportunidades</span>
-        </div>
+      <div className="riesgos-kpis"> <div className="riesgos-kpi riesgos-kpi--risk"> <span className="riesgos-kpi__value">{totalRiesgos}</span> <span className="riesgos-kpi__label">Riesgos identificados</span> </div> <div className="riesgos-kpi riesgos-kpi--critical"> <span className="riesgos-kpi__value">{criticos}</span> <span className="riesgos-kpi__label">Riesgos críticos</span> </div> <div className="riesgos-kpi riesgos-kpi--treatment"> <span className="riesgos-kpi__value">{enTratamiento}</span> <span className="riesgos-kpi__label">En tratamiento</span> </div> <div className="riesgos-kpi riesgos-kpi--opportunity"> <span className="riesgos-kpi__value">{totalOportunidades}</span> <span className="riesgos-kpi__label">Oportunidades</span> </div>
         {actividades.length > 0 && (
-          <div className="riesgos-kpi" style={{ borderLeft: '3px solid #7c3aed' }}>
-            <span className="riesgos-kpi__value" style={{ color: '#7c3aed' }}>
+          <div className="riesgos-kpi" style={{ borderLeft: '3px solid #7c3aed' }}> <span className="riesgos-kpi__value" style={{ color: '#7c3aed' }}>
               {riesgosFinal.filter(r => r.fuente === 'ACTIVIDAD').length}
-            </span>
-            <span className="riesgos-kpi__label">De Actividades §4.1</span>
-          </div>
+            </span> <span className="riesgos-kpi__label">De Actividades §4.1</span> </div>
         )}
-      </div>
-
-      <main className="riesgos-page__main">
+      </div> <main className="riesgos-page__main">
         {/* Panel izq: Mapa de calor + Barras */}
-        <div className="riesgos-page__panel riesgos-page__panel--left">
-          <div className="riesgos-page__section-header">
-            <div>
-              <h3 className="riesgos-page__section-title">Mapa de Calor de Riesgos</h3>
-              <span className="riesgos-page__section-subtitle">
+        <div className="riesgos-page__panel riesgos-page__panel--left"> <div className="riesgos-page__section-header"> <div> <h3 className="riesgos-page__section-title">Mapa de Calor de Riesgos</h3> <span className="riesgos-page__section-subtitle">
                 Posición actual · {riesgosFinal.filter(r => r.tipo === 'Riesgo').length} riesgos mapeados
-              </span>
-            </div>
-          </div>
-          <div className="riesgos-page__heatmap-wrap">
-            <RiskHeatmap riesgos={riesgosFinal} />
-          </div>
-          <div className="riesgos-page__divider" />
-          <h3 className="riesgos-page__section-title">Riesgos por Nivel de Criticidad</h3>
-          <RiskSummaryBars riesgos={riesgosFinal} />
-        </div>
+              </span> </div> </div> <div className="riesgos-page__heatmap-wrap"> <RiskHeatmap riesgos={riesgosFinal} /> </div> <div className="riesgos-page__divider" /> <h3 className="riesgos-page__section-title">Riesgos por Nivel de Criticidad</h3> <RiskSummaryBars riesgos={riesgosFinal} /> </div>
 
         {/* Panel der: Tabla */}
-        <div className="riesgos-page__panel riesgos-page__panel--right">
-          <div className="riesgos-page__section-header">
-            <div>
-              <h3 className="riesgos-page__section-title">Registro de Riesgos y Oportunidades</h3>
-              <span className="riesgos-page__section-subtitle">
+        <div className="riesgos-page__panel riesgos-page__panel--right"> <div className="riesgos-page__section-header"> <div> <h3 className="riesgos-page__section-title">Registro de Riesgos y Oportunidades</h3> <span className="riesgos-page__section-subtitle">
                 {riesgosFinal.filter(r => confirmados[r.codigo]).length} confirmados en BD · {riesgosFinal.filter(r => !confirmados[r.codigo]).length} borradores
-              </span>
-            </div>
-            <button
+              </span> </div> <button
               className="iso-btn-secondary"
               disabled={!canCreate || confirmandoTodos || riesgosFinal.every(r => confirmados[r.codigo])}
               title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : undefined}
               onClick={confirmarTodos}
             >
-              {confirmandoTodos ? 'Guardando...' : '✅ Confirmar todos los borradores'}
-            </button>
-          </div>
+              {confirmandoTodos ? 'Guardando...' : 'Confirmar todos los borradores'}
+            </button> </div>
 
           {/* Filtros */}
-          <div className="riesgos-filters">
-            <input
+          <div className="riesgos-filters"> <input
               className="riesgos-filter-input"
               type="text"
-              placeholder="🔍 Buscar..."
+              placeholder=" Buscar..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-            />
-            <select className="riesgos-filter-select" value={filterTipo} onChange={e => setFilterTipo(e.target.value as any)}>
-              <option value="todos">Todos los tipos</option>
-              <option value="Riesgo">Solo Riesgos</option>
-              <option value="Oportunidad">Solo Oportunidades</option>
-            </select>
-            <select className="riesgos-filter-select" value={filterNivel} onChange={e => setFilterNivel(e.target.value as any)}>
-              <option value="todos">Todos los estados</option>
-              <option value="CRITICO">Crítico</option>
-              <option value="TRATAMIENTO">En tratamiento</option>
-              <option value="MONITOREO">Monitoreo</option>
-            </select>
-            <select className="riesgos-filter-select" value={filterFuente} onChange={e => setFilterFuente(e.target.value as any)}>
-              <option value="todos">Todas las fuentes</option>
-              <option value="PESTEL">Solo PESTEL</option>
-              <option value="DOFA">Solo DOFA</option>
-              <option value="ACTIVIDAD">Solo Actividades (§4.1)</option>
-              <option value="PLANIFICACION">Solo Planificación (§8.1)</option>
-            </select>
-          </div>
-
-          <div className="riesgos-page__table-wrap">
-            <table className="risk-table">
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Tipo</th>
-                  <th>Fuente</th>
-                  <th>Descripción</th>
-                  <th>Categoría</th>
-                  <th>P</th>
-                  <th>I</th>
-                  <th>Nivel</th>
-                  <th>Estado</th>
-                  <th>Responsable</th>
-                  <th className="risk-table__th--acciones">
+            /> <select className="riesgos-filter-select" value={filterTipo} onChange={e => setFilterTipo(e.target.value as any)}> <option value="todos">Todos los tipos</option> <option value="Riesgo">Solo Riesgos</option> <option value="Oportunidad">Solo Oportunidades</option> </select> <select className="riesgos-filter-select" value={filterNivel} onChange={e => setFilterNivel(e.target.value as any)}> <option value="todos">Todos los estados</option> <option value="CRITICO">Crítico</option> <option value="TRATAMIENTO">En tratamiento</option> <option value="MONITOREO">Monitoreo</option> </select> <select className="riesgos-filter-select" value={filterFuente} onChange={e => setFilterFuente(e.target.value as any)}> <option value="todos">Todas las fuentes</option> <option value="PESTEL">Solo PESTEL</option> <option value="DOFA">Solo DOFA</option> <option value="ACTIVIDAD">Solo Actividades (§4.1)</option> <option value="PLANIFICACION">Solo Planificación (§8.1)</option> </select> </div> <div className="riesgos-page__table-wrap"> <table className="risk-table"> <thead> <tr> <th>Código</th> <th>Tipo</th> <th>Fuente</th> <th>Descripción</th> <th>Categoría</th> <th>P</th> <th>I</th> <th>Nivel</th> <th>Estado</th> <th>Responsable</th> <th className="risk-table__th--acciones">
                     Acciones
-                    <span className="risk-table__th-sub">Mitigación · Aprovechamiento</span>
-                  </th>
-                  <th className="risk-table__th--evidencias">
+                    <span className="risk-table__th-sub">Mitigación · Aprovechamiento</span> </th> <th className="risk-table__th--evidencias">
                     Indicador de seguimiento
-                    <span className="risk-table__th-sub">Evidencias de ejecución</span>
-                  </th>
-                  <th className="risk-table__th--eficacia">
+                    <span className="risk-table__th-sub">Evidencias de ejecución</span> </th> <th className="risk-table__th--eficacia">
                     Eficacia del control
-                    <span className="risk-table__th-sub">% de avance</span>
-                  </th>
-                  <th className="risk-table__th--bd">BD</th>
-                </tr>
-              </thead>
-              <tbody>
+                    <span className="risk-table__th-sub">% de avance</span> </th> <th className="risk-table__th--bd">BD</th> </tr> </thead> <tbody>
                 {riesgosFiltrados.map(r => {
                   const ov = overrides[r.codigo] ?? {}
                   const estaConfirmado = !!confirmados[r.codigo]
                   const estaGuardando  = !!guardando[r.codigo]
                   return (
                     <tr key={r.codigo} className={!estaConfirmado ? 'risk-table__row--borrador' : undefined}
-                        title={!estaConfirmado ? 'Generado automáticamente — aún no se ha guardado en la base de datos' : undefined}>
-                      <td className="risk-table__code">{r.codigo}</td>
-                      <td>
-                        <span className={`risk-table__tipo risk-table__tipo--${r.tipo === 'Riesgo' ? 'riesgo' : 'oportunidad'}`}>
-                          {r.tipo === 'Riesgo' ? '⚠️ Riesgo' : '🚀 Oport.'}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`risk-table__fuente risk-table__fuente--${(r.fuente || '').toLowerCase()}`}>
+                        title={!estaConfirmado ? 'Generado automáticamente — aún no se ha guardado en la base de datos' : undefined}> <td className="risk-table__code">{r.codigo}</td> <td> <span className={`risk-table__tipo risk-table__tipo--${r.tipo === 'Riesgo' ? 'riesgo' : 'oportunidad'}`}>
+                          {r.tipo === 'Riesgo' ? ' Riesgo' : ' Oport.'}
+                        </span> </td> <td> <span className={`risk-table__fuente risk-table__fuente--${(r.fuente || '').toLowerCase()}`}>
                           {r.fuente}
-                        </span>
-                      </td>
+                        </span> </td>
 
                       {/* ── Descripción desplegable ── */}
-                      <td className="risk-table__desc">
-                        <DescripcionCell texto={r.descripcion} />
-                      </td>
-
-                      <td className="risk-table__cat">{r.categoria}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 600 }}>{r.probabilidad}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 600 }}>{r.impacto}</td>
-                      <td>
-                        <span className={`risk-table__level risk-table__level--${getLevelVariant(r.nivel)}`}>
+                      <td className="risk-table__desc"> <DescripcionCell texto={r.descripcion} /> </td> <td className="risk-table__cat">{r.categoria}</td> <td style={{ textAlign: 'center', fontWeight: 600 }}>{r.probabilidad}</td> <td style={{ textAlign: 'center', fontWeight: 600 }}>{r.impacto}</td> <td> <span className={`risk-table__level risk-table__level--${getLevelVariant(r.nivel)}`}>
                           {r.nivel} — {getLevelLabel(r.nivel)}
-                        </span>
-                      </td>
-                      <td>
-                        <select
+                        </span> </td> <td> <select
                           className={`risk-table__estado-select risk-table__estado-select--${(r.estado || '').toLowerCase()}`}
                           value={r.estado}
                           onChange={e => changeEstado(r.codigo, e.target.value as RiesgoDerivado['estado'])}
                           disabled={!canEdit}
                           title={!canEdit ? 'Tu rol no tiene permiso para editar' : undefined}
-                        >
-                          <option value="MONITOREO">MONITOREO</option>
-                          <option value="TRATAMIENTO">TRATAMIENTO</option>
-                          <option value="CRITICO">CRÍTICO</option>
-                        </select>
-                      </td>
-                      <td>
+                        > <option value="MONITOREO">MONITOREO</option> <option value="TRATAMIENTO">TRATAMIENTO</option> <option value="CRITICO">CRÍTICO</option> </select> </td> <td>
                         {editingId === r.codigo ? (
-                          <div className="risk-table__edit-cell">
-                            <input
+                          <div className="risk-table__edit-cell"> <input
                               autoFocus
                               value={editValue}
                               onChange={e => setEditValue(e.target.value)}
@@ -686,10 +511,7 @@ const RiesgosPage: React.FC = () => {
                                 if (e.key === 'Enter') saveEdit(r.codigo)
                                 if (e.key === 'Escape') setEditingId(null)
                               }}
-                            />
-                            <button onClick={() => saveEdit(r.codigo)} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}>✔</button>
-                            <button onClick={() => setEditingId(null)}>✕</button>
-                          </div>
+                            /> <button onClick={() => saveEdit(r.codigo)} disabled={!canEdit} title={!canEdit ? 'Tu rol no tiene permiso para esta acción' : undefined}></button> <button onClick={() => setEditingId(null)}></button> </div>
                         ) : (
                           <span
                             className="risk-table__responsable"
@@ -700,28 +522,17 @@ const RiesgosPage: React.FC = () => {
                             {r.responsable}
                           </span>
                         )}
-                      </td>
-
-                      <td className="risk-table__td--acciones">
-                        <AccionesCell acciones={r.acciones} tipo={r.tipo} />
-                      </td>
-                      <td className="risk-table__td--evidencias">
-                        <EvidenciasCell
+                      </td> <td className="risk-table__td--acciones"> <AccionesCell acciones={r.acciones} tipo={r.tipo} /> </td> <td className="risk-table__td--evidencias"> <EvidenciasCell
                           riesgoCodigo={r.codigo}
                           evidencias={ov.evidencias ?? []}
                           onChange={files => setOverride(r.codigo, { evidencias: files })}
-                        />
-                      </td>
-                      <td className="risk-table__td--eficacia">
-                        <EficaciaCell
+                        /> </td> <td className="risk-table__td--eficacia"> <EficaciaCell
                           value={ov.eficacia ?? 0}
                           onChange={v => setOverride(r.codigo, { eficacia: v })}
-                        />
-                      </td>
-                      <td className="risk-table__td--bd" style={{ textAlign: 'center' }}>
+                        /> </td> <td className="risk-table__td--bd" style={{ textAlign: 'center' }}>
                         {estaConfirmado ? (
                           <span className="risk-table__bd-badge risk-table__bd-badge--ok" title="Guardado en la base de datos">
-                            ✅ Confirmado
+                            Confirmado
                           </span>
                         ) : (
                           <button
@@ -730,30 +541,20 @@ const RiesgosPage: React.FC = () => {
                             onClick={() => confirmarRiesgo(r)}
                             title={!canCreate ? 'Tu rol no tiene permiso para esta acción' : "Guardar este riesgo/oportunidad en la base de datos"}
                           >
-                            {estaGuardando ? '⏳' : '💾 Confirmar'}
+                            {estaGuardando ? '⏳' : ' Confirmar'}
                           </button>
                         )}
-                      </td>
-                    </tr>
+                      </td> </tr>
                   )
                 })}
                 {riesgosFiltrados.length === 0 && (
-                  <tr>
-                    <td colSpan={14} style={{ textAlign: 'center', padding: '2rem', opacity: 0.5 }}>
+                  <tr> <td colSpan={14} style={{ textAlign: 'center', padding: '2rem', opacity: 0.5 }}>
                       No hay elementos que coincidan con los filtros
-                    </td>
-                  </tr>
+                    </td> </tr>
                 )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="riesgos-table-footer">
+              </tbody> </table> </div> <div className="riesgos-table-footer">
             Mostrando <strong>{riesgosFiltrados.length}</strong> de <strong>{riesgosFinal.length}</strong> elementos
-          </div>
-        </div>
-      </main>
-    </div>
+          </div> </div> </main> </div>
   )
 }
 

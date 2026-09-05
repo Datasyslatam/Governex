@@ -85,40 +85,17 @@ const statusLabel: Record<string, string> = {
 
 const RiskTable: React.FC = () => {
   return (
-    <table className="risk-table">
-      <thead>
-        <tr>
-          <th>Código</th>
-          <th>Descripción</th>
-          <th>Proceso</th>
-          <th>P × I</th>
-          <th>Estado</th>
-          <th>Responsable</th>
-        </tr>
-      </thead>
-      <tbody>
+    <table className="risk-table"> <thead> <tr> <th>Código</th> <th>Descripción</th> <th>Proceso</th> <th>P × I</th> <th>Estado</th> <th>Responsable</th> </tr> </thead> <tbody>
         {rows.map(r => (
-          <tr key={r.code}>
-            <td className="risk-table__code">{r.code}</td>
-            <td>{r.description}</td>
-            <td>{r.process}</td>
-            <td>
-              <span className={`risk-table__level risk-table__level--${getLevelVariant(r.level)}`}>
+          <tr key={r.code}> <td className="risk-table__code">{r.code}</td> <td>{r.description}</td> <td>{r.process}</td> <td> <span className={`risk-table__level risk-table__level--${getLevelVariant(r.level)}`}>
                 {r.level}
-              </span>
-            </td>
-            <td>
-              <span
+              </span> </td> <td> <span
                 className={`risk-table__status risk-table__status--${r.status.toLowerCase()}`}
               >
                 {statusLabel[r.status]}
-              </span>
-            </td>
-            <td>{r.owner}</td>
-          </tr>
+              </span> </td> <td>{r.owner}</td> </tr>
         ))}
-      </tbody>
-    </table>
+      </tbody> </table>
   );
 };
 

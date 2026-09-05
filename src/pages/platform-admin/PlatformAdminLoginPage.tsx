@@ -32,27 +32,17 @@ const PlatformAdminLoginPage: React.FC = () => {
   }
 
   return (
-    <div className="pa-login">
-      <form className="pa-login__card" onSubmit={handleSubmit}>
-        <h2>Governex · Administración de plataforma</h2>
-        <p className="pa-login__subtitle">Acceso restringido a staff de Governex</p>
+    <div className="pa-login"> <form className="pa-login__card" onSubmit={handleSubmit}> <h2>Governex · Administración de plataforma</h2> <p className="pa-login__subtitle">Acceso restringido a staff de Governex</p>
 
         {error && <div className="pa-login__error">{error}</div>}
 
         <label>
           Correo
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} disabled={loading} />
-        </label>
-        <label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} disabled={loading} /> </label> <label>
           Contraseña
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
-        </label>
-
-        <button type="submit" disabled={loading}>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} /> </label> <button type="submit" disabled={loading}>
           {loading ? 'Ingresando...' : 'Ingresar'}
-        </button>
-      </form>
-    </div>
+        </button> </form> </div>
   )
 }
 

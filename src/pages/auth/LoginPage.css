@@ -1,28 +1,16 @@
+/* ══════════════════════════════════════════════════════
+   LOGIN PAGE  —  Deep Navy Blue · Governex
+   ══════════════════════════════════════════════════════ */
+
 .login {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   min-height: 100vh;
-  background: #e8eef5;
-  border-radius: 1.5rem;
+  width: 100%;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
 }
 
-.login__right {
-  position: relative; /* necesario para que el logo se posicione respecto a este panel */
-}
-
-.login__powered-by {
-  position: absolute;
-  bottom: 1rem;
-  right: 1.25rem;
-  font-size: 0.9rem;
-  color: var(--color-text-secondary, #7a8fa6);
-  opacity: 0.75;
-  letter-spacing: 0.02em;
-  pointer-events: none;
-}
-
+/* ── Panel izquierdo (branding) ───────────────────────── */
 .login__left {
   position: relative;
   color: #ffffff;
@@ -30,37 +18,63 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  background: radial-gradient(circle at 20% 25%, rgba(255, 255, 255, 0.16), transparent 52%),
-    radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.1), transparent 60%),
-    radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.08), transparent 62%),
-    linear-gradient(135deg, #030097 0%, #02007a 42%, #010052 100%);
+  background:
+    radial-gradient(ellipse 300px 250px at 10% 15%, rgba(0, 180, 216, 0.18) 0%, transparent 65%),
+    radial-gradient(ellipse 260px 200px at 85% 70%, rgba(0, 82,  204, 0.2)  0%, transparent 60%),
+    radial-gradient(ellipse 200px 180px at 50% 90%, rgba(0, 180, 216, 0.12) 0%, transparent 55%),
+    linear-gradient(145deg, #061224 0%, #081830 50%, #0A192F 100%);
   overflow: hidden;
 }
 
+/* destellos de partículas decorativos */
 .login__left::before {
   content: "";
   position: absolute;
-  top: 1.5rem;
-  right: -6rem;
-  width: 22rem;
-  height: 22rem;
+  top: 1.5rem; right: -6rem;
+  width: 22rem; height: 22rem;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  filter: blur(20px);
+  background: rgba(0, 180, 216, 0.07);
+  filter: blur(40px);
+  pointer-events: none;
 }
 
 .login__left::after {
   content: "";
   position: absolute;
-  bottom: -5rem;
-  left: -6rem;
-  width: 26rem;
-  height: 26rem;
+  bottom: -5rem; left: -6rem;
+  width: 26rem; height: 26rem;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.07);
-  filter: blur(26px);
+  background: rgba(0, 82, 204, 0.08);
+  filter: blur(40px);
+  pointer-events: none;
 }
 
+/* ── Panel derecho (formulario) ───────────────────────── */
+.login__right {
+  position: relative;
+  padding: 4rem 2.5rem;
+  background:
+    radial-gradient(ellipse 260px 200px at 80% 20%, rgba(0, 82, 204, 0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 200px 160px at 20% 80%, rgba(0, 180, 216, 0.12) 0%, transparent 55%),
+    linear-gradient(160deg, #071626 0%, #091a2e 60%, #0A192F 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid rgba(0, 180, 216, 0.18);
+}
+
+.login__powered-by {
+  position: absolute;
+  bottom: 1rem;
+  right: 1.25rem;
+  font-size: 0.8rem;
+  color: rgba(0, 180, 216, 0.5);
+  opacity: 0.85;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+/* ── Branding (contenido izquierda) ───────────────────── */
 .login__brand {
   position: relative;
   max-width: 400px;
@@ -78,25 +92,35 @@
   justify-content: center;
   align-items: center;
   margin-bottom: 1.5rem;
+  /* fondo oscuro semitransparente para que el logo destaque */
+  background: rgba(6, 18, 36, 0.55);
+  border: 1px solid rgba(0, 180, 216, 0.2);
+  border-radius: 1rem;
+  padding: 1rem 1.75rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 180, 216, 0.08);
 }
 
 .login__brand-icon img {
-  max-width: 280px; /* Adjust size to fit nicely */
+  max-width: 260px;
   width: 100%;
   height: auto;
 }
 
 .login__brand p {
   margin: 0;
-  font-size: 1.600rem;
-  opacity: 0.9;
+  font-size: 1.55rem;
+  font-weight: 300;
+  color: #ffffff;
+  opacity: 0.92;
+  text-align: center;
+  letter-spacing: 0.01em;
 }
 
 .login__brand ul {
   margin-top: 1.4rem;
   padding-left: 0;
-  font-size: 1.125rem;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.82);
   line-height: 1.6;
   list-style: none;
 }
@@ -108,11 +132,10 @@
 }
 
 .login__brand ul li::before {
-  content: "✓";
+  content: "•";
   position: absolute;
-  left: 0;
-  top: 0;
-  color: rgba(255, 255, 255, 0.85);
+  left: 0; top: 0;
+  color: rgba(0, 180, 216, 0.9);
   font-weight: 700;
   font-size: 0.9rem;
   line-height: 1;
@@ -123,38 +146,34 @@
   max-width: 100%;
   height: 1px;
   margin: 1.5rem auto 1.25rem;
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(0, 180, 216, 0.25);
 }
 
 .login__brand-footer {
   margin-top: 2.5rem;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(0, 180, 216, 0.6);
 }
 
-.login__right {
-  padding: 4rem 2.5rem;
-  background: #eef3f9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
+/* ── Formulario (card) ────────────────────────────────── */
 .login__card {
-  background: #ffffff;
+  background: rgba(6, 18, 36, 0.7);
+  border: 1px solid rgba(0, 180, 216, 0.2);
   border-radius: 1.25rem;
   padding: 2.25rem 2.25rem 2.5rem;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 82, 204, 0.1);
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
+  backdrop-filter: blur(12px);
 }
 
 .login__card h2 {
   margin: 0 0 0.75rem;
   font-size: 1.5rem;
+  color: #ffffff;
 }
 
 .login__card label {
@@ -162,40 +181,49 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .login__card input,
 .login__card select {
-  border-radius: 12px;
-  border: 1px solid #d1dce8;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 180, 216, 0.25);
   padding: 0.65rem 0.75rem;
   font-size: 0.95rem;
-  background: #f8fafc;
+  background: rgba(10, 25, 47, 0.8);
+  color: #ffffff;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login__card input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
 }
 
 .login__card input:focus,
 .login__card select:focus {
   outline: none;
-  border-color: #030097;
-  box-shadow: 0 0 0 3px rgba(3, 0, 151, 0.18); /* #030097 rgb(3,0,151) */
+  border-color: rgba(0, 180, 216, 0.6);
+  box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.15);
 }
 
 .login__submit {
   margin-top: 0.75rem;
   border-radius: 999px;
   border: none;
-  padding: 0.65rem 1rem;
-  background: #030097;
+  padding: 0.7rem 1rem;
+  background: linear-gradient(90deg, #0052CC 0%, #0077E6 60%, #00B4D8 100%);
   color: #ffffff;
   font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
+  letter-spacing: 0.04em;
+  transition: opacity 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 18px rgba(0, 82, 204, 0.4);
 }
 
 .login__submit:hover {
-  background: #5E4AAC;
+  opacity: 0.9;
+  box-shadow: 0 6px 24px rgba(0, 180, 216, 0.4);
 }
 
 .login__submit:active {
@@ -204,14 +232,14 @@
 
 .login__helper {
   font-size: 0.75rem;
-  color: #7a8fa6;
+  color: rgba(0, 180, 216, 0.6);
   margin: 0.25rem 0 0;
+  text-align: center;
 }
 
 @media (max-width: 900px) {
   .login {
     grid-template-columns: 1fr;
-    border-radius: 0;
     min-height: 100vh;
   }
 
@@ -221,5 +249,7 @@
 
   .login__right {
     padding: 3rem 2rem;
+    border-left: none;
+    border-top: 1px solid rgba(0, 180, 216, 0.18);
   }
 }

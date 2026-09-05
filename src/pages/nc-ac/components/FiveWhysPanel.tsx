@@ -14,22 +14,16 @@ const items = [
 
 const FiveWhysPanel: React.FC = () => {
   return (
-    <div className="fivewhys">
-      <h4>Análisis 5 Por Qués — Governex</h4>
-      <ul className="fivewhys__list">
+    <div className="fivewhys"> <h4>Análisis 5 Por Qués — Governex</h4> <ul className="fivewhys__list">
         {items.map(item => (
           <li
             key={item.label}
             className={`fivewhys__item ${
               item.label === "Causa raíz:" ? "fivewhys__item--root" : ""
             }`}
-          >
-            <span className="fivewhys__label">{item.label}</span>
-            <span className="fivewhys__text">{item.text}</span>
-          </li>
+          > <span className="fivewhys__label">{item.label}</span> <span className="fivewhys__text">{item.text}</span> </li>
         ))}
-      </ul>
-    </div>
+      </ul> </div>
   );
 };
 

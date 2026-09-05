@@ -30,7 +30,7 @@ interface PermissionGuardProps {
  *   </PermissionGuard>
  *
  *   <PermissionGuard recurso="riesgos" accion="eliminar" mode="hide">
- *     <button className="btn-icon danger">🗑️</button>
+ *     <button className="btn-icon danger"></button>
  *   </PermissionGuard>
  */
 export const PermissionGuard: React.FC<PermissionGuardProps> = ({

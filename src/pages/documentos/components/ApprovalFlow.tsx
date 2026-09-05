@@ -9,27 +9,21 @@ const steps = [
 
 const ApprovalFlow: React.FC = () => {
   return (
-    <div className="approval-flow">
-      <h4>Flujo de Aprobación (Cap. 7.5.2)</h4>
-      <div className="approval-flow__steps">
+    <div className="approval-flow"> <h4>Flujo de Aprobación (Cap. 7.5.2)</h4> <div className="approval-flow__steps">
         {steps.map((s, index) => (
-          <div key={s.label} className="approval-flow__step">
-            <div
+          <div key={s.label} className="approval-flow__step"> <div
               className={`approval-flow__icon approval-flow__icon--${
                 s.status === "OK" ? "done" : s.status === "PEND" ? "pending" : "empty"
               }`}
             >
-              {s.status === "OK" ? "✔" : s.status === "PEND" ? "!" : "·"}
-            </div>
-            <div className="approval-flow__label">{s.label}</div>
-            <div className="approval-flow__person">{s.person}</div>
+              {s.status === "OK" ? "" : s.status === "PEND" ? "!" : "·"}
+            </div> <div className="approval-flow__label">{s.label}</div> <div className="approval-flow__person">{s.person}</div>
             {index < steps.length - 1 && (
               <div className="approval-flow__arrow">⟶</div>
             )}
           </div>
         ))}
-      </div>
-    </div>
+      </div> </div>
   );
 };
 

@@ -50,9 +50,7 @@ interface FieldProps {
 }
 
 const Field = memo(({ label, value, onChange, placeholder = '', type = 'text', hint, error }: FieldProps) => (
-  <div className={`efm-field${error ? ' efm-field--error' : ''}`}>
-    <label className="efm-label">{label}</label>
-    <input
+  <div className={`efm-field${error ? ' efm-field--error' : ''}`}> <label className="efm-label">{label}</label> <input
       className="efm-input"
       type={type}
       value={value}
@@ -75,9 +73,7 @@ interface TextareaProps {
 }
 
 const Textarea = memo(({ label, value, onChange, placeholder = '', rows = 3, hint, error }: TextareaProps) => (
-  <div className={`efm-field${error ? ' efm-field--error' : ''}`}>
-    <label className="efm-label">{label}</label>
-    <textarea
+  <div className={`efm-field${error ? ' efm-field--error' : ''}`}> <label className="efm-label">{label}</label> <textarea
       className="efm-textarea"
       rows={rows}
       value={value}
@@ -99,14 +95,11 @@ interface SelectProps {
 }
 
 const Select = memo(({ label, value, onChange, options, hint, error }: SelectProps) => (
-  <div className={`efm-field${error ? ' efm-field--error' : ''}`}>
-    <label className="efm-label">{label}</label>
-    <select
+  <div className={`efm-field${error ? ' efm-field--error' : ''}`}> <label className="efm-label">{label}</label> <select
       className="efm-select"
       value={value}
       onChange={e => onChange(e.target.value)}
-    >
-      <option value="">— Selecciona —</option>
+    > <option value="">— Selecciona —</option>
       {options.map(o => <option key={o} value={o}>{o}</option>)}
     </select>
     {hint  && <span className="efm-hint">{hint}</span>}
@@ -186,43 +179,29 @@ const EmpresaFormModal: React.FC<Props> = ({ onConfirm, onCancel, initial }) => 
   }
 
   const secciones = [
-    { id: 'identidad'        as Seccion, label: 'Identidad',       icon: '🏢' },
-    { id: 'direccionamiento' as Seccion, label: 'Direccionamiento', icon: '🧭' },
-    { id: 'operacion'        as Seccion, label: 'Operación',        icon: '⚙️' },
-    { id: 'sgc'              as Seccion, label: 'SGC',              icon: '📋' },
+    { id: 'identidad'        as Seccion, label: 'Identidad',       icon: '' },
+    { id: 'direccionamiento' as Seccion, label: 'Direccionamiento', icon: '' },
+    { id: 'operacion'        as Seccion, label: 'Operación',        icon: '' },
+    { id: 'sgc'              as Seccion, label: 'SGC',              icon: '' },
   ]
   const currentIdx = secciones.findIndex(s => s.id === seccion)
   const isLast     = currentIdx === secciones.length - 1
 
   return (
-    <div className="efm-overlay" onClick={onCancel}>
-      <div className="efm-modal" onClick={e => e.stopPropagation()}>
+    <div className="efm-overlay" onClick={onCancel}> <div className="efm-modal" onClick={e => e.stopPropagation()}>
 
         {/* ── Header ────────────────────────────────────── */}
-        <div className="efm-header">
-          <div className="efm-header__title">
-            <span className="efm-header__icon">🏢</span>
-            <div>
-              <h2>Contexto de la Organización</h2>
-              <p>Completa la información de tu empresa para que la IA genere un análisis personalizado y preciso.</p>
-            </div>
-          </div>
-          <button className="efm-close" onClick={onCancel}>✕</button>
-        </div>
+        <div className="efm-header"> <div className="efm-header__title"> <span className="efm-header__icon"></span> <div> <h2>Contexto de la Organización</h2> <p>Completa la información de tu empresa para que la IA genere un análisis personalizado y preciso.</p> </div> </div> <button className="efm-close" onClick={onCancel}></button> </div>
 
         {/* ── Stepper ───────────────────────────────────── */}
         <div className="efm-stepper">
           {secciones.map((s, i) => (
-            <React.Fragment key={s.id}>
-              <div
+            <React.Fragment key={s.id}> <div
                 className={`efm-step${i === currentIdx ? ' efm-step--active' : ''}${i < currentIdx ? ' efm-step--done' : ''}`}
                 onClick={() => i < currentIdx && setSeccion(s.id)}
-              >
-                <div className="efm-step__circle">
-                  {i < currentIdx ? '✓' : s.icon}
-                </div>
-                <span className="efm-step__label">{s.label}</span>
-              </div>
+              > <div className="efm-step__circle">
+                  {i < currentIdx ? '' : s.icon}
+                </div> <span className="efm-step__label">{s.label}</span> </div>
               {i < secciones.length - 1 && (
                 <div className={`efm-step__line${i < currentIdx ? ' efm-step__line--done' : ''}`} />
               )}
@@ -235,171 +214,124 @@ const EmpresaFormModal: React.FC<Props> = ({ onConfirm, onCancel, initial }) => 
 
           {/* IDENTIDAD */}
           {seccion === 'identidad' && (
-            <>
-              <div className="efm-section-title"><span>🏢</span> Identidad de la Empresa</div>
-              <div className="efm-row efm-row--2">
-                <Field
+            <> <div className="efm-section-title"><span></span> Identidad de la Empresa</div> <div className="efm-row efm-row--2"> <Field
                   label="Nombre de la empresa *"
                   value={form.nombreEmpresa}
                   onChange={setNombreEmpresa}
                   placeholder="Ej: Industrias XYZ S.A.S."
                   error={errors.nombreEmpresa}
-                />
-                <Select
+                /> <Select
                   label="Tipo de empresa *"
                   value={form.tipoEmpresa}
                   onChange={setTipoEmpresa}
                   options={TIPOS_EMPRESA}
                   error={errors.tipoEmpresa}
-                />
-              </div>
-              <div className="efm-row efm-row--2">
-                <Select
+                /> </div> <div className="efm-row efm-row--2"> <Select
                   label="Sector / Industria *"
                   value={form.sector}
                   onChange={setSector}
                   options={SECTORES}
                   error={errors.sector}
-                />
-                <Select
+                /> <Select
                   label="Tamaño de la empresa *"
                   value={form.tamano}
                   onChange={setTamano}
                   options={TAMANIOS}
                   error={errors.tamano}
-                />
-              </div>
-              <div className="efm-row efm-row--2">
-                <Field
+                /> </div> <div className="efm-row efm-row--2"> <Field
                   label="Ciudad / Ubicación"
                   value={form.ubicacion}
                   onChange={setUbicacion}
                   placeholder="Ej: Barranquilla, Atlántico, Colombia"
-                />
-                <Field
+                /> <Field
                   label="Año de fundación"
                   value={form.anoFundacion}
                   onChange={setAnoFundacion}
                   placeholder="Ej: 2010"
-                />
-              </div>
-              <div className="efm-row efm-row--2">
-                <Field
+                /> </div> <div className="efm-row efm-row--2"> <Field
                   label="Número de empleados"
                   value={form.cantidadEmpleados}
                   onChange={setCantidadEmpleados}
                   placeholder="Ej: 45"
-                />
-                <Field
+                /> <Field
                   label="Certificaciones actuales"
                   value={form.certificaciones}
                   onChange={setCertificaciones}
                   placeholder="Ej: ISO 14001, OHSAS 18001..."
-                />
-              </div>
-            </>
+                /> </div> </>
           )}
 
           {/* DIRECCIONAMIENTO */}
           {seccion === 'direccionamiento' && (
-            <>
-              <div className="efm-section-title"><span>🧭</span> Direccionamiento Estratégico</div>
-              <Textarea
+            <> <div className="efm-section-title"><span></span> Direccionamiento Estratégico</div> <Textarea
                 label="Misión *"
                 value={form.mision}
                 onChange={setMision}
                 placeholder="¿Qué hace la empresa, para quién y cómo lo hace?"
                 hint="Describe el propósito fundamental de la organización."
                 error={errors.mision}
-              />
-              <Textarea
+              /> <Textarea
                 label="Visión *"
                 value={form.vision}
                 onChange={setVision}
                 placeholder="¿Dónde quiere estar la empresa en 5–10 años?"
                 hint="Describe el estado futuro deseado."
                 error={errors.vision}
-              />
-              <Textarea
+              /> <Textarea
                 label="Política de Calidad"
                 value={form.politicaCalidad}
                 onChange={setPoliticaCalidad}
                 placeholder="Declaración formal del compromiso con la calidad..."
                 hint="Si no la tienes definida, la IA puede ayudarte a construirla."
-              />
-              <Textarea
+              /> <Textarea
                 label="Productos y/o Servicios que ofrece *"
                 value={form.productosServicios}
                 onChange={setProductosServicios}
                 placeholder="Describe los principales productos y servicios..."
                 error={errors.productosServicios}
-              />
-            </>
+              /> </>
           )}
 
           {/* OPERACIÓN */}
           {seccion === 'operacion' && (
-            <>
-              <div className="efm-section-title"><span>⚙️</span> Contexto Operacional</div>
-              <Textarea
+            <> <div className="efm-section-title"><span></span> Contexto Operacional</div> <Textarea
                 label="Mercado objetivo / Clientes principales"
                 value={form.mercadoObjetivo}
                 onChange={setMercadoObjetivo}
                 placeholder="Describe a quiénes van dirigidos los productos/servicios: segmentos, geografías, tipos de cliente..."
-              />
-              <Textarea
+              /> <Textarea
                 label="Partes interesadas relevantes"
                 value={form.parteInteresadas}
                 onChange={setParteInteresadas}
                 placeholder="Ej: clientes, empleados, proveedores, accionistas, entes reguladores, comunidad..."
                 hint="§4.2 — Identifica las partes interesadas y sus necesidades y expectativas."
-              />
-            </>
+              /> </>
           )}
 
           {/* SGC */}
           {seccion === 'sgc' && (
-            <>
-              <div className="efm-section-title"><span>📋</span> Sistema de Gestión de Calidad</div>
-              <Textarea
+            <> <div className="efm-section-title"><span></span> Sistema de Gestión de Calidad</div> <Textarea
                 label="Alcance del SGC"
                 value={form.alcanceSGC}
                 onChange={setAlcanceSGC}
                 rows={4}
                 placeholder={'Ej: "Diseño, desarrollo y comercialización de software para el sector financiero en Colombia."'}
                 hint="§4.3 — El alcance determina los límites y la aplicabilidad del SGC."
-              />
-              <div className="efm-info-box">
-                <span>✅</span>
-                <div>
-                  <strong>¡Todo listo para el análisis!</strong>
-                  <p>
+              /> <div className="efm-info-box"> <span></span> <div> <strong>¡Todo listo para el análisis!</strong> <p>
                     Con esta información, Governex generará PESTEL, DOFA, Caracterización de Procesos
                     y un <strong>análisis narrativo del contexto organizacional</strong> específico
                     para <strong>{form.nombreEmpresa || 'tu empresa'}</strong>.
-                  </p>
-                </div>
-              </div>
-            </>
+                  </p> </div> </div> </>
           )}
 
         </div>
 
         {/* ── Footer ────────────────────────────────────── */}
-        <div className="efm-footer">
-          <button className="efm-btn efm-btn--secondary" onClick={currentIdx === 0 ? onCancel : goBack}>
+        <div className="efm-footer"> <button className="efm-btn efm-btn--secondary" onClick={currentIdx === 0 ? onCancel : goBack}>
             {currentIdx === 0 ? 'Cancelar' : '← Anterior'}
-          </button>
-          <div className="efm-footer__right">
-            <span className="efm-progress-text">Paso {currentIdx + 1} de {secciones.length}</span>
-            <button className="efm-btn efm-btn--primary" onClick={validateAndNext}>
-              {isLast ? '🤖 Analizar con Governex →' : 'Siguiente →'}
-            </button>
-          </div>
-        </div>
-
-      </div>
-    </div>
+          </button> <div className="efm-footer__right"> <span className="efm-progress-text">Paso {currentIdx + 1} de {secciones.length}</span> <button className="efm-btn efm-btn--primary" onClick={validateAndNext}>
+              {isLast ? ' Analizar con Governex →' : 'Siguiente →'}
+            </button> </div> </div> </div> </div>
   )
 }
 

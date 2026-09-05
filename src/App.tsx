@@ -24,10 +24,7 @@ function App() {
   }, [navigate]);
 
   return (
-    <div className="App">
-      <ImpersonationBanner />
-      <AppRoutes />
-    </div>
+    <div className="App"> <ImpersonationBanner /> <AppRoutes /> </div>
   );
 }
 

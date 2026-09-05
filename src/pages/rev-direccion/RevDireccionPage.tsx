@@ -322,23 +322,11 @@ const RevDireccionPage: React.FC = () => {
     <div className="page rev9-page">
 
       {/* ── Header ──────────────────────────────────────────── */}
-      <header className="page__header rev9-header">
-        <div className="rev9-header-left">
-          <nav className="rev9-breadcrumb">
-            <span>Governex</span>
-            <span className="rev9-bc-sep">›</span>
-            <span>Cap. 9</span>
-            <span className="rev9-bc-sep">›</span>
-            <span className="rev9-bc-active">9.3 Revisión por la Dirección</span>
-          </nav>
-          <h2>Revisión por la Dirección</h2>
-          <p className="rev9-subtitle">
+      <header className="page__header rev9-header"> <div className="rev9-header-left"> <nav className="rev9-breadcrumb"> <span>Governex</span> <span className="rev9-bc-sep">›</span> <span>Cap. 9</span> <span className="rev9-bc-sep">›</span> <span className="rev9-bc-active">9.3 Revisión por la Dirección</span> </nav> <h2>Revisión por la Dirección</h2> <p className="rev9-subtitle">
             Evaluación estratégica del desempeño y eficacia del SGC · ISO 9001:2015 §9.3
-          </p>
-        </div>
-        <div className="rev9-header-actions">
+          </p> </div> <div className="rev9-header-actions">
           {alertCount > 0 && (
-            <span className="rev9-alert-badge">⚠ {alertCount} alerta{alertCount > 1 ? 's' : ''}</span>
+            <span className="rev9-alert-badge"> {alertCount} alerta{alertCount > 1 ? 's' : ''}</span>
           )}
           <button
             className={`btn btn--primary rev9-btn-analizar ${analizando ? 'rev9-btn-analizar--loading' : ''}`}
@@ -348,28 +336,17 @@ const RevDireccionPage: React.FC = () => {
           >
             {analizando
               ? <><span className="rev9-spinner" />Analizando…</>
-              : <><span className="rev9-icon-ai">✦</span>Analizar con IA</>
+              : <><span className="rev9-icon-ai"></span>Analizar con IA</>
             }
-          </button>
-        </div>
-      </header>
-
-      <div className="rev9-layout">
+          </button> </div> </header> <div className="rev9-layout">
 
         {/* ── Columna principal ────────────────────────────── */}
         <div className="rev9-main">
 
           {/* Insumos §9.3.2 */}
-          <section className="rev9-section">
-            <div className="rev9-section-title">
-              <span className="rev9-section-num">§9.3.2</span>
-              <h3>Insumos de la Revisión</h3>
-              <span className="rev9-section-sub">Datos en tiempo real del SGC</span>
-              <div className="rev9-refresh-group">
-                <span className="rev9-refresh-time">
+          <section className="rev9-section"> <div className="rev9-section-title"> <span className="rev9-section-num">§9.3.2</span> <h3>Insumos de la Revisión</h3> <span className="rev9-section-sub">Datos en tiempo real del SGC</span> <div className="rev9-refresh-group"> <span className="rev9-refresh-time">
                   Actualizado {ultimaActualizacion.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
-                </span>
-                <button
+                </span> <button
                   className={`rev9-refresh-btn ${refrescando ? 'rev9-refresh-btn--spinning' : ''}`}
                   onClick={() => refrescarInsumos(true)}
                   disabled={refrescando}
@@ -377,83 +354,42 @@ const RevDireccionPage: React.FC = () => {
                   aria-label="Actualizar insumos"
                 >
                   ↻
-                </button>
-              </div>
-            </div>
-
-            <div className="rev9-insumos-grid">
+                </button> </div> </div> <div className="rev9-insumos-grid">
               {insumos.map((ins, i) => (
-                <div key={i} className={`rev9-insumo-card ${ins.kpis.some(k => k.alerta) ? 'rev9-insumo-card--alerta' : ''}`}>
-                  <div className="rev9-insumo-head">
-                    <span className="rev9-insumo-req">{ins.req}</span>
-                    <span className="rev9-insumo-clausula">{ins.clausula}</span>
-                  </div>
-                  <p className="rev9-insumo-titulo">{ins.titulo}</p>
-                  <div className="rev9-insumo-kpis">
+                <div key={i} className={`rev9-insumo-card ${ins.kpis.some(k => k.alerta) ? 'rev9-insumo-card--alerta' : ''}`}> <div className="rev9-insumo-head"> <span className="rev9-insumo-req">{ins.req}</span> <span className="rev9-insumo-clausula">{ins.clausula}</span> </div> <p className="rev9-insumo-titulo">{ins.titulo}</p> <div className="rev9-insumo-kpis">
                     {ins.kpis.map((kpi, j) => (
-                      <div key={j} className={`rev9-kpi ${kpi.alerta ? 'rev9-kpi--alerta' : ''}`}>
-                        <span className="rev9-kpi-value">{kpi.value}</span>
-                        <span className="rev9-kpi-label">{kpi.label}</span>
-                      </div>
+                      <div key={j} className={`rev9-kpi ${kpi.alerta ? 'rev9-kpi--alerta' : ''}`}> <span className="rev9-kpi-value">{kpi.value}</span> <span className="rev9-kpi-label">{kpi.label}</span> </div>
                     ))}
-                  </div>
-                  <p className="rev9-insumo-detalle">{ins.detalle}</p>
-                </div>
+                  </div> <p className="rev9-insumo-detalle">{ins.detalle}</p> </div>
               ))}
-            </div>
-          </section>
+            </div> </section>
 
           {/* Error análisis */}
           {errorAnalisis && (
-            <div className="rev9-error-banner">
-              <span>⚠</span>
-              <div>
-                <strong>Error al analizar</strong>
-                <p>{errorAnalisis}</p>
-              </div>
-            </div>
+            <div className="rev9-error-banner"> <span></span> <div> <strong>Error al analizar</strong> <p>{errorAnalisis}</p> </div> </div>
           )}
 
           {/* Placeholder vacío */}
           {!analisis && !analizando && !errorAnalisis && (
-            <section className="rev9-empty-analisis">
-              <div className="rev9-empty-icon">✦</div>
-              <h3>Listo para analizar</h3>
-              <p>
+            <section className="rev9-empty-analisis"> <div className="rev9-empty-icon"></div> <h3>Listo para analizar</h3> <p>
                 Haz clic en <strong>Analizar con IA</strong> para que el sistema consolide
                 todos los insumos anteriores y genere las salidas de la revisión según §9.3.3.
-              </p>
-            </section>
+              </p> </section>
           )}
 
           {/* Skeleton mientras carga */}
           {analizando && (
-            <section className="rev9-skeleton">
-              <div className="rev9-skeleton-bar rev9-skeleton-bar--wide" />
-              <div className="rev9-skeleton-bar" />
-              <div className="rev9-skeleton-bar rev9-skeleton-bar--short" />
-              <div className="rev9-skeleton-cards">
+            <section className="rev9-skeleton"> <div className="rev9-skeleton-bar rev9-skeleton-bar--wide" /> <div className="rev9-skeleton-bar" /> <div className="rev9-skeleton-bar rev9-skeleton-bar--short" /> <div className="rev9-skeleton-cards">
                 {[1,2,3].map(n => <div key={n} className="rev9-skeleton-card" />)}
-              </div>
-            </section>
+              </div> </section>
           )}
 
           {/* ── Resultados IA ──────────────────────────────── */}
           {analisis && (
-            <section className="rev9-resultados">
-              <div className="rev9-section-title">
-                <span className="rev9-section-num">§9.3.3</span>
-                <h3>Salidas de la Revisión</h3>
-                <span className="rev9-section-sub">Generado por análisis IA · editable antes de cerrar acta</span>
-              </div>
+            <section className="rev9-resultados"> <div className="rev9-section-title"> <span className="rev9-section-num">§9.3.3</span> <h3>Salidas de la Revisión</h3> <span className="rev9-section-sub">Generado por análisis IA · editable antes de cerrar acta</span> </div>
 
               {/* Resumen ejecutivo */}
-              <div className="rev9-resumen-card">
-                <div className="rev9-resumen-header">
-                  <span className="rev9-resumen-label">Resumen Ejecutivo</span>
-                </div>
-                <p className="rev9-resumen-texto">{analisis.resumenEjecutivo}</p>
-              </div>
+              <div className="rev9-resumen-card"> <div className="rev9-resumen-header"> <span className="rev9-resumen-label">Resumen Ejecutivo</span> </div> <p className="rev9-resumen-texto">{analisis.resumenEjecutivo}</p> </div>
 
               {/* Tabs de salidas */}
               <div className="rev9-tabs">
@@ -468,167 +404,97 @@ const RevDireccionPage: React.FC = () => {
                     onClick={() => setTabActiva(tab.key)}
                   >
                     {tab.label}
-                    <span className="rev9-tab-count">{tab.count}</span>
-                  </button>
+                    <span className="rev9-tab-count">{tab.count}</span> </button>
                 ))}
-              </div>
-
-              <div className="rev9-salidas-lista">
+              </div> <div className="rev9-salidas-lista">
                 {salidaActiva.map((s, i) => (
-                  <div key={i} className="rev9-salida-item">
-                    <div className="rev9-salida-head">
-                      <span className={`rev9-prioridad ${PRIORIDAD_CLASS[s.prioridad]}`}>
+                  <div key={i} className="rev9-salida-item"> <div className="rev9-salida-head"> <span className={`rev9-prioridad ${PRIORIDAD_CLASS[s.prioridad]}`}>
                         {s.prioridad}
-                      </span>
-                      <span className="rev9-salida-req">{s.requisitoFuente}</span>
-                    </div>
-                    <p className="rev9-salida-titulo">{s.titulo}</p>
-                    <p className="rev9-salida-just">{s.justificacion}</p>
-                  </div>
+                      </span> <span className="rev9-salida-req">{s.requisitoFuente}</span> </div> <p className="rev9-salida-titulo">{s.titulo}</p> <p className="rev9-salida-just">{s.justificacion}</p> </div>
                 ))}
               </div>
 
               {/* Conclusión */}
-              <div className="rev9-conclusion">
-                <span className="rev9-conclusion-label">Conclusión y Enfoque Estratégico</span>
-                <p>{analisis.conclusionGeneral}</p>
-              </div>
+              <div className="rev9-conclusion"> <span className="rev9-conclusion-label">Conclusión y Enfoque Estratégico</span> <p>{analisis.conclusionGeneral}</p> </div>
 
               {/* Botón cerrar acta */}
-              <div className="rev9-acta-action">
-                <button
+              <div className="rev9-acta-action"> <button
                   className="btn btn--primary rev9-btn-acta"
                   onClick={() => setShowActaModal(true)}
                   disabled={!canApprove}
                   title={!canApprove ? 'Tu rol no tiene permiso para esta acción' : undefined}
                 >
-                  📋 Registrar Acta de Revisión
-                </button>
-                <p className="rev9-acta-hint">
+                   Registrar Acta de Revisión
+                </button> <p className="rev9-acta-hint">
                   El acta incluirá todos los insumos, el resumen y las salidas generadas.
-                </p>
-              </div>
-            </section>
+                </p> </div> </section>
           )}
         </div>
 
         {/* ── Columna lateral: historial ───────────────────── */}
-        <aside className="rev9-sidebar">
-          <div className="rev9-hist-panel">
-            <h3>Historial de Actas</h3>
+        <aside className="rev9-sidebar"> <div className="rev9-hist-panel"> <h3>Historial de Actas</h3>
 
             {loadingRev ? (
               <div className="rev9-hist-loading">Cargando…</div>
             ) : errorRev ? (
               <div className="rev9-hist-error">Error: {errorRev}</div>
             ) : revisiones.length === 0 ? (
-              <div className="rev9-hist-empty">
-                <p>Aún no hay actas registradas.</p>
-                <p>Ejecuta el análisis IA y registra la primera revisión.</p>
-              </div>
+              <div className="rev9-hist-empty"> <p>Aún no hay actas registradas.</p> <p>Ejecuta el análisis IA y registra la primera revisión.</p> </div>
             ) : (
               <div className="rev9-hist-list">
                 {(revisiones as any[]).map((rev: any, i: number) => (
-                  <div key={rev.id} className="rev9-hist-item">
-                    <div className="rev9-hist-item-top">
-                      <strong>RD-{new Date(rev.fecha).getFullYear()}-{String(i + 1).padStart(2, '0')}</strong>
-                      <span className="rev9-hist-fecha">
+                  <div key={rev.id} className="rev9-hist-item"> <div className="rev9-hist-item-top"> <strong>RD-{new Date(rev.fecha).getFullYear()}-{String(i + 1).padStart(2, '0')}</strong> <span className="rev9-hist-fecha">
                         {new Date(rev.fecha).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })}
-                      </span>
-                    </div>
+                      </span> </div>
                     {rev.proxima_rev && (
                       <p className="rev9-hist-prox">
                         Próxima: {new Date(rev.proxima_rev).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })}
                       </p>
                     )}
-                    <span className="rev9-hist-badge">Registrada</span>
-                  </div>
+                    <span className="rev9-hist-badge">Registrada</span> </div>
                 ))}
               </div>
             )}
           </div>
 
           {/* Guía rápida */}
-          <div className="rev9-guide-panel">
-            <h4>Flujo de la Revisión</h4>
-            <ol className="rev9-guide-steps">
-              <li><strong>Insumos</strong> — El sistema carga automáticamente los datos del SGC</li>
-              <li><strong>Análisis IA</strong> — Governex IA consolida y genera las salidas §9.3.3</li>
-              <li><strong>Revisión</strong> — La dirección evalúa y edita las recomendaciones</li>
-              <li><strong>Acta</strong> — Se registra formalmente con fecha y asistentes</li>
-            </ol>
-          </div>
-        </aside>
-      </div>
+          <div className="rev9-guide-panel"> <h4>Flujo de la Revisión</h4> <ol className="rev9-guide-steps"> <li><strong>Insumos</strong> — El sistema carga automáticamente los datos del SGC</li> <li><strong>Análisis IA</strong> — Governex IA consolida y genera las salidas §9.3.3</li> <li><strong>Revisión</strong> — La dirección evalúa y edita las recomendaciones</li> <li><strong>Acta</strong> — Se registra formalmente con fecha y asistentes</li> </ol> </div> </aside> </div>
 
       {/* ── Modal: registrar acta ────────────────────────────── */}
       {showActaModal && (
-        <div className="modal-overlay" onClick={() => setShowActaModal(false)}>
-          <div
+        <div className="modal-overlay" onClick={() => setShowActaModal(false)}> <div
             className="modal-card rev9-modal"
             onClick={e => e.stopPropagation()}
-          >
-            <div className="modal-header">
-              <h3>📋 Registrar Acta de Revisión</h3>
-              <button className="modal-close" onClick={() => setShowActaModal(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Fecha de la revisión</label>
-                  <input
+          > <div className="modal-header"> <h3> Registrar Acta de Revisión</h3> <button className="modal-close" onClick={() => setShowActaModal(false)}></button> </div> <div className="modal-body"> <div className="form-row"> <div className="form-group"> <label>Fecha de la revisión</label> <input
                     type="date" className="filter-input form-control"
                     value={formActa.fecha}
                     onChange={e => setFormActa(f => ({ ...f, fecha: e.target.value }))}
                     readOnly={isReadOnly()}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Próxima revisión</label>
-                  <input
+                  /> </div> <div className="form-group"> <label>Próxima revisión</label> <input
                     type="date" className="filter-input form-control"
                     value={formActa.proxima_rev}
                     onChange={e => setFormActa(f => ({ ...f, proxima_rev: e.target.value }))}
                     readOnly={isReadOnly()}
-                  />
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Asistentes</label>
-                <input
+                  /> </div> </div> <div className="form-group"> <label>Asistentes</label> <input
                   type="text" className="filter-input form-control"
                   placeholder="Ej: Gerente General, Director de Calidad…"
                   value={formActa.asistentes}
                   onChange={e => setFormActa(f => ({ ...f, asistentes: e.target.value }))}
                   readOnly={isReadOnly()}
-                />
-              </div>
+                /> </div>
               {analisis && (
-                <div className="rev9-modal-preview">
-                  <p className="rev9-modal-preview-label">Vista previa de salidas incluidas:</p>
-                  <ul>
-                    <li>✅ {analisis.oportunidadesMejora.length} oportunidades de mejora</li>
-                    <li>✅ {analisis.necesidadesCambioSGC.length} necesidades de cambio en el SGC</li>
-                    <li>✅ {analisis.necesidadesRecursos.length} necesidades de recursos</li>
-                  </ul>
-                </div>
+                <div className="rev9-modal-preview"> <p className="rev9-modal-preview-label">Vista previa de salidas incluidas:</p> <ul> <li>{analisis.oportunidadesMejora.length} oportunidades de mejora</li> <li>{analisis.necesidadesCambioSGC.length} necesidades de cambio en el SGC</li> <li>{analisis.necesidadesRecursos.length} necesidades de recursos</li> </ul> </div>
               )}
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn--secondary" onClick={() => setShowActaModal(false)}>
+            </div> <div className="modal-footer"> <button className="btn btn--secondary" onClick={() => setShowActaModal(false)}>
                 Cancelar
-              </button>
-              <button
+              </button> <button
                 className="btn btn--primary"
                 onClick={handleGuardarActa}
                 disabled={guardando || !formActa.asistentes.trim() || !canApprove}
                 title={!canApprove ? 'Tu rol no tiene permiso para esta acción' : undefined}
               >
                 {guardando ? 'Guardando…' : 'Registrar Acta'}
-              </button>
-            </div>
-          </div>
-        </div>
+              </button> </div> </div> </div>
       )}
     </div>
   )

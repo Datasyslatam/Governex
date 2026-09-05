@@ -21,9 +21,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
   ...rest
 }) => {
   return (
-    <label className={`form-field ${className}`.trim()}>
-      <span className="form-field__label">{label}</span>
-      <select className="form-field__select" {...rest}>
+    <label className={`form-field ${className}`.trim()}> <span className="form-field__label">{label}</span> <select className="form-field__select" {...rest}>
         {options.map(opt => (
           <option key={opt.value} value={opt.value}>
             {opt.label}

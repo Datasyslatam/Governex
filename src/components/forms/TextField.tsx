@@ -14,9 +14,7 @@ const TextField: React.FC<TextFieldProps> = ({
   ...rest
 }) => {
   return (
-    <label className={`form-field ${className}`.trim()}>
-      <span className="form-field__label">{label}</span>
-      <input className="form-field__input" {...rest} />
+    <label className={`form-field ${className}`.trim()}> <span className="form-field__label">{label}</span> <input className="form-field__input" {...rest} />
       {error && <span className="form-field__error">{error}</span>}
     </label>
   );

@@ -42,75 +42,43 @@ export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
 
   return (
-    <Routes>
-      <Route path="/login" element={<AuthLayout><LoginPage /></AuthLayout>} />
+    <Routes> <Route path="/login" element={<AuthLayout><LoginPage /></AuthLayout>} />
 
       {/* Panel de super-admin de Governex — completamente aislado del resto de la app */}
-      <Route path="/platform-admin/login" element={<PlatformAdminLoginPage />} />
-      <Route
+      <Route path="/platform-admin/login" element={<PlatformAdminLoginPage />} /> <Route
         path="/platform-admin"
         element={
-          <PlatformAdminProtectedRoute>
-            <PlatformAdminDashboardPage />
-          </PlatformAdminProtectedRoute>
+          <PlatformAdminProtectedRoute> <PlatformAdminDashboardPage /> </PlatformAdminProtectedRoute>
         }
-      />
-
-      <Route
+      /> <Route
         path="/"
         element={
-          <ProtectedRoute isAuthenticated={isAuthenticated}>
-            <MainLayout />
-          </ProtectedRoute>
+          <ProtectedRoute isAuthenticated={isAuthenticated}> <MainLayout /> </ProtectedRoute>
         }
-      >
-        <Route index element={<DashboardPage />} />
-        <Route path="dashboard"               element={<DashboardPage />} />
+      > <Route index element={<DashboardPage />} /> <Route path="dashboard"               element={<DashboardPage />} />
 
         {/* §4 */}
         <Route path="procesos"                element={<ProcesosPage />} />
 
         {/* §5 */}
-        <Route path="politica"                element={<PoliticaPage />} />
-        <Route path="roles"                   element={<RolesPage />} />
-        <Route path="enfoque-cliente"         element={<EnfoqueClientePage />} /> {/* ← NUEVO */}
+        <Route path="politica"                element={<PoliticaPage />} /> <Route path="roles"                   element={<RolesPage />} /> <Route path="enfoque-cliente"         element={<EnfoqueClientePage />} /> {/* ← NUEVO */}
         {user?.role === "Superusuario" && (
           <Route path="usuarios"              element={<UsuariosPage />} />
         )}
 
         {/* §6 */}
-        <Route path="riesgos"                 element={<RiesgosPage />} />
-        <Route path="objetivos-calidad"       element={<ObjetivosCalidadPage />} />
-        <Route path="planificacion-cambios"   element={<PlanificacionCambiosPage />} /> {/* ← NUEVO */}
+        <Route path="riesgos"                 element={<RiesgosPage />} /> <Route path="objetivos-calidad"       element={<ObjetivosCalidadPage />} /> <Route path="planificacion-cambios"   element={<PlanificacionCambiosPage />} /> {/* ← NUEVO */}
 
         {/* §7 */}
-        <Route path="recursos"                element={<RecursosPage />} />
-        <Route path="competencias"            element={<CompetenciasPage />} />
-        <Route path="documentos"             element={<DocumentosPage />} />
-        <Route path="toma-consciencia"        element={<TomaConscienciaPage />} />
-        <Route path="comunicacion"            element={<ComunicacionPage />} />
+        <Route path="recursos"                element={<RecursosPage />} /> <Route path="competencias"            element={<CompetenciasPage />} /> <Route path="documentos"             element={<DocumentosPage />} /> <Route path="toma-consciencia"        element={<TomaConscienciaPage />} /> <Route path="comunicacion"            element={<ComunicacionPage />} />
 
         {/* §8 */}
-        <Route path="planificacion-operacion" element={<PlanificacionOperacionPage />} />
-        <Route path="requerimientos-ps"       element={<RequerimientosPSPage />} />
-        <Route path="diseno-desarrollo"       element={<DisenoDesarrolloPage />} />
-        <Route path="compras"                 element={<ComprasPage />} />
-        <Route path="proveedores"             element={<ProveedoresPage />} />
-        <Route path="produccion-servicio"     element={<ProduccionServicioPage />} />
-        <Route path="liberacion-ps"           element={<LiberacionPSPage />} />
-        <Route path="salidas-nc"              element={<SalidasNCPage />} />
+        <Route path="planificacion-operacion" element={<PlanificacionOperacionPage />} /> <Route path="requerimientos-ps"       element={<RequerimientosPSPage />} /> <Route path="diseno-desarrollo"       element={<DisenoDesarrolloPage />} /> <Route path="compras"                 element={<ComprasPage />} /> <Route path="proveedores"             element={<ProveedoresPage />} /> <Route path="produccion-servicio"     element={<ProduccionServicioPage />} /> <Route path="liberacion-ps"           element={<LiberacionPSPage />} /> <Route path="salidas-nc"              element={<SalidasNCPage />} />
 
         {/* §9 */}
-        <Route path="auditorias"              element={<AuditoriaPage />} />
-        <Route path="indicadores"             element={<IndicadoresPage />} />
-        <Route path="rev-direccion"           element={<RevDireccionPage />} />
+        <Route path="auditorias"              element={<AuditoriaPage />} /> <Route path="indicadores"             element={<IndicadoresPage />} /> <Route path="rev-direccion"           element={<RevDireccionPage />} />
 
         {/* §10 */}
-        <Route path="nc-ac"                   element={<NcAcPage />} />
-        <Route path="mejora-continua"         element={<MejoraContinuaPage />} />
-      </Route>
-
-      <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
-    </Routes>
+        <Route path="nc-ac"                   element={<NcAcPage />} /> <Route path="mejora-continua"         element={<MejoraContinuaPage />} /> </Route> <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} /> </Routes>
   );
 };

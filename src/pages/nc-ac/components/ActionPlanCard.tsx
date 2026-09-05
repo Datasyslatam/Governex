@@ -26,17 +26,11 @@ const fields = [
 
 const ActionPlanCard: React.FC = () => {
   return (
-    <div className="action-plan-card">
-      <h4>Plan de Acción Correctiva — Governex</h4>
-      <dl className="action-plan-card__list">
+    <div className="action-plan-card"> <h4>Plan de Acción Correctiva — Governex</h4> <dl className="action-plan-card__list">
         {fields.map(f => (
-          <div key={f.label} className="action-plan-card__item">
-            <dt>{f.label}</dt>
-            <dd>{f.value}</dd>
-          </div>
+          <div key={f.label} className="action-plan-card__item"> <dt>{f.label}</dt> <dd>{f.value}</dd> </div>
         ))}
-      </dl>
-    </div>
+      </dl> </div>
   );
 };
 

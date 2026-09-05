@@ -17,10 +17,7 @@ const NcKpiCards: React.FC = () => {
         <div
           key={c.label}
           className={`nc-kpis__card nc-kpis__card--${c.variant}`}
-        >
-          <div className="nc-kpis__value">{c.value}</div>
-          <div className="nc-kpis__label">{c.label}</div>
-        </div>
+        > <div className="nc-kpis__value">{c.value}</div> <div className="nc-kpis__label">{c.label}</div> </div>
       ))}
     </section>
   );

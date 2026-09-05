@@ -6,15 +6,7 @@ import "./MainLayout.css";
 
 const MainLayout: React.FC = () => {
   return (
-    <div className="main-layout">
-      <Sidebar />
-      <div className="main-layout__content">
-        <Topbar />
-        <main className="main-layout__page">
-          <Outlet />
-        </main>
-      </div>
-    </div>
+    <div className="main-layout"> <Sidebar /> <div className="main-layout__content"> <Topbar /> <main className="main-layout__page"> <Outlet /> </main> </div> </div>
   );
 };
 

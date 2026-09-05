@@ -7,9 +7,7 @@ interface AuthLayoutProps {
 
 const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
   return (
-    <div className="auth-layout">
-      <div className="auth-layout__container">{children}</div>
-    </div>
+    <div className="auth-layout"> <div className="auth-layout__container">{children}</div> </div>
   );
 };
 

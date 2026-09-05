@@ -38,11 +38,9 @@ const ImpersonationBanner: React.FC = () => {
       padding: '0.5rem 1rem',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       gap: '1rem', fontSize: '0.85rem',
-    }}>
-      <span>
+    }}> <span>
         Viendo Governex como <b>{info.usuarioEmail}</b> ({info.tenantNombre}) — sesión de administrador: {info.adminEmail}
-      </span>
-      <button
+      </span> <button
         onClick={handleExit}
         style={{
           background: '#fff', color: '#7c2d12', border: 'none',
@@ -51,8 +49,7 @@ const ImpersonationBanner: React.FC = () => {
         }}
       >
         Salir y volver al panel admin
-      </button>
-    </div>
+      </button> </div>
   )
 }
 

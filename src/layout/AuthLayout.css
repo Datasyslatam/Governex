@@ -1,10 +1,13 @@
 .auth-layout {
   min-height: 100vh;
-  background: linear-gradient(135deg, #e8eef5 0%, #f0f4f8 100%);
+  background:
+    radial-gradient(ellipse 500px 400px at 15% 20%, rgba(0, 82, 204, 0.15) 0%, transparent 65%),
+    radial-gradient(ellipse 400px 300px at 85% 75%, rgba(0, 180, 216, 0.12) 0%, transparent 60%),
+    linear-gradient(145deg, #061224 0%, #071830 50%, #0A192F 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 0;
 }
 
 .auth-layout__container {

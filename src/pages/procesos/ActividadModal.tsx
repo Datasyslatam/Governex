@@ -36,8 +36,7 @@ interface ItemRowProps {
 }
 
 const ItemRow: React.FC<ItemRowProps> = ({ item, placeholder, onChange, onRemove, canRemove }) => (
-  <div className="act-modal__item-row">
-    <input
+  <div className="act-modal__item-row"> <input
       className="act-modal__item-input"
       placeholder={placeholder}
       value={item.valor}
@@ -50,9 +49,7 @@ const ItemRow: React.FC<ItemRowProps> = ({ item, placeholder, onChange, onRemove
         className="act-modal__item-del"
         onClick={() => onRemove(item.id)}
         title="Eliminar"
-      >
-        ✕
-      </button>
+      > </button>
     )}
   </div>
 )
@@ -157,8 +154,7 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
 
   /* ── Render ────────────────────────────────────────────────── */
   return (
-    <div className="act-modal__overlay" onClick={onCerrar}>
-      <div
+    <div className="act-modal__overlay" onClick={onCerrar}> <div
         className="act-modal__dialog"
         onClick={e => e.stopPropagation()}
         role="dialog"
@@ -170,61 +166,42 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
         }}
       >
         {/* Encabezado — fijo, no hace scroll */}
-        <div className="act-modal__header" style={{ flexShrink: 0 }}>
-          <div className="act-modal__header-left">
-            <span className="act-modal__header-icon">⚙️</span>
-            <div>
-              <h3 id="act-modal-title" className="act-modal__title">
+        <div className="act-modal__header" style={{ flexShrink: 0 }}> <div className="act-modal__header-left"> <span className="act-modal__header-icon"></span> <div> <h3 id="act-modal-title" className="act-modal__title">
                 Registrar Actividad de la Empresa
-              </h3>
-              <p className="act-modal__subtitle">
+              </h3> <p className="act-modal__subtitle">
                 4.1 Caracterización · Las entradas y salidas se propagarán a 6.1 y 8.1
-              </p>
-            </div>
-          </div>
-          <button className="act-modal__close" onClick={onCerrar} aria-label="Cerrar">✕</button>
-        </div>
+              </p> </div> </div> <button className="act-modal__close" onClick={onCerrar} aria-label="Cerrar"></button> </div>
 
         {/* Cuerpo — scrolleable */}
         <div className="act-modal__body">
           {/* Info box */}
-          <div className="act-modal__info-box">
-            <span>💡</span>
-            <span>
+          <div className="act-modal__info-box"> <span></span> <span>
               Cada <strong>entrada</strong> genera un <em>Riesgo</em> en la Matriz 6.1.
               Cada <strong>salida</strong> genera una <em>Oportunidad</em>.
               El <strong>Objetivo</strong> e <strong>Indicador</strong> se generan automáticamente con IA.
-            </span>
-          </div>
+            </span> </div>
 
           {/* Nombre */}
-          <div className="act-modal__field">
-            <label className="act-modal__label" htmlFor="act-nombre">
-              Nombre de la actividad <span className="act-modal__required">*</span>
-            </label>
-            <input
+          <div className="act-modal__field"> <label className="act-modal__label" htmlFor="act-nombre">
+              Nombre de la actividad <span className="act-modal__required">*</span> </label> <input
               id="act-nombre"
               className="act-modal__input"
               placeholder="Ej: Fabricación de piezas metálicas, Atención al cliente…"
               value={nombre}
               onChange={e => { setNombre(e.target.value); setError(''); setAiGenerated(false) }}
               maxLength={120}
-            />
-          </div>
+            /> </div>
 
           {/* Proceso asociado */}
-          <div className="act-modal__field">
-            <label className="act-modal__label" htmlFor="act-proceso">
-              Proceso asociado <span className="act-modal__optional">(opcional)</span>
-            </label>
+          <div className="act-modal__field"> <label className="act-modal__label" htmlFor="act-proceso">
+              Proceso asociado <span className="act-modal__optional">(opcional)</span> </label>
             {procesosDisponibles.length > 0 ? (
               <select
                 id="act-proceso"
                 className="act-modal__select"
                 value={proceso}
                 onChange={e => setProceso(e.target.value)}
-              >
-                <option value="">— Sin proceso asociado —</option>
+              > <option value="">— Sin proceso asociado —</option>
                 {procesosDisponibles.map(p => (
                   <option key={p} value={p}>{p}</option>
                 ))}
@@ -242,34 +219,22 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
           </div>
 
           {/* Responsable */}
-          <div className="act-modal__field">
-            <label className="act-modal__label" htmlFor="act-responsable">
-              Responsable <span className="act-modal__required">*</span>
-            </label>
-            <input
+          <div className="act-modal__field"> <label className="act-modal__label" htmlFor="act-responsable">
+              Responsable <span className="act-modal__required">*</span> </label> <input
               id="act-responsable"
               className="act-modal__input"
               placeholder="Ej: Jefe de Producción, Coordinador de Calidad, Gerente Comercial…"
               value={responsable}
               onChange={e => { setResponsable(e.target.value); setError('') }}
               maxLength={100}
-            />
-          </div>
+            /> </div>
 
           {/* Entradas y Salidas */}
           <div className="act-modal__io-grid">
             {/* Entradas */}
-            <div className="act-modal__io-col act-modal__io-col--entradas">
-              <div className="act-modal__io-header">
-                <span className="act-modal__io-icon">📥</span>
-                <div>
-                  <div className="act-modal__io-title">Entradas</div>
-                  <div className="act-modal__io-desc">
+            <div className="act-modal__io-col act-modal__io-col--entradas"> <div className="act-modal__io-header"> <span className="act-modal__io-icon"></span> <div> <div className="act-modal__io-title">Entradas</div> <div className="act-modal__io-desc">
                     Recursos, información o materiales que la actividad necesita
-                  </div>
-                </div>
-              </div>
-              <div className="act-modal__items">
+                  </div> </div> </div> <div className="act-modal__items">
                 {entradas.map(e => (
                   <ItemRow
                     key={e.id}
@@ -280,35 +245,21 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
                     canRemove={entradas.length > 1}
                   />
                 ))}
-              </div>
-              <button
+              </div> <button
                 type="button"
                 className="act-modal__add-btn act-modal__add-btn--entrada"
                 onClick={addEntrada}
               >
                 + Agregar entrada
-              </button>
-            </div>
+              </button> </div>
 
             {/* Divisor */}
-            <div className="act-modal__io-divider">
-              <div className="act-modal__io-divider-line" />
-              <span className="act-modal__io-divider-icon">⟶</span>
-              <div className="act-modal__io-divider-line" />
-            </div>
+            <div className="act-modal__io-divider"> <div className="act-modal__io-divider-line" /> <span className="act-modal__io-divider-icon">⟶</span> <div className="act-modal__io-divider-line" /> </div>
 
             {/* Salidas */}
-            <div className="act-modal__io-col act-modal__io-col--salidas">
-              <div className="act-modal__io-header">
-                <span className="act-modal__io-icon">📤</span>
-                <div>
-                  <div className="act-modal__io-title">Salidas</div>
-                  <div className="act-modal__io-desc">
+            <div className="act-modal__io-col act-modal__io-col--salidas"> <div className="act-modal__io-header"> <span className="act-modal__io-icon"></span> <div> <div className="act-modal__io-title">Salidas</div> <div className="act-modal__io-desc">
                     Productos, servicios o resultados que genera la actividad
-                  </div>
-                </div>
-              </div>
-              <div className="act-modal__items">
+                  </div> </div> </div> <div className="act-modal__items">
                 {salidas.map(s => (
                   <ItemRow
                     key={s.id}
@@ -319,16 +270,13 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
                     canRemove={salidas.length > 1}
                   />
                 ))}
-              </div>
-              <button
+              </div> <button
                 type="button"
                 className="act-modal__add-btn act-modal__add-btn--salida"
                 onClick={addSalida}
               >
                 + Agregar salida
-              </button>
-            </div>
-          </div>
+              </button> </div> </div>
 
           {/* Sección IA: Objetivo e Indicador */}
           <div style={{
@@ -345,19 +293,11 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
               padding:        '0.75rem 1rem',
               background:     'linear-gradient(135deg, #eff6ff, #e8f0fe)',
               borderBottom:   '1px solid #dbeafe',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.1rem' }}>✨</span>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e40af' }}>
+            }}> <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}> <span style={{ fontSize: '1.1rem' }}></span> <div> <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e40af' }}>
                     Objetivo e Indicador — Generados por IA
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>
+                  </div> <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>
                     Completa el formulario y pulsa el botón para generar automáticamente
-                  </div>
-                </div>
-              </div>
-              <button
+                  </div> </div> </div> <button
                 type="button"
                 onClick={handleGenerarIA}
                 disabled={aiLoading}
@@ -380,8 +320,7 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
                 }}
               >
                 {aiLoading ? (
-                  <>
-                    <span style={{
+                  <> <span style={{
                       width: 14, height: 14,
                       border: '2px solid #9ca3af',
                       borderTop: '2px solid #6b7280',
@@ -392,16 +331,14 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
                     Generando…
                   </>
                 ) : (
-                  <>✨ {aiGenerated ? 'Regenerar con IA' : 'Generar con IA'}</>
+                  <>{aiGenerated ? 'Regenerar con IA' : 'Generar con IA'}</>
                 )}
-              </button>
-            </div>
+              </button> </div>
 
             {/* Campos objetivo e indicador */}
             <div style={{ padding: '0.9rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {/* Objetivo */}
-              <div className="act-modal__field">
-                <label className="act-modal__label" htmlFor="act-objetivo">
+              <div className="act-modal__field"> <label className="act-modal__label" htmlFor="act-objetivo">
                   Objetivo
                   {aiGenerated && (
                     <span style={{
@@ -412,11 +349,9 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
                       fontWeight:   700,
                       padding:      '0.1rem 0.4rem',
                       borderRadius: 999,
-                    }}>✨ IA</span>
+                    }}>IA</span>
                   )}
-                  <span className="act-modal__optional"> (editable)</span>
-                </label>
-                <textarea
+                  <span className="act-modal__optional"> (editable)</span> </label> <textarea
                   id="act-objetivo"
                   className="act-modal__input"
                   rows={2}
@@ -431,12 +366,10 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
                     lineHeight: 1.5,
                     background: aiLoading ? '#f3f4f6' : '#fff',
                   }}
-                />
-              </div>
+                /> </div>
 
               {/* Indicador */}
-              <div className="act-modal__field">
-                <label className="act-modal__label" htmlFor="act-indicador">
+              <div className="act-modal__field"> <label className="act-modal__label" htmlFor="act-indicador">
                   Indicador de desempeño
                   {aiGenerated && (
                     <span style={{
@@ -447,11 +380,9 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
                       fontWeight:   700,
                       padding:      '0.1rem 0.4rem',
                       borderRadius: 999,
-                    }}>✨ IA</span>
+                    }}>IA</span>
                   )}
-                  <span className="act-modal__optional"> (editable)</span>
-                </label>
-                <input
+                  <span className="act-modal__optional"> (editable)</span> </label> <input
                   id="act-indicador"
                   className="act-modal__input"
                   placeholder={aiLoading ? 'Generando indicador…' : 'Se generará automáticamente al pulsar "Generar con IA"…'}
@@ -459,38 +390,30 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
                   onChange={e => setIndicador(e.target.value)}
                   maxLength={300}
                   style={{ background: aiLoading ? '#f3f4f6' : '#fff' }}
-                />
-              </div>
-            </div>
-          </div>
+                /> </div> </div> </div>
 
           {/* Error */}
           {error && (
             <div className="act-modal__error">
-              ⚠️ {error}
+               {error}
             </div>
           )}
         </div>
 
         {/* Footer — fijo, no hace scroll */}
-        <div className="act-modal__footer" style={{ flexShrink: 0 }}>
-          <button type="button" className="act-modal__btn-cancel" onClick={onCerrar}>
+        <div className="act-modal__footer" style={{ flexShrink: 0 }}> <button type="button" className="act-modal__btn-cancel" onClick={onCerrar}>
             Cancelar
-          </button>
-          <button
+          </button> <button
             type="button"
             className="act-modal__btn-save"
             onClick={handleGuardar}
             disabled={aiLoading}
           >
             Guardar actividad →
-          </button>
-        </div>
-      </div>
+          </button> </div> </div>
 
       {/* Keyframe para spinner */}
-      <style>{`@keyframes act-spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
+      <style>{`@keyframes act-spin { to { transform: rotate(360deg); } }`}</style> </div>
   )
 }
 

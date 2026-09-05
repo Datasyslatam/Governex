@@ -251,188 +251,92 @@ const PlatformAdminDashboardPage: React.FC = () => {
 
   /* ── Render ───────────────────────────────────────────────── */
   return (
-    <div className="pa-dashboard">
-      <header className="pa-dashboard__header">
-        <div>
-          <h1>Administración de plataforma</h1>
-          <p className="pa-dashboard__subtitle">Conectado como {admin?.nombre} ({admin?.email})</p>
-        </div>
-        <div className="pa-dashboard__header-actions">
-          <button className="pa-dashboard__btn-secondary" onClick={handleLogout}>Cerrar sesión</button>
-        </div>
-      </header>
-
-      <nav className="pa-dashboard__tabs">
-        <button
+    <div className="pa-dashboard"> <header className="pa-dashboard__header"> <div> <h1>Administración de plataforma</h1> <p className="pa-dashboard__subtitle">Conectado como {admin?.nombre} ({admin?.email})</p> </div> <div className="pa-dashboard__header-actions"> <button className="pa-dashboard__btn-secondary" onClick={handleLogout}>Cerrar sesión</button> </div> </header> <nav className="pa-dashboard__tabs"> <button
           className={`pa-dashboard__tab ${tab === 'dashboard' ? 'pa-dashboard__tab--active' : ''}`}
           onClick={() => setTab('dashboard')}
         >
           Dashboard
-        </button>
-        <button
+        </button> <button
           className={`pa-dashboard__tab ${tab === 'tenants' ? 'pa-dashboard__tab--active' : ''}`}
           onClick={() => setTab('tenants')}
         >
           Tenants
-        </button>
-        <button
+        </button> <button
           className={`pa-dashboard__tab ${tab === 'admins' ? 'pa-dashboard__tab--active' : ''}`}
           onClick={() => setTab('admins')}
         >
           Administradores
-        </button>
-        <button
+        </button> <button
           className={`pa-dashboard__tab ${tab === 'auditoria' ? 'pa-dashboard__tab--active' : ''}`}
           onClick={() => setTab('auditoria')}
         >
           Auditoría
-        </button>
-      </nav>
+        </button> </nav>
 
       {/* ── TAB: DASHBOARD ────────────────────────────────────── */}
       {tab === 'dashboard' && (
         loadingTenants ? <p>Cargando...</p> : (
-          <>
-            <div className="pa-dashboard__stat-cards">
-              <div className="pa-dashboard__stat-card">
-                <span className="pa-dashboard__stat-value">{stats.total}</span>
-                <span className="pa-dashboard__stat-label">Tenants totales</span>
-              </div>
-              <div className="pa-dashboard__stat-card pa-dashboard__stat-card--activo">
-                <span className="pa-dashboard__stat-value">{stats.activos}</span>
-                <span className="pa-dashboard__stat-label">Activos</span>
-              </div>
-              <div className="pa-dashboard__stat-card pa-dashboard__stat-card--suspendido">
-                <span className="pa-dashboard__stat-value">{stats.suspendidos}</span>
-                <span className="pa-dashboard__stat-label">Suspendidos</span>
-              </div>
-              <div className="pa-dashboard__stat-card pa-dashboard__stat-card--cancelado">
-                <span className="pa-dashboard__stat-value">{stats.cancelados}</span>
-                <span className="pa-dashboard__stat-label">Cancelados</span>
-              </div>
-            </div>
-
-            <div className="pa-dashboard__panels">
-              <section className="pa-dashboard__panel">
-                <h2>Distribución por plan</h2>
+          <> <div className="pa-dashboard__stat-cards"> <div className="pa-dashboard__stat-card"> <span className="pa-dashboard__stat-value">{stats.total}</span> <span className="pa-dashboard__stat-label">Tenants totales</span> </div> <div className="pa-dashboard__stat-card pa-dashboard__stat-card--activo"> <span className="pa-dashboard__stat-value">{stats.activos}</span> <span className="pa-dashboard__stat-label">Activos</span> </div> <div className="pa-dashboard__stat-card pa-dashboard__stat-card--suspendido"> <span className="pa-dashboard__stat-value">{stats.suspendidos}</span> <span className="pa-dashboard__stat-label">Suspendidos</span> </div> <div className="pa-dashboard__stat-card pa-dashboard__stat-card--cancelado"> <span className="pa-dashboard__stat-value">{stats.cancelados}</span> <span className="pa-dashboard__stat-label">Cancelados</span> </div> </div> <div className="pa-dashboard__panels"> <section className="pa-dashboard__panel"> <h2>Distribución por plan</h2>
                 {(['Standard', 'Pro', 'Enterprise'] as const).map(plan => {
                   const count = stats.porPlan[plan]
                   const pct = stats.total > 0 ? Math.round((count / stats.total) * 100) : 0
                   return (
-                    <div key={plan} className="pa-dashboard__bar-row">
-                      <span className="pa-dashboard__bar-label">{plan}</span>
-                      <div className="pa-dashboard__bar-track">
-                        <div className="pa-dashboard__bar-fill" style={{ width: `${pct}%` }} />
-                      </div>
-                      <span className="pa-dashboard__bar-count">{count}</span>
-                    </div>
+                    <div key={plan} className="pa-dashboard__bar-row"> <span className="pa-dashboard__bar-label">{plan}</span> <div className="pa-dashboard__bar-track"> <div className="pa-dashboard__bar-fill" style={{ width: `${pct}%` }} /> </div> <span className="pa-dashboard__bar-count">{count}</span> </div>
                   )
                 })}
                 {stats.total === 0 && <p className="pa-dashboard__empty">Aún no hay tenants.</p>}
-              </section>
-
-              <section className="pa-dashboard__panel">
-                <h2>Nuevos tenants (últimos 6 meses)</h2>
-                <div className="pa-dashboard__growth-chart">
+              </section> <section className="pa-dashboard__panel"> <h2>Nuevos tenants (últimos 6 meses)</h2> <div className="pa-dashboard__growth-chart">
                   {crecimientoMensual.map(m => (
-                    <div key={m.label} className="pa-dashboard__growth-col">
-                      <div
+                    <div key={m.label} className="pa-dashboard__growth-col"> <div
                         className="pa-dashboard__growth-bar"
                         style={{ height: `${Math.max(4, (m.count / maxCrecimiento) * 100)}px` }}
                         title={`${m.count} tenant(s)`}
-                      />
-                      <span className="pa-dashboard__growth-count">{m.count}</span>
-                      <span className="pa-dashboard__growth-label">{m.label}</span>
-                    </div>
+                      /> <span className="pa-dashboard__growth-count">{m.count}</span> <span className="pa-dashboard__growth-label">{m.label}</span> </div>
                   ))}
-                </div>
-              </section>
-            </div>
-          </>
+                </div> </section> </div> </>
         )
       )}
 
       {/* ── TAB: TENANTS ─────────────────────────────────────── */}
       {tab === 'tenants' && (
-        <>
-          <div className="pa-dashboard__tab-actions">
-            <button className="pa-dashboard__btn-primary" onClick={() => setShowTenantForm(v => !v)}>
+        <> <div className="pa-dashboard__tab-actions"> <button className="pa-dashboard__btn-primary" onClick={() => setShowTenantForm(v => !v)}>
               {showTenantForm ? 'Cancelar' : '+ Nuevo tenant'}
-            </button>
-          </div>
+            </button> </div>
 
           {showTenantForm && (
-            <form className="pa-dashboard__form" onSubmit={handleCreateTenant}>
-              <h2>Nuevo tenant</h2>
-              <div className="pa-dashboard__form-grid">
-                <label>
+            <form className="pa-dashboard__form" onSubmit={handleCreateTenant}> <h2>Nuevo tenant</h2> <div className="pa-dashboard__form-grid"> <label>
                   Nombre de la empresa
                   <input value={tenantForm.nombreEmpresa} required
-                    onChange={e => setTenantForm(f => ({ ...f, nombreEmpresa: e.target.value }))} />
-                </label>
-                <label>
+                    onChange={e => setTenantForm(f => ({ ...f, nombreEmpresa: e.target.value }))} /> </label> <label>
                   NIT
                   <input value={tenantForm.nit} required
-                    onChange={e => setTenantForm(f => ({ ...f, nit: e.target.value }))} />
-                </label>
-                <label>
+                    onChange={e => setTenantForm(f => ({ ...f, nit: e.target.value }))} /> </label> <label>
                   Plan
                   <select value={tenantForm.plan}
-                    onChange={e => setTenantForm(f => ({ ...f, plan: e.target.value as CreateTenantPayload['plan'] }))}>
-                    <option value="Standard">Standard</option>
-                    <option value="Pro">Pro</option>
-                    <option value="Enterprise">Enterprise</option>
-                  </select>
-                </label>
-                <label>
+                    onChange={e => setTenantForm(f => ({ ...f, plan: e.target.value as CreateTenantPayload['plan'] }))}> <option value="Standard">Standard</option> <option value="Pro">Pro</option> <option value="Enterprise">Enterprise</option> </select> </label> <label>
                   Nombre del administrador
                   <input value={tenantForm.adminNombre} required
-                    onChange={e => setTenantForm(f => ({ ...f, adminNombre: e.target.value }))} />
-                </label>
-                <label>
+                    onChange={e => setTenantForm(f => ({ ...f, adminNombre: e.target.value }))} /> </label> <label>
                   Email del administrador
                   <input type="email" value={tenantForm.adminEmail} required
-                    onChange={e => setTenantForm(f => ({ ...f, adminEmail: e.target.value }))} />
-                </label>
-                <label>
+                    onChange={e => setTenantForm(f => ({ ...f, adminEmail: e.target.value }))} /> </label> <label>
                   Contraseña temporal
                   <input type="password" value={tenantForm.adminPassword} required minLength={8}
-                    onChange={e => setTenantForm(f => ({ ...f, adminPassword: e.target.value }))} />
-                </label>
-              </div>
-              <p className="pa-dashboard__form-hint">
+                    onChange={e => setTenantForm(f => ({ ...f, adminPassword: e.target.value }))} /> </label> </div> <p className="pa-dashboard__form-hint">
                 El administrador quedará creado con rol "Alta Dirección" y podrá invitar al resto
                 de su equipo desde Governex una vez inicie sesión.
-              </p>
-              <button type="submit" className="pa-dashboard__btn-primary" disabled={creatingTenant}>
+              </p> <button type="submit" className="pa-dashboard__btn-primary" disabled={creatingTenant}>
                 {creatingTenant ? 'Creando...' : 'Crear tenant'}
-              </button>
-            </form>
+              </button> </form>
           )}
 
-          <section className="pa-dashboard__table-section">
-            <h2>Tenants ({filteredTenants.length}{filteredTenants.length !== tenants.length ? ` de ${tenants.length}` : ''})</h2>
-
-            <div className="pa-dashboard__filters">
-              <input
+          <section className="pa-dashboard__table-section"> <h2>Tenants ({filteredTenants.length}{filteredTenants.length !== tenants.length ? ` de ${tenants.length}` : ''})</h2> <div className="pa-dashboard__filters"> <input
                 type="text"
                 className="pa-dashboard__search"
                 placeholder="Buscar por nombre o NIT..."
                 value={tenantSearch}
                 onChange={e => setTenantSearch(e.target.value)}
-              />
-              <select value={tenantEstadoFilter} onChange={e => setTenantEstadoFilter(e.target.value as any)}>
-                <option value="Todos">Todos los estados</option>
-                <option value="Activo">Activo</option>
-                <option value="Suspendido">Suspendido</option>
-                <option value="Cancelado">Cancelado</option>
-              </select>
-              <select value={tenantPlanFilter} onChange={e => setTenantPlanFilter(e.target.value as any)}>
-                <option value="Todos">Todos los planes</option>
-                <option value="Standard">Standard</option>
-                <option value="Pro">Pro</option>
-                <option value="Enterprise">Enterprise</option>
-              </select>
+              /> <select value={tenantEstadoFilter} onChange={e => setTenantEstadoFilter(e.target.value as any)}> <option value="Todos">Todos los estados</option> <option value="Activo">Activo</option> <option value="Suspendido">Suspendido</option> <option value="Cancelado">Cancelado</option> </select> <select value={tenantPlanFilter} onChange={e => setTenantPlanFilter(e.target.value as any)}> <option value="Todos">Todos los planes</option> <option value="Standard">Standard</option> <option value="Pro">Pro</option> <option value="Enterprise">Enterprise</option> </select>
               {(tenantSearch || tenantEstadoFilter !== 'Todos' || tenantPlanFilter !== 'Todos') && (
                 <button
                   className="pa-dashboard__btn-link"
@@ -448,164 +352,83 @@ const PlatformAdminDashboardPage: React.FC = () => {
             ) : filteredTenants.length === 0 ? (
               <p className="pa-dashboard__empty">No se encontraron tenants con esos filtros.</p>
             ) : (
-              <table className="pa-dashboard__table">
-                <thead>
-                  <tr>
-                    <th>Empresa</th>
-                    <th>NIT</th>
-                    <th>Plan</th>
-                    <th>Usuarios</th>
-                    <th>Creado</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <table className="pa-dashboard__table"> <thead> <tr> <th>Empresa</th> <th>NIT</th> <th>Plan</th> <th>Usuarios</th> <th>Creado</th> <th>Estado</th> </tr> </thead> <tbody>
                   {filteredTenants.map(t => (
-                    <tr key={t.id}>
-                      <td className="pa-dashboard__link-cell" onClick={() => setSelectedTenantId(t.id)}>
+                    <tr key={t.id}> <td className="pa-dashboard__link-cell" onClick={() => setSelectedTenantId(t.id)}>
                         {t.nombre}
-                      </td>
-                      <td>{t.nit}</td>
-                      <td>{t.plan}</td>
-                      <td>{t.usuarios_count}</td>
-                      <td>{new Date(t.fecha_creacion).toLocaleDateString()}</td>
-                      <td>
-                        <select
+                      </td> <td>{t.nit}</td> <td>{t.plan}</td> <td>{t.usuarios_count}</td> <td>{new Date(t.fecha_creacion).toLocaleDateString()}</td> <td> <select
                           className={`pa-dashboard__estado pa-dashboard__estado--${t.estado.toLowerCase()}`}
                           value={t.estado}
                           onChange={e => {
                             e.stopPropagation()
                             handleTenantEstadoChange(t, e.target.value as TenantSummary['estado'])
                             }}
-                        >
-                          <option value="Activo">Activo</option>
-                          <option value="Suspendido">Suspendido</option>
-                          <option value="Cancelado">Cancelado</option>
-                        </select>
-                      </td>
-                    </tr>
+                        > <option value="Activo">Activo</option> <option value="Suspendido">Suspendido</option> <option value="Cancelado">Cancelado</option> </select> </td> </tr>
                   ))}
-                </tbody>
-              </table>
+                </tbody> </table>
             )}
-          </section>
-        </>
+          </section> </>
       )}
 
       {/* ── TAB: ADMINISTRADORES ─────────────────────────────── */}
       {tab === 'admins' && (
-        <>
-          <div className="pa-dashboard__tab-actions">
-            <button className="pa-dashboard__btn-primary" onClick={() => setShowAdminForm(v => !v)}>
+        <> <div className="pa-dashboard__tab-actions"> <button className="pa-dashboard__btn-primary" onClick={() => setShowAdminForm(v => !v)}>
               {showAdminForm ? 'Cancelar' : '+ Nuevo administrador'}
-            </button>
-          </div>
+            </button> </div>
 
           {showAdminForm && (
-            <form className="pa-dashboard__form" onSubmit={handleCreateAdmin}>
-              <h2>Nuevo administrador de plataforma</h2>
-              <div className="pa-dashboard__form-grid">
-                <label>
+            <form className="pa-dashboard__form" onSubmit={handleCreateAdmin}> <h2>Nuevo administrador de plataforma</h2> <div className="pa-dashboard__form-grid"> <label>
                   Nombre
                   <input value={adminForm.nombre} required
-                    onChange={e => setAdminForm(f => ({ ...f, nombre: e.target.value }))} />
-                </label>
-                <label>
+                    onChange={e => setAdminForm(f => ({ ...f, nombre: e.target.value }))} /> </label> <label>
                   Email
                   <input type="email" value={adminForm.email} required
-                    onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))} />
-                </label>
-                <label>
+                    onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))} /> </label> <label>
                   Contraseña temporal
                   <input type="password" value={adminForm.password} required minLength={8}
-                    onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))} />
-                </label>
-              </div>
-              <p className="pa-dashboard__form-hint">
+                    onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))} /> </label> </div> <p className="pa-dashboard__form-hint">
                 Este usuario tendrá acceso completo a la administración de la plataforma: podrá
                 crear/suspender tenants y crear/desactivar otros administradores.
-              </p>
-              <button type="submit" className="pa-dashboard__btn-primary" disabled={creatingAdmin}>
+              </p> <button type="submit" className="pa-dashboard__btn-primary" disabled={creatingAdmin}>
                 {creatingAdmin ? 'Creando...' : 'Crear administrador'}
-              </button>
-            </form>
+              </button> </form>
           )}
 
-          <section className="pa-dashboard__table-section">
-            <h2>Administradores de plataforma ({admins.length})</h2>
+          <section className="pa-dashboard__table-section"> <h2>Administradores de plataforma ({admins.length})</h2>
             {loadingAdmins ? (
               <p>Cargando...</p>
             ) : (
-              <table className="pa-dashboard__table">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Email</th>
-                    <th>Creado</th>
-                    <th>Estado</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
+              <table className="pa-dashboard__table"> <thead> <tr> <th>Nombre</th> <th>Email</th> <th>Creado</th> <th>Estado</th> <th></th> </tr> </thead> <tbody>
                   {admins.map(a => (
-                    <tr key={a.id}>
-                      <td>{a.nombre}{a.id === admin?.id && <span className="pa-dashboard__tag-self"> (tú)</span>}</td>
-                      <td>{a.email}</td>
-                      <td>{new Date(a.creado_en).toLocaleDateString()}</td>
-                      <td>
-                        <span className={`pa-dashboard__badge pa-dashboard__badge--${a.activo ? 'activo' : 'inactivo'}`}>
+                    <tr key={a.id}> <td>{a.nombre}{a.id === admin?.id && <span className="pa-dashboard__tag-self"> (tú)</span>}</td> <td>{a.email}</td> <td>{new Date(a.creado_en).toLocaleDateString()}</td> <td> <span className={`pa-dashboard__badge pa-dashboard__badge--${a.activo ? 'activo' : 'inactivo'}`}>
                           {a.activo ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </td>
-                      <td>
-                        <button
+                        </span> </td> <td> <button
                           className="pa-dashboard__btn-link"
                           onClick={() => handleAdminEstadoChange(a)}
                           disabled={a.id === admin?.id && a.activo}
                           title={a.id === admin?.id && a.activo ? 'No puedes desactivar tu propia cuenta' : undefined}
                         >
                           {a.activo ? 'Desactivar' : 'Activar'}
-                        </button>
-                      </td>
-                    </tr>
+                        </button> </td> </tr>
                   ))}
-                </tbody>
-              </table>
+                </tbody> </table>
             )}
-          </section>
-        </>
+          </section> </>
       )}
 
       {/* ── TAB: AUDITORÍA ────────────────────────────────────── */}
       {tab === 'auditoria' && (
-        <section className="pa-dashboard__table-section">
-          <h2>Bitácora de acciones ({auditLog.length})</h2>
-          <p className="pa-dashboard__form-hint">Muestra las últimas 200 acciones sensibles ejecutadas por administradores de plataforma.</p>
+        <section className="pa-dashboard__table-section"> <h2>Bitácora de acciones ({auditLog.length})</h2> <p className="pa-dashboard__form-hint">Muestra las últimas 200 acciones sensibles ejecutadas por administradores de plataforma.</p>
           {loadingAudit ? (
             <p>Cargando...</p>
           ) : (
-            <table className="pa-dashboard__table">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Administrador</th>
-                  <th>Acción</th>
-                  <th>Detalle</th>
-                </tr>
-              </thead>
-              <tbody>
+            <table className="pa-dashboard__table"> <thead> <tr> <th>Fecha</th> <th>Administrador</th> <th>Acción</th> <th>Detalle</th> </tr> </thead> <tbody>
                 {auditLog.map(entry => (
-                  <tr key={entry.id}>
-                    <td>{new Date(entry.creado_en).toLocaleString()}</td>
-                    <td>{entry.actor_email}</td>
-                    <td>{ACCION_LABELS[entry.accion] || entry.accion}</td>
-                    <td className="pa-dashboard__audit-detail">
+                  <tr key={entry.id}> <td>{new Date(entry.creado_en).toLocaleString()}</td> <td>{entry.actor_email}</td> <td>{ACCION_LABELS[entry.accion] || entry.accion}</td> <td className="pa-dashboard__audit-detail">
                       {Object.entries(entry.detalle).map(([k, v]) => `${k}: ${v}`).join(' · ')}
-                    </td>
-                  </tr>
+                    </td> </tr>
                 ))}
-              </tbody>
-            </table>
+              </tbody> </table>
           )}
         </section>
       )}

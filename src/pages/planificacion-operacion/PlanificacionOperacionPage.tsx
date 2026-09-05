@@ -69,11 +69,9 @@ const TextoExpandible: React.FC<TextoExpandibleProps> = ({ texto, maxChars = 80 
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-      <span style={{ fontSize: '0.78rem', color: '#374151', lineHeight: 1.45, wordBreak: 'break-word' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}> <span style={{ fontSize: '0.78rem', color: '#374151', lineHeight: 1.45, wordBreak: 'break-word' }}>
         {expanded ? texto : `${texto.slice(0, maxChars)}…`}
-      </span>
-      <button
+      </span> <button
         onClick={() => setExpanded(prev => !prev)}
         style={{
           alignSelf:   'flex-start',
@@ -94,8 +92,7 @@ const TextoExpandible: React.FC<TextoExpandibleProps> = ({ texto, maxChars = 80 
         title={expanded ? 'Colapsar' : 'Ver texto completo'}
       >
         {expanded ? '▲ Ver menos' : '▼ Ver más'}
-      </button>
-    </div>
+      </button> </div>
   )
 }
 
@@ -103,8 +100,7 @@ const TextoExpandible: React.FC<TextoExpandibleProps> = ({ texto, maxChars = 80 
 const ActividadBadge: React.FC<{ nombre: string; codigo: string }> = ({ nombre, codigo }) => {
   const [open, setOpen] = useState(false)
   return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
-      <button
+    <div style={{ position: 'relative', display: 'inline-block' }}> <button
         onClick={() => setOpen(o => !o)}
         title={nombre}
         style={{
@@ -126,15 +122,14 @@ const ActividadBadge: React.FC<{ nombre: string; codigo: string }> = ({ nombre, 
         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#f3e8ff' }}
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fdf4ff' }}
       >
-        ⚙️ {codigo}
+         {codigo}
         <span style={{
           display:    'inline-block',
           transform:  open ? 'rotate(180deg)' : 'none',
           transition: 'transform 0.15s',
           fontSize:   '0.6rem',
           marginLeft: 2,
-        }}>▼</span>
-      </button>
+        }}>▼</span> </button>
 
       {open && (
         <div style={{
@@ -149,14 +144,11 @@ const ActividadBadge: React.FC<{ nombre: string; codigo: string }> = ({ nombre, 
           padding:      '0.65rem 0.85rem',
           minWidth:     220,
           maxWidth:     300,
-        }}>
-          <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#7e22ce', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        }}> <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#7e22ce', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Actividad
-          </div>
-          <div style={{ fontSize: '0.84rem', color: '#1a2b45', fontWeight: 600, lineHeight: 1.4 }}>
+          </div> <div style={{ fontSize: '0.84rem', color: '#1a2b45', fontWeight: 600, lineHeight: 1.4 }}>
             {nombre}
-          </div>
-          <button
+          </div> <button
             onClick={() => setOpen(false)}
             style={{
               position:   'absolute',
@@ -169,8 +161,7 @@ const ActividadBadge: React.FC<{ nombre: string; codigo: string }> = ({ nombre, 
               fontSize:   '0.75rem',
               padding:    '0.1rem 0.3rem',
             }}
-          >✕</button>
-        </div>
+          ></button> </div>
       )}
     </div>
   )
@@ -182,31 +173,16 @@ const EmptyState: React.FC = () => (
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     justifyContent: 'center', gap: '1.25rem',
     padding: '4rem 2rem', textAlign: 'center',
-  }}>
-    <div style={{ fontSize: '3.5rem' }}>🏗️</div>
-    <div>
-      <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#030097', margin: '0 0 0.5rem' }}>
+  }}> <div style={{ fontSize: '3.5rem' }}></div> <div> <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#030097', margin: '0 0 0.5rem' }}>
         Sin análisis disponible
-      </h2>
-      <p style={{ fontSize: '0.88rem', color: '#6b7280', maxWidth: 480, margin: '0 auto' }}>
+      </h2> <p style={{ fontSize: '0.88rem', color: '#6b7280', maxWidth: 480, margin: '0 auto' }}>
         La Tabla de Caracterización, el Mapa de Procedimiento y el Manual de Procedimiento
         se generan automáticamente a partir del análisis IA producido en el módulo{' '}
         <strong>Contexto de la Organización</strong>.
-      </p>
-    </div>
-    <div style={{
+      </p> </div> <div style={{
       background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '0.75rem',
       padding: '1rem 1.5rem', fontSize: '0.82rem', color: '#1e40af', maxWidth: 480,
-    }}>
-      <strong>¿Cómo generar el análisis?</strong>
-      <ol style={{ margin: '0.5rem 0 0', paddingLeft: '1.2rem', textAlign: 'left', lineHeight: 1.8 }}>
-        <li>Ve al módulo <em>Contexto de la Organización</em> (Cap. 4).</li>
-        <li>Construye o carga el organigrama en la pestaña <em>Mapa de Procesos</em>.</li>
-        <li>Haz clic en <strong>"Analizar con Governex IA"</strong> e ingresa el nombre de la empresa y sector.</li>
-        <li>Regresa aquí: los documentos se generarán automáticamente.</li>
-      </ol>
-    </div>
-  </div>
+    }}> <strong>¿Cómo generar el análisis?</strong> <ol style={{ margin: '0.5rem 0 0', paddingLeft: '1.2rem', textAlign: 'left', lineHeight: 1.8 }}> <li>Ve al módulo <em>Contexto de la Organización</em> (Cap. 4).</li> <li>Construye o carga el organigrama en la pestaña <em>Mapa de Procesos</em>.</li> <li>Haz clic en <strong>"Analizar con Governex IA"</strong> e ingresa el nombre de la empresa y sector.</li> <li>Regresa aquí: los documentos se generarán automáticamente.</li> </ol> </div> </div>
 )
 
 /* ──────────────── SUBCOMPONENTE: TABLA DE CARACTERIZACIÓN ─────── */
@@ -288,32 +264,21 @@ const TablaCaracterizacion: React.FC<{
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div className="iso-info-box">
-        <span className="iso-info-box__icon">📌</span>
-        <span>
-          <strong>§4.4 / §8.1</strong> — La tabla de caracterización documenta
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}> <div className="iso-info-box"> <span className="iso-info-box__icon"></span> <span> <strong>§4.4 / §8.1</strong> — La tabla de caracterización documenta
           entradas, salidas, indicadores y responsables de cada proceso del SGC.
-        </span>
-      </div>
-
-      <div className="iso-topbar">
-        <div className="iso-topbar__info">
+        </span> </div> <div className="iso-topbar"> <div className="iso-topbar__info">
           Total procesos: <strong>{rows.length}</strong>
           {search && <span style={{ marginLeft: 8, color: '#6b7280' }}>· Mostrando {filtered.length}</span>}
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <button
+        </div> <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}> <button
             onClick={onRegenerar}
             style={{
               background: '#f59e0b', color: '#fff', border: 'none',
               borderRadius: '0.5rem', padding: '0.4rem 0.9rem',
               fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
             }}
-          >✨ Regenerar Tabla</button>
-          <input
+          >Regenerar Tabla</button> <input
             type="text"
-            placeholder="🔍 Buscar proceso o responsable…"
+            placeholder=" Buscar proceso o responsable…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{
@@ -331,114 +296,59 @@ const TablaCaracterizacion: React.FC<{
               }}
             >＋ Ingresar Manualmente</button>
           )}
-        </div>
-      </div>
+        </div> </div>
 
       {showAdd && canCreate && (
         <div style={{
           background: '#f0f9ff', border: '1px solid #bae6fd',
           borderRadius: '0.6rem', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem',
-        }}>
-          <div style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.85rem' }}>➕ Ingresar Proceso Manualmente</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}>
-            <input placeholder="Código *" value={newManual.codigo}
+        }}> <div style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.85rem' }}> Ingresar Proceso Manualmente</div> <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}> <input placeholder="Código *" value={newManual.codigo}
               onChange={e => setNewManual(p => ({ ...p, codigo: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <input placeholder="Proceso *" value={newManual.proceso}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <input placeholder="Proceso *" value={newManual.proceso}
               onChange={e => setNewManual(p => ({ ...p, proceso: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <input placeholder="Responsable" value={newManual.responsable}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <input placeholder="Responsable" value={newManual.responsable}
               onChange={e => setNewManual(p => ({ ...p, responsable: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <textarea placeholder="Objetivo" value={newManual.objetivo}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <textarea placeholder="Objetivo" value={newManual.objetivo}
               onChange={e => setNewManual(p => ({ ...p, objetivo: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem', gridColumn: '1 / 4' }} />
-            <textarea placeholder="Entradas *" value={newManual.entradas}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem', gridColumn: '1 / 4' }} /> <textarea placeholder="Entradas *" value={newManual.entradas}
               onChange={e => setNewManual(p => ({ ...p, entradas: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem', gridColumn: '1 / 4' }} />
-          </div>
-          
-          <button onClick={handleGenerarIA} disabled={loadingAI}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem', gridColumn: '1 / 4' }} /> </div> <button onClick={handleGenerarIA} disabled={loadingAI}
             style={{ background: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '0.4rem', padding: '0.4rem', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', width: 'fit-content' }}>
-            {loadingAI ? 'Generando...' : '✨ Generar con Governex IA (Actividades, Salidas, Riesgos)'}
-          </button>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
-            <textarea placeholder="Actividades" value={newManual.actividades}
+            {loadingAI ? 'Generando...' : 'Generar con Governex IA (Actividades, Salidas, Riesgos)'}
+          </button> <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}> <textarea placeholder="Actividades" value={newManual.actividades}
               onChange={e => setNewManual(p => ({ ...p, actividades: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <textarea placeholder="Salidas" value={newManual.salidas}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <textarea placeholder="Salidas" value={newManual.salidas}
               onChange={e => setNewManual(p => ({ ...p, salidas: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            
-            <input placeholder="Indicador Entrada" value={newManual.indicadorEntrada}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <input placeholder="Indicador Entrada" value={newManual.indicadorEntrada}
               onChange={e => setNewManual(p => ({ ...p, indicadorEntrada: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <input placeholder="Indicador Actividad" value={newManual.indicadorActividad}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <input placeholder="Indicador Actividad" value={newManual.indicadorActividad}
               onChange={e => setNewManual(p => ({ ...p, indicadorActividad: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <input placeholder="Indicador Salida" value={newManual.indicadorSalida}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <input placeholder="Indicador Salida" value={newManual.indicadorSalida}
               onChange={e => setNewManual(p => ({ ...p, indicadorSalida: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <input placeholder="Indicador General" value={newManual.indicador}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <input placeholder="Indicador General" value={newManual.indicador}
               onChange={e => setNewManual(p => ({ ...p, indicador: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-          </div>
-
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <button onClick={handleSaveManual}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> </div> <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}> <button onClick={handleSaveManual}
               style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: '0.4rem', padding: '0.38rem 0.9rem', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
-            >✔ Guardar Proceso</button>
-            <button onClick={() => setShowAdd(false)}
+            > Guardar Proceso</button> <button onClick={() => setShowAdd(false)}
               style={{ background: '#f3f4f6', color: '#6b7280', border: 'none', borderRadius: '0.4rem', padding: '0.38rem 0.9rem', fontSize: '0.82rem', cursor: 'pointer' }}
-            >✕ Cancelar</button>
-          </div>
-        </div>
+            > Cancelar</button> </div> </div>
       )}
 
-      <div className="iso-table-wrapper" style={{ overflowX: 'auto' }}>
-        <table className="iso-table" style={{ minWidth: 1200 }}>
-          <thead>
-            <tr>
-              <th>Código</th><th>Proceso</th><th>Objetivo</th>
-              <th>Entradas<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Entrada</span></th>
-              <th>Actividades<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Actividad</span></th>
-              <th>Salidas<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Salida</span></th>
-              <th>Indicador Gral.</th>
-              <th>Responsable</th><th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="iso-table-wrapper" style={{ overflowX: 'auto' }}> <table className="iso-table" style={{ minWidth: 1200 }}> <thead> <tr> <th>Código</th><th>Proceso</th><th>Objetivo</th> <th>Entradas<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Entrada</span></th> <th>Actividades<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Actividad</span></th> <th>Salidas<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Salida</span></th> <th>Indicador Gral.</th> <th>Responsable</th><th>Estado</th> <th>Acciones</th> </tr> </thead> <tbody>
             {filtered.length === 0 ? (
               <tr><td colSpan={9} style={{ textAlign: 'center', color: '#9ca3af', padding: '1.5rem' }}>Sin resultados</td></tr>
             ) : filtered.map(row => (
-              <tr key={row.codigo}>
-                <td>
-                  <code style={{
+              <tr key={row.codigo}> <td> <code style={{
                     background: '#eff6ff', color: '#1e40af',
                     padding: '0.15rem 0.5rem', borderRadius: 4,
                     fontSize: '0.78rem', fontWeight: 700,
-                  }}>{row.codigo}</code>
-                </td>
-                <td style={{ fontWeight: 600, color: '#030097' }}>{row.proceso}</td>
-                <td style={{ fontSize: '0.8rem' }}><TextoExpandible texto={row.objetivo} maxChars={80} /></td>
-                <td style={{ fontSize: '0.78rem' }}>
-                  <div style={{ color: '#6b7280', marginBottom: 4 }}><TextoExpandible texto={row.entradas} maxChars={80} /></div>
-                  {row.indicadorEntrada && <div style={{ fontSize: '0.7rem', color: '#0369a1', background: '#e0f2fe', padding: 2, borderRadius: 4 }}>🎯 {row.indicadorEntrada}</div>}
-                </td>
-                <td style={{ fontSize: '0.78rem' }}>
-                  <div style={{ color: '#6b7280', marginBottom: 4 }}><TextoExpandible texto={row.actividades || '—'} maxChars={80} /></div>
-                  {row.indicadorActividad && <div style={{ fontSize: '0.7rem', color: '#b45309', background: '#fef3c7', padding: 2, borderRadius: 4 }}>🎯 {row.indicadorActividad}</div>}
-                </td>
-                <td style={{ fontSize: '0.78rem' }}>
-                  <div style={{ color: '#6b7280', marginBottom: 4 }}><TextoExpandible texto={row.salidas} maxChars={80} /></div>
-                  {row.indicadorSalida && <div style={{ fontSize: '0.7rem', color: '#15803d', background: '#dcfce3', padding: 2, borderRadius: 4 }}>🎯 {row.indicadorSalida}</div>}
-                </td>
-                <td style={{ fontSize: '0.78rem' }}>{row.indicador}</td>
-                <td style={{ fontWeight: 500 }}>{row.responsable}</td>
-                <td><span className={`iso-badge ${estadoBadgeClass(row.estado)}`}>{row.estado}</span></td>
-                <td>
+                  }}>{row.codigo}</code> </td> <td style={{ fontWeight: 600, color: '#030097' }}>{row.proceso}</td> <td style={{ fontSize: '0.8rem' }}><TextoExpandible texto={row.objetivo} maxChars={80} /></td> <td style={{ fontSize: '0.78rem' }}> <div style={{ color: '#6b7280', marginBottom: 4 }}><TextoExpandible texto={row.entradas} maxChars={80} /></div>
+                  {row.indicadorEntrada && <div style={{ fontSize: '0.7rem', color: '#0369a1', background: '#e0f2fe', padding: 2, borderRadius: 4 }}> {row.indicadorEntrada}</div>}
+                </td> <td style={{ fontSize: '0.78rem' }}> <div style={{ color: '#6b7280', marginBottom: 4 }}><TextoExpandible texto={row.actividades || '—'} maxChars={80} /></div>
+                  {row.indicadorActividad && <div style={{ fontSize: '0.7rem', color: '#b45309', background: '#fef3c7', padding: 2, borderRadius: 4 }}> {row.indicadorActividad}</div>}
+                </td> <td style={{ fontSize: '0.78rem' }}> <div style={{ color: '#6b7280', marginBottom: 4 }}><TextoExpandible texto={row.salidas} maxChars={80} /></div>
+                  {row.indicadorSalida && <div style={{ fontSize: '0.7rem', color: '#15803d', background: '#dcfce3', padding: 2, borderRadius: 4 }}> {row.indicadorSalida}</div>}
+                </td> <td style={{ fontSize: '0.78rem' }}>{row.indicador}</td> <td style={{ fontWeight: 500 }}>{row.responsable}</td> <td><span className={`iso-badge ${estadoBadgeClass(row.estado)}`}>{row.estado}</span></td> <td>
                   {onDelete && (
                     <button
                       title="Eliminar registro"
@@ -449,70 +359,36 @@ const TablaCaracterizacion: React.FC<{
                       }}
                       onMouseOver={e => e.currentTarget.style.opacity = '1'}
                       onMouseOut={e => e.currentTarget.style.opacity = '0.6'}
-                    >🗑️</button>
+                    ></button>
                   )}
-                </td>
-              </tr>
+                </td> </tr>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </tbody> </table> </div>
 
       {/* ── Actividades registradas en §4.1 ── */}
       {actividades.length > 0 && (
-        <div style={{ marginTop: '1.5rem' }}>
-          <div style={{
+        <div style={{ marginTop: '1.5rem' }}> <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '0.75rem 0', borderTop: '2px solid #e8edf4', marginBottom: '0.85rem',
-          }}>
-            <div>
-              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#030097' }}>
-                ⚙️ Actividades de la Empresa — §4.1 / §8.1
-              </h4>
-              <p style={{ margin: '0.15rem 0 0', fontSize: '0.78rem', color: '#6b7280' }}>
+          }}> <div> <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#030097' }}>
+                 Actividades de la Empresa — §4.1 / §8.1
+              </h4> <p style={{ margin: '0.15rem 0 0', fontSize: '0.78rem', color: '#6b7280' }}>
                 Actividades con objetivo e indicador generados por IA.
                 Los riesgos y oportunidades asociados se reflejan en §6.1.
-              </p>
-            </div>
-            <span style={{
+              </p> </div> <span style={{
               background: '#fdf4ff', color: '#7e22ce', border: '1px solid #e9d5ff',
               borderRadius: 999, padding: '0.2rem 0.75rem', fontSize: '0.75rem', fontWeight: 700,
             }}>
               {actividades.length} actividad{actividades.length !== 1 ? 'es' : ''}
-            </span>
-          </div>
-
-          <div className="iso-table-wrapper">
-            <table className="iso-table">
-              <thead>
-                <tr>
-                  <th>Actividad</th>
-                  <th>Proceso</th>
-                  <th>Responsable</th>
-                  <th style={{ minWidth: 200 }}>Objetivo ✨</th>
-                  <th style={{ minWidth: 180 }}>Indicador ✨</th>
-                  <th>Entradas</th>
-                  <th>Salidas</th>
-                  <th>Riesgos</th>
-                  <th>Oportunidades</th>
-                  <th>Registrada</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
+            </span> </div> <div className="iso-table-wrapper"> <table className="iso-table"> <thead> <tr> <th>Actividad</th> <th>Proceso</th> <th>Responsable</th> <th style={{ minWidth: 200 }}>Objetivo </th> <th style={{ minWidth: 180 }}>Indicador </th> <th>Entradas</th> <th>Salidas</th> <th>Riesgos</th> <th>Oportunidades</th> <th>Registrada</th> <th>Acciones</th> </tr> </thead> <tbody>
                 {actividades.map(act => {
                   const entradasValidas = act.entradas.filter(e => e.valor.trim())
                   const salidasValidas  = act.salidas.filter(s => s.valor.trim())
                   const codigo = `ACT-${actIdx(act.id)}`
                   return (
-                    <tr key={act.id}>
-                      <td>
-                        <ActividadBadge nombre={act.nombre} codigo={codigo} />
-                      </td>
-                      <td style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                    <tr key={act.id}> <td> <ActividadBadge nombre={act.nombre} codigo={codigo} /> </td> <td style={{ fontSize: '0.8rem', color: '#6b7280' }}>
                         {act.proceso || <em style={{ color: '#9ca3af' }}>—</em>}
-                      </td>
-                      <td style={{ fontSize: '0.8rem', fontWeight: 500 }}>
+                      </td> <td style={{ fontSize: '0.8rem', fontWeight: 500 }}>
                         {act.responsable || <em style={{ color: '#9ca3af' }}>—</em>}
                       </td>
 
@@ -530,9 +406,7 @@ const TablaCaracterizacion: React.FC<{
                           ? <TextoExpandible texto={act.indicador} maxChars={70} />
                           : <em style={{ color: '#9ca3af', fontSize: '0.78rem' }}>—</em>
                         }
-                      </td>
-
-                      <td style={{ fontSize: '0.78rem' }}>
+                      </td> <td style={{ fontSize: '0.78rem' }}>
                         {entradasValidas.length === 0 ? (
                           <em style={{ color: '#9ca3af' }}>Sin entradas</em>
                         ) : (
@@ -542,8 +416,7 @@ const TablaCaracterizacion: React.FC<{
                             ))}
                           </ul>
                         )}
-                      </td>
-                      <td style={{ fontSize: '0.78rem' }}>
+                      </td> <td style={{ fontSize: '0.78rem' }}>
                         {salidasValidas.length === 0 ? (
                           <em style={{ color: '#9ca3af' }}>Sin salidas</em>
                         ) : (
@@ -553,29 +426,21 @@ const TablaCaracterizacion: React.FC<{
                             ))}
                           </ul>
                         )}
-                      </td>
-                      <td>
-                        <span style={{
+                      </td> <td> <span style={{
                           background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca',
                           borderRadius: 999, padding: '0.15rem 0.6rem',
                           fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap',
                         }}>
-                          ⚠️ {entradasValidas.length}
-                        </span>
-                      </td>
-                      <td>
-                        <span style={{
+                           {entradasValidas.length}
+                        </span> </td> <td> <span style={{
                           background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0',
                           borderRadius: 999, padding: '0.15rem 0.6rem',
                           fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap',
                         }}>
-                          🚀 {salidasValidas.length}
-                        </span>
-                      </td>
-                      <td style={{ fontSize: '0.75rem', color: '#9ca3af', whiteSpace: 'nowrap' }}>
+                           {salidasValidas.length}
+                        </span> </td> <td style={{ fontSize: '0.75rem', color: '#9ca3af', whiteSpace: 'nowrap' }}>
                         {new Date(act.creadaEn).toLocaleDateString('es-CO')}
-                      </td>
-                      <td>
+                      </td> <td>
                         {onDeleteActividad && (
                           <button
                             title="Eliminar actividad"
@@ -586,16 +451,12 @@ const TablaCaracterizacion: React.FC<{
                             }}
                             onMouseOver={e => e.currentTarget.style.opacity = '1'}
                             onMouseOut={e => e.currentTarget.style.opacity = '0.6'}
-                          >🗑️</button>
+                          ></button>
                         )}
-                      </td>
-                    </tr>
+                      </td> </tr>
                   )
                 })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </tbody> </table> </div> </div>
       )}
     </div>
   )
@@ -645,15 +506,8 @@ const MapaProcedimiento: React.FC<{
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div className="iso-info-box">
-        <span className="iso-info-box__icon">🗺️</span>
-        <span>
-          <strong>§4.4 / §8.1 - Mapa de Procedimiento</strong> — Relación de procesos clasificados por tipo, responsables, cláusulas ISO aplicables y descripción de funciones.
-        </span>
-      </div>
-
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}> <div className="iso-info-box"> <span className="iso-info-box__icon"></span> <span> <strong>§4.4 / §8.1 - Mapa de Procedimiento</strong> — Relación de procesos clasificados por tipo, responsables, cláusulas ISO aplicables y descripción de funciones.
+        </span> </div> <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
         {(['estrategico', 'misional', 'apoyo'] as TipoProceso[]).map(tipo => {
           const c = TIPO_COLOR[tipo]
           return (
@@ -661,29 +515,20 @@ const MapaProcedimiento: React.FC<{
               background: c.bg, border: `1px solid ${c.border}`,
               borderRadius: '0.6rem', padding: '0.6rem 1.1rem',
               display: 'flex', flexDirection: 'column', gap: 2,
-            }}>
-              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: c.color }}>{grupos[tipo].length}</span>
-              <span style={{ fontSize: '0.73rem', color: c.color, fontWeight: 600 }}>{TIPO_LABEL[tipo]}s</span>
-            </div>
+            }}> <span style={{ fontSize: '1.4rem', fontWeight: 800, color: c.color }}>{grupos[tipo].length}</span> <span style={{ fontSize: '0.73rem', color: c.color, fontWeight: 600 }}>{TIPO_LABEL[tipo]}s</span> </div>
           )
         })}
         {empresa && (
-          <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.6rem 1.1rem' }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#030097' }}>{empresa}</div>
+          <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '0.6rem 1.1rem' }}> <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#030097' }}>{empresa}</div>
             {sector && <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>{sector}</div>}
           </div>
         )}
-      </div>
-
-      <div className="iso-topbar">
-        <div className="iso-topbar__info">
+      </div> <div className="iso-topbar"> <div className="iso-topbar__info">
           Procedimientos en el Mapa: <strong>{filas.length}</strong>
           {search && <span style={{ marginLeft: 8, color: '#6b7280' }}>· Mostrando {filtered.length}</span>}
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <input
+        </div> <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}> <input
             type="text"
-            placeholder="🔍 Filtrar procedimientos…"
+            placeholder=" Filtrar procedimientos…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{ padding: '0.4rem 0.75rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', fontSize: '0.82rem', outline: 'none', width: 220 }}
@@ -698,7 +543,7 @@ const MapaProcedimiento: React.FC<{
                 display: 'flex', alignItems: 'center', gap: '0.4rem', border: 'none'
               }}
             >
-              ✨ Regenerar Mapa con Governex IA
+              Regenerar Mapa con Governex IA
             </button>
           )}
           {canCreate && (
@@ -711,60 +556,32 @@ const MapaProcedimiento: React.FC<{
               }}
             >＋ Agregar</button>
           )}
-        </div>
-      </div>
+        </div> </div>
 
       {/* Formulario de agregar */}
       {showAdd && canCreate && (
         <div style={{
           background: '#f0f9ff', border: '1px solid #bae6fd',
           borderRadius: '0.6rem', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem',
-        }}>
-          <div style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.85rem' }}>➕ Nueva fila — Mapa de Procedimiento</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}>
-            <input placeholder="Nombre del proceso *" value={newFila.proceso}
+        }}> <div style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.85rem' }}> Nueva fila — Mapa de Procedimiento</div> <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}> <input placeholder="Nombre del proceso *" value={newFila.proceso}
               onChange={e => setNewFila(p => ({ ...p, proceso: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <select value={newFila.tipo} onChange={e => setNewFila(p => ({ ...p, tipo: e.target.value as TipoProceso }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }}>
-              <option value="estrategico">Estratégico</option>
-              <option value="misional">Misional</option>
-              <option value="apoyo">Apoyo</option>
-            </select>
-            <input placeholder="Responsable" value={newFila.responsable}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <select value={newFila.tipo} onChange={e => setNewFila(p => ({ ...p, tipo: e.target.value as TipoProceso }))}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }}> <option value="estrategico">Estratégico</option> <option value="misional">Misional</option> <option value="apoyo">Apoyo</option> </select> <input placeholder="Responsable" value={newFila.responsable}
               onChange={e => setNewFila(p => ({ ...p, responsable: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <input placeholder="Cláusula ISO (ej: §8.1)" value={newFila.clausula}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <input placeholder="Cláusula ISO (ej: §8.1)" value={newFila.clausula}
               onChange={e => setNewFila(p => ({ ...p, clausula: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <input placeholder="Funciones / Requisitos" value={newFila.funciones}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <input placeholder="Funciones / Requisitos" value={newFila.funciones}
               onChange={e => setNewFila(p => ({ ...p, funciones: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem', gridColumn: '2 / 4' }} />
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={handleAdd}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem', gridColumn: '2 / 4' }} /> </div> <div style={{ display: 'flex', gap: '0.5rem' }}> <button onClick={handleAdd}
               style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: '0.4rem', padding: '0.38rem 0.9rem', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
-            >✔ Guardar</button>
-            <button onClick={() => setShowAdd(false)}
+            > Guardar</button> <button onClick={() => setShowAdd(false)}
               style={{ background: '#f3f4f6', color: '#6b7280', border: 'none', borderRadius: '0.4rem', padding: '0.38rem 0.9rem', fontSize: '0.82rem', cursor: 'pointer' }}
-            >✕ Cancelar</button>
-          </div>
-        </div>
+            > Cancelar</button> </div> </div>
       )}
 
-      <div className="iso-table-wrapper">
-        <table className="iso-table">
-          <thead>
-            <tr>
-              <th style={{ width: '120px' }}>Tipo</th>
-              <th>Proceso</th>
-              <th>Responsable</th>
-              <th>Cláusula ISO</th>
-              <th>Funciones / Requisitos</th>
+      <div className="iso-table-wrapper"> <table className="iso-table"> <thead> <tr> <th style={{ width: '120px' }}>Tipo</th> <th>Proceso</th> <th>Responsable</th> <th>Cláusula ISO</th> <th>Funciones / Requisitos</th>
               {(canEdit || canDelete) && <th style={{ width: '90px' }}>Acciones</th>}
-            </tr>
-          </thead>
-          <tbody>
+            </tr> </thead> <tbody>
             {filtered.length === 0 ? (
               <tr><td colSpan={6} style={{ textAlign: 'center', color: '#9ca3af', padding: '1.5rem' }}>Sin resultados</td></tr>
             ) : filtered.map(f => {
@@ -772,16 +589,11 @@ const MapaProcedimiento: React.FC<{
               const c = TIPO_COLOR[tipo] || { bg: '#f3f4f6', color: '#374151', border: '#cbd5e1' }
               const isEditing = editingId === f.id
               return (
-                <tr key={f.id}>
-                  <td>
+                <tr key={f.id}> <td>
                     {isEditing && canEdit ? (
                       <select value={editValues.tipo || f.tipo}
                         onChange={e => setEditValues(p => ({ ...p, tipo: e.target.value as TipoProceso }))}
-                        style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.8rem' }}>
-                        <option value="estrategico">Estratégico</option>
-                        <option value="misional">Misional</option>
-                        <option value="apoyo">Apoyo</option>
-                      </select>
+                        style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.8rem' }}> <option value="estrategico">Estratégico</option> <option value="misional">Misional</option> <option value="apoyo">Apoyo</option> </select>
                     ) : (
                       <span style={{
                         background: c.bg, color: c.color, border: `1px solid ${c.border}`,
@@ -789,22 +601,19 @@ const MapaProcedimiento: React.FC<{
                         borderRadius: 6, textTransform: 'uppercase', display: 'inline-block',
                       }}>{TIPO_LABEL[tipo] || tipo}</span>
                     )}
-                  </td>
-                  <td style={{ fontWeight: 600, color: '#030097' }}>
+                  </td> <td style={{ fontWeight: 600, color: '#030097' }}>
                     {isEditing && canEdit ? (
                       <input value={editValues.proceso ?? f.proceso}
                         onChange={e => setEditValues(p => ({ ...p, proceso: e.target.value }))}
                         style={{ width: '100%', padding: '0.3rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.82rem' }} />
                     ) : f.proceso}
-                  </td>
-                  <td>
+                  </td> <td>
                     {isEditing && canEdit ? (
                       <input value={editValues.responsable ?? f.responsable}
                         onChange={e => setEditValues(p => ({ ...p, responsable: e.target.value }))}
                         style={{ width: '100%', padding: '0.3rem 0.5rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.82rem' }} />
                     ) : f.responsable || <em style={{ color: '#9ca3af' }}>—</em>}
-                  </td>
-                  <td>
+                  </td> <td>
                     {isEditing && canEdit ? (
                       <input value={editValues.clausula ?? f.clausula}
                         onChange={e => setEditValues(p => ({ ...p, clausula: e.target.value }))}
@@ -812,8 +621,7 @@ const MapaProcedimiento: React.FC<{
                     ) : f.clausula ? (
                       <span style={{ background: '#e8f0fb', color: '#030097', padding: '0.15rem 0.45rem', borderRadius: 999, fontSize: '0.72rem', fontWeight: 600 }}>{f.clausula}</span>
                     ) : <em style={{ color: '#9ca3af' }}>—</em>}
-                  </td>
-                  <td style={{ fontSize: '0.8rem', color: '#4b5563' }}>
+                  </td> <td style={{ fontSize: '0.8rem', color: '#4b5563' }}>
                     {isEditing && canEdit ? (
                       <input value={editValues.funciones ?? f.funciones}
                         onChange={e => setEditValues(p => ({ ...p, funciones: e.target.value }))}
@@ -821,39 +629,31 @@ const MapaProcedimiento: React.FC<{
                     ) : f.funciones || <em style={{ color: '#9ca3af' }}>—</em>}
                   </td>
                   {(canEdit || canDelete) && (
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center' }}>
+                    <td> <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center' }}>
                         {isEditing && canEdit ? (
-                          <>
-                            <button onClick={() => saveEdit(f.id)}
-                              style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>✔</button>
-                            <button onClick={cancelEdit}
-                              style={{ background: '#e5e7eb', color: '#374151', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer' }}>✕</button>
-                          </>
+                          <> <button onClick={() => saveEdit(f.id)}
+                              style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}></button> <button onClick={cancelEdit}
+                              style={{ background: '#e5e7eb', color: '#374151', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer' }}></button> </>
                         ) : (
                           <>
                             {canEdit && (
                               <button onClick={() => startEdit(f)}
                                 title="Editar fila"
-                                style={{ background: '#eff6ff', color: '#1e40af', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer' }}>✏️</button>
+                                style={{ background: '#eff6ff', color: '#1e40af', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer' }}></button>
                             )}
                             {canDelete && (
                               <button onClick={() => onDelete(f.id)}
                                 title="Eliminar fila"
-                                style={{ background: '#fef2f2', color: '#991b1b', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer' }}>🗑️</button>
+                                style={{ background: '#fef2f2', color: '#991b1b', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer' }}></button>
                             )}
                           </>
                         )}
-                      </div>
-                    </td>
+                      </div> </td>
                   )}
                 </tr>
               )
             })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </tbody> </table> </div> </div>
   )
 }
 
@@ -904,23 +704,13 @@ const ManualProcedimiento: React.FC<{
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div className="iso-info-box">
-        <span className="iso-info-box__icon">📖</span>
-        <span>
-          <strong>§8.1 / §4.4.2 - Manual de Procedimientos</strong> — Fichas de procesos y guías paso a paso del procedimiento operacional estándar.
-        </span>
-      </div>
-
-      <div className="iso-topbar">
-        <div className="iso-topbar__info">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}> <div className="iso-info-box"> <span className="iso-info-box__icon"></span> <span> <strong>§8.1 / §4.4.2 - Manual de Procedimientos</strong> — Fichas de procesos y guías paso a paso del procedimiento operacional estándar.
+        </span> </div> <div className="iso-topbar"> <div className="iso-topbar__info">
           Procedimientos documentados: <strong>{filas.length}</strong>
           {search && <span style={{ marginLeft: 8, color: '#6b7280' }}>· Mostrando {filtered.length}</span>}
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <input
+        </div> <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}> <input
             type="text"
-            placeholder="🔍 Buscar procedimiento o responsable…"
+            placeholder=" Buscar procedimiento o responsable…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{ padding: '0.4rem 0.75rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', fontSize: '0.82rem', outline: 'none', width: 220 }}
@@ -930,73 +720,42 @@ const ManualProcedimiento: React.FC<{
               style={{ background: '#030097', color: '#fff', border: 'none', borderRadius: '0.5rem', padding: '0.4rem 0.9rem', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
             >＋ Agregar</button>
           )}
-        </div>
-      </div>
+        </div> </div>
 
       {/* Formulario de agregar */}
       {showAdd && canCreate && (
-        <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '0.6rem', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          <div style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.85rem' }}>➕ Nueva fila — Manual de Procedimiento</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}>
-            <input placeholder="Código (ej: GP-001)" value={newFila.codigo}
+        <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '0.6rem', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}> <div style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.85rem' }}> Nueva fila — Manual de Procedimiento</div> <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}> <input placeholder="Código (ej: GP-001)" value={newFila.codigo}
               onChange={e => setNewFila(p => ({ ...p, codigo: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <input placeholder="Nombre del proceso *" value={newFila.proceso}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <input placeholder="Nombre del proceso *" value={newFila.proceso}
               onChange={e => setNewFila(p => ({ ...p, proceso: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <input placeholder="Responsable" value={newFila.responsable}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <input placeholder="Responsable" value={newFila.responsable}
               onChange={e => setNewFila(p => ({ ...p, responsable: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <input placeholder="Objetivo" value={newFila.objetivo}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <input placeholder="Objetivo" value={newFila.objetivo}
               onChange={e => setNewFila(p => ({ ...p, objetivo: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <input placeholder="Entradas" value={newFila.entradas}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <input placeholder="Entradas" value={newFila.entradas}
               onChange={e => setNewFila(p => ({ ...p, entradas: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <input placeholder="Salidas" value={newFila.salidas}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <input placeholder="Salidas" value={newFila.salidas}
               onChange={e => setNewFila(p => ({ ...p, salidas: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <input placeholder="Indicador" value={newFila.indicador}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <input placeholder="Indicador" value={newFila.indicador}
               onChange={e => setNewFila(p => ({ ...p, indicador: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <input placeholder="Cláusula ISO (ej: §8.1)" value={newFila.clausula}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <input placeholder="Cláusula ISO (ej: §8.1)" value={newFila.clausula}
               onChange={e => setNewFila(p => ({ ...p, clausula: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} />
-            <select value={newFila.estado} onChange={e => setNewFila(p => ({ ...p, estado: e.target.value }))}
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }}>
-              <option>Activo</option><option>Revisión</option><option>Inactivo</option>
-            </select>
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={handleAdd}
-              style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: '0.4rem', padding: '0.38rem 0.9rem', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>✔ Guardar</button>
-            <button onClick={() => setShowAdd(false)}
-              style={{ background: '#f3f4f6', color: '#6b7280', border: 'none', borderRadius: '0.4rem', padding: '0.38rem 0.9rem', fontSize: '0.82rem', cursor: 'pointer' }}>✕ Cancelar</button>
-          </div>
-        </div>
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }} /> <select value={newFila.estado} onChange={e => setNewFila(p => ({ ...p, estado: e.target.value }))}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid #cbd5e1', borderRadius: '0.4rem', fontSize: '0.82rem' }}> <option>Activo</option><option>Revisión</option><option>Inactivo</option> </select> </div> <div style={{ display: 'flex', gap: '0.5rem' }}> <button onClick={handleAdd}
+              style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: '0.4rem', padding: '0.38rem 0.9rem', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}> Guardar</button> <button onClick={() => setShowAdd(false)}
+              style={{ background: '#f3f4f6', color: '#6b7280', border: 'none', borderRadius: '0.4rem', padding: '0.38rem 0.9rem', fontSize: '0.82rem', cursor: 'pointer' }}> Cancelar</button> </div> </div>
       )}
 
-      <div className="iso-table-wrapper">
-        <table className="iso-table">
-          <thead>
-            <tr>
-              <th style={{ width: '90px' }}>Código</th>
-              <th style={{ width: '180px' }}>Proceso / Responsable</th>
-              <th style={{ width: '220px' }}>Ficha Técnica SGC</th>
-              <th style={{ minWidth: '300px' }}>Procedimiento Operacional</th>
-              <th style={{ width: '110px' }}>Cláusula ISO</th>
+      <div className="iso-table-wrapper"> <table className="iso-table"> <thead> <tr> <th style={{ width: '90px' }}>Código</th> <th style={{ width: '180px' }}>Proceso / Responsable</th> <th style={{ width: '220px' }}>Ficha Técnica SGC</th> <th style={{ minWidth: '300px' }}>Procedimiento Operacional</th> <th style={{ width: '110px' }}>Cláusula ISO</th>
               {(canEdit || canDelete) && <th style={{ width: '90px' }}>Acciones</th>}
-            </tr>
-          </thead>
-          <tbody>
+            </tr> </thead> <tbody>
             {filtered.length === 0 ? (
               <tr><td colSpan={6} style={{ textAlign: 'center', color: '#9ca3af', padding: '1.5rem' }}>Sin resultados</td></tr>
             ) : filtered.map(row => {
               const isEditing = editingId === row.id
               const pasos = generarPasos(row)
               return (
-                <tr key={row.id} style={{ verticalAlign: 'top' }}>
-                  <td>
+                <tr key={row.id} style={{ verticalAlign: 'top' }}> <td>
                     {isEditing && canEdit ? (
                       <input value={editValues.codigo ?? row.codigo}
                         onChange={e => setEditValues(p => ({ ...p, codigo: e.target.value }))}
@@ -1004,65 +763,37 @@ const ManualProcedimiento: React.FC<{
                     ) : (
                       <code style={{ background: '#030097', color: '#fff', fontSize: '0.72rem', fontWeight: 700, padding: '0.2rem 0.55rem', borderRadius: 4, display: 'inline-block' }}>{row.codigo}</code>
                     )}
-                  </td>
-                  <td>
+                  </td> <td>
                     {isEditing && canEdit ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <input value={editValues.proceso ?? row.proceso}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}> <input value={editValues.proceso ?? row.proceso}
                           onChange={e => setEditValues(p => ({ ...p, proceso: e.target.value }))}
-                          style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.82rem' }} />
-                        <input value={editValues.responsable ?? row.responsable}
+                          style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.82rem' }} /> <input value={editValues.responsable ?? row.responsable}
                           onChange={e => setEditValues(p => ({ ...p, responsable: e.target.value }))}
-                          style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.78rem' }} />
-                        <select value={editValues.estado ?? row.estado}
+                          style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.78rem' }} /> <select value={editValues.estado ?? row.estado}
                           onChange={e => setEditValues(p => ({ ...p, estado: e.target.value }))}
-                          style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.78rem' }}>
-                          <option>Activo</option><option>Revisión</option><option>Inactivo</option>
-                        </select>
-                      </div>
+                          style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.78rem' }}> <option>Activo</option><option>Revisión</option><option>Inactivo</option> </select> </div>
                     ) : (
-                      <>
-                        <div style={{ fontWeight: 700, color: '#030097', fontSize: '0.85rem', marginBottom: 4 }}>{row.proceso}</div>
-                        <div style={{ fontSize: '0.74rem', color: '#6b7280' }}>👤 <strong>Resp:</strong> {row.responsable || '—'}</div>
-                        <div style={{ marginTop: 4 }}><span className={`iso-badge ${estadoBadgeClass(row.estado)}`}>{row.estado}</span></div>
-                      </>
+                      <> <div style={{ fontWeight: 700, color: '#030097', fontSize: '0.85rem', marginBottom: 4 }}>{row.proceso}</div> <div style={{ fontSize: '0.74rem', color: '#6b7280' }}> <strong>Resp:</strong> {row.responsable || '—'}</div> <div style={{ marginTop: 4 }}><span className={`iso-badge ${estadoBadgeClass(row.estado)}`}>{row.estado}</span></div> </>
                     )}
-                  </td>
-                  <td style={{ fontSize: '0.78rem', color: '#4b5563', lineHeight: 1.5 }}>
+                  </td> <td style={{ fontSize: '0.78rem', color: '#4b5563', lineHeight: 1.5 }}>
                     {isEditing && canEdit ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <input placeholder="Objetivo" value={editValues.objetivo ?? row.objetivo}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}> <input placeholder="Objetivo" value={editValues.objetivo ?? row.objetivo}
                           onChange={e => setEditValues(p => ({ ...p, objetivo: e.target.value }))}
-                          style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.78rem' }} />
-                        <input placeholder="Entradas" value={editValues.entradas ?? row.entradas}
+                          style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.78rem' }} /> <input placeholder="Entradas" value={editValues.entradas ?? row.entradas}
                           onChange={e => setEditValues(p => ({ ...p, entradas: e.target.value }))}
-                          style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.78rem' }} />
-                        <input placeholder="Salidas" value={editValues.salidas ?? row.salidas}
+                          style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.78rem' }} /> <input placeholder="Salidas" value={editValues.salidas ?? row.salidas}
                           onChange={e => setEditValues(p => ({ ...p, salidas: e.target.value }))}
-                          style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.78rem' }} />
-                        <input placeholder="Indicador" value={editValues.indicador ?? row.indicador}
+                          style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.78rem' }} /> <input placeholder="Indicador" value={editValues.indicador ?? row.indicador}
                           onChange={e => setEditValues(p => ({ ...p, indicador: e.target.value }))}
-                          style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.78rem' }} />
-                      </div>
+                          style={{ padding: '0.3rem', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: '0.78rem' }} /> </div>
                     ) : (
-                      <>
-                        <div style={{ marginBottom: 4 }}><strong>🎯 Objetivo:</strong> {row.objetivo || <em style={{ color: '#9ca3af' }}>—</em>}</div>
-                        <div style={{ marginBottom: 4 }}><strong>📥 Entradas:</strong> {row.entradas || <em style={{ color: '#9ca3af' }}>—</em>}</div>
-                        <div style={{ marginBottom: 4 }}><strong>📤 Salidas:</strong> {row.salidas || <em style={{ color: '#9ca3af' }}>—</em>}</div>
-                        <div><strong>📊 Indicador:</strong> {row.indicador || <em style={{ color: '#9ca3af' }}>—</em>}</div>
-                      </>
+                      <> <div style={{ marginBottom: 4 }}><strong>Objetivo:</strong> {row.objetivo || <em style={{ color: '#9ca3af' }}>—</em>}</div> <div style={{ marginBottom: 4 }}><strong> Entradas:</strong> {row.entradas || <em style={{ color: '#9ca3af' }}>—</em>}</div> <div style={{ marginBottom: 4 }}><strong> Salidas:</strong> {row.salidas || <em style={{ color: '#9ca3af' }}>—</em>}</div> <div><strong> Indicador:</strong> {row.indicador || <em style={{ color: '#9ca3af' }}>—</em>}</div> </>
                     )}
-                  </td>
-                  <td>
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '0.4rem', padding: '0.6rem 0.75rem' }}>
-                      <ol style={{ margin: 0, paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  </td> <td> <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '0.4rem', padding: '0.6rem 0.75rem' }}> <ol style={{ margin: 0, paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: 4 }}>
                         {pasos.map((paso, idx) => (
                           <li key={idx} style={{ fontSize: '0.78rem', color: '#374151', lineHeight: 1.45 }}>{paso}</li>
                         ))}
-                      </ol>
-                    </div>
-                  </td>
-                  <td>
+                      </ol> </div> </td> <td>
                     {isEditing && canEdit ? (
                       <input value={editValues.clausula ?? row.clausula}
                         onChange={e => setEditValues(p => ({ ...p, clausula: e.target.value }))}
@@ -1072,39 +803,31 @@ const ManualProcedimiento: React.FC<{
                     ) : <em style={{ color: '#9ca3af' }}>—</em>}
                   </td>
                   {(canEdit || canDelete) && (
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center' }}>
+                    <td> <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center' }}>
                         {isEditing && canEdit ? (
-                          <>
-                            <button onClick={() => saveEdit(row.id)}
-                              style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>✔</button>
-                            <button onClick={cancelEdit}
-                              style={{ background: '#e5e7eb', color: '#374151', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer' }}>✕</button>
-                          </>
+                          <> <button onClick={() => saveEdit(row.id)}
+                              style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}></button> <button onClick={cancelEdit}
+                              style={{ background: '#e5e7eb', color: '#374151', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer' }}></button> </>
                         ) : (
                           <>
                             {canEdit && (
                               <button onClick={() => startEdit(row)}
                                 title="Editar fila"
-                                style={{ background: '#eff6ff', color: '#1e40af', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer' }}>✏️</button>
+                                style={{ background: '#eff6ff', color: '#1e40af', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer' }}></button>
                             )}
                             {canDelete && (
                               <button onClick={() => onDelete(row.id)}
                                 title="Eliminar fila"
-                                style={{ background: '#fef2f2', color: '#991b1b', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer' }}>🗑️</button>
+                                style={{ background: '#fef2f2', color: '#991b1b', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', fontSize: '0.75rem', cursor: 'pointer' }}></button>
                             )}
                           </>
                         )}
-                      </div>
-                    </td>
+                      </div> </td>
                   )}
                 </tr>
               )
             })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </tbody> </table> </div> </div>
   )
 }
 
@@ -1139,16 +862,9 @@ const MatrizRiesgosActividades: React.FC<{
   )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div className="iso-info-box">
-        <span className="iso-info-box__icon">⚠️</span>
-        <span>
-          <strong>§6.1 / §8.1</strong> — Riesgos y oportunidades derivados de las actividades
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}> <div className="iso-info-box"> <span className="iso-info-box__icon"></span> <span> <strong>§6.1 / §8.1</strong> — Riesgos y oportunidades derivados de las actividades
           propias de la empresa. La descripción se genera a partir de las entradas y salidas registradas.
-        </span>
-      </div>
-
-      <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+        </span> </div> <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
         {[
           { val: riesgos.length,                                        lbl: 'Total',          color: '#7e22ce', bg: '#fdf4ff', border: '#e9d5ff' },
           { val: riesgos.filter(r => r.tipo === 'Riesgo').length,       lbl: 'Riesgos',        color: '#991b1b', bg: '#fef2f2', border: '#fecaca' },
@@ -1158,18 +874,11 @@ const MatrizRiesgosActividades: React.FC<{
           <div key={lbl} style={{
             background: bg, border: `1px solid ${border}`,
             borderRadius: '0.6rem', padding: '0.45rem 0.85rem', textAlign: 'center', minWidth: 70,
-          }}>
-            <div style={{ fontSize: '1.15rem', fontWeight: 800, color }}>{val}</div>
-            <div style={{ fontSize: '0.68rem', color: '#6b7280' }}>{lbl}</div>
-          </div>
+          }}> <div style={{ fontSize: '1.15rem', fontWeight: 800, color }}>{val}</div> <div style={{ fontSize: '0.68rem', color: '#6b7280' }}>{lbl}</div> </div>
         ))}
-      </div>
-
-      <div className="iso-topbar">
-        <div className="iso-topbar__info">
+      </div> <div className="iso-topbar"> <div className="iso-topbar__info">
           Mostrando <strong>{filtered.length}</strong> de <strong>{riesgos.length}</strong> elementos
-        </div>
-        <select
+        </div> <select
           value={filterTipo}
           onChange={e => setFilterTipo(e.target.value as any)}
           style={{
@@ -1177,82 +886,37 @@ const MatrizRiesgosActividades: React.FC<{
             borderRadius: '0.5rem', fontSize: '0.82rem', outline: 'none',
             background: '#fff',
           }}
-        >
-          <option value="todos">Todos los tipos</option>
-          <option value="Riesgo">Solo Riesgos</option>
-          <option value="Oportunidad">Solo Oportunidades</option>
-        </select>
-      </div>
-
-      <div className="iso-table-wrapper">
-        <table className="iso-table">
-          <thead>
-            <tr>
-              <th>Código</th>
-              <th>Actividad</th>
-              <th>Tipo</th>
-              <th>Categoría</th>
-              <th>Descripción</th>
-              <th style={{ textAlign: 'center' }}>P</th>
-              <th style={{ textAlign: 'center' }}>I</th>
-              <th>Nivel</th>
-              <th>Estado</th>
-              <th>Responsable</th>
-              <th>Acciones sugeridas</th>
-            </tr>
-          </thead>
-          <tbody>
+        > <option value="todos">Todos los tipos</option> <option value="Riesgo">Solo Riesgos</option> <option value="Oportunidad">Solo Oportunidades</option> </select> </div> <div className="iso-table-wrapper"> <table className="iso-table"> <thead> <tr> <th>Código</th> <th>Actividad</th> <th>Tipo</th> <th>Categoría</th> <th>Descripción</th> <th style={{ textAlign: 'center' }}>P</th> <th style={{ textAlign: 'center' }}>I</th> <th>Nivel</th> <th>Estado</th> <th>Responsable</th> <th>Acciones sugeridas</th> </tr> </thead> <tbody>
             {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={11} style={{ textAlign: 'center', color: '#9ca3af', padding: '1.5rem' }}>
+              <tr> <td colSpan={11} style={{ textAlign: 'center', color: '#9ca3af', padding: '1.5rem' }}>
                   Sin resultados con el filtro actual
-                </td>
-              </tr>
+                </td> </tr>
             ) : filtered.map((r: RiesgoDerivado) => {
               const actCodigo = r.actividadId
                 ? `ACT-${actIdxMap[r.actividadId] ?? '001'}`
                 : r.codigo.split('-').slice(0, 2).join('-')
               const actNombre = r.actividadNombre ?? '—'
               return (
-                <tr key={r.codigo}>
-                  <td>
-                    <code style={{
+                <tr key={r.codigo}> <td> <code style={{
                       background: r.tipo === 'Riesgo' ? '#fef2f2' : '#f0fdf4',
                       color:      r.tipo === 'Riesgo' ? '#991b1b' : '#166534',
                       padding: '0.15rem 0.45rem', borderRadius: 4,
                       fontSize: '0.72rem', fontWeight: 700,
-                    }}>{r.codigo}</code>
-                  </td>
-                  <td>
-                    <ActividadBadge nombre={actNombre} codigo={actCodigo} />
-                  </td>
-                  <td>
-                    <span style={{
+                    }}>{r.codigo}</code> </td> <td> <ActividadBadge nombre={actNombre} codigo={actCodigo} /> </td> <td> <span style={{
                       background: r.tipo === 'Riesgo' ? '#fef2f2' : '#f0fdf4',
                       color:      r.tipo === 'Riesgo' ? '#991b1b' : '#166534',
                       border:     `1px solid ${r.tipo === 'Riesgo' ? '#fecaca' : '#bbf7d0'}`,
                       borderRadius: 999, padding: '0.15rem 0.6rem',
                       fontSize: '0.73rem', fontWeight: 700, whiteSpace: 'nowrap',
                     }}>
-                      {r.tipo === 'Riesgo' ? '⚠️ Riesgo' : '🚀 Oportunidad'}
-                    </span>
-                  </td>
-                  <td>
-                    <span style={{
+                      {r.tipo === 'Riesgo' ? ' Riesgo' : ' Oportunidad'}
+                    </span> </td> <td> <span style={{
                       background: '#fdf4ff', color: '#7e22ce', border: '1px solid #e9d5ff',
                       borderRadius: 999, padding: '0.15rem 0.6rem',
                       fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap',
                     }}>
-                      ⚙️ {r.categoria}
-                    </span>
-                  </td>
-                  <td style={{ maxWidth: 260, verticalAlign: 'top' }}>
-                    <TextoExpandible texto={r.descripcion} maxChars={100} />
-                  </td>
-                  <td style={{ textAlign: 'center', fontWeight: 700 }}>{r.probabilidad}</td>
-                  <td style={{ textAlign: 'center', fontWeight: 700 }}>{r.impacto}</td>
-                  <td>
-                    <span style={{
+                       {r.categoria}
+                    </span> </td> <td style={{ maxWidth: 260, verticalAlign: 'top' }}> <TextoExpandible texto={r.descripcion} maxChars={100} /> </td> <td style={{ textAlign: 'center', fontWeight: 700 }}>{r.probabilidad}</td> <td style={{ textAlign: 'center', fontWeight: 700 }}>{r.impacto}</td> <td> <span style={{
                       background:   getLevelVariant(r.nivel) === 'critical' ? '#fee2e2'
                                   : getLevelVariant(r.nivel) === 'high'     ? '#fef3c7'
                                   : getLevelVariant(r.nivel) === 'medium'   ? '#fefce8'
@@ -1265,29 +929,17 @@ const MatrizRiesgosActividades: React.FC<{
                       fontSize: '0.73rem', fontWeight: 700, whiteSpace: 'nowrap',
                     }}>
                       {r.nivel} — {getLevelLabel(r.nivel)}
-                    </span>
-                  </td>
-                  <td>
-                    <span style={{
+                    </span> </td> <td> <span style={{
                       background:   r.estado === 'CRITICO'     ? '#fee2e2'
                                   : r.estado === 'TRATAMIENTO' ? '#fef3c7' : '#f0fdf4',
                       color:        r.estado === 'CRITICO'     ? '#991b1b'
                                   : r.estado === 'TRATAMIENTO' ? '#92400e' : '#166534',
                       borderRadius: 999, padding: '0.15rem 0.55rem',
                       fontSize: '0.7rem', fontWeight: 700, whiteSpace: 'nowrap',
-                    }}>{r.estado}</span>
-                  </td>
-                  <td style={{ fontSize: '0.79rem', fontWeight: 500 }}>{r.responsable}</td>
-                  <td style={{ maxWidth: 220, verticalAlign: 'top' }}>
-                    <TextoExpandible texto={r.acciones} maxChars={90} />
-                  </td>
-                </tr>
+                    }}>{r.estado}</span> </td> <td style={{ fontSize: '0.79rem', fontWeight: 500 }}>{r.responsable}</td> <td style={{ maxWidth: 220, verticalAlign: 'top' }}> <TextoExpandible texto={r.acciones} maxChars={90} /> </td> </tr>
               )
             })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </tbody> </table> </div> </div>
   )
 }
 
@@ -1307,62 +959,30 @@ const IndicadoresCaracterizacion: React.FC<{ rows: CaracterizacionRow[] }> = ({ 
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div className="iso-info-box">
-        <span className="iso-info-box__icon">📈</span>
-        <span>
-          <strong>Indicadores de Procesos</strong> — Muestra los indicadores generales, de entrada, de actividades y de salida identificados en la tabla de caracterización.
-        </span>
-      </div>
-
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-        <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '1rem 1.5rem', minWidth: 200 }}>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#FE7F03' }}>{getTotal()}</div>
-          <div style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: 600 }}>Indicadores Totales</div>
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}> <div className="iso-info-box"> <span className="iso-info-box__icon"></span> <span> <strong>Indicadores de Procesos</strong> — Muestra los indicadores generales, de entrada, de actividades y de salida identificados en la tabla de caracterización.
+        </span> </div> <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}> <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '1rem 1.5rem', minWidth: 200 }}> <div style={{ fontSize: '2rem', fontWeight: 800, color: '#FE7F03' }}>{getTotal()}</div> <div style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: 600 }}>Indicadores Totales</div> </div> </div> <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
         {rows.map((r, i) => {
           const hasInds = r.indicador || r.indicadorEntrada || r.indicadorActividad || r.indicadorSalida
           if (!hasInds) return null
 
           return (
-            <div key={i} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '1rem' }}>
-              <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, marginBottom: '0.2rem' }}>{r.codigo}</div>
-              <div style={{ fontSize: '1rem', fontWeight: 700, color: '#030097', marginBottom: '1rem' }}>{r.proceso}</div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            <div key={i} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '0.6rem', padding: '1rem' }}> <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, marginBottom: '0.2rem' }}>{r.codigo}</div> <div style={{ fontSize: '1rem', fontWeight: 700, color: '#030097', marginBottom: '1rem' }}>{r.proceso}</div> <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                 {r.indicador && (
-                  <div style={{ background: '#f0fdf4', padding: '0.6rem', borderRadius: '0.4rem', borderLeft: '4px solid #22c55e' }}>
-                    <div style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 700, marginBottom: '0.2rem' }}>General</div>
-                    <div style={{ fontSize: '0.85rem', color: '#111827' }}>{r.indicador}</div>
-                  </div>
+                  <div style={{ background: '#f0fdf4', padding: '0.6rem', borderRadius: '0.4rem', borderLeft: '4px solid #22c55e' }}> <div style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 700, marginBottom: '0.2rem' }}>General</div> <div style={{ fontSize: '0.85rem', color: '#111827' }}>{r.indicador}</div> </div>
                 )}
                 {r.indicadorEntrada && (
-                  <div style={{ background: '#eff6ff', padding: '0.6rem', borderRadius: '0.4rem', borderLeft: '4px solid #3b82f6' }}>
-                    <div style={{ fontSize: '0.7rem', color: '#1e3a8a', fontWeight: 700, marginBottom: '0.2rem' }}>Entrada</div>
-                    <div style={{ fontSize: '0.85rem', color: '#111827' }}>{r.indicadorEntrada}</div>
-                  </div>
+                  <div style={{ background: '#eff6ff', padding: '0.6rem', borderRadius: '0.4rem', borderLeft: '4px solid #3b82f6' }}> <div style={{ fontSize: '0.7rem', color: '#1e3a8a', fontWeight: 700, marginBottom: '0.2rem' }}>Entrada</div> <div style={{ fontSize: '0.85rem', color: '#111827' }}>{r.indicadorEntrada}</div> </div>
                 )}
                 {r.indicadorActividad && (
-                  <div style={{ background: '#fdf4ff', padding: '0.6rem', borderRadius: '0.4rem', borderLeft: '4px solid #d946ef' }}>
-                    <div style={{ fontSize: '0.7rem', color: '#86198f', fontWeight: 700, marginBottom: '0.2rem' }}>Actividad</div>
-                    <div style={{ fontSize: '0.85rem', color: '#111827' }}>{r.indicadorActividad}</div>
-                  </div>
+                  <div style={{ background: '#fdf4ff', padding: '0.6rem', borderRadius: '0.4rem', borderLeft: '4px solid #d946ef' }}> <div style={{ fontSize: '0.7rem', color: '#86198f', fontWeight: 700, marginBottom: '0.2rem' }}>Actividad</div> <div style={{ fontSize: '0.85rem', color: '#111827' }}>{r.indicadorActividad}</div> </div>
                 )}
                 {r.indicadorSalida && (
-                  <div style={{ background: '#fffbeb', padding: '0.6rem', borderRadius: '0.4rem', borderLeft: '4px solid #f59e0b' }}>
-                    <div style={{ fontSize: '0.7rem', color: '#b45309', fontWeight: 700, marginBottom: '0.2rem' }}>Salida</div>
-                    <div style={{ fontSize: '0.85rem', color: '#111827' }}>{r.indicadorSalida}</div>
-                  </div>
+                  <div style={{ background: '#fffbeb', padding: '0.6rem', borderRadius: '0.4rem', borderLeft: '4px solid #f59e0b' }}> <div style={{ fontSize: '0.7rem', color: '#b45309', fontWeight: 700, marginBottom: '0.2rem' }}>Salida</div> <div style={{ fontSize: '0.85rem', color: '#111827' }}>{r.indicadorSalida}</div> </div>
                 )}
-              </div>
-            </div>
+              </div> </div>
           )
         })}
-      </div>
-    </div>
+      </div> </div>
   )
 }
 
@@ -1475,19 +1095,15 @@ const PlanificacionOperacionPage: React.FC = () => {
   }
 
   const TABS: { id: Tab; label: string; count?: number }[] = [
-    { id: 'caracterizacion', label: '📋 Tabla de Caracterización', count: caracterizacion.length },
-    { id: 'mapa',            label: '🗺️ Mapa de Procedimiento',    count: matrizRoles.length    },
-    { id: 'manual',          label: '📖 Manual de Procedimiento',  count: manualRows.length     },
-    { id: 'riesgos',         label: '⚠️ Riesgos de Actividades',   count: actividades.length    },
-    { id: 'indicadores',     label: '📈 Indicadores',              count: caracterizacion.length },
+    { id: 'caracterizacion', label: ' Tabla de Caracterización', count: caracterizacion.length },
+    { id: 'mapa',            label: ' Mapa de Procedimiento',    count: matrizRoles.length    },
+    { id: 'manual',          label: ' Manual de Procedimiento',  count: manualRows.length     },
+    { id: 'riesgos',         label: ' Riesgos de Actividades',   count: actividades.length    },
+    { id: 'indicadores',     label: ' Indicadores',              count: caracterizacion.length },
   ]
 
   return (
-    <div className="iso-page">
-      <div className="iso-page__header">
-        <div className="iso-page__title-block">
-          <h1>⚙️ Planificación y Control Operacional</h1>
-          <p>
+    <div className="iso-page"> <div className="iso-page__header"> <div className="iso-page__title-block"> <h1> Planificación y Control Operacional</h1> <p>
             Tabla de caracterización, mapa y manual de procedimiento, y matriz de riesgos de actividades
             {analysis?.nombreEmpresa && (
               <> · <strong style={{ color: '#030097' }}>{analysis.nombreEmpresa}</strong></>
@@ -1499,9 +1115,7 @@ const PlanificacionOperacionPage: React.FC = () => {
                 padding: '0.15rem 0.55rem',
               }}>{analysis.sector}</span>
             )}
-          </p>
-          <span className="iso-page__clause">Cláusula 8.1</span>
-        </div>
+          </p> <span className="iso-page__clause">Cláusula 8.1</span> </div>
 
         {hasData && (
           <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
@@ -1516,28 +1130,20 @@ const PlanificacionOperacionPage: React.FC = () => {
                 background: '#f8fafc', border: '1px solid #e5e7eb',
                 borderRadius: '0.6rem', padding: '0.45rem 0.85rem',
                 textAlign: 'center', minWidth: 70,
-              }}>
-                <div style={{ fontSize: '1.2rem', fontWeight: 800, color }}>{val}</div>
-                <div style={{ fontSize: '0.68rem', color: '#6b7280' }}>{lbl}</div>
-              </div>
+              }}> <div style={{ fontSize: '1.2rem', fontWeight: 800, color }}>{val}</div> <div style={{ fontSize: '0.68rem', color: '#6b7280' }}>{lbl}</div> </div>
             ))}
             <div style={{
               background: '#f0fdf4', border: '1px solid #bbf7d0',
               borderRadius: '0.6rem', padding: '0.45rem 0.85rem',
               display: 'flex', alignItems: 'center', gap: '0.3rem',
-            }}>
-              <span style={{ fontSize: '0.85rem' }}>✅</span>
-              <span style={{ fontSize: '0.72rem', color: '#166534', fontWeight: 700 }}>Persistido en BD</span>
-            </div>
-          </div>
+            }}> <span style={{ fontSize: '0.85rem' }}></span> <span style={{ fontSize: '0.72rem', color: '#166534', fontWeight: 700 }}>Persistido en BD</span> </div> </div>
         )}
       </div>
 
       {!hasData ? (
         <EmptyState />
       ) : (
-        <>
-          <div className="iso-tabs">
+        <> <div className="iso-tabs">
             {TABS.map(t => (
               <button
                 key={t.id}
@@ -1616,14 +1222,10 @@ const PlanificacionOperacionPage: React.FC = () => {
           backgroundColor: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           zIndex: 9999
-        }}>
-          <div style={{
+        }}> <div style={{
             fontSize: '3rem', animation: 'spin 2s linear infinite', marginBottom: '1rem',
             background: 'linear-gradient(45deg, #FF6B6B, #4ECDC4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
-          }}>✨</div>
-          <h2 style={{ color: '#030097', margin: 0 }}>Governex IA está trabajando en el análisis</h2>
-          <p style={{ color: '#6b7280', marginTop: '0.5rem' }}>Por favor espera unos segundos...</p>
-        </div>
+          }}></div> <h2 style={{ color: '#030097', margin: 0 }}>Governex IA está trabajando en el análisis</h2> <p style={{ color: '#6b7280', marginTop: '0.5rem' }}>Por favor espera unos segundos...</p> </div>
       )}
     </div>
   )
