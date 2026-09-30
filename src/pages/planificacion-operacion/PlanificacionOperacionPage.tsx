@@ -386,29 +386,26 @@ const TablaCaracterizacion: React.FC<{
               borderRadius: 999, padding: '0.2rem 0.75rem', fontSize: '0.75rem', fontWeight: 700,
             }}>
               {actividades.length} actividad{actividades.length !== 1 ? 'es' : ''}
-            </span> </div> <div className="iso-table-wrapper"> <table className="iso-table"> <thead> <tr> <th>Actividad</th> <th>Proceso</th> <th style={{ minWidth: 200 }}>Objetivo</th> <th>Entradas</th> <th>Salidas</th> <th style={{ minWidth: 180 }}>Indicador</th> <th>Responsable</th> <th>Estado</th> <th>Registrada</th> <th>Acciones</th> </tr> </thead> <tbody>
+            </span> </div> <div className="iso-table-wrapper"> <table className="iso-table"> <thead> <tr> <th>Código</th> <th>Actividad</th> <th>Proceso</th> <th style={{ minWidth: 200 }}>Objetivo</th> <th>Entradas</th> <th>Salidas</th> <th style={{ minWidth: 180 }}>Indicador</th> <th>Responsable</th> <th>Estado</th> <th>Registrada</th> <th>Acciones</th> </tr> </thead> <tbody>
                 {actividades.map(act => {
                   const entradasValidas = act.entradas.filter(e => e.valor.trim())
                   const salidasValidas  = act.salidas.filter(s => s.valor.trim())
                   const codigo = `ACT-${actIdx(act.id)}`
                   return (
                     <tr key={act.id}> <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
-                          <code style={{
-                            background: '#eff6ff',
-                            color: '#1e40af',
-                            padding: '0.15rem 0.5rem',
-                            borderRadius: 4,
-                            fontSize: '0.78rem',
-                            fontWeight: 700,
-                            whiteSpace: 'nowrap',
-                          }}>
-                            {codigo}
-                          </code>
-                          <span style={{ fontWeight: 600, color: '#1a2b45', fontSize: '0.82rem' }}>
-                            {act.nombre}
-                          </span>
-                        </div>
+                        <code style={{
+                          background: '#eff6ff',
+                          color: '#1e40af',
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: 4,
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {codigo}
+                        </code>
+                      </td> <td style={{ fontWeight: 600, color: '#1a2b45', fontSize: '0.82rem' }}>
+                        {act.nombre}
                       </td> <td style={{ fontSize: '0.8rem', color: '#6b7280' }}>
                         {act.proceso || <em style={{ color: '#9ca3af' }}>—</em>}
                       </td>
