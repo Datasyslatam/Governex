@@ -204,6 +204,7 @@ CREATE TABLE IF NOT EXISTS actividades_empresa (
     nombre      VARCHAR(200) NOT NULL,
     proceso     VARCHAR(200),
     responsable VARCHAR(150),
+    descripcion TEXT,
     objetivo    TEXT,
     indicador   TEXT,
     entradas    JSONB        NOT NULL DEFAULT '[]',

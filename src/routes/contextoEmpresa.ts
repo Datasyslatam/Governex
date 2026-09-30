@@ -413,13 +413,13 @@ router.get('/actividades', async (req: AuthRequest, res: Response) => {
 
 // POST /api/contexto-empresa/actividades
 router.post('/actividades', requirePermission('contexto_empresa', 'crear'), async (req: AuthRequest, res: Response) => {
-  const { id, nombre, proceso, responsable, objetivo, indicador, entradas, salidas, creadaEn } = req.body
+  const { id, nombre, proceso, responsable, descripcion, objetivo, indicador, entradas, salidas, creadaEn } = req.body
   if (!id || !nombre) return res.status(400).json({ error: 'id y nombre son requeridos' })
   try {
     const { rows } = await pool.query(
-      `INSERT INTO actividades_empresa (id, nombre, proceso, responsable, objetivo, indicador, entradas, salidas, creada_en, tenant_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [id, nombre, proceso || null, responsable || null, objetivo || null, indicador || null,
+      `INSERT INTO actividades_empresa (id, nombre, proceso, responsable, descripcion, objetivo, indicador, entradas, salidas, creada_en, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+      [id, nombre, proceso || null, responsable || null, descripcion || null, objetivo || null, indicador || null,
        JSON.stringify(entradas || []), JSON.stringify(salidas || []), creadaEn || new Date().toISOString(), req.user!.tenantId]
     )
     res.status(201).json(rows[0])

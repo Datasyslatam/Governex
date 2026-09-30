@@ -97,7 +97,7 @@ const TextoExpandible: React.FC<TextoExpandibleProps> = ({ texto, maxChars = 80 
 }
 
 /* ── Badge desplegable para identificativo de actividad ────────── */
-const ActividadBadge: React.FC<{ nombre: string; codigo: string }> = ({ nombre, codigo }) => {
+const ActividadBadge: React.FC<{ nombre: string; codigo: string; descripcion?: string }> = ({ nombre, codigo, descripcion }) => {
   const [open, setOpen] = useState(false)
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}> <button
@@ -143,12 +143,18 @@ const ActividadBadge: React.FC<{ nombre: string; codigo: string }> = ({ nombre, 
           boxShadow:    '0 8px 24px rgba(0,0,0,0.12)',
           padding:      '0.65rem 0.85rem',
           minWidth:     220,
-          maxWidth:     300,
+          maxWidth:     320,
         }}> <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#7e22ce', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Actividad
           </div> <div style={{ fontSize: '0.84rem', color: '#1a2b45', fontWeight: 600, lineHeight: 1.4 }}>
             {nombre}
-          </div> <button
+          </div>
+          {descripcion && (
+            <div style={{ fontSize: '0.75rem', color: '#4b5563', marginTop: 5, lineHeight: 1.4, borderTop: '1px solid #f3e8ff', paddingTop: 4 }}>
+              <strong>Descripción:</strong> {descripcion}
+            </div>
+          )}
+          <button
             onClick={() => setOpen(false)}
             style={{
               position:   'absolute',
@@ -391,7 +397,7 @@ const TablaCaracterizacion: React.FC<{
               borderRadius: 999, padding: '0.2rem 0.75rem', fontSize: '0.75rem', fontWeight: 700,
             }}>
               {actividades.length} actividad{actividades.length !== 1 ? 'es' : ''}
-            </span> </div> <div className="iso-table-wrapper"> <table className="iso-table"> <thead> <tr> <th>Código</th> <th>Proceso</th> <th style={{ minWidth: 200 }}>Objetivo</th> <th>Entradas</th> <th>Actividad</th> <th>Salidas</th> <th style={{ minWidth: 180 }}>Indicador</th> <th>Responsable</th> <th>Estado</th> <th>Registrada</th> <th>Acciones</th> </tr> </thead> <tbody>
+            </span> </div> <div className="iso-table-wrapper"> <table className="iso-table"> <thead> <tr> <th>Código</th> <th>Proceso</th> <th style={{ minWidth: 200 }}>Objetivo</th> <th>Entradas</th> <th>Actividad</th> <th style={{ minWidth: 200 }}>Descripción de la Actividad</th> <th>Salidas</th> <th style={{ minWidth: 180 }}>Indicador</th> <th>Responsable</th> <th>Estado</th> <th>Registrada</th> <th>Acciones</th> </tr> </thead> <tbody>
                 {actividades.map(act => {
                   const entradasValidas = act.entradas.filter(e => e.valor.trim())
                   const salidasValidas  = act.salidas.filter(s => s.valor.trim())
@@ -431,6 +437,11 @@ const TablaCaracterizacion: React.FC<{
                         )}
                       </td> <td style={{ fontWeight: 600, color: '#1a2b45', fontSize: '0.82rem' }}>
                         {act.nombre}
+                      </td> <td style={{ maxWidth: 220, verticalAlign: 'top' }}>
+                        {act.descripcion
+                          ? <TextoExpandible texto={act.descripcion} maxChars={80} />
+                          : <em style={{ color: '#9ca3af', fontSize: '0.78rem' }}>—</em>
+                        }
                       </td> <td style={{ fontSize: '0.78rem' }}>
                         {salidasValidas.length === 0 ? (
                           <em style={{ color: '#9ca3af' }}>Sin salidas</em>
@@ -918,14 +929,15 @@ const MatrizRiesgosActividades: React.FC<{
               const actCodigo = r.actividadId
                 ? `ACT-${actIdxMap[r.actividadId] ?? '001'}`
                 : r.codigo.split('-').slice(0, 2).join('-')
-              const actNombre = r.actividadNombre ?? '—'
+              const actObj = r.actividadId ? actividades.find(a => a.id === r.actividadId) : undefined
+              const actNombre = r.actividadNombre ?? actObj?.nombre ?? '—'
               return (
                 <tr key={r.codigo}> <td> <code style={{
                       background: r.tipo === 'Riesgo' ? '#fef2f2' : '#f0fdf4',
                       color:      r.tipo === 'Riesgo' ? '#991b1b' : '#166534',
                       padding: '0.15rem 0.45rem', borderRadius: 4,
                       fontSize: '0.72rem', fontWeight: 700,
-                    }}>{r.codigo}</code> </td> <td> <ActividadBadge nombre={actNombre} codigo={actCodigo} /> </td> <td> <span style={{
+                    }}>{r.codigo}</code> </td> <td> <ActividadBadge nombre={actNombre} codigo={actCodigo} descripcion={actObj?.descripcion} /> </td> <td> <span style={{
                       background: r.tipo === 'Riesgo' ? '#fef2f2' : '#f0fdf4',
                       color:      r.tipo === 'Riesgo' ? '#991b1b' : '#166534',
                       border:     `1px solid ${r.tipo === 'Riesgo' ? '#fecaca' : '#bbf7d0'}`,
@@ -1061,6 +1073,7 @@ const PlanificacionOperacionPage: React.FC = () => {
       addActividad({
         id: crypto.randomUUID(),
         nombre: fila.actividades.substring(0, 100), // Nombre descriptivo basado en la actividad (truncado si es muy largo)
+        descripcion: fila.actividades,
         proceso: fila.proceso,
         responsable: fila.responsable,
         objetivo: fila.objetivo,

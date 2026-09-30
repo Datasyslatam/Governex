@@ -61,9 +61,10 @@ async function generarObjetivoEIndicador(
   entradas:    string[],
   salidas:     string[],
   responsable: string,
+  descripcion?: string,
 ): Promise<{ objetivo: string; indicador: string }> {
   return api.post('/api/gemini/generar-objetivo-indicador', {
-    nombre, proceso, responsable, entradas, salidas,
+    nombre, proceso, responsable, descripcion, entradas, salidas,
   })
 }
 
@@ -74,6 +75,7 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
   const [nombre,      setNombre]      = useState('')
   const [proceso,     setProceso]     = useState('')
   const [responsable, setResponsable] = useState('')
+  const [descripcion, setDescripcion] = useState('')
   const [entradas,    setEntradas]    = useState<EntradaSalida[]>([newItem()])
   const [salidas,     setSalidas]     = useState<EntradaSalida[]>([newItem()])
   const [error,       setError]       = useState('')
@@ -112,7 +114,7 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
     setAiLoading(true)
     try {
       const result = await generarObjetivoEIndicador(
-        nombre.trim(), proceso.trim(), entradasValidas, salidasValidas, responsable.trim()
+        nombre.trim(), proceso.trim(), entradasValidas, salidasValidas, responsable.trim(), descripcion.trim()
       )
       setObjetivo(result.objetivo)
       setIndicador(result.indicador)
@@ -127,7 +129,7 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
     } finally {
       setAiLoading(false)
     }
-  }, [nombre, proceso, responsable, entradas, salidas])
+  }, [nombre, proceso, responsable, descripcion, entradas, salidas])
 
   /* ── Guardar ───────────────────────────────────────────────── */
   const handleGuardar = () => {
@@ -144,6 +146,7 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
       nombre:      nombre.trim(),
       proceso:     proceso.trim(),
       responsable: responsable.trim(),
+      descripcion: descripcion.trim(),
       objetivo:    objetivo.trim(),
       indicador:   indicador.trim(),
       entradas:    entradasLimpias,
@@ -228,6 +231,28 @@ const ActividadModal: React.FC<Props> = ({ procesosDisponibles = [], onGuardar, 
               onChange={e => { setResponsable(e.target.value); setError('') }}
               maxLength={100}
             /> </div>
+
+          {/* Descripción de la Actividad */}
+          <div className="act-modal__field">
+            <label className="act-modal__label" htmlFor="act-descripcion">
+              Descripción de la Actividad
+            </label>
+            <textarea
+              id="act-descripcion"
+              className="act-modal__input"
+              rows={3}
+              placeholder="Describe detalladamente las tareas, pasos o alcance de la actividad…"
+              value={descripcion}
+              onChange={e => setDescripcion(e.target.value)}
+              maxLength={1000}
+              style={{
+                resize: 'vertical',
+                fontFamily: 'inherit',
+                fontSize: '0.85rem',
+                lineHeight: 1.5,
+              }}
+            />
+          </div>
 
           {/* Entradas y Salidas */}
           <div className="act-modal__io-grid">

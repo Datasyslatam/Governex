@@ -1124,10 +1124,11 @@ REGLAS:
    Genera Objetivo e Indicador de una actividad empresarial (§4.1/§8.1)
    Sustituye la llamada directa a Anthropic que hacía ActividadModal.tsx  */
 router.post('/generar-objetivo-indicador', async (req: AuthRequest, res: Response) => {
-    const { nombre, proceso, responsable, entradas, salidas } = req.body as {
+    const { nombre, proceso, responsable, descripcion, entradas, salidas } = req.body as {
         nombre: string
         proceso?: string
         responsable: string
+        descripcion?: string
         entradas: string[]
         salidas: string[]
     }
@@ -1143,6 +1144,7 @@ router.post('/generar-objetivo-indicador', async (req: AuthRequest, res: Respons
 2. Un INDICADOR de desempeño concreto con fórmula o criterio de medición (máximo 1 oración).
 
 Actividad: "${nombre}"
+Descripción de la actividad: "${descripcion?.trim() || 'No especificada'}"
 Proceso asociado: "${proceso || 'No especificado'}"
 Responsable: "${responsable}"
 Entradas: ${entradas.length > 0 ? entradas.map(e => `"${e}"`).join(', ') : 'No especificadas'}

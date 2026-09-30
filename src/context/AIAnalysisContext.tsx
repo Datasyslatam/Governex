@@ -124,6 +124,7 @@ export interface ActividadEmpresa {
   nombre:       string
   proceso:      string
   responsable:  string
+  descripcion?: string
   objetivo:     string
   indicador:    string
   entradas:     EntradaSalida[]
@@ -352,6 +353,7 @@ const mapCaracterizacionDB = (rows: any[]): CaracterizacionRow[] => rows.map(r =
 
   const mapActividades = (rows: any[]): ActividadEmpresa[] => rows.map(r => ({
     id: r.id, nombre: r.nombre, proceso: r.proceso ?? '', responsable: r.responsable ?? '',
+    descripcion: r.descripcion ?? '',
     objetivo: r.objetivo ?? '', indicador: r.indicador ?? '',
     entradas: Array.isArray(r.entradas) ? r.entradas : [],
     salidas: Array.isArray(r.salidas) ? r.salidas : [],

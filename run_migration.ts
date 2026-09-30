@@ -9,9 +9,11 @@ async function run() {
   try {
     await client.connect()
     console.log('Conectado a BD')
-    const sql = fs.readFileSync('migrations/016_perfiles_cargo.sql', 'utf8')
+    const migrationFile = process.argv[2] || 'migrations/017_add_descripcion_actividades_empresa.sql'
+    console.log(`Ejecutando migración: ${migrationFile}`)
+    const sql = fs.readFileSync(migrationFile, 'utf8')
     await client.query(sql)
-    console.log('Migración 016 ejecutada correctamente')
+    console.log(`Migración ejecutada correctamente: ${migrationFile}`)
   } catch(e) {
     console.error('Error', e)
   } finally {

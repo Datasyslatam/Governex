@@ -670,6 +670,11 @@ const ProcesosPage: React.FC = () => {
                               Proceso: {act.proceso}
                             </div>
                           )}
+                          {act.responsable && (
+                            <div style={{ fontSize: '0.73rem', color: '#7a8fa6', marginTop: 1 }}>
+                              Responsable: <strong style={{ color: '#4b5563' }}>{act.responsable}</strong>
+                            </div>
+                          )}
                         </div> </div> <PermissionGuard recurso="procesos" accion="eliminar" mode="hide"> <button
                           onClick={() => removeActividad(act.id)}
                           style={{
@@ -692,6 +697,23 @@ const ProcesosPage: React.FC = () => {
                         >
                            Eliminar
                         </button> </PermissionGuard> </div>
+
+                    {/* ── Descripción de la Actividad ── */}
+                    {act.descripcion && (
+                      <div style={{
+                        padding: '0.65rem 1rem',
+                        background: '#ffffff',
+                        borderBottom: '1px solid #e2e8f0',
+                        fontSize: '0.82rem',
+                        color: '#334155',
+                        lineHeight: 1.5,
+                      }}>
+                        <span style={{ fontWeight: 700, color: '#1e40af', marginRight: 6 }}>
+                          Descripción:
+                        </span>
+                        {act.descripcion}
+                      </div>
+                    )}
 
                     {/* ── NUEVO: Objetivo e Indicador generados por IA ── */}
                     {(act.objetivo || act.indicador) && (
