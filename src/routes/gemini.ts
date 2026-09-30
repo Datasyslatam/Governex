@@ -1,7 +1,7 @@
 import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
-import { analyzeWithGemini, generateResourcesOnly, MapaData, DatosEmpresa, FilaMatrizCargos, generarDetalleProcesoManual, regenerarCaracterizacionCompleta, regenerarMapaCompleto } from '../services/geminiService'
+import { analyzeWithGemini, generateResourcesOnly, MapaData, DatosEmpresa, FilaMatrizCargos, generarDetalleProcesoManual, regenerarCaracterizacionCompleta, regenerarMapaCompleto, GEMINI_MODELS } from '../services/geminiService'
 import { requirePermission } from '../middleware/rbac'
 
 /** Allowed PESTEL factor codes as required by the DB constraint. */
@@ -236,7 +236,7 @@ Requisitos:
 - La política de calidad debe ser detallada, extensa y apta para publicarse oficialmente como la Política Institucional ISO 9001.
 - IMPORTANTE: Estás generando un JSON estricto. NO USES saltos de línea reales (Enter) en los textos. Si necesitas separar párrafos, usa explícitamente el separador || (dos barras verticales). Todo el texto debe ser continuo.`
 
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    const MODELS = GEMINI_MODELS
 
     for (const model of MODELS) {
         try {
@@ -247,6 +247,9 @@ Requisitos:
                     maxOutputTokens: 8192,
                     responseMimeType: 'application/json',
                 },
+            }
+            if (model.startsWith('gemini-2.5') || model.startsWith('gemini-3.')) {
+                body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
             }
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
@@ -318,7 +321,7 @@ Responde ÚNICAMENTE con JSON válido:
   "control": "El texto del control aquí"
 }`
 
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    const MODELS = GEMINI_MODELS
 
     for (const model of MODELS) {
         try {
@@ -326,7 +329,7 @@ Responde ÚNICAMENTE con JSON válido:
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: { temperature: 0.3, maxOutputTokens: 1024, responseMimeType: 'application/json' },
             }
-            if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+            if (model.startsWith('gemini-2.5') || model.startsWith('gemini-3.')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
@@ -466,7 +469,7 @@ REGLAS:
 - Las preguntas deben ser específicas al sector/productos/servicios de la empresa, no genéricas.
 - JSON completo y válido, sin truncar.`
 
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    const MODELS = GEMINI_MODELS
 
     for (const model of MODELS) {
         try {
@@ -474,7 +477,7 @@ REGLAS:
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: { temperature: 0.4, maxOutputTokens: 4096, responseMimeType: 'application/json' },
             }
-            if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+            if (model.startsWith('gemini-2.5') || model.startsWith('gemini-3.')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
@@ -566,7 +569,7 @@ REGLAS:
 - Sé específico: cita categorías, calificaciones promedio o quejas concretas cuando sea posible.
 - JSON completo y válido, sin truncar.`
 
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    const MODELS = GEMINI_MODELS
 
     for (const model of MODELS) {
         try {
@@ -574,7 +577,7 @@ REGLAS:
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: { temperature: 0.4, maxOutputTokens: 3000, responseMimeType: 'application/json' },
             }
-            if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+            if (model.startsWith('gemini-2.5') || model.startsWith('gemini-3.')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
@@ -630,7 +633,7 @@ Responde ÚNICAMENTE con JSON válido:
         generationConfig: { temperature: 0.2, maxOutputTokens: 1024, responseMimeType: 'application/json' },
     }
 
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    const MODELS = GEMINI_MODELS
     for (const model of MODELS) {
         try {
             const response = await fetch(
@@ -752,7 +755,7 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown, con esta estru
   ]
 }`
 
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    const MODELS = GEMINI_MODELS
     for (const model of MODELS) {
         try {
             const body: any = {
@@ -763,6 +766,7 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown, con esta estru
                     responseMimeType: 'application/json',
                 },
             }
+            if (model.startsWith('gemini-2.5') || model.startsWith('gemini-3.')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
                 { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) }
@@ -892,7 +896,7 @@ IMPORTANTE:
 - El contenidoProgramatico debe ser específico y detallado para cada grado`
 
     const prompt = esEducativa ? promptEducativo : promptGeneral
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    const MODELS = GEMINI_MODELS
     let rateLimitHit = false
 
     for (let attempt = 1; attempt <= 3; attempt++) {
@@ -907,6 +911,7 @@ IMPORTANTE:
                         responseMimeType: 'application/json',
                     },
                 }
+                if (model.startsWith('gemini-2.5') || model.startsWith('gemini-3.')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
                 const response = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
                     {
@@ -1057,7 +1062,7 @@ REGLAS:
 - Sé específico: menciona datos concretos (porcentajes, cantidades, nombres de indicadores).
 - JSON completo y válido, sin truncar.`
 
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    const MODELS = GEMINI_MODELS
 
     for (const model of MODELS) {
         try {
@@ -1069,7 +1074,7 @@ REGLAS:
                     responseMimeType: 'application/json',
                 },
             }
-            if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+            if (model.startsWith('gemini-2.5') || model.startsWith('gemini-3.')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
@@ -1146,7 +1151,7 @@ Salidas:  ${salidas.length > 0 ? salidas.map(s => `"${s}"`).join(', ') : 'No esp
 Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
 {"objetivo":"...","indicador":"..."}`
 
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    const MODELS = GEMINI_MODELS
 
     for (const model of MODELS) {
         try {
@@ -1158,7 +1163,7 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
                     responseMimeType: 'application/json',
                 },
             }
-            if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+            if (model.startsWith('gemini-2.5') || model.startsWith('gemini-3.')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
@@ -1231,7 +1236,7 @@ Responde ÚNICAMENTE con JSON válido, sin markdown ni backticks:
   "debilidades": "Texto detallado con las debilidades y el plan de acción sugerido para el proveedor. Usa un tono formal corporativo."
 }`
 
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-flash-latest']
+    const MODELS = GEMINI_MODELS
 
     for (const model of MODELS) {
         try {
@@ -1243,7 +1248,7 @@ Responde ÚNICAMENTE con JSON válido, sin markdown ni backticks:
                     responseMimeType: 'application/json',
                 },
             }
-            if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+            if (model.startsWith('gemini-2.5') || model.startsWith('gemini-3.')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
@@ -1331,7 +1336,7 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
   "matrizLegal": "Texto detallado (2-3 párrafos) mencionando las leyes, normas, resoluciones y permisos exactos requeridos para comercializar este producto en Colombia."
 }`
 
-    const MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-pro']
+    const MODELS = GEMINI_MODELS
     let rateLimitHit = false
 
     for (let attempt = 1; attempt <= 3; attempt++) {
@@ -1349,6 +1354,7 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
                         responseMimeType: 'application/json',
                     },
                 }
+                if (model.startsWith('gemini-2.5') || model.startsWith('gemini-3.')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
                 const response = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
@@ -1430,7 +1436,7 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
   "cotizacion": "Texto extraído y resumido (1-2 párrafos)."
 }`
 
-        const MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-pro']
+        const MODELS = GEMINI_MODELS
         let rateLimitHit = false
 
         for (let attempt = 1; attempt <= 3; attempt++) {
@@ -1448,6 +1454,7 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
                             responseMimeType: 'application/json',
                         },
                     }
+                    if (model.startsWith('gemini-2.5') || model.startsWith('gemini-3.')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
                     const response = await fetch(
                         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
@@ -1568,7 +1575,7 @@ Genera una respuesta ÚNICAMENTE en JSON válido con el siguiente formato, sin b
   ]
 }`
 
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+    const MODELS = GEMINI_MODELS
 
     for (const model of MODELS) {
         try {
@@ -1576,7 +1583,7 @@ Genera una respuesta ÚNICAMENTE en JSON válido con el siguiente formato, sin b
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
             }
-            if (model.startsWith('gemini-2.5')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
+            if (model.startsWith('gemini-2.5') || model.startsWith('gemini-3.')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
                 method: 'POST',
@@ -1621,7 +1628,7 @@ Devuelve EXACTAMENTE un JSON con esta estructura (sin markdown, solo el JSON):
         generationConfig: { temperature: 0.3, responseMimeType: 'application/json' },
     }
 
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+    const MODELS = GEMINI_MODELS
     for (const model of MODELS) {
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
@@ -1677,7 +1684,7 @@ Responde ÚNICAMENTE en JSON válido:
         body.contents[0].parts.unshift({ inline_data: { mime_type: mimeType, data: base64 } })
     }
 
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+    const MODELS = GEMINI_MODELS
     for (const model of MODELS) {
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
@@ -1720,7 +1727,7 @@ Devuelve EXACTAMENTE un JSON con un arreglo de strings llamado "temas" que conte
         generationConfig: { temperature: 0.3, responseMimeType: 'application/json' },
     }
 
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+    const MODELS = GEMINI_MODELS
     for (const model of MODELS) {
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
@@ -1763,7 +1770,7 @@ Devuelve ÚNICAMENTE el código Markdown (sin backticks iniciales ni finales, si
         generationConfig: { temperature: 0.5 },
     }
 
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+    const MODELS = GEMINI_MODELS
     for (const model of MODELS) {
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {

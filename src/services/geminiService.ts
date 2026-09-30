@@ -186,7 +186,14 @@ REGLAS:
 - No devuelvas ningún texto extra, solo el JSON.`;
 }
 
-const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest'];
+export const GEMINI_MODELS = [
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-3.8-flash',
+  'gemini-3.1-flash-lite',
+  'gemini-flash-latest',
+];
+const MODELS = GEMINI_MODELS;
 
 /**
  * Helper para reparar JSONs incompletos/truncados por límites de tokens de salida.
@@ -221,15 +228,15 @@ function safeParseJson<T = any>(jsonString: string): T {
 
 /**
  * Helper: builds the request body for a Gemini model, applying the
- * thinkingBudget: 0 fix for gemini-2.5-* models to prevent JSON truncation.
+ * thinkingBudget: 0 fix for gemini-2.5-* and gemini-3.* models to prevent JSON truncation.
  */
 function buildGeminiBody(model: string, prompt: string, maxOutputTokens: number) {
   const body: any = {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: { temperature: 0.3, topP: 0.9, maxOutputTokens, responseMimeType: 'application/json' },
   };
-  // Disable thinking tokens for gemini-2.5 models to avoid truncated JSON
-  if (model.startsWith('gemini-2.5')) {
+  // Disable thinking tokens for reasoning models to avoid truncated JSON
+  if (model.startsWith('gemini-2.5') || model.startsWith('gemini-3.')) {
     body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
   }
   return body;
