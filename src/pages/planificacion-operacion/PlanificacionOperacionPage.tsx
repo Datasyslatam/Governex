@@ -355,11 +355,17 @@ const TablaCaracterizacion: React.FC<{
                       onClick={() => onDelete(row.codigo)}
                       style={{
                         background: 'transparent', border: 'none', cursor: 'pointer',
-                        fontSize: '1rem', padding: '0.2rem', opacity: 0.6
+                        padding: '0.25rem', opacity: 0.7, color: '#ef4444',
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
                       }}
                       onMouseOver={e => e.currentTarget.style.opacity = '1'}
-                      onMouseOut={e => e.currentTarget.style.opacity = '0.6'}
-                    ></button>
+                      onMouseOut={e => e.currentTarget.style.opacity = '0.7'}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </button>
                   )}
                 </td> </tr>
             ))}
@@ -380,30 +386,37 @@ const TablaCaracterizacion: React.FC<{
               borderRadius: 999, padding: '0.2rem 0.75rem', fontSize: '0.75rem', fontWeight: 700,
             }}>
               {actividades.length} actividad{actividades.length !== 1 ? 'es' : ''}
-            </span> </div> <div className="iso-table-wrapper"> <table className="iso-table"> <thead> <tr> <th>Actividad</th> <th>Proceso</th> <th>Responsable</th> <th style={{ minWidth: 200 }}>Objetivo </th> <th style={{ minWidth: 180 }}>Indicador </th> <th>Entradas</th> <th>Salidas</th> <th>Riesgos</th> <th>Oportunidades</th> <th>Registrada</th> <th>Acciones</th> </tr> </thead> <tbody>
+            </span> </div> <div className="iso-table-wrapper"> <table className="iso-table"> <thead> <tr> <th>Actividad</th> <th>Proceso</th> <th style={{ minWidth: 200 }}>Objetivo</th> <th>Entradas</th> <th>Salidas</th> <th style={{ minWidth: 180 }}>Indicador</th> <th>Responsable</th> <th>Estado</th> <th>Registrada</th> <th>Acciones</th> </tr> </thead> <tbody>
                 {actividades.map(act => {
                   const entradasValidas = act.entradas.filter(e => e.valor.trim())
                   const salidasValidas  = act.salidas.filter(s => s.valor.trim())
                   const codigo = `ACT-${actIdx(act.id)}`
                   return (
-                    <tr key={act.id}> <td> <ActividadBadge nombre={act.nombre} codigo={codigo} /> </td> <td style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                    <tr key={act.id}> <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                          <code style={{
+                            background: '#eff6ff',
+                            color: '#1e40af',
+                            padding: '0.15rem 0.5rem',
+                            borderRadius: 4,
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {codigo}
+                          </code>
+                          <span style={{ fontWeight: 600, color: '#1a2b45', fontSize: '0.82rem' }}>
+                            {act.nombre}
+                          </span>
+                        </div>
+                      </td> <td style={{ fontSize: '0.8rem', color: '#6b7280' }}>
                         {act.proceso || <em style={{ color: '#9ca3af' }}>—</em>}
-                      </td> <td style={{ fontSize: '0.8rem', fontWeight: 500 }}>
-                        {act.responsable || <em style={{ color: '#9ca3af' }}>—</em>}
                       </td>
 
                       {/* Objetivo — expandible */}
                       <td style={{ maxWidth: 220, verticalAlign: 'top' }}>
                         {act.objetivo
                           ? <TextoExpandible texto={act.objetivo} maxChars={80} />
-                          : <em style={{ color: '#9ca3af', fontSize: '0.78rem' }}>—</em>
-                        }
-                      </td>
-
-                      {/* Indicador — expandible */}
-                      <td style={{ maxWidth: 200, verticalAlign: 'top' }}>
-                        {act.indicador
-                          ? <TextoExpandible texto={act.indicador} maxChars={70} />
                           : <em style={{ color: '#9ca3af', fontSize: '0.78rem' }}>—</em>
                         }
                       </td> <td style={{ fontSize: '0.78rem' }}>
@@ -426,20 +439,22 @@ const TablaCaracterizacion: React.FC<{
                             ))}
                           </ul>
                         )}
-                      </td> <td> <span style={{
-                          background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca',
-                          borderRadius: 999, padding: '0.15rem 0.6rem',
-                          fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap',
-                        }}>
-                           {entradasValidas.length}
-                        </span> </td> <td> <span style={{
-                          background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0',
-                          borderRadius: 999, padding: '0.15rem 0.6rem',
-                          fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap',
-                        }}>
-                           {salidasValidas.length}
-                        </span> </td> <td style={{ fontSize: '0.75rem', color: '#9ca3af', whiteSpace: 'nowrap' }}>
-                        {new Date(act.creadaEn).toLocaleDateString('es-CO')}
+                      </td>
+
+                      {/* Indicador — expandible */}
+                      <td style={{ maxWidth: 200, verticalAlign: 'top' }}>
+                        {act.indicador
+                          ? <TextoExpandible texto={act.indicador} maxChars={70} />
+                          : <em style={{ color: '#9ca3af', fontSize: '0.78rem' }}>—</em>
+                        }
+                      </td> <td style={{ fontSize: '0.8rem', fontWeight: 500 }}>
+                        {act.responsable || <em style={{ color: '#9ca3af' }}>—</em>}
+                      </td> <td>
+                        <span className={`iso-badge ${estadoBadgeClass((act as any).estado || 'Activo')}`}>
+                          {(act as any).estado || 'Activo'}
+                        </span>
+                      </td> <td style={{ fontSize: '0.75rem', color: '#6b7280', whiteSpace: 'nowrap' }}>
+                        {act.creadaEn ? new Date(act.creadaEn).toLocaleDateString('es-CO') : '—'}
                       </td> <td>
                         {onDeleteActividad && (
                           <button
@@ -447,11 +462,17 @@ const TablaCaracterizacion: React.FC<{
                             onClick={() => onDeleteActividad(act.id)}
                             style={{
                               background: 'transparent', border: 'none', cursor: 'pointer',
-                              fontSize: '1rem', padding: '0.2rem', opacity: 0.6
+                              padding: '0.25rem', opacity: 0.7, color: '#ef4444',
+                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
                             }}
                             onMouseOver={e => e.currentTarget.style.opacity = '1'}
-                            onMouseOut={e => e.currentTarget.style.opacity = '0.6'}
-                          ></button>
+                            onMouseOut={e => e.currentTarget.style.opacity = '0.7'}
+                          >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6"></polyline>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                          </button>
                         )}
                       </td> </tr>
                   )
@@ -1098,13 +1119,13 @@ const PlanificacionOperacionPage: React.FC = () => {
     { id: 'caracterizacion', label: ' Tabla de Caracterización', count: caracterizacion.length },
     { id: 'mapa',            label: ' Mapa de Procedimiento',    count: matrizRoles.length    },
     { id: 'manual',          label: ' Manual de Procedimiento',  count: manualRows.length     },
-    { id: 'riesgos',         label: ' Riesgos de Actividades',   count: actividades.length    },
+    { id: 'riesgos',         label: ' Riesgos y Oportunidades de Actividades', count: actividades.length },
     { id: 'indicadores',     label: ' Indicadores',              count: caracterizacion.length },
   ]
 
   return (
     <div className="iso-page"> <div className="iso-page__header"> <div className="iso-page__title-block"> <h1> Planificación y Control Operacional</h1> <p>
-            Tabla de caracterización, mapa y manual de procedimiento, y matriz de riesgos de actividades
+            Tabla de caracterización, mapa y manual de procedimiento, y matriz de riesgos y oportunidades de actividades
             {analysis?.nombreEmpresa && (
               <> · <strong style={{ color: '#030097' }}>{analysis.nombreEmpresa}</strong></>
             )}
