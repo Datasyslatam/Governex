@@ -386,7 +386,7 @@ const TablaCaracterizacion: React.FC<{
               borderRadius: 999, padding: '0.2rem 0.75rem', fontSize: '0.75rem', fontWeight: 700,
             }}>
               {actividades.length} actividad{actividades.length !== 1 ? 'es' : ''}
-            </span> </div> <div className="iso-table-wrapper"> <table className="iso-table"> <thead> <tr> <th>Código</th> <th>Actividad</th> <th>Proceso</th> <th style={{ minWidth: 200 }}>Objetivo</th> <th>Entradas</th> <th>Salidas</th> <th style={{ minWidth: 180 }}>Indicador</th> <th>Responsable</th> <th>Estado</th> <th>Registrada</th> <th>Acciones</th> </tr> </thead> <tbody>
+            </span> </div> <div className="iso-table-wrapper"> <table className="iso-table"> <thead> <tr> <th>Código</th> <th>Proceso</th> <th style={{ minWidth: 200 }}>Objetivo</th> <th>Entradas</th> <th>Actividad</th> <th>Salidas</th> <th style={{ minWidth: 180 }}>Indicador</th> <th>Responsable</th> <th>Estado</th> <th>Registrada</th> <th>Acciones</th> </tr> </thead> <tbody>
                 {actividades.map(act => {
                   const entradasValidas = act.entradas.filter(e => e.valor.trim())
                   const salidasValidas  = act.salidas.filter(s => s.valor.trim())
@@ -404,8 +404,6 @@ const TablaCaracterizacion: React.FC<{
                         }}>
                           {codigo}
                         </code>
-                      </td> <td style={{ fontWeight: 600, color: '#1a2b45', fontSize: '0.82rem' }}>
-                        {act.nombre}
                       </td> <td style={{ fontSize: '0.8rem', color: '#6b7280' }}>
                         {act.proceso || <em style={{ color: '#9ca3af' }}>—</em>}
                       </td>
@@ -426,6 +424,8 @@ const TablaCaracterizacion: React.FC<{
                             ))}
                           </ul>
                         )}
+                      </td> <td style={{ fontWeight: 600, color: '#1a2b45', fontSize: '0.82rem' }}>
+                        {act.nombre}
                       </td> <td style={{ fontSize: '0.78rem' }}>
                         {salidasValidas.length === 0 ? (
                           <em style={{ color: '#9ca3af' }}>Sin salidas</em>
