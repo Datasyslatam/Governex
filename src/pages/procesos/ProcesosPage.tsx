@@ -56,6 +56,7 @@ interface CaracterizacionRow {
   indicador:   string
   responsable: string
   estado:      string
+  creadaEn?:   string
 }
 
 interface AiAnalysis {
@@ -624,11 +625,13 @@ const ProcesosPage: React.FC = () => {
           {lProc && !aiAnalysis ? (
             <div style={{ padding:'1rem', opacity: 0.5 }}>Cargando procesos...</div>
           ) : (
-            <div className="procesos-char__table-wrap"> <table className="procesos-char__table"> <thead> <tr> <th>Código</th><th>Proceso</th><th>Objetivo</th> <th>Entradas</th><th>Salidas</th> <th>Indicador</th><th>Responsable</th><th>Estado</th> </tr> </thead> <tbody>
+            <div className="procesos-char__table-wrap"> <table className="procesos-char__table"> <thead> <tr> <th>Código</th><th>Proceso</th><th>Objetivo</th> <th>Entradas</th><th>Salidas</th> <th>Indicador</th><th>Responsable</th><th>Estado</th> <th>Registrada</th> </tr> </thead> <tbody>
                   {caracterizacionData.map((row: CaracterizacionRow, i: number) => (
                     <tr key={row.codigo} className={i % 2 === 1 ? 'procesos-char__row--alt' : ''}> <td className="procesos-char__code">{row.codigo}</td> <td className="procesos-char__name">{row.proceso}</td> <td className="procesos-char__objetivo">{row.objetivo}</td> <td className="procesos-char__io">{row.entradas}</td> <td className="procesos-char__io">{row.salidas}</td> <td className="procesos-char__indicador">{row.indicador}</td> <td className="procesos-char__resp">{row.responsable}</td> <td> <span className={`pill ${row.estado === 'Activo' ? 'pill--success' : row.estado === 'Revisión' ? 'pill--warning' : 'pill--muted'}`}>
                           {row.estado}
-                        </span> </td> </tr>
+                        </span> </td> <td style={{ fontSize: '0.78rem', color: '#6b7280', whiteSpace: 'nowrap' }}>
+                          {row.creadaEn ? new Date(row.creadaEn).toLocaleDateString('es-CO') : '—'}
+                        </td> </tr>
                   ))}
                 </tbody> </table> </div>
           )}

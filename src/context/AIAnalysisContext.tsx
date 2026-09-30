@@ -60,6 +60,7 @@ export interface CaracterizacionRow {
   opSalida?: string
   responsable: string
   estado:      string
+  creadaEn?:   string
 }
 
 export type TipoProceso = 'estrategico' | 'misional' | 'apoyo'
@@ -314,6 +315,7 @@ const mapCaracterizacionDB = (rows: any[]): CaracterizacionRow[] => rows.map(r =
   opActividad: r.op_actividad ?? '',
   riesgoSalida: r.riesgo_salida ?? '',
   opSalida: r.op_salida ?? '',
+  creadaEn: r.creado_en ?? r.creada_en ?? r.creadaEn,
 }))
 
   const mapMatrizCargos = (rows: any[]): FilaMatrizCargos[] => rows.map(r => ({

@@ -254,7 +254,10 @@ const TablaCaracterizacion: React.FC<{
       alert('Código y Proceso son obligatorios.')
       return
     }
-    onAddManual(newManual as CaracterizacionRow)
+    onAddManual({
+      ...(newManual as CaracterizacionRow),
+      creadaEn: newManual.creadaEn || new Date().toISOString()
+    })
     setShowAdd(false)
     setNewManual({
       codigo: '', proceso: '', objetivo: '', entradas: '', actividades: '',
@@ -334,9 +337,9 @@ const TablaCaracterizacion: React.FC<{
             > Cancelar</button> </div> </div>
       )}
 
-      <div className="iso-table-wrapper" style={{ overflowX: 'auto' }}> <table className="iso-table" style={{ minWidth: 1200 }}> <thead> <tr> <th>Código</th><th>Proceso</th><th>Objetivo</th> <th>Entradas<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Entrada</span></th> <th>Actividades<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Actividad</span></th> <th>Salidas<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Salida</span></th> <th>Indicador Gral.</th> <th>Responsable</th><th>Estado</th> <th>Acciones</th> </tr> </thead> <tbody>
+      <div className="iso-table-wrapper" style={{ overflowX: 'auto' }}> <table className="iso-table" style={{ minWidth: 1200 }}> <thead> <tr> <th>Código</th><th>Proceso</th><th>Objetivo</th> <th>Entradas<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Entrada</span></th> <th>Actividades<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Actividad</span></th> <th>Salidas<br/><span style={{fontSize:'0.65rem',color:'#6b7280'}}>Ind. Salida</span></th> <th>Indicador Gral.</th> <th>Responsable</th><th>Estado</th> <th>Registrada</th> <th>Acciones</th> </tr> </thead> <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', color: '#9ca3af', padding: '1.5rem' }}>Sin resultados</td></tr>
+              <tr><td colSpan={11} style={{ textAlign: 'center', color: '#9ca3af', padding: '1.5rem' }}>Sin resultados</td></tr>
             ) : filtered.map(row => (
               <tr key={row.codigo}> <td> <code style={{
                     background: '#eff6ff', color: '#1e40af',
@@ -348,7 +351,9 @@ const TablaCaracterizacion: React.FC<{
                   {row.indicadorActividad && <div style={{ fontSize: '0.7rem', color: '#b45309', background: '#fef3c7', padding: 2, borderRadius: 4 }}> {row.indicadorActividad}</div>}
                 </td> <td style={{ fontSize: '0.78rem' }}> <div style={{ color: '#6b7280', marginBottom: 4 }}><TextoExpandible texto={row.salidas} maxChars={80} /></div>
                   {row.indicadorSalida && <div style={{ fontSize: '0.7rem', color: '#15803d', background: '#dcfce3', padding: 2, borderRadius: 4 }}> {row.indicadorSalida}</div>}
-                </td> <td style={{ fontSize: '0.78rem' }}>{row.indicador}</td> <td style={{ fontWeight: 500 }}>{row.responsable}</td> <td><span className={`iso-badge ${estadoBadgeClass(row.estado)}`}>{row.estado}</span></td> <td>
+                </td> <td style={{ fontSize: '0.78rem' }}>{row.indicador}</td> <td style={{ fontWeight: 500 }}>{row.responsable}</td> <td><span className={`iso-badge ${estadoBadgeClass(row.estado)}`}>{row.estado}</span></td> <td style={{ fontSize: '0.75rem', color: '#6b7280', whiteSpace: 'nowrap' }}>
+                  {row.creadaEn ? new Date(row.creadaEn).toLocaleDateString('es-CO') : '—'}
+                </td> <td>
                   {onDelete && (
                     <button
                       title="Eliminar registro"
