@@ -12,9 +12,11 @@ router.use(authMiddleware)
 router.get('/no-conformidades', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
-      `SELECT nc.*, p.nombre AS proceso_nombre
+      `SELECT nc.*, p.nombre AS proceso_nombre, h.codigo AS hallazgo_codigo,
+              (SELECT COUNT(*) FROM acciones_correctivas ac WHERE ac.nc_id = nc.id) AS total_acs
        FROM no_conformidades nc
        LEFT JOIN procesos p ON p.id = nc.proceso_id
+       LEFT JOIN hallazgos h ON h.id = nc.hallazgo_id
        WHERE nc.tenant_id = $1
        ORDER BY nc.creado_en DESC`,
       [req.user!.tenantId]
@@ -72,7 +74,8 @@ router.put('/no-conformidades/:id', requirePermission('no_conformidades', 'edita
 router.get('/acciones-correctivas', async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
-      `SELECT ac.*, nc.codigo AS nc_codigo
+      `SELECT ac.*, nc.codigo AS nc_codigo, nc.descripcion AS nc_descripcion,
+              nc.origen AS nc_origen, nc.gravedad AS nc_gravedad
        FROM acciones_correctivas ac
        JOIN no_conformidades nc ON nc.id = ac.nc_id
        WHERE ac.tenant_id = $1
@@ -88,7 +91,7 @@ router.get('/acciones-correctivas', async (req: AuthRequest, res: Response) => {
 
 // POST /api/nc-ac/acciones-correctivas
 router.post('/acciones-correctivas', requirePermission('acciones_correctivas', 'crear'), async (req: AuthRequest, res: Response) => {
-  const { codigo, nc_id, metodo_analisis, accion, responsable, fecha_fin, estado, eficacia } = req.body
+  const { codigo, nc_id, metodo_analisis, causa_raiz, correccion_inmediata, analisis_detalle, accion, responsable, fecha_fin, estado, eficacia } = req.body
   if (!codigo || !nc_id || !accion) {
     return res.status(400).json({ error: 'codigo, nc_id y accion son requeridos' })
   }
@@ -100,9 +103,10 @@ router.post('/acciones-correctivas', requirePermission('acciones_correctivas', '
     if (!rowCount) return res.status(400).json({ error: 'nc_id no pertenece a tu organización' })
 
     const { rows } = await pool.query(
-      `INSERT INTO acciones_correctivas (codigo, nc_id, metodo_analisis, accion, responsable, fecha_fin, estado, eficacia, tenant_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [codigo, nc_id, metodo_analisis || null, accion,
+      `INSERT INTO acciones_correctivas (codigo, nc_id, metodo_analisis, causa_raiz, correccion_inmediata, analisis_detalle, accion, responsable, fecha_fin, estado, eficacia, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+      [codigo, nc_id, metodo_analisis || null, causa_raiz || null, correccion_inmediata || null,
+       analisis_detalle ? JSON.stringify(analisis_detalle) : '{}', accion,
        responsable || null, fecha_fin || null,
        estado || 'En Implementación', eficacia || '-', req.user!.tenantId]
     )
@@ -117,12 +121,14 @@ router.post('/acciones-correctivas', requirePermission('acciones_correctivas', '
 // PUT /api/nc-ac/acciones-correctivas/:id
 router.put('/acciones-correctivas/:id', requirePermission('acciones_correctivas', 'editar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
-  const { metodo_analisis, accion, responsable, fecha_fin, estado, eficacia } = req.body
+  const { metodo_analisis, causa_raiz, correccion_inmediata, analisis_detalle, accion, responsable, fecha_fin, estado, eficacia } = req.body
   try {
     const { rows } = await pool.query(
-      `UPDATE acciones_correctivas SET metodo_analisis=$1, accion=$2, responsable=$3,
-       fecha_fin=$4, estado=$5, eficacia=$6 WHERE id=$7 AND tenant_id=$8 RETURNING *`,
-      [metodo_analisis || null, accion, responsable || null,
+      `UPDATE acciones_correctivas SET metodo_analisis=$1, causa_raiz=$2, correccion_inmediata=$3,
+       analisis_detalle=$4, accion=$5, responsable=$6, fecha_fin=$7, estado=$8, eficacia=$9
+       WHERE id=$10 AND tenant_id=$11 RETURNING *`,
+      [metodo_analisis || null, causa_raiz || null, correccion_inmediata || null,
+       analisis_detalle ? JSON.stringify(analisis_detalle) : '{}', accion, responsable || null,
        fecha_fin || null, estado, eficacia || '-', id, req.user!.tenantId]
     )
     if (!rows[0]) return res.status(404).json({ error: 'AC no encontrada' })

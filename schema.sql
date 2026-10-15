@@ -1208,7 +1208,7 @@ CREATE TABLE IF NOT EXISTS no_conformidades (
     fecha       DATE        NOT NULL DEFAULT CURRENT_DATE,
     origen      VARCHAR(50) NOT NULL
                 CHECK (origen IN (
-                    'Auditoría Interna', 'Cliente (Queja)', 'Proceso Interno', 'Proveedor', 'Otro'
+                    'Auditoría Interna', 'Auditoría Externa', 'Cliente (Queja)', 'Proceso Interno', 'Proveedor', 'Otro'
                 )),
     proceso_id  INTEGER     REFERENCES procesos (id),
     descripcion TEXT        NOT NULL,
@@ -1223,6 +1223,7 @@ CREATE TABLE IF NOT EXISTS no_conformidades (
 CREATE INDEX IF NOT EXISTS idx_no_conformidades_tenant_id     ON no_conformidades (tenant_id);
 CREATE INDEX IF NOT EXISTS idx_nc_estado                      ON no_conformidades (estado);
 CREATE INDEX IF NOT EXISTS idx_no_conformidades_tenant_estado ON no_conformidades (tenant_id, estado);
+CREATE INDEX IF NOT EXISTS idx_no_conformidades_hallazgo_id   ON no_conformidades (hallazgo_id);
 
 -- §10.2 — Acciones Correctivas
 CREATE TABLE IF NOT EXISTS acciones_correctivas (
@@ -1231,6 +1232,8 @@ CREATE TABLE IF NOT EXISTS acciones_correctivas (
     nc_id                INTEGER      NOT NULL REFERENCES no_conformidades (id),
     metodo_analisis      VARCHAR(30)  CHECK (metodo_analisis IN ('5 Por Qué''s', 'Ishikawa', 'Pareto', 'Otro')),
     causa_raiz           TEXT,
+    correccion_inmediata TEXT,
+    analisis_detalle     JSONB        DEFAULT '{}',
     accion               TEXT         NOT NULL,
     responsable          VARCHAR(100),
     fecha_fin            DATE,
@@ -1312,6 +1315,7 @@ CREATE TABLE IF NOT EXISTS mejoras_continuas (
     estado            VARCHAR(20)  NOT NULL DEFAULT 'Propuesta'
                       CHECK (estado IN ('Propuesta', 'Aprobada', 'En ejecución', 'Completada', 'Cancelada')),
     proceso_id        INTEGER      REFERENCES procesos (id),
+    hallazgo_id       INTEGER      REFERENCES hallazgos (id) ON DELETE SET NULL,
     creado_por        INTEGER      REFERENCES usuarios (id),
     creado_en         TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     tenant_id         INTEGER      NOT NULL REFERENCES tenants (id) ON DELETE RESTRICT,
@@ -1322,6 +1326,7 @@ CREATE INDEX IF NOT EXISTS idx_mejoras_continuas_tenant_id     ON mejoras_contin
 CREATE INDEX IF NOT EXISTS idx_mejoras_estado                  ON mejoras_continuas (estado);
 CREATE INDEX IF NOT EXISTS idx_mejoras_origen                  ON mejoras_continuas (origen);
 CREATE INDEX IF NOT EXISTS idx_mejoras_continuas_tenant_estado ON mejoras_continuas (tenant_id, estado);
+CREATE INDEX IF NOT EXISTS idx_mejoras_continuas_hallazgo_id   ON mejoras_continuas (hallazgo_id);
 
 -- ============================================================
 -- GESTIÓN GENERAL

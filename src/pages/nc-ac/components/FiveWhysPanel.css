@@ -1,34 +1,133 @@
 .fivewhys {
-  background: #fff9f0;
-  border-radius: 0.9rem;
-  border: 1px solid #f5c842;
-  padding: 0.75rem 0.9rem;
-  font-size: 0.8rem;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  border: 1px solid #cbd5e1;
+  padding: 1rem 1.25rem;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
 }
 
-.fivewhys h4 {
-  margin: 0 0 0.5rem;
-  font-size: 0.9rem;
-  color: #FE7F03;
+.fivewhys--empty {
+  text-align: center;
+  color: #64748b;
+  font-style: italic;
+  padding: 1.5rem;
 }
 
-.fivewhys__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.fivewhys__item {
+.fivewhys__header {
   display: flex;
-  gap: 0.4rem;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px dashed #cbd5e1;
+  padding-bottom: 0.6rem;
+}
+
+.fivewhys__badge {
+  display: inline-block;
+  align-self: flex-start;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  border: 1px solid #bfdbfe;
+}
+
+.fivewhys__sintoma {
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.fivewhys__timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: relative;
+  margin-left: 0.5rem;
+  padding-left: 1.5rem;
+  border-left: 2px solid #93c5fd;
+}
+
+.fivewhys__step {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.fivewhys__step-num {
+  position: absolute;
+  left: -2.35rem;
+  top: 0.4rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.fivewhys__pregunta {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+  font-size: 0.82rem;
+}
+
+.fivewhys__respuesta {
+  color: #475569;
+  line-height: 1.35;
+}
+
+.fivewhys__input-q {
+  width: 100%;
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.3rem;
+  padding: 0.25rem 0.45rem;
+  margin-bottom: 0.35rem;
+}
+
+.fivewhys__input-a {
+  width: 100%;
+  font-size: 0.82rem;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.3rem;
+  padding: 0.25rem 0.45rem;
+  resize: vertical;
+}
+
+.fivewhys__root-cause {
+  margin-top: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.fivewhys__root-title {
+  font-weight: 700;
+  color: #991b1b;
+  font-size: 0.85rem;
   margin-bottom: 0.25rem;
 }
 
-.fivewhys__label {
-  font-weight: 600;
-  min-width: 90px;
-}
-
-.fivewhys__item--root .fivewhys__label {
-  color: #d93025;
+.fivewhys__root-text {
+  margin: 0;
+  color: #7f1d1d;
+  font-weight: 500;
+  line-height: 1.4;
 }

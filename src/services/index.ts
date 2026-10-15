@@ -32,20 +32,85 @@ export interface Auditoria {
 }
 
 export interface Hallazgo {
-  id: number; codigo: string; auditoria_id: number; auditoria_codigo?: string
-  tipo: string; descripcion: string; clausula?: string; estado: string
+  id: number;
+  codigo: string;
+  auditoria_id: number;
+  auditoria_codigo?: string;
+  proceso_id?: number;
+  proceso_nombre?: string;
+  tipo: string;
+  descripcion: string;
+  clausula?: string;
+  estado: string;
+  nc_id?: number;
+  nc_codigo?: string;
+  mejora_id?: number;
+  mejora_codigo?: string;
 }
 
 export interface NoConformidad {
-  id: number; codigo: string; fecha: string; origen: string
-  proceso_id?: number; proceso_nombre?: string
-  descripcion: string; gravedad: string; estado: string
+  id: number;
+  codigo: string;
+  fecha: string;
+  origen: string;
+  proceso_id?: number;
+  proceso_nombre?: string;
+  descripcion: string;
+  gravedad: string;
+  estado: string;
+  hallazgo_id?: number;
+  hallazgo_codigo?: string;
+  total_acs?: number;
+}
+
+export interface AnalisisDetallePaso5W {
+  nivel: number;
+  porque: string;
+  respuesta: string;
+}
+
+export interface AnalisisDetalleIshikawa {
+  mano_de_obra: string[];
+  metodos: string[];
+  maquinaria: string[];
+  materiales: string[];
+  medicion: string[];
+  medio_ambiente: string[];
+}
+
+export interface AnalisisDetalleIA {
+  metodo: "5 Por Qué's" | "Ishikawa";
+  problema_sintoma?: string;
+  efecto_problema?: string;
+  pasos?: AnalisisDetallePaso5W[];
+  categorias_6m?: AnalisisDetalleIshikawa;
+  causa_raiz: string;
+  correccion_inmediata?: string;
+  acciones_sugeridas?: Array<{
+    accion: string;
+    responsable?: string;
+    plazo_dias?: number;
+  }>;
 }
 
 export interface AccionCorrectiva {
-  id: number; codigo: string; nc_id: number; nc_codigo?: string
-  metodo_analisis?: string; accion: string; responsable?: string
-  fecha_fin?: string; estado: string; eficacia: string
+  id: number;
+  codigo: string;
+  nc_id: number;
+  nc_codigo?: string;
+  nc_descripcion?: string;
+  nc_origen?: string;
+  nc_gravedad?: string;
+  metodo_analisis?: string;
+  causa_raiz?: string;
+  correccion_inmediata?: string;
+  analisis_detalle?: AnalisisDetalleIA;
+  accion: string;
+  responsable?: string;
+  fecha_fin?: string;
+  fecha_implementacion?: string;
+  estado: string;
+  eficacia: string;
 }
 
 export interface Documento {
@@ -182,6 +247,9 @@ export const auditoriasService = {
   getHallazgos: () => api.get<Hallazgo[]>('/api/auditorias/hallazgos'),
   createHallazgo: (body: Partial<Hallazgo>) => api.post<Hallazgo>('/api/auditorias/hallazgos', body),
   updateHallazgo: (id: number, body: Partial<Hallazgo>) => api.put<Hallazgo>(`/api/auditorias/hallazgos/${id}`, body),
+
+  convertirEnNC: (hallazgoId: number) => api.post<NoConformidad>(`/api/auditorias/hallazgos/${hallazgoId}/convertir-nc`, {}),
+  convertirEnMejora: (hallazgoId: number) => api.post<any>(`/api/auditorias/hallazgos/${hallazgoId}/convertir-mejora`, {}),
 }
 
 // ── NC / AC ────────────────────────────────────────────────
@@ -194,6 +262,15 @@ export const ncAcService = {
   getACs: () => api.get<AccionCorrectiva[]>('/api/nc-ac/acciones-correctivas'),
   createAC: (body: Partial<AccionCorrectiva>) => api.post<AccionCorrectiva>('/api/nc-ac/acciones-correctivas', body),
   updateAC: (id: number, body: Partial<AccionCorrectiva>) => api.put<AccionCorrectiva>(`/api/nc-ac/acciones-correctivas/${id}`, body),
+
+  analizarConIA: (body: {
+    descripcion: string;
+    origen?: string;
+    proceso?: string;
+    gravedad?: string;
+    clausula?: string;
+    metodo: "5 Por Qué's" | "Ishikawa";
+  }) => api.post<AnalisisDetalleIA>('/api/gemini/analizar-nc-causa-raiz', body),
 }
 
 // ── DOCUMENTOS ─────────────────────────────────────────────

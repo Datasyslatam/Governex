@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './AuditoriaPage.css'
 import AuditCalendar from './components/AuditCalendar'
 import { useFetch } from '../../hooks/useFetch'
@@ -30,6 +31,7 @@ const formatFecha = (iso: string) => {
 }
 
 const AuditoriaPage: React.FC = () => {
+  const navigate = useNavigate()
   const { canEdit, isReadOnly } = usePermissions('auditorias')
   const [activeTab, setActiveTab]     = useState<Tab>('programa')
   const [viewMode, setViewMode]       = useState<'table' | 'calendar'>('table')
@@ -40,6 +42,7 @@ const AuditoriaPage: React.FC = () => {
   const [showProgramaModal, setShowProgramaModal] = useState(false)
   const [programaForm, setProgramaForm]     = useState<typeof emptyPrograma>(emptyPrograma)
   const [savingPrograma, setSavingPrograma] = useState(false)
+  const [convertingId, setConvertingId]     = useState<number | null>(null)
 
   // Filtros
   const [filterProgYear, setFilterProgYear]     = useState('')
@@ -57,8 +60,46 @@ const AuditoriaPage: React.FC = () => {
   const { data: auditorias, loading: loadingAud, refetch: refetchAud }
     = useFetch(auditoriasService.getAll, [])
 
-  const { data: hallazgos, loading: loadingHal }
+  const { data: hallazgos, loading: loadingHal, refetch: refetchHal }
     = useFetch(auditoriasService.getHallazgos, [])
+
+  const handleConvertirEnNC = async (hal: Hallazgo) => {
+    if (hal.nc_id) {
+      navigate('/nc-ac')
+      return
+    }
+    if (!window.confirm(`¿Deseas transferir este hallazgo ("${hal.codigo}") a No Conformidades (Cap. 10.2) para realizar el análisis de causa raíz?`)) return
+    setConvertingId(hal.id)
+    try {
+      const nc = await auditoriasService.convertirEnNC(hal.id)
+      alert(`No Conformidad ${nc.codigo} creada correctamente a partir del hallazgo.`)
+      await refetchHal()
+      navigate('/nc-ac')
+    } catch (e: any) {
+      alert(e.message)
+    } finally {
+      setConvertingId(null)
+    }
+  }
+
+  const handleConvertirEnMejora = async (hal: Hallazgo) => {
+    if (hal.mejora_id) {
+      navigate('/mejora-continua')
+      return
+    }
+    if (!window.confirm(`¿Deseas transferir esta Oportunidad de Mejora ("${hal.codigo}") al registro de Mejora Continua (Cap. 10.3)?`)) return
+    setConvertingId(hal.id)
+    try {
+      const mc = await auditoriasService.convertirEnMejora(hal.id)
+      alert(`Iniciativa de Mejora ${mc.codigo} creada correctamente.`)
+      await refetchHal()
+      navigate('/mejora-continua')
+    } catch (e: any) {
+      alert(e.message)
+    } finally {
+      setConvertingId(null)
+    }
+  }
 
   // Filtros aplicados
   const filteredProgramas  = programas.filter(p =>
@@ -209,10 +250,70 @@ const AuditoriaPage: React.FC = () => {
             {loadingHal ? <div className="audit-loading">Cargando hallazgos...</div> : (
               <table className="table audit-table"> <thead> <tr><th>Código</th><th>Auditoría</th><th>Naturaleza</th><th>Descripción</th><th>Cláusula</th><th>Estado</th><th>Acciones</th></tr> </thead> <tbody>
                   {filteredHallazgos.map((hal, i) => (
-                    <tr key={hal.id} className={i % 2 === 1 ? 'table__row--alt' : ''}> <td className="audit-table__code">{hal.codigo}</td> <td className="audit-table__ref">{hal.auditoria_codigo}</td> <td> <span className={`pill ${
+                    <tr key={hal.id} className={i % 2 === 1 ? 'table__row--alt' : ''}>
+                      <td className="audit-table__code">{hal.codigo}</td>
+                      <td className="audit-table__ref">{hal.auditoria_codigo}</td>
+                      <td>
+                        <span className={`pill ${
                           hal.tipo.includes('No Conformidad') ? 'pill--danger' :
                           hal.tipo.includes('Observación') ? 'pill--warning' : 'pill--success'
-                        }`}>{hal.tipo}</span> </td> <td className="audit-table__desc">{hal.descripcion}</td> <td className="audit-table__clausula">{hal.clausula || '—'}</td> <td> <span className={`pill ${hal.estado === 'Cerrado' ? 'pill--success' : 'pill--danger'}`}>{hal.estado}</span> </td> <td className="audit-table__actions"> <button className="audit-action-btn" title="Ver detalle"></button> </td> </tr>
+                        }`}>{hal.tipo}</span>
+                      </td>
+                      <td className="audit-table__desc">{hal.descripcion}</td>
+                      <td className="audit-table__clausula">{hal.clausula || '—'}</td>
+                      <td>
+                        <span className={`pill ${hal.estado === 'Cerrado' ? 'pill--success' : 'pill--danger'}`}>
+                          {hal.estado}
+                        </span>
+                      </td>
+                      <td className="audit-table__actions" style={{ whiteSpace: 'nowrap' }}>
+                        {hal.tipo.includes('No Conformidad') ? (
+                          hal.nc_id ? (
+                            <button
+                              className="btn btn--outline"
+                              style={{ fontSize: '0.72rem', padding: '0.2rem 0.5rem', background: '#ecfdf5', color: '#065f46', borderColor: '#a7f3d0' }}
+                              onClick={() => navigate('/nc-ac')}
+                              title="Ver No Conformidad vinculada (Cap. 10.2)"
+                            >
+                              ✓ Ver {hal.nc_codigo || 'NC'}
+                            </button>
+                          ) : (
+                            <button
+                              className="btn btn--primary"
+                              style={{ fontSize: '0.72rem', padding: '0.25rem 0.6rem' }}
+                              onClick={() => handleConvertirEnNC(hal)}
+                              disabled={convertingId === hal.id}
+                              title="Transferir hallazgo a No Conformidades (Cap. 10.2)"
+                            >
+                              {convertingId === hal.id ? 'Transferir...' : '→ Enviar a NC (10.2)'}
+                            </button>
+                          )
+                        ) : hal.tipo.includes('Oportunidad de Mejora') ? (
+                          hal.mejora_id ? (
+                            <button
+                              className="btn btn--outline"
+                              style={{ fontSize: '0.72rem', padding: '0.2rem 0.5rem', background: '#eff6ff', color: '#1e40af', borderColor: '#bfdbfe' }}
+                              onClick={() => navigate('/mejora-continua')}
+                              title="Ver Iniciativa de Mejora vinculada (Cap. 10.3)"
+                            >
+                              ✓ Ver {hal.mejora_codigo || 'Mejora'}
+                            </button>
+                          ) : (
+                            <button
+                              className="btn btn--secondary"
+                              style={{ fontSize: '0.72rem', padding: '0.25rem 0.6rem' }}
+                              onClick={() => handleConvertirEnMejora(hal)}
+                              disabled={convertingId === hal.id}
+                              title="Transferir a Iniciativas de Mejora (Cap. 10.3)"
+                            >
+                              {convertingId === hal.id ? 'Transferir...' : '→ Enviar a Mejora (10.3)'}
+                            </button>
+                          )
+                        ) : (
+                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Observación</span>
+                        )}
+                      </td>
+                    </tr>
                   ))}
                   {filteredHallazgos.length === 0 && (
                     <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', opacity: 0.5 }}>

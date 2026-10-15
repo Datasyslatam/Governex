@@ -1800,4 +1800,132 @@ Devuelve ÚNICAMENTE el código Markdown (sin backticks iniciales ni finales, si
     return res.status(500).json({ error: 'No se pudo generar la guía de capacitación' })
 })
 
+/* ── POST /api/gemini/analizar-nc-causa-raiz ───────────────────────
+   Analiza una No Conformidad con IA mediante 5 Por Qués o Ishikawa (6M)
+   y propone causa raíz, corrección inmediata y acciones correctivas.
+*/
+router.post('/analizar-nc-causa-raiz', async (req: AuthRequest, res: Response) => {
+    const { descripcion, origen, proceso, gravedad, clausula, metodo = "5 Por Qué's" } = req.body as {
+        descripcion: string
+        origen?: string
+        proceso?: string
+        gravedad?: string
+        clausula?: string
+        metodo?: "5 Por Qué's" | "Ishikawa"
+    }
+
+    if (!descripcion?.trim()) {
+        return res.status(400).json({ error: 'La descripción de la no conformidad es obligatoria' })
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' })
+
+    const isIshikawa = metodo === 'Ishikawa'
+
+    const prompt = isIshikawa ? `
+Eres un auditor líder y consultor senior en Sistemas de Gestión de la Calidad (ISO 9001:2015).
+Tu tarea es realizar un riguroso análisis de Causa y Efecto mediante el DIAGRAMA DE ISHIKAWA (Espina de Pescado usando las 6M) para la siguiente No Conformidad detectada.
+
+NO CONFORMIDAD:
+- Descripción del problema: "${descripcion}"
+- Origen: "${origen || 'Auditoría Interna'}"
+- Proceso: "${proceso || 'No especificado'}"
+- Gravedad: "${gravedad || 'Menor'}"
+- Cláusula ISO 9001: "${clausula || '10.2'}"
+
+Debes analizar las 6 categorías (Mano de obra, Métodos, Maquinaria, Materiales, Medición, Medio ambiente) identificando causas potenciales y determinar cuál es la Causa Raíz principal, además de definir una Corrección Inmediata y un plan de Acciones Correctivas concretas.
+
+RESPONDE EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO (sin bloques markdown ni texto adicional) con este formato exacto:
+{
+  "metodo": "Ishikawa",
+  "efecto_problema": "Resumen claro del problema en máximo 15 palabras",
+  "categorias_6m": {
+    "mano_de_obra": ["causa o factor 1", "causa o factor 2"],
+    "metodos": ["causa o factor 1", "causa o factor 2"],
+    "maquinaria": ["causa o factor 1", "causa o factor 2"],
+    "materiales": ["causa o factor 1", "causa o factor 2"],
+    "medicion": ["causa o factor 1", "causa o factor 2"],
+    "medio_ambiente": ["causa o factor 1", "causa o factor 2"]
+  },
+  "causa_raiz": "Explicación clara, directa y sistémica de la causa raíz identificada",
+  "correccion_inmediata": "Acción inmediata de contención para mitigar el impacto inmediato",
+  "acciones_sugeridas": [
+    {
+      "accion": "Acción correctiva para eliminar la causa raíz",
+      "responsable": "Cargo o rol sugerido",
+      "plazo_dias": 30
+    }
+  ]
+}` : `
+Eres un auditor líder y consultor senior en Sistemas de Gestión de la Calidad (ISO 9001:2015).
+Tu tarea es realizar un riguroso análisis de Causa Raíz utilizando la metodología de los 5 POR QUÉS (5 Whys) para la siguiente No Conformidad detectada.
+
+NO CONFORMIDAD:
+- Descripción del problema: "${descripcion}"
+- Origen: "${origen || 'Auditoría Interna'}"
+- Proceso: "${proceso || 'No especificado'}"
+- Gravedad: "${gravedad || 'Menor'}"
+- Cláusula ISO 9001: "${clausula || '10.2'}"
+
+Debes construir una secuencia lógica y progresiva de 5 niveles de causa-efecto (desde el síntoma observable hasta la falla sistémica de fondo). Luego formula la Causa Raíz definitiva, la Corrección Inmediata y Acciones Correctivas.
+
+RESPONDE EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO (sin bloques markdown ni texto adicional) con este formato exacto:
+{
+  "metodo": "5 Por Qué's",
+  "problema_sintoma": "Resumen claro del problema en máximo 15 palabras",
+  "pasos": [
+    { "nivel": 1, "porque": "¿Por qué ocurrió la desviación?", "respuesta": "..." },
+    { "nivel": 2, "porque": "¿Por qué...?", "respuesta": "..." },
+    { "nivel": 3, "porque": "¿Por qué...?", "respuesta": "..." },
+    { "nivel": 4, "porque": "¿Por qué...?", "respuesta": "..." },
+    { "nivel": 5, "porque": "¿Por qué...?", "respuesta": "..." }
+  ],
+  "causa_raiz": "Explicación clara, directa y sistémica de la causa raíz identificada",
+  "correccion_inmediata": "Acción inmediata de contención para mitigar el impacto inmediato",
+  "acciones_sugeridas": [
+    {
+      "accion": "Acción correctiva para eliminar la causa raíz",
+      "responsable": "Cargo o rol sugerido",
+      "plazo_dias": 30
+    }
+  ]
+}`
+
+    const body = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+            temperature: 0.3,
+            responseMimeType: 'application/json'
+        },
+    }
+
+    const MODELS = GEMINI_MODELS
+    for (const model of MODELS) {
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+            if (!response.ok) continue
+            const data = await response.json()
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+            if (!text) continue
+
+            let cleanText = text.trim()
+            if (cleanText.startsWith('```json')) cleanText = cleanText.substring(7)
+            else if (cleanText.startsWith('```')) cleanText = cleanText.substring(3)
+            if (cleanText.endsWith('```')) cleanText = cleanText.substring(0, cleanText.length - 3)
+            cleanText = cleanText.trim()
+
+            const parsed = JSON.parse(cleanText)
+            return res.json(parsed)
+        } catch (e) {
+            console.warn(`[Gemini NC Causa Raíz] Falló con modelo ${model}:`, e)
+        }
+    }
+    return res.status(500).json({ error: 'No se pudo generar el análisis de causa raíz con IA' })
+})
+
 export default router

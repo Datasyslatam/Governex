@@ -1,0 +1,146 @@
+.ishikawa {
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  border: 1px solid #cbd5e1;
+  padding: 1rem 1.25rem;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.ishikawa--empty {
+  text-align: center;
+  color: #64748b;
+  font-style: italic;
+  padding: 1.5rem;
+}
+
+.ishikawa__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px dashed #cbd5e1;
+  padding-bottom: 0.6rem;
+}
+
+.ishikawa__badge {
+  display: inline-block;
+  align-self: flex-start;
+  background: #f0fdf4;
+  color: #15803d;
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  border: 1px solid #bbf7d0;
+}
+
+.ishikawa__efecto {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.75rem;
+}
+
+.ishikawa__efecto-tag {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.ishikawa__efecto-text {
+  color: #475569;
+  font-weight: 500;
+}
+
+.ishikawa__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.ishikawa__card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-top-width: 4px;
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.ishikawa__card-title {
+  font-weight: 700;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ishikawa__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.ishikawa__item {
+  position: relative;
+  padding-left: 1rem;
+  font-size: 0.8rem;
+  color: #334155;
+  line-height: 1.35;
+}
+
+.ishikawa__item::before {
+  content: "•";
+  position: absolute;
+  left: 0.2rem;
+  color: #64748b;
+  font-weight: bold;
+}
+
+.ishikawa__item--none {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-style: italic;
+  padding-left: 0.25rem;
+}
+
+.ishikawa__input {
+  width: 100%;
+  font-size: 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.25rem;
+  padding: 0.2rem 0.4rem;
+  color: #334155;
+}
+
+.ishikawa__root-cause {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.ishikawa__root-title {
+  font-weight: 700;
+  color: #991b1b;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+}
+
+.ishikawa__root-text {
+  margin: 0;
+  color: #7f1d1d;
+  font-weight: 500;
+  line-height: 1.4;
+}
