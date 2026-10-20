@@ -1,5 +1,5 @@
 /**
- * PlantillaOrganizacion.tsx  –  Governex · ISO 9001:2015
+ * PlantillaOrganizacion.tsx  –  Governex · Sistema de Gestión
  *
  * Genera la plantilla PDF en el cliente (pdf-lib) con AcroForm rellenable.
  * Secciones: 1 – Identidad, 2 – Contexto Operacional.

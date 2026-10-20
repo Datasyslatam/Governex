@@ -40,7 +40,7 @@ const emptyPrograma = {
   duracion: '12 meses',
   ubicacion: 'Sede Principal / Híbrida',
   calendario: 'Planificación anual con auditorías semestrales por proceso',
-  criterio: 'Norma ISO 9001:2015, Manual de Calidad, Procedimientos e Instructivos internos, Requisitos legales y reglamentarios aplicables.',
+  criterio: 'Sistema de Gestión de la Calidad, Manual de Calidad, Procedimientos e Instructivos internos, Requisitos legales y reglamentarios aplicables.',
   metodo: 'Entrevistas a responsables, revisión documental y muestreo de registros, observación in situ.',
   equipo_auditores: 'Auditor Líder + Auditores Internos calificados',
   recursos: 'Equipo de cómputo, acceso al ERP Governex, salas de reunión, transporte y disponibilidad del personal clave.',
@@ -391,7 +391,7 @@ const AuditoriaPage: React.FC = () => {
             <div className="audit-section-header">
               <div className="audit-section-header__title">
                 <h3>Programas Anuales de Auditoría</h3>
-                <span className="pill pill--muted">Requisito ISO 9001 §9.2.2 & ISO 19011:2018 §5</span>
+                <span className="pill pill--muted">Requisito §9.2.2 & Directrices de Auditoría</span>
               </div>
               <div className="audit-filters">
                 <input
@@ -587,7 +587,7 @@ const AuditoriaPage: React.FC = () => {
                             {aud.requisito_norma}
                           </span>
                         ) : (
-                          <span style={{ color: '#94a3b8' }}>Norma ISO 9001:2015</span>
+                          <span style={{ color: '#94a3b8' }}>Requisitos del Sistema de Gestión</span>
                         )}
                       </td>
                       <td style={{ fontSize: '0.82rem' }}>
@@ -857,7 +857,7 @@ const AuditoriaPage: React.FC = () => {
                     <input
                       type="text"
                       className="filter-input form-control"
-                      placeholder="Ej: Auditoría Interna de Sistema de Gestión ISO 9001"
+                      placeholder="Ej: Auditoría Interna de Sistema de Gestión"
                       value={programaForm.tipo}
                       onChange={e => setProgramaForm(f => ({ ...f, tipo: e.target.value }))}
                       readOnly={isReadOnly()}
@@ -930,7 +930,7 @@ const AuditoriaPage: React.FC = () => {
                   <input
                     type="text"
                     className="filter-input form-control"
-                    placeholder="Ej: Determinar la conformidad y eficacia del SGC con ISO 9001:2015..."
+                    placeholder="Ej: Determinar la conformidad y eficacia del Sistema de Gestión de Calidad..."
                     value={programaForm.objetivo}
                     onChange={e => setProgramaForm(f => ({ ...f, objetivo: e.target.value }))}
                     readOnly={isReadOnly()}
@@ -945,7 +945,7 @@ const AuditoriaPage: React.FC = () => {
                   <label>Normas, Políticas y Requisitos aplicables</label>
                   <textarea
                     className="filter-input form-control form-control-textarea"
-                    placeholder="Normas de referencia (ej: ISO 9001:2015, requisitos reglamentarios, procedimientos e instructivos internos)..."
+                    placeholder="Normas de referencia (ej: Requisitos normativos, reglamentarios, procedimientos e instructivos internos)..."
                     value={programaForm.criterio}
                     onChange={e => setProgramaForm(f => ({ ...f, criterio: e.target.value }))}
                     readOnly={isReadOnly()}
@@ -1080,7 +1080,7 @@ const AuditoriaPage: React.FC = () => {
 
                 <div className="program-detail-card">
                   <div className="program-detail-card__label">2. Criterio de la Auditoría</div>
-                  <div className="program-detail-card__val">{viewingPrograma.criterio || 'Norma ISO 9001:2015'}</div>
+                  <div className="program-detail-card__val">{viewingPrograma.criterio || 'Requisitos del Sistema de Gestión'}</div>
                 </div>
 
                 <div className="program-detail-card">
@@ -1221,7 +1221,7 @@ const AuditoriaPage: React.FC = () => {
                 <input
                   type="text"
                   className="filter-input form-control"
-                  placeholder="Ej: Cláusula 4.4, 7.1.5, 8.5.1, 9.1 de ISO 9001:2015"
+                  placeholder="Ej: Cláusulas 4.4, 7.1.5, 8.5.1, 9.1 del Sistema de Gestión"
                   value={form.requisito_norma}
                   onChange={e => setForm(f => ({ ...f, requisito_norma: e.target.value }))}
                   readOnly={isReadOnly()}

@@ -5,7 +5,7 @@ import { usePermissions } from '../../hooks/usePermissions'
 import PermissionGuard from '../../components/ui/PermissionGuard'
 
 /* ══════════════════════════════════════════════════════════════
-   LISTA PREDEFINIDA DE CLÁUSULAS ISO 9001:2015
+   LISTA PREDEFINIDA DE CLÁUSULAS DEL SISTEMA DE GESTIÓN
    ══════════════════════════════════════════════════════════════ */
 const CLAUSULAS_ISO: { codigo: string; detalle: string }[] = [
   { codigo: '§4.1', detalle: '§4.1 – Comprensión de la organización y de su contexto' },
@@ -47,7 +47,7 @@ const COLS: { key: ColKey; label: string }[] = [
   { key: 'actividades',     label: 'Actividades del Proceso' },
   { key: 'responsable',     label: 'Responsable del Cargo' },
   { key: 'funciones',       label: 'Funciones y Responsabilidades' },
-  { key: 'clausulaDetalle', label: 'Cláusula ISO 9001:2015' },
+  { key: 'clausulaDetalle', label: 'Cláusula del Sistema de Gestión' },
 ]
 
 /* ══════════════════════════════════════════════════════════════
@@ -121,7 +121,7 @@ const MatrizCargosPage: React.FC<MatrizCargosProps> = ({ isSubTab }) => {
 
       {/* HEADER */}
       {!isSubTab && (
-        <div className="cargos-page__header"> <div className="cargos-page__title-block"> <h1> Matriz de Cargos</h1> <p>Actividades y responsabilidades de cada proceso frente a los requisitos ISO 9001:2015</p> <span className="cargos-page__clause">Cláusula 5.3 · RF-004</span> </div> </div>
+        <div className="cargos-page__header"> <div className="cargos-page__title-block"> <h1> Matriz de Cargos</h1> <p>Actividades y responsabilidades de cada proceso frente a los requisitos del Sistema de Gestión</p> <span className="cargos-page__clause">Cláusula 5.3 · RF-004</span> </div> </div>
       )}
 
       {/* ── PANEL VACÍO: sin análisis aún ─────────────────── */}
@@ -131,7 +131,7 @@ const MatrizCargosPage: React.FC<MatrizCargosProps> = ({ isSubTab }) => {
             en el módulo <strong>"Contexto de la Organización"</strong>.
           </p> <ol className="cargos-empty-state__steps"> <li>Ve al módulo <strong>Contexto de la Organización</strong> (§4 — Mapa de Procesos)</li> <li>Construye o sube tu organigrama / mapa de procesos</li> <li>Haz clic en <strong>"Guardar y analizar con Governex"</strong></li> <li>Regresa aquí — la matriz se habrá generado automáticamente</li> </ol> <a href="/procesos" className="btn-primary" style={{ display: 'inline-block', marginTop: '1.2rem', textDecoration: 'none' }}>
             Ir a Contexto de la Organización →
-          </a> <div className="cargos-legend" style={{ marginTop: '2rem' }}> <div className="cargos-legend__item"> <strong>RF-004</strong> — Genera una Matriz de Cargos donde cada proceso lista sus actividades concretas mapeadas contra las cláusulas de la norma ISO 9001:2015.
+          </a> <div className="cargos-legend" style={{ marginTop: '2rem' }}> <div className="cargos-legend__item"> <strong>RF-004</strong> — Genera una Matriz de Cargos donde cada proceso lista sus actividades concretas mapeadas contra las cláusulas del Sistema de Gestión.
             </div> </div> </div>
       )}
 
@@ -220,7 +220,7 @@ const MatrizCargosPage: React.FC<MatrizCargosProps> = ({ isSubTab }) => {
                   )}
                 </div>
               ))}
-              <button className="btn-icon" onClick={addActividadNew} style={{ fontSize: '0.78rem', alignSelf: 'flex-start', marginTop: '0.2rem' }}>＋ Agregar actividad</button> </div> <label>Responsable del cargo<input type="text" placeholder="ej. Jefe de Proyectos" value={newFila.responsable} onChange={e => setNewFila(p => ({ ...p, responsable: e.target.value }))} /></label> <label>Funciones y responsabilidades<textarea rows={2} placeholder="ej. Planificar, ejecutar y controlar los proyectos..." value={newFila.funciones} onChange={e => setNewFila(p => ({ ...p, funciones: e.target.value }))} /></label> <label>Cláusula ISO 9001:2015
+              <button className="btn-icon" onClick={addActividadNew} style={{ fontSize: '0.78rem', alignSelf: 'flex-start', marginTop: '0.2rem' }}>＋ Agregar actividad</button> </div> <label>Responsable del cargo<input type="text" placeholder="ej. Jefe de Proyectos" value={newFila.responsable} onChange={e => setNewFila(p => ({ ...p, responsable: e.target.value }))} /></label> <label>Funciones y responsabilidades<textarea rows={2} placeholder="ej. Planificar, ejecutar y controlar los proyectos..." value={newFila.funciones} onChange={e => setNewFila(p => ({ ...p, funciones: e.target.value }))} /></label> <label>Cláusula del Sistema de Gestión
               <select value={newFila.clausulaDetalle} onChange={e => {
                 const selected = CLAUSULAS_ISO.find(c => c.detalle === e.target.value)
                 setNewFila(p => ({ ...p, clausula: selected?.codigo || '', clausulaDetalle: e.target.value }))

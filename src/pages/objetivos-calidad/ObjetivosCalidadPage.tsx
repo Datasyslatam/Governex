@@ -1,5 +1,5 @@
 /**
- * ObjetivosCalidadPage.tsx — §6.2 ISO 9001:2015
+ * ObjetivosCalidadPage.tsx — §6.2 Objetivos de la Calidad
  *
  * Los objetivos se generan AUTOMÁTICAMENTE desde los riesgos y oportunidades
  * derivados del análisis IA en §6.1. El usuario puede revisar, ajustar y

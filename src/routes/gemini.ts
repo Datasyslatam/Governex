@@ -233,7 +233,7 @@ Requisitos:
 - Sé específico al sector y tipo de empresa
 - Tono formal y profesional
 - Evita frases genéricas o clichés
-- La política de calidad debe ser detallada, extensa y apta para publicarse oficialmente como la Política Institucional ISO 9001.
+- La política de calidad debe ser detallada, extensa y apta para publicarse oficialmente como la Política Institucional de Calidad.
 - IMPORTANTE: Estás generando un JSON estricto. NO USES saltos de línea reales (Enter) en los textos. Si necesitas separar párrafos, usa explícitamente el separador || (dos barras verticales). Todo el texto debe ser continuo.`
 
     const MODELS = GEMINI_MODELS
@@ -1034,7 +1034,7 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
       "titulo": "Título corto de la oportunidad",
       "justificacion": "Justificación basada en los datos entregados (qué dato específico la sustenta)",
       "prioridad": "Alta | Media | Baja",
-      "requisitoFuente": "§X.X ISO 9001:2015"
+      "requisitoFuente": "§X.X"
     }
   ],
   "necesidadesCambioSGC": [
@@ -1042,7 +1042,7 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
       "titulo": "Cambio necesario en el SGC",
       "justificacion": "Justificación basada en evidencia",
       "prioridad": "Alta | Media | Baja",
-      "requisitoFuente": "§X.X ISO 9001:2015"
+      "requisitoFuente": "§X.X"
     }
   ],
   "necesidadesRecursos": [
@@ -1050,7 +1050,7 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
       "titulo": "Recurso necesario (humano, tecnológico, infraestructura, etc.)",
       "justificacion": "Justificación basada en evidencia",
       "prioridad": "Alta | Media | Baja",
-      "requisitoFuente": "§X.X ISO 9001:2015"
+      "requisitoFuente": "§X.X"
     }
   ],
   "conclusionGeneral": "2-3 oraciones con la conclusión estratégica y el enfoque de la próxima revisión"
@@ -1621,7 +1621,7 @@ Si no encuentras una sección explícita de requisitos, infiere los requisitos b
 Devuelve EXACTAMENTE un JSON con esta estructura (sin markdown, solo el JSON):
 {
   "educacion": "Título o nivel académico exigido o recomendado (ej. Profesional en Ingeniería)",
-  "formacion": "Conocimientos específicos adicionales (ej. ISO 9001, Excel, Maquinaria pesada)",
+  "formacion": "Conocimientos específicos adicionales (ej. Sistemas de gestión, Excel, Maquinaria pesada)",
   "experiencia": "Tiempo y tipo de experiencia requerida o recomendada"
 }`
 
@@ -1670,7 +1670,7 @@ router.post('/generar-checklist-perfil', requirePermission('competencias', 'edit
 
 Genera dos listas de chequeo (checklists) para evaluar a una persona en este cargo:
 1. "desempeno": 5-8 ítems medibles sobre sus responsabilidades prácticas (ej: "Cumple con los tiempos de entrega", "Maneja adecuadamente la maquinaria").
-2. "conocimiento": 5-8 ítems sobre lo que debe saber (ej: "Conoce la normativa ISO 9001", "Demuestra dominio del software contable").
+2. "conocimiento": 5-8 ítems sobre lo que debe saber (ej: "Conoce la normativa aplicable del sistema de gestión", "Demuestra dominio del software contable").
 
 Responde ÚNICAMENTE en JSON válido:
 {
@@ -1832,7 +1832,7 @@ NO CONFORMIDAD:
 - Origen: "${origen || 'Auditoría Interna'}"
 - Proceso: "${proceso || 'No especificado'}"
 - Gravedad: "${gravedad || 'Menor'}"
-- Cláusula ISO 9001: "${clausula || '10.2'}"
+- Cláusula aplicable: "${clausula || '10.2'}"
 
 Debes analizar las 6 categorías (Mano de obra, Métodos, Maquinaria, Materiales, Medición, Medio ambiente) identificando causas potenciales y determinar cuál es la Causa Raíz principal, además de definir una Corrección Inmediata y un plan de Acciones Correctivas concretas.
 
@@ -1866,7 +1866,7 @@ NO CONFORMIDAD:
 - Origen: "${origen || 'Auditoría Interna'}"
 - Proceso: "${proceso || 'No especificado'}"
 - Gravedad: "${gravedad || 'Menor'}"
-- Cláusula ISO 9001: "${clausula || '10.2'}"
+- Cláusula aplicable: "${clausula || '10.2'}"
 
 Debes construir una secuencia lógica y progresiva de 5 niveles de causa-efecto (desde el síntoma observable hasta la falla sistémica de fondo). Luego formula la Causa Raíz definitiva, la Corrección Inmediata y Acciones Correctivas.
 

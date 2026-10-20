@@ -505,7 +505,7 @@ const RequerimientosPSPage: React.FC = () => {
       )}
 
       {/* Header */}
-      <div className="iso-page__header"> <div className="iso-page__title-block"> <h1>Requerimientos para Productos y Servicios</h1> <p>Determinación, revisión y comunicación de requisitos — ISO 9001:2015 §8.2</p> <span className="iso-page__clause">Cláusula 8.2</span>
+      <div className="iso-page__header"> <div className="iso-page__title-block"> <h1>Requerimientos para Productos y Servicios</h1> <p>Determinación, revisión y comunicación de requisitos — Cláusula §8.2</p> <span className="iso-page__clause">Cláusula 8.2</span>
           {esEducativo && <span className="iso-page__clause" style={{ background:'#f0fdf4', color:'#166534', marginLeft:'0.5rem' }}>Institución Educativa</span>}
           {datosEmpresa && <span className="iso-page__clause" style={{ background:'#f5f3ff', color:'#6d28d9', marginLeft:'0.5rem' }}>IA — {datosEmpresa.nombreEmpresa}</span>}
         </div> </div>

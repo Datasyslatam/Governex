@@ -88,7 +88,7 @@ export async function generarAuditoriasPDF(
       color: headerText,
     })
 
-    const subText = `${empresaNombre}  |  Conforme a ISO 9001:2015 (§9.2) & ISO 19011:2018  |  Fecha de emisión: ${new Date().toLocaleDateString('es-ES')}`
+    const subText = `${empresaNombre}  |  Conforme a lineamientos de auditoría interna (§9.2)  |  Fecha de emisión: ${new Date().toLocaleDateString('es-ES')}`
     currentPage.drawText(subText, {
       x: MARGIN + 14,
       y: y - 38,
@@ -147,7 +147,7 @@ export async function generarAuditoriasPDF(
     const cellTexts = [
       fechaStr,
       aud.proceso_nombre || '—',
-      aud.requisito_norma || 'ISO 9001:2015',
+      aud.requisito_norma || 'Requisitos del Sistema de Gestión',
       aud.auditado || '—',
       aud.auditor_lider || '—',
       aud.observacion || '—'
@@ -224,7 +224,7 @@ export async function generarAuditoriasPDF(
       color: mutedText,
     })
 
-    p.drawText('Documento controlado emitido conforme a la directriz ISO 19011:2018', {
+    p.drawText('Documento controlado emitido conforme a directrices de auditoría', {
       x: PAGE_WIDTH - MARGIN - 260,
       y: MARGIN + 4,
       size: 7.5,

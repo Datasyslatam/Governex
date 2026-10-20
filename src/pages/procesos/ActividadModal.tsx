@@ -1,5 +1,5 @@
 /**
- * ActividadModal.tsx — Governex · ISO 9001:2015 §4.1 / §8.1
+ * ActividadModal.tsx — Governex · Sistema de Gestión §4.1 / §8.1
  *
  * Modal para registrar actividades propias de la empresa.
  * v3: Objetivo e Indicador se generan via /api/gemini/generar-objetivo-indicador

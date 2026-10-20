@@ -1,5 +1,5 @@
 /**
- * PlanificacionCambiosPage.tsx — §6.3 ISO 9001:2015 (CORREGIDO)
+ * PlanificacionCambiosPage.tsx — §6.3 Planificación de los Cambios
  *
  * Fix principal: el módulo ahora funciona 100% en memoria sin necesidad
  * de BD. Los cambios se guardan localmente de forma inmediata y se

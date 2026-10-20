@@ -323,7 +323,7 @@ const RevDireccionPage: React.FC = () => {
 
       {/* ── Header ──────────────────────────────────────────── */}
       <header className="page__header rev9-header"> <div className="rev9-header-left"> <nav className="rev9-breadcrumb"> <span>Governex</span> <span className="rev9-bc-sep">›</span> <span>Cap. 9</span> <span className="rev9-bc-sep">›</span> <span className="rev9-bc-active">9.3 Revisión por la Dirección</span> </nav> <h2>Revisión por la Dirección</h2> <p className="rev9-subtitle">
-            Evaluación estratégica del desempeño y eficacia del SGC · ISO 9001:2015 §9.3
+            Evaluación estratégica del desempeño y eficacia del SGC · Cláusula §9.3
           </p> </div> <div className="rev9-header-actions">
           {alertCount > 0 && (
             <span className="rev9-alert-badge"> {alertCount} alerta{alertCount > 1 ? 's' : ''}</span>

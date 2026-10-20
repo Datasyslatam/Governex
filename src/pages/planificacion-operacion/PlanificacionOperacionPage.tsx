@@ -1,5 +1,5 @@
 /**
- * PlanificacionOperacionPage.tsx — ISO 9001:2015 §8.1
+ * PlanificacionOperacionPage.tsx — Planificación y Control Operacional §8.1
  */
 
 import React, { useState, useMemo } from 'react'

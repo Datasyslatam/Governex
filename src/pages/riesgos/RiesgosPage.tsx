@@ -1,5 +1,5 @@
 /**
- * RiesgosPage.tsx — Governex · ISO 9001:2015 §6.1
+ * RiesgosPage.tsx — Governex · Gestión de Riesgos §6.1
  */
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'

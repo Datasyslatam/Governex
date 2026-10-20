@@ -1,5 +1,5 @@
 /**
- * ContextoOrganizacionalPanel.tsx — Governex · ISO 9001:2015
+ * ContextoOrganizacionalPanel.tsx — Governex · Sistema de Gestión
  *
  * Muestra el contexto completo de la organización incluyendo:
  * - Identidad (Sección 1)
