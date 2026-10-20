@@ -22,12 +22,35 @@ export interface Riesgo {
   tratamiento?: string   // texto de "acciones" generado/editado para el riesgo
 }
 
+export interface ProgramaAuditoria {
+  id: number
+  anio: number
+  numero?: string
+  objetivo: string
+  alcance?: string
+  tipo?: string
+  duracion?: string
+  ubicacion?: string
+  calendario?: string
+  criterio?: string
+  metodo?: string
+  equipo_auditores?: string
+  recursos?: string
+  riesgos?: string
+  tipo_informe?: string
+  estado: 'Planificado' | 'En Curso' | 'Cerrado'
+  avance_pct: number
+}
+
 export interface Auditoria {
   id: number; codigo: string; programa_id?: number
   proceso_id?: number; proceso_nombre?: string
   fecha_inicio: string; duracion_dias: number
   auditor_lider?: string
   estado: 'Planificada' | 'En Ejecución' | 'Cerrada'
+  requisito_norma?: string
+  auditado?: string
+  observacion?: string
   hallazgos: number
 }
 
@@ -236,9 +259,9 @@ export const riesgosService = {
 // ── AUDITORÍAS ─────────────────────────────────────────────
 
 export const auditoriasService = {
-  getProgramas: () => api.get<any[]>('/api/auditorias/programas'),
-  createPrograma: (body: any) => api.post<any>('/api/auditorias/programas', body),
-  updatePrograma: (id: number, body: any) => api.put<any>(`/api/auditorias/programas/${id}`, body),
+  getProgramas: () => api.get<ProgramaAuditoria[]>('/api/auditorias/programas'),
+  createPrograma: (body: Partial<ProgramaAuditoria>) => api.post<ProgramaAuditoria>('/api/auditorias/programas', body),
+  updatePrograma: (id: number, body: Partial<ProgramaAuditoria>) => api.put<ProgramaAuditoria>(`/api/auditorias/programas/${id}`, body),
 
   getAll: () => api.get<Auditoria[]>('/api/auditorias'),
   create: (body: Partial<Auditoria>) => api.post<Auditoria>('/api/auditorias', body),

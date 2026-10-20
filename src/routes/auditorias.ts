@@ -24,13 +24,27 @@ router.get('/programas', async (req: AuthRequest, res: Response) => {
 
 // POST /api/auditorias/programas
 router.post('/programas', requirePermission('auditorias', 'crear'), async (req: AuthRequest, res: Response) => {
-  const { anio, objetivo, duracion, estado, avance_pct } = req.body
+  const {
+    anio, objetivo, duracion, estado, avance_pct,
+    numero, alcance, tipo, ubicacion, calendario,
+    criterio, metodo, equipo_auditores, recursos, riesgos, tipo_informe
+  } = req.body
   if (!anio || !objetivo) return res.status(400).json({ error: 'anio y objetivo requeridos' })
   try {
     const { rows } = await pool.query(
-      `INSERT INTO programas_auditoria (anio, objetivo, duracion, estado, avance_pct, tenant_id)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [anio, objetivo, duracion || null, estado || 'Planificado', avance_pct ?? 0, req.user!.tenantId]
+      `INSERT INTO programas_auditoria (
+        anio, objetivo, duracion, estado, avance_pct,
+        numero, alcance, tipo, ubicacion, calendario,
+        criterio, metodo, equipo_auditores, recursos, riesgos, tipo_informe, tenant_id
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+      [
+        anio, objetivo, duracion || null, estado || 'Planificado', avance_pct ?? 0,
+        numero || null, alcance || null, tipo || 'Auditoría Interna de Sistema de Gestión',
+        ubicacion || null, calendario || null, criterio || null, metodo || null,
+        equipo_auditores || null, recursos || null, riesgos || null, tipo_informe || null,
+        req.user!.tenantId
+      ]
     )
     res.status(201).json(rows[0])
   } catch (err: any) {
@@ -43,12 +57,36 @@ router.post('/programas', requirePermission('auditorias', 'crear'), async (req: 
 // PUT /api/auditorias/programas/:id
 router.put('/programas/:id', requirePermission('auditorias', 'editar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
-  const { objetivo, duracion, estado, avance_pct } = req.body
+  const {
+    objetivo, duracion, estado, avance_pct,
+    numero, alcance, tipo, ubicacion, calendario,
+    criterio, metodo, equipo_auditores, recursos, riesgos, tipo_informe
+  } = req.body
   try {
     const { rows } = await pool.query(
-      `UPDATE programas_auditoria SET objetivo=$1, duracion=$2, estado=$3, avance_pct=$4
-       WHERE id=$5 AND tenant_id=$6 RETURNING *`,
-      [objetivo, duracion || null, estado, avance_pct, id, req.user!.tenantId]
+      `UPDATE programas_auditoria SET
+        objetivo = COALESCE($1, objetivo),
+        duracion = COALESCE($2, duracion),
+        estado = COALESCE($3, estado),
+        avance_pct = COALESCE($4, avance_pct),
+        numero = COALESCE($5, numero),
+        alcance = COALESCE($6, alcance),
+        tipo = COALESCE($7, tipo),
+        ubicacion = COALESCE($8, ubicacion),
+        calendario = COALESCE($9, calendario),
+        criterio = COALESCE($10, criterio),
+        metodo = COALESCE($11, metodo),
+        equipo_auditores = COALESCE($12, equipo_auditores),
+        recursos = COALESCE($13, recursos),
+        riesgos = COALESCE($14, riesgos),
+        tipo_informe = COALESCE($15, tipo_informe)
+       WHERE id = $16 AND tenant_id = $17 RETURNING *`,
+      [
+        objetivo, duracion || null, estado, avance_pct,
+        numero || null, alcance || null, tipo || null, ubicacion || null, calendario || null,
+        criterio || null, metodo || null, equipo_auditores || null, recursos || null, riesgos || null, tipo_informe || null,
+        id, req.user!.tenantId
+      ]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Programa no encontrado' })
     res.json(rows[0])
@@ -81,14 +119,14 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
 // POST /api/auditorias
 router.post('/', requirePermission('auditorias', 'crear'), async (req: AuthRequest, res: Response) => {
-  const { codigo, programa_id, proceso_id, fecha_inicio, duracion_dias, auditor_lider, estado } = req.body
+  const { codigo, programa_id, proceso_id, fecha_inicio, duracion_dias, auditor_lider, estado, requisito_norma, auditado, observacion } = req.body
   if (!codigo || !fecha_inicio) return res.status(400).json({ error: 'codigo y fecha_inicio requeridos' })
   try {
     const { rows } = await pool.query(
-      `INSERT INTO auditorias (codigo, programa_id, proceso_id, fecha_inicio, duracion_dias, auditor_lider, estado, tenant_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      `INSERT INTO auditorias (codigo, programa_id, proceso_id, fecha_inicio, duracion_dias, auditor_lider, estado, requisito_norma, auditado, observacion, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
       [codigo, programa_id || null, proceso_id || null, fecha_inicio,
-       duracion_dias || 1, auditor_lider || null, estado || 'Planificada', req.user!.tenantId]
+       duracion_dias || 1, auditor_lider || null, estado || 'Planificada', requisito_norma || null, auditado || null, observacion || null, req.user!.tenantId]
     )
     res.status(201).json(rows[0])
   } catch (err: any) {
@@ -101,12 +139,20 @@ router.post('/', requirePermission('auditorias', 'crear'), async (req: AuthReque
 // PUT /api/auditorias/:id
 router.put('/:id', requirePermission('auditorias', 'editar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
-  const { proceso_id, fecha_inicio, duracion_dias, auditor_lider, estado } = req.body
+  const { proceso_id, fecha_inicio, duracion_dias, auditor_lider, estado, requisito_norma, auditado, observacion } = req.body
   try {
     const { rows } = await pool.query(
-      `UPDATE auditorias SET proceso_id=$1, fecha_inicio=$2, duracion_dias=$3,
-       auditor_lider=$4, estado=$5 WHERE id=$6 AND tenant_id=$7 RETURNING *`,
-      [proceso_id || null, fecha_inicio, duracion_dias, auditor_lider || null, estado, id, req.user!.tenantId]
+      `UPDATE auditorias SET
+        proceso_id = $1,
+        fecha_inicio = $2,
+        duracion_dias = $3,
+        auditor_lider = $4,
+        estado = $5,
+        requisito_norma = $6,
+        auditado = $7,
+        observacion = $8
+       WHERE id = $9 AND tenant_id = $10 RETURNING *`,
+      [proceso_id || null, fecha_inicio, duracion_dias, auditor_lider || null, estado, requisito_norma || null, auditado || null, observacion || null, id, req.user!.tenantId]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Auditoría no encontrada' })
     res.json(rows[0])
@@ -143,9 +189,9 @@ router.get('/hallazgos', async (req: AuthRequest, res: Response) => {
 
 // POST /api/auditorias/hallazgos
 router.post('/hallazgos', requirePermission('auditorias', 'crear'), async (req: AuthRequest, res: Response) => {
-  const { codigo, auditoria_id, tipo, descripcion, clausula, estado } = req.body
-  if (!codigo || !auditoria_id || !tipo || !descripcion) {
-    return res.status(400).json({ error: 'codigo, auditoria_id, tipo y descripcion requeridos' })
+  let { codigo, auditoria_id, tipo, descripcion, clausula, estado } = req.body
+  if (!auditoria_id || !tipo || !descripcion) {
+    return res.status(400).json({ error: 'auditoria_id, tipo y descripcion requeridos' })
   }
   try {
     const { rowCount } = await pool.query(
@@ -153,6 +199,19 @@ router.post('/hallazgos', requirePermission('auditorias', 'crear'), async (req: 
       [auditoria_id, req.user!.tenantId]
     )
     if (!rowCount) return res.status(400).json({ error: 'auditoria_id no pertenece a tu organización' })
+
+    if (!codigo) {
+      const year = new Date().getFullYear().toString().slice(2)
+      const countRes = await pool.query('SELECT COUNT(*) FROM hallazgos WHERE tenant_id = $1', [req.user!.tenantId])
+      let seq = parseInt(countRes.rows[0].count, 10) + 1
+      codigo = `HAL-${year}-${String(seq).padStart(3, '0')}`
+      let collision = await pool.query('SELECT 1 FROM hallazgos WHERE codigo = $1 AND tenant_id = $2', [codigo, req.user!.tenantId])
+      while (collision.rowCount && collision.rowCount > 0) {
+        seq++
+        codigo = `HAL-${year}-${String(seq).padStart(3, '0')}`
+        collision = await pool.query('SELECT 1 FROM hallazgos WHERE codigo = $1 AND tenant_id = $2', [codigo, req.user!.tenantId])
+      }
+    }
 
     const { rows } = await pool.query(
       `INSERT INTO hallazgos (codigo, auditoria_id, tipo, descripcion, clausula, estado, tenant_id)
