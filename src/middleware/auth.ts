@@ -23,23 +23,28 @@ export interface AuthRequest extends Request {
 const TENANT_STATUS_TTL_MS = 60_000
 const tenantStatusCache = new Map<number, { estado: string; expiresAt: number }>()
 
-async function isTenantActive(tenantId: number): Promise<boolean> {
+type TenantStatus = 'active' | 'inactive' | 'unknown'
+
+async function getTenantStatus(tenantId: number): Promise<TenantStatus> {
   const cached = tenantStatusCache.get(tenantId)
   const now = Date.now()
   if (cached && cached.expiresAt > now) {
-    return cached.estado === 'Activo'
+    return cached.estado === 'Activo' ? 'active' : 'inactive'
   }
   try {
     const { rows } = await pool.query('SELECT estado FROM tenants WHERE id = $1', [tenantId])
     const estado = rows[0]?.estado ?? 'Cancelado' // tenant inexistente se trata como no-activo
     tenantStatusCache.set(tenantId, { estado, expiresAt: now + TENANT_STATUS_TTL_MS })
-    return estado === 'Activo'
+    return estado === 'Activo' ? 'active' : 'inactive'
   } catch (err) {
-    // Si la BD falla, se falla cerrado del lado de la caché (no se guarda
-    // nada) pero se deja pasar la request: un error transitorio de BD no
-    // debería tumbar toda la aplicación para todos los tenants activos.
     console.error('[authMiddleware] error verificando estado de tenant:', err)
-    return true
+    // Antes se dejaba pasar SIEMPRE ante un error de BD, lo que permitía que
+    // un tenant suspendido siguiera operando durante una falla. Ahora:
+    //  - si hay un estado conocido (aunque la caché haya vencido), se usa;
+    //  - si no hay ninguno, el estado es "desconocido" y se responde 503
+    //    (no 403, para no cerrar la sesión como si la empresa estuviera inactiva).
+    if (cached) return cached.estado === 'Activo' ? 'active' : 'inactive'
+    return 'unknown'
   }
 }
 
@@ -65,8 +70,11 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
     return res.status(401).json({ error: 'Token inválido: falta información de tenant. Vuelve a iniciar sesión.', code: 'INVALID_TOKEN' })
   }
 
-  const active = await isTenantActive(payload.tenantId)
-  if (!active) {
+  const status = await getTenantStatus(payload.tenantId)
+  if (status === 'unknown') {
+    return res.status(503).json({ error: 'Servicio temporalmente no disponible. Intenta de nuevo en unos segundos.' })
+  }
+  if (status === 'inactive') {
     return res.status(403).json({ error: 'La cuenta de tu empresa no está activa. Contacta a soporte de Governex.', code: 'TENANT_INACTIVE' })
   }
 

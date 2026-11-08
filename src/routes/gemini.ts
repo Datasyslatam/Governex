@@ -1587,9 +1587,9 @@ Genera una respuesta ÚNICAMENTE en JSON válido con el siguiente formato, sin b
             }
             if (model.startsWith('gemini-2.5') || model.startsWith('gemini-3.')) body.generationConfig.thinkingConfig = { thinkingBudget: 0 }
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
                 body: JSON.stringify(body),
             })
             if (!response.ok) continue
@@ -1633,8 +1633,8 @@ Devuelve EXACTAMENTE un JSON con esta estructura (sin markdown, solo el JSON):
     const MODELS = GEMINI_MODELS
     for (const model of MODELS) {
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body)
             })
             if (!response.ok) continue
             const data = await response.json()
@@ -1689,8 +1689,8 @@ Responde ÚNICAMENTE en JSON válido:
     const MODELS = GEMINI_MODELS
     for (const model of MODELS) {
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body)
             })
             if (!response.ok) continue
             const data = await response.json()
@@ -1732,8 +1732,8 @@ Devuelve EXACTAMENTE un JSON con un arreglo de strings llamado "temas" que conte
     const MODELS = GEMINI_MODELS
     for (const model of MODELS) {
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body)
             })
             if (!response.ok) continue
             const data = await response.json()
@@ -1775,8 +1775,8 @@ Devuelve ÚNICAMENTE el código Markdown (sin backticks iniciales ni finales, si
     const MODELS = GEMINI_MODELS
     for (const model of MODELS) {
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body)
             })
             if (!response.ok) continue
             const data = await response.json()
@@ -1790,7 +1790,12 @@ Devuelve ÚNICAMENTE el código Markdown (sin backticks iniciales ni finales, si
 
             markdown = markdown.trim()
             if (plan_id) {
-                await pool.query('UPDATE plan_formacion SET guia_markdown = $1 WHERE id = $2', [markdown, plan_id])
+                // Filtro por tenant: sin él, un usuario podía sobrescribir la guía
+                // de un plan de formación de OTRA empresa conociendo su id.
+                await pool.query(
+                    'UPDATE plan_formacion SET guia_markdown = $1 WHERE id = $2 AND tenant_id = $3',
+                    [markdown, plan_id, req.user!.tenantId]
+                )
             }
             return res.json({ guia: markdown })
         } catch (e) {
@@ -1903,9 +1908,9 @@ RESPONDE EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO (sin bloques markdown ni text
     const MODELS = GEMINI_MODELS
     for (const model of MODELS) {
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
                 body: JSON.stringify(body)
             })
             if (!response.ok) continue

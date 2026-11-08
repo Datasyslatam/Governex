@@ -43,11 +43,54 @@ import geminiRouter from './routes/gemini'
 const app  = express()
 const PORT = process.env.PORT || 3001
 
+// Railway (y Cloudflare, si se usa) ponen un proxy delante: sin esto req.ip
+// sería siempre la IP del proxy y el limitador de login no distinguiría
+// clientes. Ajustable con TRUST_PROXY (número de saltos de proxy de confianza).
+app.set('trust proxy', Number(process.env.TRUST_PROXY ?? 1))
+app.disable('x-powered-by')
+
+// ── Cabeceras de seguridad básicas ──────────────────────────
+// No se define Content-Security-Policy a propósito: la app usa estilos en
+// línea e imágenes firmadas de R2, y una CSP mal calibrada rompería pantallas.
+// Queda como mejora planificada (ver docs/PLAN_CORRECCION_SEGURIDAD.md).
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN')
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=15552000')
+  }
+  next()
+})
+
+// ── CORS ────────────────────────────────────────────────────
+// En producción el frontend lo sirve este mismo Express (mismo origen) y en
+// desarrollo Vite hace de proxy, así que ninguno depende de CORS. Si se
+// define CORS_ORIGINS (lista separada por comas), solo esos orígenes externos
+// quedan autorizados. Si no se define, se mantiene el comportamiento anterior
+// (cualquier origen) para no romper integraciones existentes, con un aviso.
+const corsOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean)
+
+if (corsOrigins.length === 0 && process.env.NODE_ENV === 'production') {
+  console.warn('[seguridad] CORS_ORIGINS no está definida: se acepta cualquier origen. Defínela en Railway.')
+}
+
 app.use(cors({
-  origin: (_origin, callback) => callback(null, true),
+  origin: (origin, callback) => {
+    if (corsOrigins.length === 0) return callback(null, true) // comportamiento anterior
+    if (!origin || corsOrigins.includes(origin)) return callback(null, true)
+    return callback(null, false) // sin cabeceras CORS: el navegador bloquea la respuesta
+  },
   credentials: true,
 }))
-app.use(express.json())
+
+// 100 KB (valor por defecto de Express) no alcanzaba para las imágenes en
+// base64 que se envían a /api/gemini/extraer-procesos-imagen (organigramas):
+// cualquier imagen de más de ~75 KB fallaba con 413. Ajustable con JSON_BODY_LIMIT.
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '15mb' }))
 app.use(logActivityMiddleware)
 
 // ── API Routes ──────────────────────────────────────────────

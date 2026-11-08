@@ -5,6 +5,7 @@ import { useFetch } from '../../hooks/useFetch'
 import { requerimientosPSService, fichasTecnicasPSService, uploadsService } from '../../services'
 import { usePermissions } from '../../hooks/usePermissions'
 import PermissionGuard from '../../components/ui/PermissionGuard'
+import { getSignedFileUrl } from '../../services/api'
 
 /* ─────────────────── TIPOS ─────────────────── */
 interface UnidadCurricular {
@@ -97,7 +98,33 @@ const tryParseJSON = (str: any) => {
 
 const parseUrls = (str: any) => tryParseJSON(str)
 
-const getProxiedUrl = (url: string) => {
+const VIEW_PREFIX = '/api/uploads/view/'
+
+/**
+ * /api/uploads/view ya no es público (exige sesión), así que un <a href>
+ * directo no sirve: el navegador no envía el token. Para esos enlaces se
+ * intercepta el clic, se pide una URL firmada vía /api/uploads/signed-url
+ * (que valida que el archivo sea de la empresa) y se abre en una pestaña.
+ * La pestaña se abre ANTES del await para que el bloqueador de ventanas
+ * emergentes no la bloquee.
+ */
+const abrirArchivoProtegido = async (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
+  const proxied = getProxiedUrl(url)
+  if (typeof proxied !== 'string' || !proxied.startsWith(VIEW_PREFIX)) return // enlace externo: comportamiento normal
+  e.preventDefault()
+  const win = window.open('', '_blank')
+  if (win) win.opener = null
+  try {
+    const signed = await getSignedFileUrl(proxied.slice(VIEW_PREFIX.length))
+    if (win) win.location.href = signed
+    else window.location.href = signed
+  } catch (err) {
+    win?.close()
+    alert(`No se pudo abrir el archivo: ${(err as Error).message}`)
+  }
+}
+
+function getProxiedUrl(url: string) {
   if (typeof url === 'string' && url.includes('r2.cloudflarestorage.com')) {
     const key = url.split('/').pop()
     return `/api/uploads/view/${key}`
@@ -715,7 +742,7 @@ const RequerimientosPSPage: React.FC = () => {
                 {parseUrls(comercialForm.urlCotizacion).length > 0 && (
                    <div style={{display:'flex', flexDirection:'column', gap:'0.5rem', marginTop: '0.75rem'}}>
                      {parseUrls(comercialForm.urlCotizacion).map((url: string, i: number) => (
-                       <div key={i} style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}> <a href={getProxiedUrl(url)} target="_blank" rel="noreferrer" style={{color:'#2563eb', fontSize:'0.85rem', textDecoration:'none', fontWeight:600}}> Ver Cotización Adjunta {i + 1}</a>
+                       <div key={i} style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}> <a href={getProxiedUrl(url)} onClick={(e) => abrirArchivoProtegido(e, url)} target="_blank" rel="noreferrer" style={{color:'#2563eb', fontSize:'0.85rem', textDecoration:'none', fontWeight:600}}> Ver Cotización Adjunta {i + 1}</a>
                          {comercialMode !== 'ver' && (
                            <button onClick={() => setComercialForm(p => ({ ...p, urlCotizacion: removeUrl(p.urlCotizacion || '', url) }))} className="iso-btn-icon danger" title="Eliminar archivo" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>Quitar</button>
                          )}
@@ -775,7 +802,7 @@ const RequerimientosPSPage: React.FC = () => {
                 {parseUrls(comercialForm.urlContrato).length > 0 && (
                    <div style={{display:'flex', flexDirection:'column', gap:'0.5rem', marginTop: '0.75rem'}}>
                      {parseUrls(comercialForm.urlContrato).map((url: string, i: number) => (
-                       <div key={i} style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}> <a href={getProxiedUrl(url)} target="_blank" rel="noreferrer" style={{color:'#2563eb', fontSize:'0.85rem', textDecoration:'none', fontWeight:600}}> Ver Documento de Evidencia {i + 1}</a>
+                       <div key={i} style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}> <a href={getProxiedUrl(url)} onClick={(e) => abrirArchivoProtegido(e, url)} target="_blank" rel="noreferrer" style={{color:'#2563eb', fontSize:'0.85rem', textDecoration:'none', fontWeight:600}}> Ver Documento de Evidencia {i + 1}</a>
                          {comercialMode !== 'ver' && (
                            <button onClick={() => setComercialForm(p => ({ ...p, urlContrato: removeUrl(p.urlContrato || '', url) }))} className="iso-btn-icon danger" title="Eliminar archivo" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>Quitar</button>
                          )}
