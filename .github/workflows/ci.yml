@@ -35,8 +35,10 @@ jobs:
 
     env:
       # Solo valores de prueba: la BD es efímera y R2/Gemini no se contactan.
+      # NODE_ENV=production NO va aquí: con él, `npm ci` omite las
+      # devDependencies (TypeScript, Vite, tsx) y el build falla. Se define
+      # solo en el paso que arranca el servidor.
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/governex_ci_test
-      NODE_ENV: production
       PORT: 3001
       BASE_URL: http://localhost:3001
       JWT_SECRET: ci-jwt-secret-solo-pruebas
@@ -64,6 +66,8 @@ jobs:
         run: bash tests/setup-db.sh
 
       - name: Arrancar servidor
+        env:
+          NODE_ENV: production
         run: |
           node dist-server/index.js > server.log 2>&1 &
           for i in $(seq 1 30); do
