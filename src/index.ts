@@ -128,6 +128,10 @@ app.use('/api/gemini',                geminiRouter)
 
 // ── Health check Railway ────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
+// Mismo chequeo bajo /api: lo usa el indicador "Servidor en línea" del login.
+// (En desarrollo, Vite solo redirige /api al backend; /health devolvería el
+// index.html de Vite con 200 y mostraría "en línea" aunque el backend no corra.)
+app.get('/api/health', (_req, res) => res.json({ status: 'ok' }))
 
 // ── Frontend estático (Vite build) ──────────────────────────
 // Solo en producción: en dev, Vite (puerto 5173) sirve el frontend y
