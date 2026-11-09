@@ -12,6 +12,7 @@
 
 .auth-layout__container {
   width: 100%;
-  max-width: 1200px;
+  /* El login ocupa todo el ancho (panel de marca + panel de acceso). */
+  max-width: none;
   background: transparent;
 }
