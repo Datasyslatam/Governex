@@ -110,7 +110,10 @@ router.post('/archivos', requirePermission('enfoque_cliente', 'crear'), async (r
        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
       [nombre, tipo, url, tipoMime || null, tamanoBytes || null, req.user?.id || null, req.user!.tenantId]
     )
-    res.status(201).json(rows[0])
+    // Se devuelve una URL firmada (igual que el GET) para que el botón de
+    // descarga funcione de inmediato: /api/uploads/view ya no es público.
+    const signed = await resolveFileUrl(rows[0].url, req.user!.tenantId)
+    res.status(201).json({ ...rows[0], url: signed ?? rows[0].url })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Error al registrar archivo' })

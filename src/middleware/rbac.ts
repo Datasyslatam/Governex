@@ -23,7 +23,10 @@ export function requirePermission(recurso: string, accion: Accion) {
     const rol = req.user?.rol
     if (!rol) return res.status(401).json({ error: 'No autenticado', code: 'NO_TOKEN' })
 
-    const cacheKey = `${rol}:${recurso}:${accion}`
+    // La clave incluye el id del usuario (no solo el rol): la consulta de abajo
+    // evalúa permisos personalizados por usuario, así que cachear por rol hacía
+    // que un usuario heredara la decisión tomada para otro del mismo rol.
+    const cacheKey = `${req.user!.id}:${recurso}:${accion}`
     const cached = cache.get(cacheKey)
     const now = Date.now()
 

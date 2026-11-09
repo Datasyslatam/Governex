@@ -38,7 +38,41 @@ export function buildObjectKey(
  * Soporta tanto el formato heredado `{tenantId}/` como el nuevo organizado `tenants/{tenantId}_...`
  */
 export function keyBelongsToTenant(key: string, tenantId: number): boolean {
+  // Se rechazan segmentos `..` y barras invertidas: una key como
+  // `5/../tenants/7_x/archivo` cumple el prefijo del tenant 5 pero, si algo
+  // en la cadena normaliza la ruta, apuntaría a un archivo del tenant 7.
+  if (key.includes('..') || key.includes('\\')) return false
   return key.startsWith(`${tenantId}/`) || key.startsWith(`tenants/${tenantId}_`)
+}
+
+const VIEW_PREFIX = '/api/uploads/view/'
+
+/**
+ * Normaliza un valor guardado en BD: algunos módulos guardan la key "pelada"
+ * y otros la URL de compatibilidad `/api/uploads/view/{key}`.
+ */
+export function normalizeKey(value: string): string {
+  return value.startsWith(VIEW_PREFIX) ? value.slice(VIEW_PREFIX.length) : value
+}
+
+/**
+ * Verificación de propiedad más completa que keyBelongsToTenant: además del
+ * prefijo de la key, acepta keys registradas en `registro_cargas_r2` para el
+ * tenant (cubre archivos con formato de key heredado sin prefijo de tenant).
+ */
+export async function isKeyOwnedByTenant(key: string, tenantId: number): Promise<boolean> {
+  if (keyBelongsToTenant(key, tenantId)) return true
+  if (key.includes('..') || key.includes('\\')) return false
+  try {
+    const { rowCount } = await pool.query(
+      'SELECT 1 FROM registro_cargas_r2 WHERE key_r2 = $1 AND tenant_id = $2 LIMIT 1',
+      [key, tenantId]
+    )
+    return (rowCount ?? 0) > 0
+  } catch (err) {
+    console.error('[storage] error verificando propiedad de key:', err)
+    return false // falla cerrado: ante la duda, no se firma
+  }
 }
 
 /**

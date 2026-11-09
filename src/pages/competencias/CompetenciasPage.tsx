@@ -220,7 +220,18 @@ const CompetenciasPage: React.FC = () => {
   }
 
   const parseMarkdown = (md: string) => {
-    let html = md
+    // Se escapa el HTML ANTES de aplicar el formato: el texto viene de la IA
+    // (a partir del "tema" que escribe el usuario) y se inserta con innerHTML,
+    // así que sin esto una etiqueta <img onerror=...> o <script> se ejecutaría
+    // con la sesión del usuario (XSS). La sintaxis Markdown soportada (#, *, -)
+    // no usa estos caracteres, por lo que el formato se conserva igual.
+    const escaped = String(md ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+    let html = escaped
       .replace(/^### (.*$)/gim, '<h4>$1</h4>')
       .replace(/^## (.*$)/gim, '<h3>$1</h3>')
       .replace(/^# (.*$)/gim, '<h2>$1</h2>')

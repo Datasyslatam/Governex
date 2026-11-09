@@ -2,23 +2,32 @@ import { Router, Response } from 'express'
 import multer from 'multer'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { ACCEPTED_MIME_TYPES } from '../constants/uploads'
-import { uploadObject, resolveFileUrl, keyBelongsToTenant, getSignedDownloadUrl } from '../services/storageService'
+import { uploadObject, normalizeKey, isKeyOwnedByTenant, getSignedDownloadUrl } from '../services/storageService'
 import { pool } from '../db'
 
 const router = Router()
 
-// Endpoint público (sin authMiddleware) para compatibilidad hacia atrás
-// con URLs antiguas de R2 y con el RequerimientosPSPage actual.
-router.get('/view/:key(*)', async (req, res) => {
+router.use(authMiddleware)
+
+// GET /api/uploads/view/:key
+// Antes era PÚBLICO: cualquiera con la key (predecible: tenant + fecha +
+// nombre) obtenía el archivo de cualquier empresa. Ahora exige sesión y
+// que la key pertenezca al tenant. Los valores `/api/uploads/view/{key}`
+// guardados en BD siguen funcionando: el backend los resuelve a URL firmada
+// (resolveFileUrl) y el frontend abre los enlaces vía /signed-url.
+router.get('/view/:key(*)', async (req: AuthRequest, res: Response) => {
+  const key = normalizeKey(req.params.key)
+  if (!(await isKeyOwnedByTenant(key, req.user!.tenantId))) {
+    return res.status(404).json({ error: 'Archivo no encontrado' })
+  }
   try {
-    const url = await getSignedDownloadUrl(req.params.key)
+    const url = await getSignedDownloadUrl(key)
     res.redirect(url)
   } catch (err) {
-    res.status(500).send('Error al generar el enlace de visualización')
+    console.error(err)
+    res.status(500).json({ error: 'Error al generar el enlace de visualización' })
   }
 })
-
-router.use(authMiddleware)
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -100,19 +109,21 @@ router.post('/', (req: AuthRequest, res: Response) => {
 // pertenezca al tenant del usuario ANTES de firmar — nunca confía en el
 // key recibido por query string sin verificarlo primero.
 router.get('/signed-url', async (req: AuthRequest, res: Response) => {
-  const key = req.query.key as string | undefined
-  if (!key) return res.status(400).json({ error: 'Se requiere el parámetro key' })
+  const rawKey = req.query.key
+  if (typeof rawKey !== 'string' || !rawKey) return res.status(400).json({ error: 'Se requiere el parámetro key' })
 
+  // Acepta tanto la key pelada como el valor `/api/uploads/view/{key}` que
+  // guardan algunos módulos (p. ej. organigrama en PlantillaOrganizacion).
+  const key = normalizeKey(rawKey)
   const tenantId = req.user!.tenantId
-  if (!keyBelongsToTenant(key, tenantId)) {
+  if (!(await isKeyOwnedByTenant(key, tenantId))) {
     // 404 en vez de 403: no confirmamos ni siquiera que la key exista en
     // otro tenant, para no dar información útil a un intento de enumeración.
     return res.status(404).json({ error: 'Archivo no encontrado' })
   }
 
   try {
-    const url = await resolveFileUrl(key, tenantId)
-    if (!url) return res.status(404).json({ error: 'Archivo no encontrado' })
+    const url = await getSignedDownloadUrl(key)
     res.json({ url })
   } catch (err) {
     console.error(err)

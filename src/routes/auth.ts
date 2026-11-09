@@ -4,8 +4,12 @@ import jwt from 'jsonwebtoken'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { registrarActividadDirecto } from '../middleware/activityLogger'
+import { loginRateLimit } from '../middleware/rateLimit'
 
 const router = Router()
+
+// 10 intentos fallidos por IP+email cada 15 minutos (los logins exitosos no cuentan).
+const loginLimiter = loginRateLimit({ windowMs: 15 * 60_000, maxFailures: 10 })
 
 interface JwtPayload {
   id: number
@@ -33,7 +37,7 @@ export async function getUserPermissions(userId: number): Promise<string[]> {
 }
 
 // POST /api/auth/login
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', loginLimiter, async (req: Request, res: Response) => {
   const { email, password } = req.body
   if (!email || !password) {
     return res.status(400).json({ error: 'Email y contraseña requeridos' })
@@ -240,6 +244,10 @@ router.put('/users/:id', authMiddleware, async (req: AuthRequest, res: Response)
       [id, req.user!.tenantId]
     )
     if (check.length === 0) {
+      // ROLLBACK antes de responder: sin él, la conexión volvía al pool con
+      // la transacción abierta y la siguiente petición que la tomara corría
+      // dentro de ella.
+      await client.query('ROLLBACK')
       return res.status(404).json({ error: 'Usuario no encontrado' })
     }
 
@@ -248,7 +256,10 @@ router.put('/users/:id', authMiddleware, async (req: AuthRequest, res: Response)
 
     if (password && password.trim() !== '') {
       const hash = await bcrypt.hash(password, 10)
-      query += `, password_hash = $6 WHERE id = $7`
+      // params[5] ($6) es el id y params[6] ($7) es el hash. Antes estaban
+      // invertidos (password_hash = id, WHERE id = hash) y cambiar la
+      // contraseña desde la edición de usuario siempre fallaba con error 500.
+      query += `, password_hash = $7 WHERE id = $6`
       params.push(hash)
     } else {
       query += ` WHERE id = $6`
