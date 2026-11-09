@@ -23,7 +23,6 @@ pool.on('error', (err) => {
   console.error('Error inesperado en pool de PostgreSQL:', err)
 })
 
-// Auto-run migration
-pool.query(`ALTER TABLE plan_formacion ADD COLUMN IF NOT EXISTS guia_markdown TEXT;`)
-  .then(() => console.log('Migración: Columna guia_markdown verificada'))
-  .catch((e) => console.error('Error en migración:', e))
+// El ALTER TABLE de plan_formacion.guia_markdown que se ejecutaba aquí en
+// cada arranque ahora vive en migrations/020_tablas_fuera_de_migraciones.sql.
+// El esquema se gestiona solo con migraciones (npm run migrate).

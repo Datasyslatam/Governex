@@ -1445,7 +1445,14 @@ ALTER TABLE salidas_nc ADD CONSTRAINT salidas_nc_disposicion_check CHECK (
 -- USUARIOS: email ÚNICO GLOBAL (no por tenant) — necesario para login sin selección de tenant
 ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS uq_usuarios_tenant_email;
 ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_email_key;
-ALTER TABLE usuarios ADD CONSTRAINT uq_usuarios_email UNIQUE (email);
+-- Idempotente: la tabla ya declara uq_usuarios_email en su CREATE TABLE, así que
+-- un ADD CONSTRAINT directo fallaba al cargar schema.sql en una BD vacía.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_usuarios_email') THEN
+    ALTER TABLE usuarios ADD CONSTRAINT uq_usuarios_email UNIQUE (email);
+  END IF;
+END $$;
 
 -- UNIQUE compuestos tenant+codigo (reemplazan UNIQUE globales antiguos)
 ALTER TABLE procesos             DROP CONSTRAINT IF EXISTS procesos_codigo_key;

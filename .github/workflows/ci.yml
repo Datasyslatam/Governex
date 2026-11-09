@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-y-pruebas:
+    name: Build y pruebas de seguridad
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Solo valores de prueba: la BD es efímera y R2/Gemini no se contactan.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/governex_ci_test
+      NODE_ENV: production
+      PORT: 3001
+      BASE_URL: http://localhost:3001
+      JWT_SECRET: ci-jwt-secret-solo-pruebas
+      PLATFORM_ADMIN_JWT_SECRET: ci-admin-secret-solo-pruebas
+      R2_ENDPOINT: https://ci-placeholder.r2.cloudflarestorage.com
+      R2_KEY: ci-placeholder
+      R2_SECRET: ci-placeholder
+      R2_BUCKET: ci-placeholder
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12'
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Build (servidor + frontend)
+        run: npm run build
+
+      - name: Crear BD de pruebas (schema + migraciones + datos de prueba)
+        run: bash tests/setup-db.sh
+
+      - name: Arrancar servidor
+        run: |
+          node dist-server/index.js > server.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf "$BASE_URL/health" > /dev/null && exit 0
+            sleep 1
+          done
+          echo "El servidor no arrancó"; cat server.log; exit 1
+
+      - name: Pruebas de seguridad y aislamiento entre empresas
+        run: npm test
+
+      - name: Log del servidor (si algo falló)
+        if: failure()
+        run: cat server.log || true
