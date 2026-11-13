@@ -41,17 +41,40 @@ Referencia normativa: ISO/IEC 27001:2022, Anexo A. Controles 5.15 (control de ac
 
 ---
 
-## Fase 2: Próximo sprint (requieren decisión o más cambios)
+## Fase 2: Estado
 
-| Prioridad | Mejora | Motivo |
+| # | Mejora | Estado |
 |---|---|---|
-| 1 | Revisión completa de aislamiento entre empresas en las 29 rutas (prueba automatizada "usuario A no ve ni modifica datos de B") | En la revisión puntual se halló un caso (H2). Conviene probarlos todos |
-| 2 | Pasar el JWT de `localStorage` a cookie `httpOnly` + `SameSite` | Reduce el impacto de un XSS. Requiere cambios coordinados en frontend y backend |
-| 3 | Content-Security-Policy calibrada (primero en modo `Report-Only`) | Segunda barrera contra XSS. Mal calibrada rompería pantallas |
-| 4 | Gestor de migraciones con tabla de control (node-pg-migrate o Drizzle) | `schema.sql` + `migrations/` no reconstruyen la BD: `usuario_permisos` y `logs_actividad` solo se crean con scripts de `scratch/` |
-| 5 | Sacar el `ALTER TABLE` automático de `src/db.ts` hacia una migración | Hoy se ejecuta en cada arranque |
-| 6 | Pruebas automatizadas + CI en GitHub Actions (build, typecheck, pruebas de API) | Hoy no hay ninguna |
-| 7 | Limitador de intentos compartido (Redis) si Railway escala a más de una réplica | El limitador actual es en memoria, por instancia |
+| 1 | Revisión completa de aislamiento entre empresas | **Hecho.** Ver "Resultado de la auditoría de aislamiento" |
+| 2 | Pasar el JWT de `localStorage` a cookie `httpOnly` + `SameSite` | **Pendiente: requiere decisión.** Cambia el login, `api.ts` y las ~10 llamadas `fetch` directas que leen el token; además exige protección CSRF |
+| 3 | Content-Security-Policy | **Hecho, en modo solo reporte.** Las violaciones se registran en el log como `[csp] …`. Tras revisarlas en producción, activar el bloqueo con `CSP_ENFORCE=true` |
+| 4 | Gestor de migraciones con tabla de control | **Hecho.** `scripts/migrate.ts` + tabla `schema_migrations` (`npm run migrate`) |
+| 5 | Sacar el `ALTER TABLE` automático de `src/db.ts` | **Hecho.** Ahora está en la migración 020 |
+| 6 | Pruebas automatizadas + CI | **Hecho.** 47 pruebas en `tests/security.test.mjs`; `.github/workflows/ci.yml` las corre en cada PR |
+| 7 | Limitador de intentos compartido (Redis) | **Pendiente.** Solo hace falta si Railway escala a más de una réplica |
+
+### Resultado de la auditoría de aislamiento
+
+**Método.** Un análisis estático (compilador de TypeScript) recorrió todas las consultas SQL de `src/routes`, `src/middleware` y `src/services`, y además todas las escrituras que reciben el id de un registro padre.
+
+**Consultas sin filtro por empresa.** Hay 16 casos y todos son legítimos:
+- consultas sobre el propio usuario (el id sale del token);
+- estadísticas globales del administrador de plataforma, que son así por diseño;
+- operaciones sobre usuarios precedidas de una verificación de empresa.
+
+En ningún caso el tenant se toma de la petición: siempre sale del token. Todos los "upsert" usan claves compuestas `(tenant_id, …)`.
+
+**Hallazgo H16 (alta).** 29 escrituras de 54 aceptan el id de un registro padre (`proceso_id`, `nc_id`, `proveedor_id`, `personal_id`, `ficha_tecnica_id`, …) sin verificar que sea de la misma empresa. Por ejemplo, la empresa A podía crear un indicador colgado de un proceso de la empresa B (comprobado: respuesta 201), y en sus listados ver datos de B.
+
+**Corrección.** La migración 022 (antes 021) instala un trigger genérico (64 relaciones, detectadas desde el catálogo de PostgreSQL) que rechaza cualquier referencia a un padre de otra empresa. Protege también el código futuro. Los registros antiguos con referencias cruzadas se pueden seguir editando mientras no cambie la referencia, y la migración los **reporta** al aplicarse.
+
+**Pruebas por HTTP.** Sobre 8 recursos, la empresa A no ve en los listados, no lee, no modifica y no borra registros de B, y no puede colgar registros de padres de B.
+
+### Pasos en producción para la Fase 2
+1. Hacer un respaldo de la base de datos.
+2. `npm run migrate -- --baseline=019` (una sola vez) y luego `npm run migrate`.
+3. Revisar la salida de la migración 022: si aparece `ATENCIÓN: … referencian un … de otra empresa`, esos registros se crearon con una referencia cruzada antes de la corrección y conviene revisarlos.
+4. Después de unos días, buscar líneas `[csp]` en los logs de Railway. Si no hay violaciones de la propia aplicación, definir `CSP_ENFORCE=true`.
 
 ## Fase 3: Deuda técnica y diseño
 
@@ -62,7 +85,8 @@ Referencia normativa: ISO/IEC 27001:2022, Anexo A. Controles 5.15 (control de ac
 - Optimizar o eliminar logos duplicados en `src/assets/` (~2,5 MB).
 - Crear o corregir los íconos PWA referenciados en `index.html` y `public/manifest.json`, que no existen.
 - Mover o eliminar los scripts sueltos de la raíz y de `scratch/`.
-- Actualizar el README (requisito Node ≥ 22.12).
+- ~~Actualizar el README (requisito Node ≥ 22.12).~~ Hecho en la Fase 2.
+- Revisar `actividades_empresa.id` y `fichas_tecnicas_ps.id`: son claves de texto con unicidad **global**, no por empresa. Hoy se generan con fecha y aleatorio, así que no chocan en la práctica, pero conviene migrarlas a claves compuestas `(tenant_id, id)`.
 - Reemplazar `document.body.innerHTML = …` en la impresión de Competencias, que destruye el árbol de React, por una ventana o iframe de impresión.
 
 ---

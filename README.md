@@ -187,7 +187,7 @@ governex/
 │   └── 019_auditorias_iso19011_upgrade.sql
 ├── package.json               # Dependencias, scripts y configuración del motor Node
 ├── railway.toml               # Configuración de compilación y despliegue en Railway
-├── run_migration.ts           # Ejecutor programático de migraciones en Node/TypeScript
+├── scripts/migrate.ts         # Gestor de migraciones (tabla schema_migrations)
 ├── schema.sql                 # Esquema DDL consolidado de base de datos
 ├── tsconfig.json              # Configuración TypeScript del Frontend
 ├── tsconfig.server.json       # Configuración TypeScript del Backend (CommonJS -> dist-server)
@@ -375,17 +375,16 @@ VITE_API_URL=
 
 ### Migraciones de Base de Datos
 
-1. Inicializa la base de datos con la estructura inicial:
+El esquema se gestiona con `scripts/migrate.ts`, que registra cada archivo `migrations/NNN_*.sql` aplicado en la tabla `schema_migrations` (con checksum, advisory lock y una transacción por archivo).
+
 ```bash
-# Puedes cargar schema.sql en tu base de datos PostgreSQL
-psql -U usuario -d governex -f schema.sql
+npm run migrate:status     # muestra migraciones aplicadas y pendientes (no cambia nada)
+npm run migrate            # aplica las pendientes
 ```
 
-2. Aplica las migraciones adicionales necesarias usando el script de migración:
-```bash
-npm run migrate migrations/001_multitenant.sql
-npm run migrate migrations/010_matriz_permisos_definitiva.sql
-```
+- **BD nueva:** cargar `schema.sql` (equivale al estado tras la 005), luego `npm run migrate -- --baseline=005` y `npm run migrate`.
+- **BD existente sin `schema_migrations`:** registrar primero la línea base de lo ya aplicado a mano (ver `docs/seguridad/INTEGRACION_PR5.md`).
+- **Entorno local con Docker y datos de prueba:** ver `docs/seguridad/ENTORNO_LOCAL.md` (`npm run local:reset` hace todo lo anterior).
 
 ### Ejecución en Entorno de Desarrollo
 
@@ -414,9 +413,12 @@ En el archivo `package.json` se encuentran definidos los siguientes comandos:
 | `npm run dev` | Inicia simultáneamente backend (`tsx watch`) y frontend (`vite`) mediante `concurrently`. |
 | `npm run dev:backend` | Inicia únicamente el servidor Express con recarga en caliente vía `tsx watch src/index.ts`. |
 | `npm run dev:frontend` | Inicia únicamente el servidor de desarrollo de Vite para el cliente React. |
+| `npm run migrate` / `npm run migrate:status` | Aplica o lista las migraciones (gestor con tabla `schema_migrations`). |
+| `npm test` | Pruebas de aislamiento entre empresas e integridad (`tests/security.test.mjs`, BD de `tests/setup-db.sh`). |
+| `npm run test:security` | Pruebas de autenticación, sesiones, MFA, CSRF y API (`scripts/security/api-security-tests.cjs`). |
+| `npm run local:env` / `local:db` / `local:reset` | Entorno local con Docker (ver `docs/seguridad/ENTORNO_LOCAL.md`). |
 | `npm run build` | Compila el backend a CommonJS (`dist-server/`) y empaqueta el frontend optimizado con Vite (`dist/`). |
 | `npm start` | Ejecuta el servidor compilado en producción (`node dist-server/index.js`). |
-| `npm run migrate` | Ejecuta scripts de migración SQL contra la base de datos (`tsx run_migration.ts <archivo.sql>`). |
 | `npm run typecheck` | Ejecuta la verificación de tipos de TypeScript sin emitir archivos (`tsc --noEmit`). |
 
 ---
