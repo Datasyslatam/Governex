@@ -2,12 +2,13 @@ import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/rbac'
+import { requireTenantRefs } from '../middleware/tenantRefs'
 
 const router = Router()
 router.use(authMiddleware)
 
 // GET /api/salidas-nc
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('salidas_nc', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT snc.*,
@@ -28,7 +29,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 })
 
 // GET /api/salidas-nc/:id
-router.get('/:id', async (req: AuthRequest, res: Response) => {
+router.get('/:id', requirePermission('salidas_nc', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM salidas_nc WHERE id=$1 AND tenant_id=$2`, [req.params.id, req.user!.tenantId]
@@ -42,7 +43,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // POST /api/salidas-nc
-router.post('/', requirePermission('salidas_nc', 'crear'), async (req: AuthRequest, res: Response) => {
+router.post('/', requirePermission('salidas_nc', 'crear'), requireTenantRefs({ nc_id: 'no_conformidades' }), async (req: AuthRequest, res: Response) => {
   const { codigo, descripcion, proceso, detectado_en, disposicion,
           responsable, fecha, accion_tomada, verificado_por, estado, nc_id,
           cliente_informado, fecha_notificacion_cliente,
@@ -97,7 +98,7 @@ router.post('/', requirePermission('salidas_nc', 'crear'), async (req: AuthReque
 })
 
 // PUT /api/salidas-nc/:id
-router.put('/:id', requirePermission('salidas_nc', 'editar'), async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('salidas_nc', 'editar'), requireTenantRefs({ nc_id: 'no_conformidades' }), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { descripcion, proceso, detectado_en, disposicion,
           responsable, fecha, accion_tomada, verificado_por, estado, nc_id,

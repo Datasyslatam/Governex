@@ -1,12 +1,19 @@
 import { Router, Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
+import { signOptions } from '../middleware/securityConfig'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { registrarActividadDirecto } from '../middleware/activityLogger'
 import { loginRateLimit } from '../middleware/rateLimit'
+import { validarPassword } from '../middleware/passwordPolicy'
 
 const router = Router()
+
+// Hash ficticio (de un valor aleatorio que nadie conoce) para igualar el
+// tiempo de respuesta del login cuando el correo no existe.
+const DUMMY_HASH = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 10)
 
 // 10 intentos fallidos por IP+email cada 15 minutos (los logins exitosos no cuentan).
 const loginLimiter = loginRateLimit({ windowMs: 15 * 60_000, maxFailures: 10 })
@@ -39,7 +46,7 @@ export async function getUserPermissions(userId: number): Promise<string[]> {
 // POST /api/auth/login
 router.post('/login', loginLimiter, async (req: Request, res: Response) => {
   const { email, password } = req.body
-  if (!email || !password) {
+  if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
     return res.status(400).json({ error: 'Email y contraseña requeridos' })
   }
 
@@ -55,17 +62,21 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
       [email]
     )
     const user = rows[0]
-    if (!user) return res.status(401).json({ error: 'Credenciales incorrectas' })
+
+    // V13 / CWE-204: la contraseña se verifica SIEMPRE antes de revelar
+    // cualquier otra cosa. Si el usuario no existe se compara contra un hash
+    // ficticio para que el tiempo de respuesta no delate qué correos existen,
+    // y el estado de la empresa solo se informa a quien ya probó conocer la
+    // contraseña (antes se respondía 403 "empresa no activa" sin verificarla).
+    const valid = await bcrypt.compare(password, user?.password_hash || DUMMY_HASH)
+    if (!user || !valid) return res.status(401).json({ error: 'Credenciales incorrectas' })
 
     if (user.tenant_estado !== 'Activo') {
       return res.status(403).json({ error: 'La cuenta de tu empresa no está activa. Contacta a soporte de Governex.' })
     }
 
-    const valid = await bcrypt.compare(password, user.password_hash)
-    if (!valid) return res.status(401).json({ error: 'Credenciales incorrectas' })
-
     const payload: JwtPayload = { id: user.id, tenantId: user.tenant_id, rol: user.rol }
-    const token = jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: '8h' })
+    const token = jwt.sign(payload, process.env.JWT_SECRET!, signOptions('8h'))
 
     const permissions = await getUserPermissions(user.id)
 
@@ -102,6 +113,8 @@ router.post('/register', authMiddleware, async (req: AuthRequest, res: Response)
   if (!nombre || !email || !password || !rol_id) {
     return res.status(400).json({ error: 'Todos los campos son requeridos' })
   }
+  const pwError = validarPassword(password, { email, nombre })
+  if (pwError) return res.status(400).json({ error: pwError, code: 'WEAK_PASSWORD' })
 
   try {
     const hash = await bcrypt.hash(password, 10)
@@ -186,6 +199,8 @@ router.post('/users', authMiddleware, async (req: AuthRequest, res: Response) =>
   if (!nombre || !email || !password || !rol_id) {
     return res.status(400).json({ error: 'Todos los campos son requeridos' })
   }
+  const pwError = validarPassword(password, { email, nombre })
+  if (pwError) return res.status(400).json({ error: pwError, code: 'WEAK_PASSWORD' })
 
   const client = await pool.connect()
   try {
@@ -232,6 +247,11 @@ router.put('/users/:id', authMiddleware, async (req: AuthRequest, res: Response)
 
   if (!nombre || !email || !rol_id) {
     return res.status(400).json({ error: 'Nombre, email y rol son requeridos' })
+  }
+  // La contraseña es opcional al editar; si se envía, debe cumplir la política.
+  if (typeof password === 'string' && password.trim() !== '') {
+    const pwError = validarPassword(password, { email, nombre })
+    if (pwError) return res.status(400).json({ error: pwError, code: 'WEAK_PASSWORD' })
   }
 
   const client = await pool.connect()

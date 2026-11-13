@@ -2,13 +2,14 @@ import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/rbac'
+import { requireTenantRefs } from '../middleware/tenantRefs'
 import { resolveFileUrl } from '../services/storageService'
 
 const router = Router()
 router.use(authMiddleware)
 
 // GET /api/compras
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('compras', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT oc.*,
@@ -91,7 +92,7 @@ router.post('/', requirePermission('compras', 'crear'), async (req: AuthRequest,
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/compras/fichas-tecnicas
-router.get('/fichas-tecnicas', async (req: AuthRequest, res: Response) => {
+router.get('/fichas-tecnicas', requirePermission('compras', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user!.tenantId
     const { rows } = await pool.query(
@@ -129,7 +130,7 @@ router.get('/fichas-tecnicas', async (req: AuthRequest, res: Response) => {
 })
 
 // POST /api/compras/fichas-tecnicas
-router.post('/fichas-tecnicas', requirePermission('compras', 'crear'), async (req: AuthRequest, res: Response) => {
+router.post('/fichas-tecnicas', requirePermission('compras', 'crear'), requireTenantRefs({ proveedor_id: 'proveedores' }), async (req: AuthRequest, res: Response) => {
   const { nombre, descripcion, especificaciones, unidadMedida, cantidadMinima,
           documentosRequeridos, responsable, fechaCreacion, variablesCriticas, proveedor_id } = req.body
   if (!nombre) return res.status(400).json({ error: 'nombre es requerido' })
@@ -157,7 +158,7 @@ router.post('/fichas-tecnicas', requirePermission('compras', 'crear'), async (re
 })
 
 // PUT /api/compras/fichas-tecnicas/:id
-router.put('/fichas-tecnicas/:id', requirePermission('compras', 'editar'), async (req: AuthRequest, res: Response) => {
+router.put('/fichas-tecnicas/:id', requirePermission('compras', 'editar'), requireTenantRefs({ proveedor_id: 'proveedores' }), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { nombre, descripcion, especificaciones, unidadMedida, cantidadMinima,
           documentosRequeridos, responsable, variablesCriticas, proveedor_id } = req.body
@@ -197,7 +198,7 @@ router.delete('/fichas-tecnicas/:id', requirePermission('compras', 'eliminar'), 
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/compras/evaluaciones
-router.get('/evaluaciones', async (req: AuthRequest, res: Response) => {
+router.get('/evaluaciones', requirePermission('compras', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT e.*, oc.producto AS orden_producto
@@ -259,7 +260,7 @@ router.delete('/evaluaciones/:id', requirePermission('compras', 'eliminar'), asy
 })
 
 // GET /api/compras/:id
-router.get('/:id', async (req: AuthRequest, res: Response) => {
+router.get('/:id', requirePermission('compras', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT oc.*, pv.razon AS proveedor_razon
@@ -277,7 +278,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // PUT /api/compras/:id
-router.put('/:id', requirePermission('compras', 'editar'), async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('compras', 'editar'), requireTenantRefs({ proveedor_id: 'proveedores' }), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { proveedor_id, nit_proveedor, proveedor, producto, cantidad, unidad,
           precio_unit, total, fecha_emision, fecha_entrega,

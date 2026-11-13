@@ -2,6 +2,7 @@ import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/rbac'
+import { requireTenantRefs } from '../middleware/tenantRefs'
 
 const router = Router()
 router.use(authMiddleware)
@@ -9,7 +10,7 @@ router.use(authMiddleware)
 // ── NO CONFORMIDADES ───────────────────────────────────────
 
 // GET /api/nc-ac/no-conformidades
-router.get('/no-conformidades', async (req: AuthRequest, res: Response) => {
+router.get('/no-conformidades', requirePermission('no_conformidades', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT nc.*, p.nombre AS proceso_nombre, h.codigo AS hallazgo_codigo,
@@ -29,7 +30,7 @@ router.get('/no-conformidades', async (req: AuthRequest, res: Response) => {
 })
 
 // POST /api/nc-ac/no-conformidades
-router.post('/no-conformidades', requirePermission('no_conformidades', 'crear'), async (req: AuthRequest, res: Response) => {
+router.post('/no-conformidades', requirePermission('no_conformidades', 'crear'), requireTenantRefs({ proceso_id: 'procesos', hallazgo_id: 'hallazgos' }), async (req: AuthRequest, res: Response) => {
   const { codigo, fecha, origen, proceso_id, descripcion, gravedad, estado, hallazgo_id } = req.body
   if (!codigo || !origen || !descripcion || !gravedad) {
     return res.status(400).json({ error: 'codigo, origen, descripcion y gravedad son requeridos' })
@@ -51,7 +52,7 @@ router.post('/no-conformidades', requirePermission('no_conformidades', 'crear'),
 })
 
 // PUT /api/nc-ac/no-conformidades/:id
-router.put('/no-conformidades/:id', requirePermission('no_conformidades', 'editar'), async (req: AuthRequest, res: Response) => {
+router.put('/no-conformidades/:id', requirePermission('no_conformidades', 'editar'), requireTenantRefs({ proceso_id: 'procesos' }), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { origen, proceso_id, descripcion, gravedad, estado } = req.body
   try {
@@ -71,7 +72,7 @@ router.put('/no-conformidades/:id', requirePermission('no_conformidades', 'edita
 // ── ACCIONES CORRECTIVAS ───────────────────────────────────
 
 // GET /api/nc-ac/acciones-correctivas
-router.get('/acciones-correctivas', async (req: AuthRequest, res: Response) => {
+router.get('/acciones-correctivas', requirePermission('acciones_correctivas', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT ac.*, nc.codigo AS nc_codigo, nc.descripcion AS nc_descripcion,

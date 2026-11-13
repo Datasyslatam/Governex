@@ -2,12 +2,13 @@ import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/rbac'
+import { requireTenantRefs } from '../middleware/tenantRefs'
 
 const router = Router()
 router.use(authMiddleware)
 
 // GET /api/procesos
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('procesos', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT p.*, t.nombre AS tipo_nombre
@@ -63,7 +64,7 @@ router.post('/', requirePermission('procesos', 'crear'), async (req: AuthRequest
 })
 
 // PUT /api/procesos/:id
-router.put('/:id', requirePermission('procesos', 'editar'), async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('procesos', 'editar'), requireTenantRefs({ tipo_id: 'tipos_proceso' }), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { nombre, objetivo, entradas, salidas, indicador_kpi, responsable, tipo_id, estado, actividades, indicadorEntrada, indicadorActividad, indicadorSalida, riesgoEntrada, opEntrada, riesgoActividad, opActividad, riesgoSalida, opSalida } = req.body
   try {
@@ -92,7 +93,7 @@ router.put('/:id', requirePermission('procesos', 'editar'), async (req: AuthRequ
 })
 
 // GET /api/procesos/pestel
-router.get('/pestel', async (req: AuthRequest, res: Response) => {
+router.get('/pestel', requirePermission('procesos', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM pestel WHERE tenant_id = $1 ORDER BY factor, id`,
@@ -125,7 +126,7 @@ router.post('/pestel', requirePermission('procesos', 'crear'), async (req: AuthR
 })
 
 // GET /api/procesos/dofa
-router.get('/dofa', async (req: AuthRequest, res: Response) => {
+router.get('/dofa', requirePermission('procesos', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM dofa WHERE tenant_id = $1 ORDER BY tipo, id`,

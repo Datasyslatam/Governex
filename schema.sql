@@ -1445,6 +1445,9 @@ ALTER TABLE salidas_nc ADD CONSTRAINT salidas_nc_disposicion_check CHECK (
 -- USUARIOS: email ÚNICO GLOBAL (no por tenant) — necesario para login sin selección de tenant
 ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS uq_usuarios_tenant_email;
 ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_email_key;
+-- Se elimina antes de crearla: el CREATE TABLE de arriba ya la define y, sin
+-- este DROP, una instalación desde cero fallaba con "already exists".
+ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS uq_usuarios_email;
 ALTER TABLE usuarios ADD CONSTRAINT uq_usuarios_email UNIQUE (email);
 
 -- UNIQUE compuestos tenant+codigo (reemplazan UNIQUE globales antiguos)
@@ -1537,14 +1540,9 @@ UPDATE roles SET nombre = 'Gestión'      WHERE nombre = 'Admin SGC';
 UPDATE roles SET nombre = 'Operativo'    WHERE nombre = 'Usuario';
 
 -- 3. Platform admin inicial
--- NOTA: Reemplazar el hash antes de desplegar. Generar con:
---   node -e "console.log(require('bcryptjs').hashSync('TU_PASSWORD_TEMPORAL', 10))"
-INSERT INTO platform_admins (nombre, email, password_hash)
-VALUES (
-    'SuperAdmin',
-    'luismj.dev@gmail.com',
-    '$2a$10$yDFtxb/PoBcbCU6HS5RTp.2gTbLGh0LiRkcdlFeSx6a.CTmV62c5y'
-) ON CONFLICT (email) DO NOTHING;
+-- Ya NO se siembra ninguno (antes se insertaba un correo personal con un hash
+-- fijo versionado en el repositorio: credencial por defecto conocida, CWE-798).
+-- Crear el primero con: node scripts/admin/create-platform-admin.cjs (ver docs/seguridad).
 
 -- 4. Tipos de proceso base (para el tenant 1)
 INSERT INTO tipos_proceso (nombre, tenant_id) VALUES
@@ -1554,15 +1552,8 @@ INSERT INTO tipos_proceso (nombre, tenant_id) VALUES
 ON CONFLICT DO NOTHING;
 
 -- 5. Usuario administrador inicial (tenant 1)
--- NOTA: Cambiar contraseña en el primer inicio de sesión.
-INSERT INTO usuarios (nombre, email, password_hash, rol_id, tenant_id)
-VALUES (
-    'Administrador',
-    'admin@governex.com',
-    '$2a$10$6Mg2Yn3K2b3etwW/jpCzEu/V6HWvWtun4BBiEGkpGnKaJ3vn1Nad6',
-    (SELECT id FROM roles WHERE nombre = 'Superusuario'),
-    1
-) ON CONFLICT (email) DO NOTHING;
+-- Ya NO se siembra (antes admin@governex.com con un hash fijo del repositorio).
+-- Los usuarios de cada empresa los crea el platform_admin al dar de alta la empresa.
 
 -- 6. Catálogo RBAC: todos los recursos × todas las acciones
 INSERT INTO permisos (recurso, accion)

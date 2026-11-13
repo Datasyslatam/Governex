@@ -2,6 +2,7 @@ import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/rbac'
+import { requireTenantRefs } from '../middleware/tenantRefs'
 
 const router = Router()
 router.use(authMiddleware)
@@ -9,7 +10,7 @@ router.use(authMiddleware)
 // ── PROGRAMAS ──────────────────────────────────────────────
 
 // GET /api/auditorias/programas
-router.get('/programas', async (req: AuthRequest, res: Response) => {
+router.get('/programas', requirePermission('auditorias', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM programas_auditoria WHERE tenant_id = $1 ORDER BY anio DESC`,
@@ -99,7 +100,7 @@ router.put('/programas/:id', requirePermission('auditorias', 'editar'), async (r
 // ── AUDITORÍAS ─────────────────────────────────────────────
 
 // GET /api/auditorias
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('auditorias', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT a.*, p.nombre AS proceso_nombre,
@@ -118,7 +119,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 })
 
 // POST /api/auditorias
-router.post('/', requirePermission('auditorias', 'crear'), async (req: AuthRequest, res: Response) => {
+router.post('/', requirePermission('auditorias', 'crear'), requireTenantRefs({ programa_id: 'programas_auditoria', proceso_id: 'procesos' }), async (req: AuthRequest, res: Response) => {
   const { codigo, programa_id, proceso_id, fecha_inicio, duracion_dias, auditor_lider, estado, requisito_norma, auditado, observacion } = req.body
   if (!codigo || !fecha_inicio) return res.status(400).json({ error: 'codigo y fecha_inicio requeridos' })
   try {
@@ -137,7 +138,7 @@ router.post('/', requirePermission('auditorias', 'crear'), async (req: AuthReque
 })
 
 // PUT /api/auditorias/:id
-router.put('/:id', requirePermission('auditorias', 'editar'), async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('auditorias', 'editar'), requireTenantRefs({ proceso_id: 'procesos' }), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { proceso_id, fecha_inicio, duracion_dias, auditor_lider, estado, requisito_norma, auditado, observacion } = req.body
   try {
@@ -165,7 +166,7 @@ router.put('/:id', requirePermission('auditorias', 'editar'), async (req: AuthRe
 // ── HALLAZGOS ──────────────────────────────────────────────
 
 // GET /api/auditorias/hallazgos
-router.get('/hallazgos', async (req: AuthRequest, res: Response) => {
+router.get('/hallazgos', requirePermission('auditorias', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT h.*, a.codigo AS auditoria_codigo, a.proceso_id, p.nombre AS proceso_nombre,

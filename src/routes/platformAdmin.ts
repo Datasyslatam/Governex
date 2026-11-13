@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
+import { signOptions } from '../middleware/securityConfig'
+import { validarPassword } from '../middleware/passwordPolicy'
 import { pool } from '../db'
 import { platformAdminMiddleware, PlatformAdminRequest } from '../middleware/platformAdminAuth'
 import { getUserPermissions } from './auth'
@@ -8,6 +11,8 @@ import { ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { s3 } from '../services/storageService'
 
 const router = Router()
+
+const DUMMY_HASH = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 10)
 
 // ── Rate limiting simple en memoria para el login ──────────────────
 // Un token de platform_admin puede crear/suspender tenants completos:
@@ -63,7 +68,7 @@ async function registrarAuditoria(
 // POST /api/platform-admin/login
 router.post('/login', async (req: Request, res: Response) => {
   const { email, password } = req.body
-  if (!email || !password) {
+  if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
     return res.status(400).json({ error: 'Email y contraseña requeridos' })
   }
 
@@ -78,13 +83,10 @@ router.post('/login', async (req: Request, res: Response) => {
       [email]
     )
     const admin = rows[0]
-    if (!admin) {
-      registerFailedAttempt(rateLimitKey)
-      return res.status(401).json({ error: 'Credenciales incorrectas' })
-    }
-
-    const valid = await bcrypt.compare(password, admin.password_hash)
-    if (!valid) {
+    // Se compara siempre (hash ficticio si el admin no existe) para que el
+    // tiempo de respuesta no permita enumerar correos de administradores.
+    const valid = await bcrypt.compare(password, admin?.password_hash || DUMMY_HASH)
+    if (!admin || !valid) {
       registerFailedAttempt(rateLimitKey)
       return res.status(401).json({ error: 'Credenciales incorrectas' })
     }
@@ -97,7 +99,7 @@ router.post('/login', async (req: Request, res: Response) => {
     const token = jwt.sign(
       { id: admin.id, email: admin.email, type: 'platform_admin' },
       process.env.PLATFORM_ADMIN_JWT_SECRET!,
-      { expiresIn: '4h' } // más corto que el de tenants (8h): credencial más sensible
+      signOptions('4h') // más corto que el de tenants (8h): credencial más sensible
     )
 
     res.json({ token, admin: { id: admin.id, nombre: admin.nombre, email: admin.email } })
@@ -141,9 +143,8 @@ router.post('/tenants', async (req: PlatformAdminRequest, res: Response) => {
       error: 'nombreEmpresa, nit, adminNombre, adminEmail y adminPassword son requeridos',
     })
   }
-  if (adminPassword.length < 8) {
-    return res.status(400).json({ error: 'adminPassword debe tener al menos 8 caracteres' })
-  }
+  const pwError = validarPassword(adminPassword, { email: adminEmail, nombre: adminNombre })
+  if (pwError) return res.status(400).json({ error: `adminPassword: ${pwError}`, code: 'WEAK_PASSWORD' })
 
   const client = await pool.connect()
   try {
@@ -260,7 +261,7 @@ router.post('/tenants/:id/impersonate', async (req: PlatformAdminRequest, res: R
         impersonatedByAdminEmail: req.platformAdmin!.email,
       },
       process.env.JWT_SECRET!,
-      { expiresIn: '30m' }
+      signOptions('30m')
     )
 
     await registrarAuditoria(req.platformAdmin!, 'impersonar_usuario', 'tenant', id, {
@@ -301,9 +302,8 @@ router.post('/platform-admins', async (req: PlatformAdminRequest, res: Response)
   if (!nombre || !email || !password) {
     return res.status(400).json({ error: 'nombre, email y password son requeridos' })
   }
-  if (password.length < 8) {
-    return res.status(400).json({ error: 'password debe tener al menos 8 caracteres' })
-  }
+  const pwError = validarPassword(password, { email, nombre })
+  if (pwError) return res.status(400).json({ error: pwError, code: 'WEAK_PASSWORD' })
   try {
     const passwordHash = await bcrypt.hash(password, 10)
     const { rows } = await pool.query(
@@ -451,9 +451,8 @@ router.post('/tenants/:id/usuarios/:usuarioId/reset-password', async (req: Platf
   const { id, usuarioId } = req.params
   const { password } = req.body
 
-  if (!password || password.length < 8) {
-    return res.status(400).json({ error: 'password debe tener al menos 8 caracteres' })
-  }
+  const pwError = validarPassword(password)
+  if (pwError) return res.status(400).json({ error: pwError, code: 'WEAK_PASSWORD' })
 
   try {
     // Verificar que el usuario pertenece efectivamente a este tenant —

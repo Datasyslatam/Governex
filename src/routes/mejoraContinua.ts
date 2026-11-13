@@ -2,12 +2,13 @@ import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/rbac'
+import { requireTenantRefs } from '../middleware/tenantRefs'
 
 const router = Router()
 router.use(authMiddleware)
 
 // GET /api/mejora-continua
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('mejoras_continuas', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT mc.*,
@@ -28,7 +29,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 })
 
 // GET /api/mejora-continua/:id
-router.get('/:id', async (req: AuthRequest, res: Response) => {
+router.get('/:id', requirePermission('mejoras_continuas', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM mejoras_continuas WHERE id=$1 AND tenant_id=$2`, [req.params.id, req.user!.tenantId]
@@ -42,7 +43,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // POST /api/mejora-continua
-router.post('/', requirePermission('mejoras_continuas', 'crear'), async (req: AuthRequest, res: Response) => {
+router.post('/', requirePermission('mejoras_continuas', 'crear'), requireTenantRefs({ proceso_id: 'procesos' }), async (req: AuthRequest, res: Response) => {
   const { codigo, titulo, origen, proceso, descripcion, beneficio_esperado,
           responsable, fecha_inicio, fecha_cierre, avance_pct, estado, proceso_id } = req.body
   if (!codigo || !titulo || !origen) {
@@ -80,7 +81,7 @@ router.post('/', requirePermission('mejoras_continuas', 'crear'), async (req: Au
 })
 
 // PUT /api/mejora-continua/:id
-router.put('/:id', requirePermission('mejoras_continuas', 'editar'), async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('mejoras_continuas', 'editar'), requireTenantRefs({ proceso_id: 'procesos' }), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { titulo, origen, proceso, descripcion, beneficio_esperado,
           responsable, fecha_inicio, fecha_cierre, avance_pct, estado, proceso_id } = req.body

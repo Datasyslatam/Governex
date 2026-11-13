@@ -2,13 +2,14 @@
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/rbac'
+import { requireTenantRefs } from '../middleware/tenantRefs'
 
 const router = Router()
 router.use(authMiddleware)
 
 // ── PERSONAL ───────────────────────────────────────────────
 
-router.get('/personal', async (req: AuthRequest, res: Response) => {
+router.get('/personal', requirePermission('competencias', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT ps.*, p.nombre AS proceso_nombre,
@@ -31,7 +32,7 @@ router.get('/personal', async (req: AuthRequest, res: Response) => {
   }
 })
 
-router.post('/personal', requirePermission('competencias', 'crear'), async (req: AuthRequest, res: Response) => {
+router.post('/personal', requirePermission('competencias', 'crear'), requireTenantRefs({ proceso_id: 'procesos' }), async (req: AuthRequest, res: Response) => {
   const { nombre, cargo, proceso_id } = req.body
   if (!nombre) return res.status(400).json({ error: 'nombre es requerido' })
   try {
@@ -75,7 +76,7 @@ router.post('/evaluaciones', requirePermission('competencias', 'crear'), async (
 
 // ── PLAN DE FORMACIÓN ──────────────────────────────────────
 
-router.get('/plan-formacion', async (req: AuthRequest, res: Response) => {
+router.get('/plan-formacion', requirePermission('competencias', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT pf.*,
@@ -95,7 +96,7 @@ router.get('/plan-formacion', async (req: AuthRequest, res: Response) => {
   }
 })
 
-router.post('/plan-formacion', requirePermission('competencias', 'crear'), async (req: AuthRequest, res: Response) => {
+router.post('/plan-formacion', requirePermission('competencias', 'crear'), requireTenantRefs({ perfil_cargo_id: 'perfiles_cargo', asistentes_ids: 'personal' }), async (req: AuthRequest, res: Response) => {
   const { tema, fecha, estado, asistentes_ids, perfil_cargo_id, generado_con_ia } = req.body
   if (!tema) return res.status(400).json({ error: 'tema es requerido' })
   const tenantId = req.user!.tenantId

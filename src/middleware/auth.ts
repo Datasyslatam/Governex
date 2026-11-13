@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 // @ts-ignore
 import jwt from 'jsonwebtoken'
+import { TENANT_JWT_VERIFY } from './securityConfig'
 import { pool } from '../db'
 
 // Payload mínimo que viaja en el JWT. Nunca se agrega nada más
@@ -57,7 +58,7 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
   const token = header.split(' ')[1]
   let payload: { id: number; tenantId: number; rol: string }
   try {
-    payload = jwt.verify(token, process.env.JWT_SECRET!) as typeof payload
+    payload = jwt.verify(token, process.env.JWT_SECRET!, TENANT_JWT_VERIFY) as typeof payload
   } catch {
     return res.status(401).json({ error: 'Token inválido o expirado', code: 'INVALID_TOKEN' })
   }

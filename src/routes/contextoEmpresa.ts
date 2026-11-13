@@ -12,7 +12,7 @@ router.use(authMiddleware)
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/contexto-empresa/datos
-router.get('/datos', async (req: AuthRequest, res: Response) => {
+router.get('/datos', requirePermission('contexto_empresa', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user!.tenantId
     const { rows } = await pool.query(
@@ -130,7 +130,7 @@ router.delete('/datos', requirePermission('contexto_empresa', 'eliminar'), async
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/contexto-empresa/matriz-roles
-router.get('/matriz-roles', async (req: AuthRequest, res: Response) => {
+router.get('/matriz-roles', requirePermission('contexto_empresa', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query('SELECT * FROM matriz_roles WHERE tenant_id = $1 ORDER BY id', [req.user!.tenantId])
     res.json(rows)
@@ -226,7 +226,7 @@ router.delete('/matriz-roles/:id', requirePermission('contexto_empresa', 'elimin
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/contexto-empresa/matriz-cargos
-router.get('/matriz-cargos', async (req: AuthRequest, res: Response) => {
+router.get('/matriz-cargos', requirePermission('contexto_empresa', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query('SELECT * FROM matriz_cargos WHERE tenant_id = $1 ORDER BY id', [req.user!.tenantId])
     res.json(rows)
@@ -321,7 +321,7 @@ router.delete('/matriz-cargos/:id', requirePermission('contexto_empresa', 'elimi
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/contexto-empresa/matriz-recursos
-router.get('/matriz-recursos', async (req: AuthRequest, res: Response) => {
+router.get('/matriz-recursos', requirePermission('contexto_empresa', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query('SELECT * FROM matriz_recursos WHERE tenant_id = $1 ORDER BY id', [req.user!.tenantId])
     res.json(rows)
@@ -401,7 +401,7 @@ router.put('/matriz-recursos/:id', requirePermission('contexto_empresa', 'editar
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/contexto-empresa/actividades
-router.get('/actividades', async (req: AuthRequest, res: Response) => {
+router.get('/actividades', requirePermission('contexto_empresa', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query('SELECT * FROM actividades_empresa WHERE tenant_id = $1 ORDER BY creada_en DESC', [req.user!.tenantId])
     res.json(rows)
@@ -447,7 +447,7 @@ router.delete('/actividades/:id', requirePermission('contexto_empresa', 'elimina
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/contexto-empresa/mapa-procedimiento
-router.get('/mapa-procedimiento', async (req: AuthRequest, res: Response) => {
+router.get('/mapa-procedimiento', requirePermission('planes_operacion', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       'SELECT * FROM mapa_procedimiento WHERE tenant_id = $1 ORDER BY id',
@@ -549,7 +549,7 @@ router.delete('/mapa-procedimiento/:id', requirePermission('planes_operacion', '
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/contexto-empresa/manual-procedimiento
-router.get('/manual-procedimiento', async (req: AuthRequest, res: Response) => {
+router.get('/manual-procedimiento', requirePermission('planes_operacion', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       'SELECT * FROM manual_procedimiento WHERE tenant_id = $1 ORDER BY id',

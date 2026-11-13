@@ -2,12 +2,13 @@ import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/rbac'
+import { requireTenantRefs } from '../middleware/tenantRefs'
 
 const router = Router()
 router.use(authMiddleware)
 
 // GET /api/indicadores
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('indicadores', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT i.*,
@@ -32,7 +33,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 })
 
 // POST /api/indicadores
-router.post('/', requirePermission('indicadores', 'crear'), async (req: AuthRequest, res: Response) => {
+router.post('/', requirePermission('indicadores', 'crear'), requireTenantRefs({ proceso_id: 'procesos' }), async (req: AuthRequest, res: Response) => {
   const { codigo, titulo, proceso_id, frecuencia, meta } = req.body
   if (!codigo || !titulo || !frecuencia || !meta) {
     return res.status(400).json({ error: 'codigo, titulo, frecuencia y meta son requeridos' })
@@ -52,7 +53,7 @@ router.post('/', requirePermission('indicadores', 'crear'), async (req: AuthRequ
 })
 
 // PUT /api/indicadores/:id
-router.put('/:id', requirePermission('indicadores', 'editar'), async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('indicadores', 'editar'), requireTenantRefs({ proceso_id: 'procesos' }), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { titulo, proceso_id, frecuencia, meta, activo } = req.body
   try {
@@ -127,7 +128,7 @@ router.post('/:id/mediciones', requirePermission('indicadores', 'crear'), async 
 })
 
 // GET /api/indicadores/:id/mediciones
-router.get('/:id/mediciones', async (req: AuthRequest, res: Response) => {
+router.get('/:id/mediciones', requirePermission('indicadores', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM indicador_mediciones WHERE indicador_id=$1 AND tenant_id=$2 ORDER BY fecha DESC LIMIT 24`,

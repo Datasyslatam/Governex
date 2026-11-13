@@ -3,6 +3,7 @@ import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { analyzeWithGemini, generateResourcesOnly, MapaData, DatosEmpresa, FilaMatrizCargos, generarDetalleProcesoManual, regenerarCaracterizacionCompleta, regenerarMapaCompleto, GEMINI_MODELS } from '../services/geminiService'
 import { requirePermission } from '../middleware/rbac'
+import { requestRateLimit } from '../middleware/rateLimit'
 
 /** Allowed PESTEL factor codes as required by the DB constraint. */
 const VALID_PESTEL_FACTORS = new Set(['P', 'E', 'S', 'T', 'A', 'L'])
@@ -45,6 +46,16 @@ function mapPestelFactor(raw: string | undefined | null): 'P' | 'E' | 'S' | 'T' 
 
 const router = Router()
 router.use(authMiddleware)
+
+// Cuota de IA por usuario (V12 / CWE-770): cada llamada consume la API de
+// Gemini que paga Governex. 40 solicitudes cada 10 minutos por usuario
+// cubren el uso normal; ajustable con IA_RATE_LIMIT_MAX.
+router.use(requestRateLimit({
+    windowMs: 10 * 60_000,
+    max: Number(process.env.IA_RATE_LIMIT_MAX || 40),
+    key: (req) => `ia:${(req as AuthRequest).user?.tenantId}:${(req as AuthRequest).user?.id}`,
+    message: 'Alcanzaste el límite de solicitudes a Governex IA. Intenta de nuevo en unos minutos.',
+}))
 
 /* POST /api/gemini/analizar-organigrama */
 router.post('/analizar-organigrama', requirePermission('contexto_empresa', 'crear'), async (req: AuthRequest, res: Response) => {
@@ -187,14 +198,14 @@ router.post('/analizar-organigrama', requirePermission('contexto_empresa', 'crea
 
     } catch (err: any) {
         console.error('[Gemini] Error:', err)
-        return res.status(500).json({ error: err.message ?? 'Error al analizar con Governex IA' })
+        return res.status(500).json({ error: 'Error al analizar con Governex IA' })
     }
 })
 
 /* ── POST /api/gemini/generar-ideario ──────────────────────────
    Genera Misión, Visión y Política de Calidad ISO 9001:2015
    a partir de los datos del formulario organizacional.            */
-router.post('/generar-ideario', async (req: AuthRequest, res: Response) => {
+router.post('/generar-ideario', requirePermission('contexto_empresa', 'crear'), async (req: AuthRequest, res: Response) => {
     const { datosEmpresa } = req.body as { datosEmpresa: DatosEmpresa }
 
     if (!datosEmpresa?.nombreEmpresa) {
@@ -295,7 +306,7 @@ Requisitos:
 /* ── POST /api/gemini/generar-control-diseno ──────────────────
    Genera el control y verificación de diseño a partir de la
    actividad (Cláusula 8.3).                                     */
-router.post('/generar-control-diseno', async (req: AuthRequest, res: Response) => {
+router.post('/generar-control-diseno', requirePermission('diseno_desarrollo', 'crear'), async (req: AuthRequest, res: Response) => {
     const { nombre, proceso, entradas, salidas } = req.body
 
     if (!nombre || !entradas || !salidas) {
@@ -396,7 +407,7 @@ function parsearIdearioJSON(rawText: string): { mision?: string; vision?: string
    Genera DOS encuestas distintas (5.1.2 Enfoque al Cliente):
    - Clientes:    sobre el producto/servicio entregado
    - Proveedores: sobre la relación y cumplimiento contractual    */
-router.post('/generar-encuestas-satisfaccion', async (req: AuthRequest, res: Response) => {
+router.post('/generar-encuestas-satisfaccion', requirePermission('enfoque_cliente', 'crear'), async (req: AuthRequest, res: Response) => {
     const { datosEmpresa } = req.body as { datosEmpresa: DatosEmpresa }
 
     if (!datosEmpresa?.nombreEmpresa) {
@@ -512,7 +523,7 @@ REGLAS:
    Analiza las respuestas agregadas de las encuestas (clientes y/o
    proveedores) junto con los registros de PQRS, y genera un DOFA
    específico basado en evidencia real (§5.1.2, §9.1.2, §6.1).      */
-router.post('/analizar-encuestas-cliente', async (req: AuthRequest, res: Response) => {
+router.post('/analizar-encuestas-cliente', requirePermission('enfoque_cliente', 'crear'), async (req: AuthRequest, res: Response) => {
     const { datosEmpresa, resumenClientes, resumenProveedores, pqrs, documentos } = req.body as {
         datosEmpresa?: DatosEmpresa
         resumenClientes?: any
@@ -606,7 +617,7 @@ REGLAS:
 })
 
 /* POST /api/gemini/extraer-procesos-imagen */
-router.post('/extraer-procesos-imagen', async (req: AuthRequest, res: Response) => {
+router.post('/extraer-procesos-imagen', requirePermission('procesos', 'crear'), async (req: AuthRequest, res: Response) => {
     const { base64, mimeType } = req.body as { base64: string; mimeType: string; fileName: string }
     if (!base64 || !mimeType) return res.status(400).json({ error: 'Se requiere base64 y mimeType' })
 
@@ -668,7 +679,7 @@ Responde ÚNICAMENTE con JSON válido:
 /* ── POST /api/gemini/generar-revisiones-requisitos ─────────────────
    A partir del contexto §4.1 genera la matriz completa de revisiones
    de requisitos (productos/servicios × clientes) con sus campos ISO. */
-router.post('/generar-revisiones-requisitos', async (req: AuthRequest, res: Response) => {
+router.post('/generar-revisiones-requisitos', requirePermission('requerimientos_ps', 'crear'), async (req: AuthRequest, res: Response) => {
     const { datosEmpresa } = req.body as { datosEmpresa: DatosEmpresa }
 
     if (!datosEmpresa?.nombreEmpresa) {
@@ -796,7 +807,7 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown, con esta estru
    Genera una ficha técnica de producto/servicio o una ficha educativa
    (área/asignatura con cursos, contenido programático e intensidad
    horaria) a partir de los datos del contexto organizacional (§4.1). */
-router.post('/generar-ficha-tecnica', async (req: AuthRequest, res: Response) => {
+router.post('/generar-ficha-tecnica', requirePermission('requerimientos_ps', 'crear'), async (req: AuthRequest, res: Response) => {
     const { datosEmpresa, cliente, productoServicio, tipo } = req.body as {
         datosEmpresa: DatosEmpresa
         cliente: string
@@ -977,7 +988,7 @@ IMPORTANTE:
 /* ── POST /api/gemini/analizar-rev-direccion ──────────────────────
    Consolida todos los insumos del SGC y genera las salidas de la
    Revisión por la Dirección según ISO 9001:2015 §9.3.3            */
-router.post('/analizar-rev-direccion', async (req: AuthRequest, res: Response) => {
+router.post('/analizar-rev-direccion', requirePermission('rev_direccion', 'crear'), async (req: AuthRequest, res: Response) => {
     const {
         riesgos, indicadores, noConformidades, accionesCorrectivas,
         auditorias, hallazgos, proveedores, objetivosCalidad,
@@ -1123,7 +1134,7 @@ REGLAS:
 /* ── POST /api/gemini/generar-objetivo-indicador ─────────────────
    Genera Objetivo e Indicador de una actividad empresarial (§4.1/§8.1)
    Sustituye la llamada directa a Anthropic que hacía ActividadModal.tsx  */
-router.post('/generar-objetivo-indicador', async (req: AuthRequest, res: Response) => {
+router.post('/generar-objetivo-indicador', requirePermission('objetivos_calidad', 'crear'), async (req: AuthRequest, res: Response) => {
     const { nombre, proceso, responsable, descripcion, entradas, salidas } = req.body as {
         nombre: string
         proceso?: string
@@ -1204,7 +1215,7 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
    Genera evaluación de proveedor basada en 3 variables críticas
    (adaptado a 4: calidad, entrega, precio, servicio) comparando
    precios y resultados obtenidos anteriormente. */
-router.post('/generar-evaluacion-proveedor', async (req: AuthRequest, res: Response) => {
+router.post('/generar-evaluacion-proveedor', requirePermission('proveedores', 'crear'), async (req: AuthRequest, res: Response) => {
     const { proveedor, tipoSuministro, historial, precioMercado, precioProveedor, puntajesPrevios } = req.body
 
     const apiKey = process.env.GEMINI_API_KEY
@@ -1283,7 +1294,7 @@ Responde ÚNICAMENTE con JSON válido, sin markdown ni backticks:
 })
 /* ── POST /api/gemini/generar-matriz-legal-ps ──────────────────────
    Genera la matriz legal, normas y permisos para RF-018. */
-router.post('/generar-matriz-legal-ps', async (req: AuthRequest, res: Response) => {
+router.post('/generar-matriz-legal-ps', requirePermission('requerimientos_ps', 'crear'), async (req: AuthRequest, res: Response) => {
     const { datosEmpresa, productoServicio, fileUrl } = req.body
 
     if (!datosEmpresa?.nombreEmpresa || !productoServicio) {
@@ -1404,7 +1415,7 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
 })
 
 // POST /api/gemini/extraer-cotizacion-ps
-router.post('/extraer-cotizacion-ps', async (req: AuthRequest, res: Response) => {
+router.post('/extraer-cotizacion-ps', requirePermission('requerimientos_ps', 'crear'), async (req: AuthRequest, res: Response) => {
     const { datosEmpresa, productoServicio, fileUrl } = req.body
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) return res.status(500).json({ error: 'Falta GEMINI_API_KEY' })
@@ -1508,7 +1519,7 @@ Responde ÚNICAMENTE con JSON válido, sin backticks ni markdown:
 
 /* ── POST /api/gemini/generar-detalle-proceso ────────────────
    Genera detalles (actividades, salidas, riesgos) para proceso manual */
-router.post('/generar-detalle-proceso', async (req: AuthRequest, res: Response) => {
+router.post('/generar-detalle-proceso', requirePermission('procesos', 'crear'), async (req: AuthRequest, res: Response) => {
     const { proceso, objetivo, entradas } = req.body;
     if (!proceso || !entradas) return res.status(400).json({ error: 'Se requiere proceso y entradas' });
     try {
@@ -1516,13 +1527,13 @@ router.post('/generar-detalle-proceso', async (req: AuthRequest, res: Response) 
         res.json(data);
     } catch (error: any) {
         console.error(error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'No se pudo completar el análisis con Governex IA' });
     }
 });
 
 /* ── POST /api/gemini/regenerar-caracterizacion ──────────────
    Regenera toda la tabla completando campos faltantes */
-router.post('/regenerar-caracterizacion', async (req: AuthRequest, res: Response) => {
+router.post('/regenerar-caracterizacion', requirePermission('procesos', 'editar'), async (req: AuthRequest, res: Response) => {
     const { rows } = req.body;
     if (!Array.isArray(rows)) return res.status(400).json({ error: 'Se requiere un array de filas' });
     try {
@@ -1530,13 +1541,13 @@ router.post('/regenerar-caracterizacion', async (req: AuthRequest, res: Response
         res.json(data);
     } catch (error: any) {
         console.error(error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'No se pudo completar el análisis con Governex IA' });
     }
 });
 
 /* ── POST /api/gemini/regenerar-mapa-procedimiento ───────────
    Regenera el mapa de roles a partir de caracterizacion */
-router.post('/regenerar-mapa-procedimiento', async (req: AuthRequest, res: Response) => {
+router.post('/regenerar-mapa-procedimiento', requirePermission('planes_operacion', 'editar'), async (req: AuthRequest, res: Response) => {
     const { rows } = req.body;
     if (!Array.isArray(rows)) return res.status(400).json({ error: 'Se requiere un array de filas' });
     try {
@@ -1544,12 +1555,12 @@ router.post('/regenerar-mapa-procedimiento', async (req: AuthRequest, res: Respo
         res.json(data);
     } catch (error: any) {
         console.error(error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'No se pudo completar el análisis con Governex IA' });
     }
 });
 /* ── POST /api/gemini/generar-ficha-orden ────────────────────
    Genera ficha técnica y variables críticas desde una Orden de Compra */
-router.post('/generar-ficha-orden', async (req: AuthRequest, res: Response) => {
+router.post('/generar-ficha-orden', requirePermission('produccion', 'crear'), async (req: AuthRequest, res: Response) => {
     const { proveedor, producto, cantidad, unidad, requisitos } = req.body
 
     const apiKey = process.env.GEMINI_API_KEY
@@ -1809,7 +1820,7 @@ Devuelve ÚNICAMENTE el código Markdown (sin backticks iniciales ni finales, si
    Analiza una No Conformidad con IA mediante 5 Por Qués o Ishikawa (6M)
    y propone causa raíz, corrección inmediata y acciones correctivas.
 */
-router.post('/analizar-nc-causa-raiz', async (req: AuthRequest, res: Response) => {
+router.post('/analizar-nc-causa-raiz', requirePermission('acciones_correctivas', 'crear'), async (req: AuthRequest, res: Response) => {
     const { descripcion, origen, proceso, gravedad, clausula, metodo = "5 Por Qué's" } = req.body as {
         descripcion: string
         origen?: string

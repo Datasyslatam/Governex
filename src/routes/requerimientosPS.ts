@@ -2,6 +2,7 @@ import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/rbac'
+import { requireTenantRefs } from '../middleware/tenantRefs'
 
 const router = Router()
 router.use(authMiddleware)
@@ -13,7 +14,7 @@ router.use(authMiddleware)
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/requerimientos-ps/fichas-tecnicas
-router.get('/fichas-tecnicas', async (req: AuthRequest, res: Response) => {
+router.get('/fichas-tecnicas', requirePermission('requerimientos_ps', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM fichas_tecnicas_ps WHERE tenant_id = $1 ORDER BY creado_en DESC`,
@@ -114,7 +115,7 @@ router.delete('/fichas-tecnicas/:id', requirePermission('requerimientos_ps', 'el
 })
 
 // GET /api/requerimientos-ps
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('requerimientos_ps', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT rp.*, u.nombre AS creado_por_nombre
@@ -132,7 +133,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 })
 
 // GET /api/requerimientos-ps/:id
-router.get('/:id', async (req: AuthRequest, res: Response) => {
+router.get('/:id', requirePermission('requerimientos_ps', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM requerimientos_ps WHERE id=$1 AND tenant_id=$2`, [req.params.id, req.user!.tenantId]
@@ -146,7 +147,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // POST /api/requerimientos-ps
-router.post('/', requirePermission('requerimientos_ps', 'crear'), async (req: AuthRequest, res: Response) => {
+router.post('/', requirePermission('requerimientos_ps', 'crear'), requireTenantRefs({ ficha_tecnica_id: 'fichas_tecnicas_ps' }), async (req: AuthRequest, res: Response) => {
   const { cliente, producto_servicio, requisitos_cliente, requisitos_legales,
           requisitos_org, fecha_revision, revisado_por, estado,
           ficha_tecnica_id, generado_con_ia } = req.body   // ← agregado
@@ -181,7 +182,7 @@ router.post('/', requirePermission('requerimientos_ps', 'crear'), async (req: Au
 })
 
 // PUT /api/requerimientos-ps/:id
-router.put('/:id', requirePermission('requerimientos_ps', 'editar'), async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('requerimientos_ps', 'editar'), requireTenantRefs({ ficha_tecnica_id: 'fichas_tecnicas_ps' }), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { cliente, producto_servicio, requisitos_cliente, requisitos_legales,
           requisitos_org, fecha_revision, revisado_por, estado, ficha_tecnica_id } = req.body   // ← agregado

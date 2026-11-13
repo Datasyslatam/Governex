@@ -7,7 +7,7 @@ const router = Router()
 router.use(authMiddleware)
 
 // GET /api/liberacion-ps
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('liberacion_ps', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT lp.*,
@@ -28,7 +28,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 })
 
 // GET /api/liberacion-ps/:id
-router.get('/:id', async (req: AuthRequest, res: Response) => {
+router.get('/:id', requirePermission('liberacion_ps', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM liberaciones_ps WHERE id=$1 AND tenant_id=$2`, [req.params.id, req.user!.tenantId]
