@@ -1,20 +1,18 @@
 import Swal from 'sweetalert2'
 
 const BASE = import.meta.env.VITE_API_URL || ''
-const TOKEN_KEY = 'governex_platform_admin_token'
+// Fase 2: la sesión de plataforma vive en una cookie HttpOnly propia
+// (gx_psession, Path=/api/platform-admin), distinta de la de empresas.
+// JavaScript no guarda ningún token; solo reenvía el CSRF (cookie gx_pcsrf).
+function csrfPlataforma(): Record<string, string> {
+  const m = document.cookie.split('; ').find((c) => c.startsWith('gx_pcsrf='))
+  return m ? { 'X-CSRF-Token': decodeURIComponent(m.slice('gx_pcsrf='.length)) } : {}
+}
 
-// Storage completamente separado del de tenants (services/api.ts usa
-// 'governex_token'). Nunca deben compartir clave: mezclar los dos tokens
-// en el mismo localStorage sería el primer paso hacia confundirlos.
-export function savePlatformAdminToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token)
-}
-export function getPlatformAdminToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY)
-}
-export function clearPlatformAdminToken() {
-  localStorage.removeItem(TOKEN_KEY)
-}
+// Limpia restos del esquema anterior si existieran.
+try { localStorage.removeItem('governex_platform_admin_token') } catch { /* sin storage */ }
+
+export const PLATFORM_SESSION_INVALID_EVENT = 'governex:platform-session-invalid'
 
 export class PlatformAdminApiError extends Error {
   status: number
@@ -26,12 +24,13 @@ export class PlatformAdminApiError extends Error {
 }
 
 async function request<T>(path: string, options: RequestInit = {}, skipSessionModal = false): Promise<T> {
-  const token = getPlatformAdminToken()
+  const metodo = (options.method || 'GET').toUpperCase()
   const res = await fetch(`${BASE}${path}`, {
     ...options,
+    credentials: 'same-origin',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(metodo !== 'GET' ? csrfPlataforma() : {}),
       ...options.headers,
     },
   })
@@ -39,7 +38,7 @@ async function request<T>(path: string, options: RequestInit = {}, skipSessionMo
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: 'Error desconocido' }))
     if (res.status === 401 && !skipSessionModal) {
-      clearPlatformAdminToken()
+      window.dispatchEvent(new CustomEvent(PLATFORM_SESSION_INVALID_EVENT))
       Swal.fire({ icon: 'warning', title: 'Sesión finalizada', text: 'Vuelve a iniciar sesión como super-admin.' })
     }
     throw new PlatformAdminApiError(body.error || `Error ${res.status}`, res.status)
@@ -52,7 +51,14 @@ export interface PlatformAdminInfo {
   id: number
   nombre: string
   email: string
+  mfaHabilitado?: boolean
+  debeCambiarPassword?: boolean
 }
+
+export type RespuestaLoginPlataforma =
+  | { estado: 'activa'; admin: PlatformAdminInfo; codigosRecuperacion?: string[]; codigosRestantes?: number }
+  | { estado: 'mfa' }
+  | { estado: 'enrolar_mfa' }
 
 export interface TenantSummary {
   id: number
@@ -107,11 +113,23 @@ export interface TenantDetail {
 }
 
 export const platformAdminApi = {
+  // skipSessionModal en el flujo de login: un 401 aquí es "credenciales
+  // incorrectas" o "código errado", no una sesión expirada.
   login: (email: string, password: string) =>
-    request<{ token: string; admin: PlatformAdminInfo }>('/api/platform-admin/login', {
+    request<RespuestaLoginPlataforma>('/api/platform-admin/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
-    }, true), // skipSessionModal: un 401 aquí es "credenciales incorrectas", no una sesión expirada
+    }, true),
+  verificarMfa: (codigo: string) =>
+    request<RespuestaLoginPlataforma>('/api/platform-admin/mfa/verificar', { method: 'POST', body: JSON.stringify({ codigo }) }, true),
+  configurarMfa: () =>
+    request<{ qr: string; secreto: string; otpauth: string }>('/api/platform-admin/mfa/configurar', { method: 'POST', body: '{}' }, true),
+  activarMfa: (codigo: string) =>
+    request<RespuestaLoginPlataforma & { codigosRecuperacion: string[] }>('/api/platform-admin/mfa/activar', { method: 'POST', body: JSON.stringify({ codigo }) }, true),
+  me: () => request<{ admin: PlatformAdminInfo; codigosRestantes: number }>('/api/platform-admin/me', {}, true),
+  cambiarPassword: (actual: string, nueva: string) =>
+    request<{ ok: true }>('/api/platform-admin/password', { method: 'POST', body: JSON.stringify({ actual, nueva }) }),
+  logout: () => request<{ ok: true }>('/api/platform-admin/logout', { method: 'POST', body: '{}' }, true),
 
   listTenants: () => request<TenantSummary[]>('/api/platform-admin/tenants'),
 
@@ -159,8 +177,7 @@ export const platformAdminApi = {
   
   impersonateUser: (tenantId: number, usuarioId: number) =>
     request<{
-      token: string
-      user: { id: number; nombre: string; email: string; rol: string }
+      user: { id: number; nombre: string; email: string; rol: string; permissions?: string[] }
       tenant: { id: number; nombre: string }
     }>(`/api/platform-admin/tenants/${tenantId}/impersonate`, {
       method: 'POST',

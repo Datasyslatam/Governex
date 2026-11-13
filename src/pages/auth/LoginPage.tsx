@@ -2,7 +2,10 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { usePlatformAdminAuth } from '../../context/PlatformAdminAuthContext'
-import { authService } from '../../services'
+import { authService, RespuestaLogin } from '../../services'
+import { userFromPerfil } from '../../context/AuthContext'
+import { platformAdminApi, RespuestaLoginPlataforma } from '../../services/platformAdminApi'
+import MfaPaso from '../../components/auth/MfaPaso'
 import './LoginPage.css'
 import logoLight from '../../assets/logo-governex-light.webp'
 import logoColor from '../../assets/logo-governex-color.webp'
@@ -58,7 +61,7 @@ type EstadoServidor = 'verificando' | 'en-linea' | 'sin-conexion'
 
 const LoginPage: React.FC = () => {
   const { login }   = useAuth()
-  const { login: loginPlatformAdmin } = usePlatformAdminAuth()
+  const { login: loginPlatformAdmin, completarLogin: completarPlataforma } = usePlatformAdminAuth()
   const navigate    = useNavigate()
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
@@ -66,6 +69,8 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
   const [servidor, setServidor] = useState<EstadoServidor>('verificando')
+  // Paso MFA pendiente y a qué backend corresponde (empresa o plataforma).
+  const [pasoMfa, setPasoMfa] = useState<null | { modo: 'mfa' | 'enrolar_mfa'; destino: 'tenant' | 'platform' }>(null)
 
   // Estado real del servidor (no decorativo): consulta /api/health al cargar.
   useEffect(() => {
@@ -77,27 +82,48 @@ const LoginPage: React.FC = () => {
     return () => { activo = false }
   }, [])
 
+  const terminarEmpresa = (r: RespuestaLogin) => {
+    if (r.estado !== 'activa') return
+    // tenant solo se guarda para mostrarlo en UI; nunca se usa para filtrar
+    // datos: eso lo decide el backend a partir de la sesión.
+    login(userFromPerfil(r.user, r.tenant))
+    navigate(r.user.debeCambiarPassword ? '/cuenta/seguridad' : '/dashboard')
+  }
+
+  const terminarPlataforma = (r: RespuestaLoginPlataforma) => {
+    if (r.estado !== 'activa') return
+    completarPlataforma(r.admin)
+    navigate('/platform-admin')
+  }
+
+  const cancelarMfa = () => {
+    const destino = pasoMfa?.destino
+    setPasoMfa(null)
+    setError('')
+    if (destino === 'platform') platformAdminApi.logout().catch(() => {})
+    else authService.logout()
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email || !password) { setError('Completa el correo y la contraseña'); return }
     setLoading(true)
     setError('')
     try {
-      const { user, tenant } = await authService.login(email, password)
-      // Adaptar al formato que espera el AuthContext existente.
-      // tenant solo se guarda para mostrarlo en UI (ej. nombre de la
-      // empresa en el header); nunca se usa para filtrar datos ni se
-      // reenvía al backend — eso siempre lo decide el JWT server-side.
-      login({ name: user.nombre, role: user.rol as any, tenant, permissions: user.permissions })
-      navigate('/dashboard')
+      const r = await authService.login(email, password)
+      if (r.estado === 'activa') return terminarEmpresa(r)
+      setPasoMfa({ modo: r.estado, destino: 'tenant' })
+      setPassword('')
     } catch (tenantErr: any) {
       // Las credenciales no son válidas como usuario de tenant. Antes de
       // mostrar el error, probamos silenciosamente si son válidas como
       // super-admin de Governex — así el mismo formulario sirve para
       // ambos accesos, sin exponer ningún enlace visible al panel.
       try {
-        await loginPlatformAdmin(email, password)
-        navigate('/platform-admin')
+        const rp = await loginPlatformAdmin(email, password)
+        if (rp.estado === 'activa') return terminarPlataforma(rp)
+        setPasoMfa({ modo: rp.estado, destino: 'platform' })
+        setPassword('')
         return
       } catch {
         setError(tenantErr.message || 'Credenciales incorrectas')
@@ -141,6 +167,25 @@ const LoginPage: React.FC = () => {
       <main className="login__form-panel">
         <img className="login__logo-mobile" src={logoColor} alt="Governex" />
 
+        {pasoMfa ? (
+          <div className="login__card">
+            {pasoMfa.destino === 'tenant' ? (
+              <MfaPaso<RespuestaLogin>
+                modo={pasoMfa.modo}
+                api={{ verificar: authService.verificarMfa, configurar: authService.configurarMfa, activar: authService.activarMfa }}
+                onListo={terminarEmpresa}
+                onCancelar={cancelarMfa}
+              />
+            ) : (
+              <MfaPaso<RespuestaLoginPlataforma>
+                modo={pasoMfa.modo}
+                api={{ verificar: platformAdminApi.verificarMfa, configurar: platformAdminApi.configurarMfa, activar: platformAdminApi.activarMfa }}
+                onListo={terminarPlataforma}
+                onCancelar={cancelarMfa}
+              />
+            )}
+          </div>
+        ) : (
         <form className="login__card" onSubmit={handleSubmit} noValidate>
           <h2>Iniciar sesión</h2>
           <p className="login__subtitle">Ingrese con su usuario corporativo</p>
@@ -188,7 +233,7 @@ const LoginPage: React.FC = () => {
           <button type="submit" className="login__submit" disabled={loading}>
             {loading ? (<><span className="login__spinner" aria-hidden="true" /> Ingresando…</>) : (<>Ingresar <IconArrow /></>)}
           </button>
-          <p className="login__helper">Tras 10 intentos fallidos, el acceso se bloquea por 15 minutos.</p>
+          <p className="login__helper">Tras 5 intentos fallidos, la cuenta se bloquea por 15 minutos.</p>
 
           <div className={`login__status login__status--${servidor}`} aria-live="polite">
             <span className="login__status-dot" aria-hidden="true" />
@@ -197,6 +242,7 @@ const LoginPage: React.FC = () => {
             {servidor === 'sin-conexion' && 'Sin conexión con el servidor'}
           </div>
         </form>
+        )}
 
         <div className="login__powered-by">Powered by Datasys · Latam Group</div>
       </main>

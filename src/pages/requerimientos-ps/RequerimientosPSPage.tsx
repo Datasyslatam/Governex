@@ -6,6 +6,7 @@ import { requerimientosPSService, fichasTecnicasPSService, uploadsService } from
 import { usePermissions } from '../../hooks/usePermissions'
 import PermissionGuard from '../../components/ui/PermissionGuard'
 import { getSignedFileUrl } from '../../services/api'
+import { csrfHeaders } from '../../services/api'
 
 /* ─────────────────── TIPOS ─────────────────── */
 interface UnidadCurricular {
@@ -75,11 +76,10 @@ const AIBadge = () => (
 
 /* ── API helpers ── */
 async function apiPost(path: string, body: object) {
-  const token = localStorage.getItem('governex_token')
   const BASE  = (import.meta as any).env?.VITE_API_URL || ''
   const res   = await fetch(`${BASE}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
     body: JSON.stringify(body),
   })
   if (!res.ok) {

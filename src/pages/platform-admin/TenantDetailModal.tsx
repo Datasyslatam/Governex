@@ -94,19 +94,17 @@ const TenantDetailModal: React.FC<Props> = ({ tenantId, onClose, onUpdated }) =>
     if (!confirm.isConfirmed) return
 
     try {
-      const { token, user, tenant } = await platformAdminApi.impersonateUser(tenantId, usuarioId)
+      const { user, tenant } = await platformAdminApi.impersonateUser(tenantId, usuarioId)
 
-      // Guarda el JWT del tenant en la misma clave que usa un login normal
-      // (services/api.ts) — así todas las llamadas de la app funcionan sin
-      // ningún cambio. El token del propio super-admin (governex_platform_
-      // admin_token) NUNCA se toca, vive en otra clave por completo.
-      localStorage.setItem('governex_token', token)
+      // El backend ya dejó en este navegador la cookie HttpOnly de la sesión
+      // suplantada (30 min, marcada con el admin que la abrió). La sesión
+      // del propio super-admin vive en otra cookie y no se toca.
       localStorage.setItem(
         IMPERSONATION_KEY,
         JSON.stringify({ adminEmail: admin?.email, tenantNombre: tenant.nombre, usuarioEmail: user.email })
       )
 
-      loginAsTenantUser({ name: user.nombre, role: user.rol as any, tenant })
+      loginAsTenantUser({ name: user.nombre, role: user.rol as any, tenant, permissions: user.permissions, email: user.email })
       navigate('/dashboard')
     } catch (err: any) {
       Swal.fire({ icon: 'error', title: 'No se pudo iniciar la impersonación', text: err.message })

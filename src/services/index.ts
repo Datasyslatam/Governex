@@ -1,4 +1,4 @@
-import { api, saveToken, clearToken } from './api'
+import { api, csrfHeaders } from './api'
 
 // ── TIPOS COMPARTIDOS ──────────────────────────────────────
 
@@ -180,23 +180,64 @@ export interface TenantInfo {
   nombre: string;
 }
 
+export interface PerfilUsuario {
+  id: number;
+  nombre: string;
+  email: string;
+  rol: string;
+  permissions?: string[];
+  mfaHabilitado: boolean;
+  mfaObligatorio: boolean;
+  debeCambiarPassword: boolean;
+}
+
+/** Respuesta del login y de cada paso MFA. La sesión viaja en cookie HttpOnly. */
+export type RespuestaLogin =
+  | { estado: 'activa'; user: PerfilUsuario; tenant: TenantInfo; codigosRecuperacion?: string[]; codigosRestantes?: number }
+  | { estado: 'mfa' }
+  | { estado: 'enrolar_mfa' };
+
+export interface SesionActiva {
+  id: string;
+  ip: string;
+  user_agent: string;
+  creada_en: string;
+  ultimo_uso_en: string;
+  expira_en: string;
+  suplantacion: boolean;
+  actual: boolean;
+}
+
+export interface EnrolamientoMfa {
+  qr: string;
+  secreto: string;
+  otpauth: string;
+}
+
 export const authService = {
-  login: async (email: string, password: string) => {
-    const data = await api.post<{
-      token: string;
-      user: { id: number; nombre: string; email: string; rol: string; permissions?: string[] };
-      tenant: TenantInfo;
-    }>('/api/auth/login', { email, password }, true)
-    saveToken(data.token)
-    return { user: data.user, tenant: data.tenant }
-  },
+  login: (email: string, password: string) =>
+    api.post<RespuestaLogin>('/api/auth/login', { email, password }, true),
+  verificarMfa: (codigo: string) =>
+    api.post<RespuestaLogin>('/api/auth/mfa/verificar', { codigo }, true),
+  configurarMfa: () => api.post<EnrolamientoMfa>('/api/auth/mfa/configurar', {}, true),
+  activarMfa: (codigo: string) =>
+    api.post<RespuestaLogin & { codigosRecuperacion: string[] }>('/api/auth/mfa/activar', { codigo }, true),
+  desactivarMfa: (password: string, codigo: string) =>
+    api.post<{ ok: true }>('/api/auth/mfa/desactivar', { password, codigo }),
+  regenerarCodigos: (codigo: string) =>
+    api.post<{ codigosRecuperacion: string[] }>('/api/auth/mfa/codigos-recuperacion', { codigo }),
+  me: () =>
+    api.get<{ user: PerfilUsuario; tenant: TenantInfo; suplantacion: boolean; codigosRestantes: number | null }>('/api/auth/me'),
+  cambiarPassword: (actual: string, nueva: string) =>
+    api.post<{ ok: true }>('/api/auth/password', { actual, nueva }),
+  sesiones: () => api.get<SesionActiva[]>('/api/auth/sesiones'),
+  cerrarSesion: (id: string) => api.delete<{ ok: true }>(`/api/auth/sesiones/${id}`),
+  cerrarOtrasSesiones: () => api.post<{ ok: true }>('/api/auth/sesiones/cerrar-otras', {}),
   logout: async () => {
     try {
-      await api.post('/api/auth/logout', {})
+      await api.post('/api/auth/logout', {}, true)
     } catch (err) {
       console.error('Error logging out on backend:', err)
-    } finally {
-      clearToken()
     }
   },
 }
@@ -242,6 +283,7 @@ export const usuariosService = {
   update: (id: number, body: any) => api.put<{ success: boolean }>(`/api/auth/users/${id}`, body),
   delete: (id: number) => api.delete<{ success: boolean; message?: string }>(`/api/auth/users/${id}`),
   getActivityLogs: () => api.get<LogActividad[]>('/api/auth/activity-logs'),
+  restablecerMfa: (id: number) => api.post<{ ok: true }>(`/api/auth/users/${id}/restablecer-mfa`, {}),
 }
 
 // ── RIESGOS ────────────────────────────────────────────────
@@ -551,13 +593,13 @@ export interface UploadResult {
 
 export const uploadsService = {
   upload: async (file: File): Promise<UploadResult> => {
-    const token = localStorage.getItem('governex_token')
     const BASE = import.meta.env.VITE_API_URL || ''
     const formData = new FormData()
     formData.append('file', file)
     const res = await fetch(`${BASE}/api/uploads`, {
       method: 'POST',
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      credentials: 'same-origin',
+      headers: csrfHeaders(),
       body: formData,
     })
     if (!res.ok) {

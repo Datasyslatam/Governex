@@ -154,6 +154,24 @@ const UsuariosPage: React.FC = () => {
     }
   }
 
+  // Restablecer la verificación en dos pasos (usuario que perdió su teléfono
+  // y sus códigos de recuperación). Cierra sus sesiones; si su rol exige MFA,
+  // deberá enrolarse de nuevo al entrar.
+  const handleResetMfa = async (userId: number, userName: string) => {
+    const r = await Swal.fire({
+      title: `¿Restablecer la verificación en dos pasos de ${userName}?`,
+      text: 'Se cerrarán sus sesiones y deberá configurar de nuevo su app autenticadora. Hazlo solo tras confirmar su identidad.',
+      icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí, restablecer', cancelButtonText: 'Cancelar',
+    })
+    if (!r.isConfirmed) return
+    try {
+      await usuariosService.restablecerMfa(userId)
+      Swal.fire({ icon: 'success', title: 'Verificación en dos pasos restablecida', timer: 2000, showConfirmButton: false })
+    } catch (err: any) {
+      Swal.fire({ icon: 'error', title: 'No se pudo restablecer', text: err.message })
+    }
+  }
+
   // Handle Delete
   const handleDelete = (userId: number, userName: string) => {
     Swal.fire({
@@ -260,7 +278,12 @@ const UsuariosPage: React.FC = () => {
                             className="btn-icon danger"
                             onClick={() => handleDelete(user.id, user.nombre)}
                             title="Eliminar usuario"
-                          > </button> </div> </td> </tr>
+                          > </button> <button
+                            className="btn-secondary"
+                            style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
+                            onClick={() => handleResetMfa(user.id, user.nombre)}
+                            title="Restablecer verificación en dos pasos"
+                          >MFA</button> </div> </td> </tr>
                   ))}
                 </tbody> </table> </div>
           )}

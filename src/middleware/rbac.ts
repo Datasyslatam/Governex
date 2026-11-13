@@ -58,3 +58,7 @@ export function requirePermission(recurso: string, accion: Accion) {
     }
   }
 }
+/** Invalida la caché de permisos de un usuario (tras editar su rol o permisos). */
+export function olvidarPermisos(usuarioId: number) {
+  for (const k of cache.keys()) if (k.startsWith(`${usuarioId}:`)) cache.delete(k)
+}

@@ -4,6 +4,7 @@ import { useFetch } from '../../hooks/useFetch'
 import { politicaService } from '../../services'
 import { useAIAnalysis } from '../../context/AIAnalysisContext'
 import { usePermissions } from '../../hooks/usePermissions'
+import { csrfHeaders } from '../../services/api'
 
 const PoliticaPage: React.FC = () => {
   const { data: politicas, loading: lPol, refetch: refetchPol }
@@ -134,13 +135,12 @@ const PoliticaPage: React.FC = () => {
                     onClick={async () => {
                       setGenerandoIA(true)
                       try {
-                        const token = localStorage.getItem('governex_token')
                         const BASE  = import.meta.env.VITE_API_URL || ''
                         const response = await fetch(`${BASE}/api/gemini/generar-ideario`, {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
-                            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                            ...csrfHeaders(),
                           },
                           body: JSON.stringify({ datosEmpresa }),
                         })

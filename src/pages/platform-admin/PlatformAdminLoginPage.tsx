@@ -1,20 +1,30 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePlatformAdminAuth } from '../../context/PlatformAdminAuthContext'
+import { platformAdminApi, RespuestaLoginPlataforma } from '../../services/platformAdminApi'
+import MfaPaso from '../../components/auth/MfaPaso'
+import '../auth/LoginPage.css'
 import './PlatformAdminLoginPage.css'
 
 // Pantalla de acceso SOLO para staff de Governex (super-admins de
 // plataforma). Deliberadamente separada de /login: usa su propio
-// contexto, su propio storage de token y su propio backend
+// contexto, su propia cookie de sesión y su propio backend
 // (POST /api/platform-admin/login), sin ningún punto de contacto con la
-// sesión de un usuario de tenant.
+// sesión de un usuario de tenant. MFA siempre obligatorio.
 const PlatformAdminLoginPage: React.FC = () => {
-  const { login } = usePlatformAdminAuth()
+  const { login, completarLogin } = usePlatformAdminAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [paso, setPaso] = useState<'credenciales' | 'mfa' | 'enrolar_mfa'>('credenciales')
+
+  const terminar = (r: RespuestaLoginPlataforma) => {
+    if (r.estado !== 'activa') return
+    completarLogin(r.admin)
+    navigate('/platform-admin')
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,13 +32,29 @@ const PlatformAdminLoginPage: React.FC = () => {
     setLoading(true)
     setError('')
     try {
-      await login(email, password)
-      navigate('/platform-admin')
+      const r = await login(email, password)
+      if (r.estado === 'activa') terminar(r)
+      else { setPaso(r.estado); setPassword('') }
     } catch (err: any) {
       setError(err.message || 'Credenciales incorrectas')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (paso !== 'credenciales') {
+    return (
+      <div className="pa-login">
+        <div className="pa-login__card">
+          <MfaPaso<RespuestaLoginPlataforma>
+            modo={paso}
+            api={{ verificar: platformAdminApi.verificarMfa, configurar: platformAdminApi.configurarMfa, activar: platformAdminApi.activarMfa }}
+            onListo={terminar}
+            onCancelar={() => { setPaso('credenciales'); platformAdminApi.logout().catch(() => {}) }}
+          />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -38,9 +64,9 @@ const PlatformAdminLoginPage: React.FC = () => {
 
         <label>
           Correo
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} disabled={loading} /> </label> <label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} disabled={loading} autoComplete="username" /> </label> <label>
           Contraseña
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} /> </label> <button type="submit" disabled={loading}>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} autoComplete="current-password" /> </label> <button type="submit" disabled={loading}>
           {loading ? 'Ingresando...' : 'Ingresar'}
         </button> </form> </div>
   )

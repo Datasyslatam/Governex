@@ -1,48 +1,36 @@
 import { Router, Request, Response } from 'express'
-import bcrypt from 'bcryptjs'
-import crypto from 'crypto'
-import jwt from 'jsonwebtoken'
-import { signOptions } from '../middleware/securityConfig'
 import { validarPassword } from '../middleware/passwordPolicy'
 import { pool } from '../db'
 import { platformAdminMiddleware, PlatformAdminRequest } from '../middleware/platformAdminAuth'
 import { getUserPermissions } from './auth'
 import { ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { s3 } from '../services/storageService'
+import { loginRateLimit } from '../middleware/rateLimit'
+import { hashPassword, verifyPassword } from '../security/passwords'
+import { estaBloqueada, registrarFallo } from '../security/lockout'
+import {
+  crearSesion, obtenerSesion, revocarSesion, revocarSesionesPlatform, revocarSesionesUsuario,
+  limpiarCookies, csrfValido, SUPLANTACION_MS,
+} from '../security/sessions'
+import {
+  abrirSesionTrasPassword, sesionPrevia, activarSesion, verificarCodigo, prepararEnrolamiento,
+  confirmarEnrolamiento, codigosRestantes,
+} from '../security/authFlow'
+import { olvidarEstadoUsuario } from '../middleware/auth'
 
 const router = Router()
 
-const DUMMY_HASH = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 10)
+// Un platform_admin puede crear/suspender empresas y suplantar usuarios:
+// límite por IP+email, bloqueo por cuenta en BD (lockout.ts) y MFA
+// SIEMPRE obligatorio. Recomendado además: restringir /api/platform-admin
+// por IP en Railway/Cloudflare.
+const loginLimiter = loginRateLimit({ windowMs: 15 * 60_000, maxFailures: 5 })
+const mfaLimiter = loginRateLimit({ windowMs: 15 * 60_000, maxFailures: 10 })
+const CREDENCIALES = 'Credenciales incorrectas o cuenta bloqueada temporalmente'
 
-// ── Rate limiting simple en memoria para el login ──────────────────
-// Un token de platform_admin puede crear/suspender tenants completos:
-// vale la pena un freno básico contra fuerza bruta a nivel de aplicación,
-// además de lo que se configure a nivel de infraestructura (recomendado:
-// restringir /api/platform-admin por IP en Railway/Cloudflare).
-const LOGIN_ATTEMPT_LIMIT = 5
-const LOGIN_ATTEMPT_WINDOW_MS = 15 * 60 * 1000
-const loginAttempts = new Map<string, { count: number; resetAt: number }>()
-
-function isRateLimited(key: string): boolean {
-  const entry = loginAttempts.get(key)
-  const now = Date.now()
-  if (!entry || entry.resetAt < now) return false
-  return entry.count >= LOGIN_ATTEMPT_LIMIT
-}
-
-function registerFailedAttempt(key: string) {
-  const now = Date.now()
-  const entry = loginAttempts.get(key)
-  if (!entry || entry.resetAt < now) {
-    loginAttempts.set(key, { count: 1, resetAt: now + LOGIN_ATTEMPT_WINDOW_MS })
-  } else {
-    entry.count += 1
-  }
-}
-
-function clearAttempts(key: string) {
-  loginAttempts.delete(key)
-}
+const SELECT_ADMIN = `SELECT id, nombre, email, password_hash, activo, mfa_habilitado, mfa_secreto_cifrado,
+                             mfa_ultimo_paso, bloqueado_hasta, debe_cambiar_password
+                      FROM platform_admins`
 
 // ── Auditoría ────────────────────────────────────────────────────
 // Nunca debe tumbar la operación principal: si el insert del log falla,
@@ -65,44 +53,99 @@ async function registrarAuditoria(
   }
 }
 
+function perfilAdmin(a: any) {
+  return { id: a.id, nombre: a.nombre, email: a.email, mfaHabilitado: a.mfa_habilitado, debeCambiarPassword: a.debe_cambiar_password }
+}
+
 // POST /api/platform-admin/login
-router.post('/login', async (req: Request, res: Response) => {
+// Respuesta: { estado: 'mfa' } | { estado: 'enrolar_mfa' }  (MFA siempre obligatorio)
+router.post('/login', loginLimiter, async (req: Request, res: Response) => {
   const { email, password } = req.body
   if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
     return res.status(400).json({ error: 'Email y contraseña requeridos' })
   }
-
-  const rateLimitKey = `${email}:${req.ip}`
-  if (isRateLimited(rateLimitKey)) {
-    return res.status(429).json({ error: 'Demasiados intentos fallidos. Intenta de nuevo en unos minutos.' })
-  }
-
   try {
-    const { rows } = await pool.query(
-      'SELECT id, nombre, email, password_hash FROM platform_admins WHERE email = $1 AND activo = true',
-      [email]
-    )
+    const { rows } = await pool.query(`${SELECT_ADMIN} WHERE email = $1 AND activo = true`, [email.trim()])
     const admin = rows[0]
-    // Se compara siempre (hash ficticio si el admin no existe) para que el
-    // tiempo de respuesta no permita enumerar correos de administradores.
-    const valid = await bcrypt.compare(password, admin?.password_hash || DUMMY_HASH)
-    if (!admin || !valid) {
-      registerFailedAttempt(rateLimitKey)
-      return res.status(401).json({ error: 'Credenciales incorrectas' })
+    const { ok, needsRehash } = await verifyPassword(password, admin?.password_hash)
+    if (!admin || estaBloqueada(admin.bloqueado_hasta)) return res.status(401).json({ error: CREDENCIALES })
+    if (!ok) {
+      if (await registrarFallo('platform_admins', admin.id)) {
+        await registrarAuditoria(admin, 'cuenta_bloqueada', 'platform_admin', admin.id, { motivo: 'intentos_fallidos' })
+      }
+      return res.status(401).json({ error: CREDENCIALES })
     }
+    if (needsRehash) {
+      await pool.query('UPDATE platform_admins SET password_hash = $2 WHERE id = $1', [admin.id, await hashPassword(password)])
+    }
+    const { etapa } = await abrirSesionTrasPassword(req, res, 'platform', admin, true)
+    res.json({ estado: etapa })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error del servidor' })
+  }
+})
 
-    clearAttempts(rateLimitKey)
+// POST /api/platform-admin/mfa/verificar  { codigo }
+router.post('/mfa/verificar', mfaLimiter, async (req: Request, res: Response) => {
+  try {
+    const previa = await sesionPrevia(req, 'platform', ['mfa'])
+    if (!previa) return res.status(401).json({ error: 'La verificación expiró. Inicia sesión de nuevo.', code: 'NO_SESSION' })
+    const { rows } = await pool.query(`${SELECT_ADMIN} WHERE id = $1`, [previa.platform_admin_id])
+    const admin = rows[0]
+    if (!admin || !admin.activo || estaBloqueada(admin.bloqueado_hasta)) {
+      await revocarSesion(previa.id, 'mfa_rechazado')
+      return res.status(401).json({ error: CREDENCIALES })
+    }
+    const tipo = await verificarCodigo('platform', admin, req.body?.codigo)
+    if (!tipo) return res.status(401).json({ error: 'Código incorrecto' })
+    await activarSesion(req, res, 'platform', previa)
+    await registrarAuditoria(admin, 'inicio_sesion', 'platform_admin', admin.id, { mfa: tipo })
+    res.json({ estado: 'activa', admin: perfilAdmin(admin), codigosRestantes: await codigosRestantes('platform', admin.id) })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error del servidor' })
+  }
+})
 
-    // Secret DISTINTA a la de los tokens de tenant (JWT_SECRET). Si algún
-    // día una de las dos secrets se filtra, la otra credencial (tenant o
-    // plataforma) sigue intacta — no comparten superficie de ataque.
-    const token = jwt.sign(
-      { id: admin.id, email: admin.email, type: 'platform_admin' },
-      process.env.PLATFORM_ADMIN_JWT_SECRET!,
-      signOptions('4h') // más corto que el de tenants (8h): credencial más sensible
-    )
+// POST /api/platform-admin/mfa/configurar  (etapa enrolar_mfa)
+router.post('/mfa/configurar', async (req: Request, res: Response) => {
+  try {
+    const s = await sesionPrevia(req, 'platform', ['enrolar_mfa'])
+    if (!s) return res.status(401).json({ error: 'Sesión no válida', code: 'NO_SESSION' })
+    const { rows } = await pool.query(`${SELECT_ADMIN} WHERE id = $1`, [s.platform_admin_id])
+    res.json(await prepararEnrolamiento('platform', rows[0]))
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error del servidor' })
+  }
+})
 
-    res.json({ token, admin: { id: admin.id, nombre: admin.nombre, email: admin.email } })
+// POST /api/platform-admin/mfa/activar  { codigo }
+router.post('/mfa/activar', mfaLimiter, async (req: Request, res: Response) => {
+  try {
+    const s = await sesionPrevia(req, 'platform', ['enrolar_mfa'])
+    if (!s) return res.status(401).json({ error: 'Sesión no válida', code: 'NO_SESSION' })
+    const { rows } = await pool.query(`${SELECT_ADMIN} WHERE id = $1`, [s.platform_admin_id])
+    const admin = rows[0]
+    const codigos = await confirmarEnrolamiento('platform', admin, req.body?.codigo)
+    if (!codigos) return res.status(400).json({ error: 'Código incorrecto. Verifica la hora de tu teléfono e intenta de nuevo.' })
+    await activarSesion(req, res, 'platform', s)
+    await registrarAuditoria(admin, 'mfa_activado', 'platform_admin', admin.id)
+    res.json({ estado: 'activa', admin: perfilAdmin({ ...admin, mfa_habilitado: true }), codigosRecuperacion: codigos })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error del servidor' })
+  }
+})
+
+// POST /api/platform-admin/logout
+router.post('/logout', async (req: Request, res: Response) => {
+  try {
+    const s = await obtenerSesion(req, 'platform')
+    if (s && (s.etapa !== 'activa' || csrfValido(req, s))) await revocarSesion(s.id, 'logout')
+    limpiarCookies(res, 'platform')
+    res.json({ ok: true })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Error del servidor' })
@@ -110,6 +153,40 @@ router.post('/login', async (req: Request, res: Response) => {
 })
 
 router.use(platformAdminMiddleware)
+
+// GET /api/platform-admin/me
+router.get('/me', async (req: PlatformAdminRequest, res: Response) => {
+  const { rows } = await pool.query(`${SELECT_ADMIN} WHERE id = $1`, [req.platformAdmin!.id])
+  res.json({ admin: perfilAdmin(rows[0]), codigosRestantes: await codigosRestantes('platform', rows[0].id) })
+})
+
+// POST /api/platform-admin/password  { actual, nueva }
+router.post('/password', loginLimiter, async (req: PlatformAdminRequest, res: Response) => {
+  const { actual, nueva } = req.body ?? {}
+  try {
+    const { rows } = await pool.query(`${SELECT_ADMIN} WHERE id = $1`, [req.platformAdmin!.id])
+    const admin = rows[0]
+    if (!(await verifyPassword(String(actual ?? ''), admin.password_hash)).ok) {
+      await registrarFallo('platform_admins', admin.id)
+      return res.status(401).json({ error: 'La contraseña actual no es correcta' })
+    }
+    const pwError = validarPassword(nueva, { email: admin.email, nombre: admin.nombre })
+    if (pwError) return res.status(400).json({ error: pwError, code: 'WEAK_PASSWORD' })
+    if ((await verifyPassword(nueva, admin.password_hash)).ok) {
+      return res.status(400).json({ error: 'La nueva contraseña debe ser distinta de la actual', code: 'WEAK_PASSWORD' })
+    }
+    await pool.query(
+      `UPDATE platform_admins SET password_hash = $2, debe_cambiar_password = false, password_cambiado_en = NOW() WHERE id = $1`,
+      [admin.id, await hashPassword(nueva)]
+    )
+    await revocarSesionesPlatform(admin.id, 'cambio_password', req.platformAdmin!.sesionId)
+    await registrarAuditoria(admin, 'cambio_password', 'platform_admin', admin.id)
+    res.json({ ok: true })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error del servidor' })
+  }
+})
 
 // GET /api/platform-admin/tenants
 // Única query autorizada en todo Governex que lista TODOS los tenants sin
@@ -166,7 +243,7 @@ router.post('/tenants', async (req: PlatformAdminRequest, res: Response) => {
     const { rows: rolRows } = await client.query(`SELECT id FROM roles WHERE nombre = 'Superusuario'`)
     if (!rolRows[0]) throw new Error('Rol "Superusuario" no existe en el catálogo global de roles')
 
-    const passwordHash = await bcrypt.hash(adminPassword, 10)
+    const passwordHash = await hashPassword(adminPassword)
     const { rows: userRows } = await client.query(
       `INSERT INTO usuarios (nombre, email, password_hash, rol_id, tenant_id)
        VALUES ($1, $2, $3, $4, $5) RETURNING id, nombre, email`,
@@ -248,21 +325,18 @@ router.post('/tenants/:id/impersonate', async (req: PlatformAdminRequest, res: R
       return res.status(400).json({ error: 'No puedes impersonar usuarios de un tenant que no está activo' })
     }
 
-    // Mismo shape que el JWT de login normal (id, tenantId, rol) para que
-    // authMiddleware lo acepte sin ningún cambio. Los campos extra
-    // (impersonatedBy*) viajan solo para trazabilidad si se decodifica el
-    // token en logs; authMiddleware los ignora.
-    const token = jwt.sign(
-      {
-        id: usuario.id,
-        tenantId: usuario.tenant_id,
-        rol: usuario.rol,
-        impersonatedByAdminId: req.platformAdmin!.id,
-        impersonatedByAdminEmail: req.platformAdmin!.email,
-      },
-      process.env.JWT_SECRET!,
-      signOptions('30m')
-    )
+    // Sesión de empresa marcada con suplantado_por_admin, de 30 minutos. Se
+    // entrega como cookie HttpOnly en este mismo navegador (ya no como token
+    // en el cuerpo de la respuesta). El MFA del usuario no se pide: el admin
+    // ya pasó su propio MFA para tener sesión de plataforma.
+    await crearSesion(req, res, {
+      tipo: 'tenant',
+      etapa: 'activa',
+      usuarioId: usuario.id,
+      tenantId: usuario.tenant_id,
+      suplantadoPorAdmin: req.platformAdmin!.id,
+      duracionMs: SUPLANTACION_MS,
+    })
 
     await registrarAuditoria(req.platformAdmin!, 'impersonar_usuario', 'tenant', id, {
       usuarioEmail: usuario.email, tenantNombre: usuario.tenant_nombre,
@@ -271,7 +345,6 @@ router.post('/tenants/:id/impersonate', async (req: PlatformAdminRequest, res: R
     const permissions = await getUserPermissions(usuario.id)
 
     res.json({
-      token,
       user: { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol, permissions },
       tenant: { id: usuario.tenant_id, nombre: usuario.tenant_nombre },
     })
@@ -305,9 +378,9 @@ router.post('/platform-admins', async (req: PlatformAdminRequest, res: Response)
   const pwError = validarPassword(password, { email, nombre })
   if (pwError) return res.status(400).json({ error: pwError, code: 'WEAK_PASSWORD' })
   try {
-    const passwordHash = await bcrypt.hash(password, 10)
+    const passwordHash = await hashPassword(password)
     const { rows } = await pool.query(
-      `INSERT INTO platform_admins (nombre, email, password_hash) VALUES ($1, $2, $3)
+      `INSERT INTO platform_admins (nombre, email, password_hash, debe_cambiar_password) VALUES ($1, $2, $3, true)
        RETURNING id, nombre, email, activo, creado_en`,
       [nombre, email, passwordHash]
     )
@@ -355,6 +428,7 @@ router.put('/platform-admins/:id/estado', async (req: PlatformAdminRequest, res:
       [activo, id]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Administrador no encontrado' })
+    if (!activo) await revocarSesionesPlatform(Number(id), 'admin_desactivado')
 
     await registrarAuditoria(req.platformAdmin!, 'cambiar_estado_admin', 'platform_admin', id, {
       email: rows[0].email, nuevoEstado: activo,
@@ -464,8 +538,17 @@ router.post('/tenants/:id/usuarios/:usuarioId/reset-password', async (req: Platf
     )
     if (!usuarioRows[0]) return res.status(404).json({ error: 'Usuario no encontrado en este tenant' })
 
-    const passwordHash = await bcrypt.hash(password, 10)
-    await pool.query(`UPDATE usuarios SET password_hash = $1 WHERE id = $2`, [passwordHash, usuarioId])
+    const passwordHash = await hashPassword(password)
+    // Contraseña temporal: el usuario debe cambiarla al entrar; se desbloquea
+    // la cuenta y se cierran sus sesiones abiertas.
+    await pool.query(
+      `UPDATE usuarios SET password_hash = $1, debe_cambiar_password = true, password_cambiado_en = NOW(),
+              intentos_fallidos = 0, bloqueado_hasta = NULL
+       WHERE id = $2`,
+      [passwordHash, usuarioId]
+    )
+    await revocarSesionesUsuario(Number(usuarioId), 'password_restablecido')
+    olvidarEstadoUsuario(Number(usuarioId))
 
     await registrarAuditoria(req.platformAdmin!, 'resetear_password_usuario', 'tenant', id, {
       usuarioEmail: usuarioRows[0].email,

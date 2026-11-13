@@ -1,0 +1,123 @@
+/* Paso MFA del inicio de sesión. Se apoya en las clases .login__* de
+   LoginPage.css. Las variables --gx-* se redefinen aquí porque en
+   LoginPage.css están acotadas a .login y el login de plataforma no la usa. */
+.mfa {
+  --gx-navy: #0B1F4D;
+  --gx-blue: #1565F0;
+  --gx-blue-light: #3B9BFF;
+  --gx-orange: #FF7A00;
+  --gx-amber: #FFA21A;
+  --gx-ink: #0B1F4D;
+  --gx-muted: #5B6785;
+  --gx-border: #D9DFEA;
+  --gx-surface: #F3F5F9;
+  --gx-brand-gradient: linear-gradient(90deg, var(--gx-blue) 0%, var(--gx-blue-light) 40%, var(--gx-amber) 70%, var(--gx-orange) 100%);
+}
+
+.mfa h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+  color: var(--gx-ink, #0B1F4D);
+}
+
+.mfa__texto {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--gx-muted, #5B6785);
+}
+
+.mfa__qr {
+  display: grid;
+  place-items: center;
+  min-height: 200px;
+  margin: 0 auto 0.5rem;
+}
+
+.mfa__qr img {
+  border: 1px solid var(--gx-border, #D9DFEA);
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.25rem;
+}
+
+.mfa__secreto {
+  display: block;
+  margin: 0.25rem 0 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--gx-surface, #F3F5F9);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-align: center;
+  word-break: break-all;
+  user-select: all;
+}
+
+.mfa__input {
+  letter-spacing: 0.25em;
+  font-variant-numeric: tabular-nums;
+}
+
+.mfa__pie {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+}
+
+.mfa__enlace {
+  border: 0;
+  background: none;
+  padding: 0.15rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--gx-blue, #1565F0);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.mfa__enlace:focus-visible {
+  outline: 2px solid var(--gx-blue, #1565F0);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.mfa__codigos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem;
+  list-style: none;
+  border-radius: 0.6rem;
+  background: var(--gx-surface, #F3F5F9);
+}
+
+.mfa__codigos code {
+  display: block;
+  font-size: 0.9rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.mfa__acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mfa__secundario {
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--gx-border, #D9DFEA);
+  border-radius: 0.6rem;
+  background: #fff;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--gx-ink, #0B1F4D);
+  cursor: pointer;
+}
+
+.mfa__secundario:hover { background: var(--gx-surface, #F3F5F9); }
