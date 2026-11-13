@@ -37,6 +37,7 @@ import LiberacionPSPage            from "../pages/liberacion-ps/LiberacionPSPage
 import SalidasNCPage               from "../pages/salidas-nc/SalidasNCPage";
 import MejoraContinuaPage          from "../pages/mejora-continua/MejoraContinuaPage";
 import UsuariosPage               from "../pages/auth/UsuariosPage";
+import SeguridadCuentaPage        from "../pages/cuenta/SeguridadCuentaPage";
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -56,6 +57,7 @@ export const AppRoutes: React.FC = () => {
           <ProtectedRoute isAuthenticated={isAuthenticated}> <MainLayout /> </ProtectedRoute>
         }
       > <Route index element={<DashboardPage />} /> <Route path="dashboard"               element={<DashboardPage />} />
+        <Route path="cuenta/seguridad"        element={<SeguridadCuentaPage />} />
 
         {/* §4 */}
         <Route path="procesos"                element={<ProcesosPage />} />

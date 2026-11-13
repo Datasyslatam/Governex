@@ -1,11 +1,11 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
-import { authService } from "../services";
+import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
+import { authService, PerfilUsuario } from "../services";
 
 export type UserRole = "Superusuario" | "Operativo" | "Gestión";
 
 // Info del tenant SOLO para mostrar en UI (nombre de empresa en el header,
 // selector de tema, etc). Nunca se usa para decidir a qué datos puede
-// acceder el usuario — eso lo decide el backend a partir del JWT.
+// acceder el usuario — eso lo decide el backend a partir de la sesión.
 export interface TenantInfo {
   id: number;
   nombre: string;
@@ -16,6 +16,10 @@ export interface User {
   role: UserRole;
   tenant?: TenantInfo;
   permissions?: string[];
+  email?: string;
+  mfaHabilitado?: boolean;
+  mfaObligatorio?: boolean;
+  debeCambiarPassword?: boolean;
 }
 
 interface AuthContextValue {
@@ -23,6 +27,8 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   login: (user: User) => void;
   logout: () => any;
+  /** Vuelve a leer el perfil del servidor (tras cambiar contraseña, activar MFA, etc.). */
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -30,14 +36,29 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const USER_KEY = "governex_user";
 export const IMPERSONATION_KEY = "governex_impersonation";
 const SESSION_INVALID_EVENT = "governex:session-invalid";
+const PASSWORD_CHANGE_EVENT = "governex:password-change-required";
+
+/** Convierte el perfil del backend al formato que usa la UI. */
+export function userFromPerfil(p: PerfilUsuario, tenant?: TenantInfo): User {
+  return {
+    name: p.nombre,
+    role: p.rol as UserRole,
+    tenant,
+    permissions: p.permissions,
+    email: p.email,
+    mfaHabilitado: p.mfaHabilitado,
+    mfaObligatorio: p.mfaObligatorio,
+    debeCambiarPassword: p.debeCambiarPassword,
+  };
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  // Inicializa desde localStorage para que la sesión persista al recargar.
-  // Nota: esto no valida el JWT contra el backend, solo restaura lo que se
-  // mostró la última vez. Si el token expiró o el tenant fue suspendido, la
-  // primera llamada a la API disparará el evento de abajo y cerrará sesión.
+  // Se restaura lo último mostrado para no parpadear al recargar, pero ya no
+  // se confía en ello: el efecto de abajo valida la sesión contra /api/auth/me
+  // (la cookie HttpOnly es la única credencial; localStorage solo guarda datos
+  // de presentación, nunca un token).
   const [user, setUser] = useState<User | null>(() => {
     try {
       const stored = localStorage.getItem(USER_KEY);
@@ -47,14 +68,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   });
 
-  const login = (nextUser: User) => {
-    setUser(nextUser);
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+  const guardar = (u: User | null) => {
+    setUser(u);
+    try {
+      if (u) localStorage.setItem(USER_KEY, JSON.stringify(u));
+      else localStorage.removeItem(USER_KEY);
+    } catch { /* sin storage */ }
   };
 
+  const login = (nextUser: User) => guardar(nextUser);
+
   const logout = async () => {
-    setUser(null);
-    localStorage.removeItem(USER_KEY);
+    guardar(null);
     await authService.logout();
     localStorage.removeItem(IMPERSONATION_KEY); // por si la sesión terminó estando impersonando
 
@@ -68,14 +93,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     sessionStorage.removeItem("governex_proyectos_diseno");
   };
 
-  // api.ts (fuera del árbol de React) dispara este evento cuando cualquier
-  // petición recibe 401, o 403 con code TENANT_INACTIVE. Al reaccionar acá
-  // en vez de forzar una recarga de página, ProtectedRoute detecta
-  // isAuthenticated=false y redirige a /login sin perder el estado de la SPA.
+  const refresh = useCallback(async () => {
+    const { user: perfil, tenant } = await authService.me();
+    guardar(userFromPerfil(perfil, tenant));
+  }, []);
+
+  // Validación de la sesión al cargar la aplicación.
+  useEffect(() => {
+    if (!user) return;
+    refresh().catch(() => { /* un 401 ya dispara el cierre de sesión vía api.ts */ });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // api.ts (fuera del árbol de React) dispara estos eventos: 401 / empresa
+  // inactiva → cerrar sesión; contraseña temporal → marcar para que
+  // ProtectedRoute lleve a la pantalla de cambio de contraseña.
   useEffect(() => {
     const handleSessionInvalid = () => logout();
+    const handlePasswordChange = () =>
+      setUser((u) => (u ? { ...u, debeCambiarPassword: true } : u));
     window.addEventListener(SESSION_INVALID_EVENT, handleSessionInvalid);
-    return () => window.removeEventListener(SESSION_INVALID_EVENT, handleSessionInvalid);
+    window.addEventListener(PASSWORD_CHANGE_EVENT, handlePasswordChange);
+    return () => {
+      window.removeEventListener(SESSION_INVALID_EVENT, handleSessionInvalid);
+      window.removeEventListener(PASSWORD_CHANGE_EVENT, handlePasswordChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const value: AuthContextValue = {
@@ -83,6 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     isAuthenticated: !!user,
     login,
     logout,
+    refresh,
   };
 
   return (

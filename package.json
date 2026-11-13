@@ -23,6 +23,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1081.0",
     "@aws-sdk/s3-request-presigner": "^3.1089.0",
+    "@node-rs/argon2": "^2.2.2",
     "@types/multer": "^2.2.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
@@ -33,6 +34,7 @@
     "multer": "^2.2.0",
     "pdf-lib": "^1.17.1",
     "pg": "^8.11.5",
+    "qrcode": "^1.5.4",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-is": "^19.3.0",
@@ -47,6 +49,7 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.12.0",
     "@types/pg": "^8.11.6",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@types/react-router-dom": "^5.3.3",

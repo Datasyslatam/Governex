@@ -5,22 +5,31 @@ import Swal from 'sweetalert2'
 // En desarrollo local, usa VITE_API_URL o localhost:3001.
 const BASE = import.meta.env.VITE_API_URL || ''
 
-function getToken(): string | null {
-  return localStorage.getItem('governex_token')
+/**
+ * Fase 2 de seguridad: la sesión vive en una cookie HttpOnly que el navegador
+ * envía solo (mismo origen). JavaScript ya NO ve ni guarda ningún token, así
+ * que un XSS no puede robar la sesión. Lo único legible es el token CSRF
+ * (cookie gx_csrf), que se reenvía en la cabecera X-CSRF-Token en toda
+ * petición que modifica datos.
+ */
+function leerCookie(nombre: string): string {
+  const m = document.cookie.split('; ').find((c) => c.startsWith(`${nombre}=`))
+  return m ? decodeURIComponent(m.slice(nombre.length + 1)) : ''
 }
 
-export function saveToken(token: string) {
-  localStorage.setItem('governex_token', token)
+/** Cabeceras que necesita cualquier fetch manual que modifique datos. */
+export function csrfHeaders(): Record<string, string> {
+  const t = leerCookie('gx_csrf')
+  return t ? { 'X-CSRF-Token': t } : {}
 }
 
-export function clearToken() {
-  localStorage.removeItem('governex_token')
-}
+// Limpia restos del esquema anterior (JWT en localStorage) si existieran.
+try { localStorage.removeItem('governex_token') } catch { /* sin storage */ }
 
 // Códigos de error que el backend adjunta junto al mensaje (ver
 // middleware/auth.ts y middleware/rbac.ts). Nunca se decide el flujo de
 // sesión inspeccionando el texto del mensaje — solo este código.
-type ApiErrorCode = 'NO_TOKEN' | 'INVALID_TOKEN' | 'TENANT_INACTIVE' | 'FORBIDDEN'
+type ApiErrorCode = 'NO_TOKEN' | 'INVALID_TOKEN' | 'NO_SESSION' | 'TENANT_INACTIVE' | 'FORBIDDEN' | 'CSRF' | 'PASSWORD_CHANGE_REQUIRED' | 'WEAK_PASSWORD'
 
 export class ApiError extends Error {
   status: number
@@ -75,12 +84,13 @@ function handleForbidden(message: string) {
 }
 
 async function request<T>(path: string, options: RequestInit = {}, skipSessionModal = false): Promise<T> {
-  const token = getToken()
+  const metodo = (options.method || 'GET').toUpperCase()
   const res = await fetch(`${BASE}${path}`, {
     ...options,
+    credentials: 'same-origin',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(metodo !== 'GET' ? csrfHeaders() : {}),
       ...options.headers,
     },
   })
@@ -90,7 +100,10 @@ async function request<T>(path: string, options: RequestInit = {}, skipSessionMo
     const code = body.code as ApiErrorCode | undefined
 
     if (!skipSessionModal && (res.status === 401 || code === 'TENANT_INACTIVE')) {
-      handleSessionInvalid(code ?? 'INVALID_TOKEN')
+      handleSessionInvalid(code ?? 'NO_SESSION')
+    } else if (code === 'PASSWORD_CHANGE_REQUIRED') {
+      // El usuario tiene una contraseña temporal: se le lleva a cambiarla.
+      window.dispatchEvent(new CustomEvent('governex:password-change-required'))
     } else if (code === 'FORBIDDEN') {
       handleForbidden(body.error || 'No tienes permiso para realizar esta acción')
     }
@@ -112,7 +125,6 @@ export const api = {
 export async function uploadFile(file: File): Promise<{
   url: string; key: string; nombre: string; tipoMime: string; tamanoBytes: number
 }> {
-  const token = getToken()
   const formData = new FormData()
   formData.append('file', file)
 
@@ -120,7 +132,8 @@ export async function uploadFile(file: File): Promise<{
     method: 'POST',
     // OJO: no seteamos Content-Type manualmente — el navegador debe
     // generar el boundary del multipart/form-data automáticamente.
-    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    credentials: 'same-origin',
+    headers: csrfHeaders(),
     body: formData,
   })
 

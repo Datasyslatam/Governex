@@ -20,29 +20,29 @@
 
 ## 2. Matriz de vulnerabilidades y riesgos
 
-Estado al 2026-11-13. "Corregido" significa que una prueba automatizada lo demuestra (ver el registro de la Fase 1).
+Estado al 2026-11-13 (tras la Fase 2). "Corregido" significa que una prueba automatizada lo demuestra (ver los registros de las Fases 0–1 y 2).
 
 | ID | Componente | Hallazgo | Crit. | Prob. / Impacto | CWE | Control recomendado | Estado |
 |---|---|---|---|---|---|---|---|
 | V01 | Dependencias | proxy-addr (crítica), multer, body-parser, qs, react-router, xmldom | Crítico | Alta / Alta | CWE-1395 | SCA continuo + actualización | Parcial (2 moderadas) |
-| V02 | Autenticación | Sin MFA, incluido platform_admin con suplantación | Crítico | Media / Muy alta | CWE-308 | TOTP obligatorio para roles privilegiados | Abierto (Fase 2) |
+| V02 | Autenticación | Sin MFA, incluido platform_admin con suplantación | Crítico | Media / Muy alta | CWE-308 | TOTP obligatorio para roles privilegiados | Corregido (Fase 2) |
 | V03 | Autorización | GET sin permiso `leer` (BFLA) | Alto | Alta / Alta | CWE-285 | `requirePermission` en toda ruta | Corregido |
 | V04 | Autorización | `DELETE /proveedores/:id` sin permiso | Alto | Alta / Media | CWE-862 | Permiso `eliminar` | Corregido |
 | V05 | Autorización | IDOR por llave foránea de otra empresa | Alto | Media / Alta | CWE-639 | `requireTenantRefs` | Corregido |
-| V06 | Sesiones | JWT de 8 h sin revocación ni timeout por inactividad. El logout no invalida | Alto | Media / Alta | CWE-613 | Access corto + refresh revocable | Abierto (Fase 2) |
-| V07 | Frontend | JWT en `localStorage`, sin CSP | Alto | Media / Alta | CWE-922 | Cookie HttpOnly + CSP | Abierto (Fases 2 y 4) |
-| V08 | Contraseñas | Sin política. bcrypt 10. Sin cambio ni recuperación | Alto | Alta / Media | CWE-521 | Política + Argon2id + flujo de recuperación | Parcial (política) |
-| V09 | Fuerza bruta | Límite por IP+email en memoria, sin bloqueo por cuenta | Alto | Media / Alta | CWE-307 | Bloqueo progresivo por cuenta, almacén compartido | Abierto (Fase 2) |
+| V06 | Sesiones | JWT de 8 h sin revocación ni timeout por inactividad. El logout no invalida | Alto | Media / Alta | CWE-613 | Sesiones del servidor revocables | Corregido (Fase 2) |
+| V07 | Frontend | JWT en `localStorage`, sin CSP | Alto | Media / Alta | CWE-922 | Cookie HttpOnly + CSP | Parcial (cookie HttpOnly; CSP en Fase 4) |
+| V08 | Contraseñas | Sin política. bcrypt 10. Sin cambio ni recuperación | Alto | Alta / Media | CWE-521 | Política + Argon2id + flujo de recuperación | Corregido salvo recuperación por correo (requiere SMTP) |
+| V09 | Fuerza bruta | Límite por IP+email en memoria, sin bloqueo por cuenta | Alto | Media / Alta | CWE-307 | Bloqueo por cuenta en BD | Corregido (Fase 2) |
 | V10 | Auditoría | Bitácora sin IP, correlación ni resultado. No registra fallos ni 403. Es mutable | Alto | Alta / Alta | CWE-778 | Bitácora de seguridad inmutable, exportable a SIEM | Abierto (Fase 3) |
 | V11 | Repositorio | Credenciales sembradas (hash fijo, correo personal) | Alto | Media / Muy alta | CWE-798 | Quitar la siembra y rotar | Corregido en el repo (rotar en prod) |
 | V12 | IA | 17 endpoints sin permiso ni cuota. Datos a un tercero | Medio | Alta / Media | CWE-770 | Permiso + cuota + minimización | Corregido (permiso y cuota) |
 | V13 | Autenticación | Enumeración de correos y del estado de la empresa | Medio | Alta / Baja | CWE-204 | Respuesta y tiempo uniformes | Corregido |
-| V14 | CORS | Abierto si `CORS_ORIGINS` está vacío | Medio | Media / Media | CWE-942 | Cerrado por defecto | Abierto (Fase 4) |
+| V14 | CORS | Abierto si `CORS_ORIGINS` está vacío | Medio | Media / Media | CWE-942 | Cerrado por defecto | Corregido (Fase 2) |
 | V15 | DoS | JSON de 15 MB global, sin límite general | Medio | Media / Media | CWE-400 | Límites por ruta + rate limit | Corregido |
 | V16 | BD | TLS sin validar, usuario dueño, sin RLS | Medio | Baja / Alta | CWE-295 | TLS verificado, mínimo privilegio, RLS | Abierto (Fase 5) |
 | V17 | Errores | `error.message` expuesto | Medio | Media / Baja | CWE-209 | Errores genéricos | Corregido |
 | V18 | JWT | Sin algoritmo fijo ni validación de secretos | Medio | Baja / Alta | CWE-347 | HS256 fijo + validación al arrancar | Corregido |
-| V19 | Suplantación | Misma secret, sin rastro visible para la empresa, sin motivo | Medio | Baja / Alta | CWE-269 | Token marcado + bitácora + motivo | Abierto (Fase 3) |
+| V19 | Suplantación | Misma secret, sin rastro visible para la empresa, sin motivo | Medio | Baja / Alta | CWE-269 | Token marcado + bitácora + motivo | Parcial (sesión marcada; motivo y bitácora en Fase 3) |
 | V20 | Platform admin | Sin separación de funciones ni restricción de IP | Medio | Baja / Muy alta | CWE-269 | Roles de plataforma + allowlist de IP | Abierto (Fase 3) |
 | V21 | Esquema | Migraciones no reproducibles. ALTER en cada arranque | Medio | Media / Media | n/a | Gestor de migraciones | Parcial (migración 020) |
 | V22 | Datos personales | Sin cifrado de campo, retención ni enmascaramiento | Medio | Media / Media | CWE-311 | Clasificación + cifrado + retención | Abierto (Fase 5) |
@@ -56,7 +56,7 @@ Estado al 2026-11-13. "Corregido" significa que una prueba automatizada lo demue
 |---|---|---|
 | 0 | Entorno local reproducible (Docker) | Docker ✔ |
 | 1 | V01, V03, V04, V05, V08 (política), V11, V12, V13, V15, V17, V18, V21 (parcial) | No ✔ **completada** |
-| 2 | MFA TOTP, Argon2id, bloqueo por cuenta, cookie HttpOnly + refresh revocable + CSRF, logout real, sesiones activas, cambio y recuperación de contraseña | SMTP para recuperación. Redis opcional |
+| 2 | MFA TOTP, Argon2id, bloqueo por cuenta, sesión del servidor en cookie HttpOnly + CSRF, logout real, sesiones activas, cambio de contraseña, CORS cerrado | ✔ **completada** (recuperación por correo pendiente: requiere SMTP) |
 | 3 | Bitácora de seguridad inmutable, suplantación trazable, separación de funciones del platform_admin | SIEM del cliente o servicio externo (costo) |
 | 4 | CSP (Report-Only → enforce), Permissions-Policy, CORS cerrado, hosts de Vite | No |
 | 5 | RLS, usuario de BD de mínimo privilegio, TLS verificado, gestor de migraciones, cifrado de campos, retención | Posible KMS |

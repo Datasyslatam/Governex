@@ -36,8 +36,8 @@ PORT=3001
 LOCAL_DB_PASSWORD=${dbPassword}
 DATABASE_URL=postgresql://governex:${dbPassword}@127.0.0.1:5433/governex
 
-JWT_SECRET=${rnd(48)}
-PLATFORM_ADMIN_JWT_SECRET=${rnd(48)}
+# Cifra los secretos MFA (TOTP) en la BD. 32 bytes en hex.
+MFA_ENCRYPTION_KEY=${crypto.randomBytes(32).toString('hex')}
 
 # Contraseña de TODOS los usuarios de prueba sembrados por setup-db.cjs
 LOCAL_SEED_PASSWORD=${seedPassword}

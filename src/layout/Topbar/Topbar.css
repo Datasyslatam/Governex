@@ -93,3 +93,10 @@
     justify-content: space-between;
   }
 }
+
+/* Enlace "Mi seguridad" con el mismo aspecto que el botón de cerrar sesión */
+.topbar__link {
+  display: inline-block;
+  margin-right: 0.4rem;
+  text-decoration: none;
+}

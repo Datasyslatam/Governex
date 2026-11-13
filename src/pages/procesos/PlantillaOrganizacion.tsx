@@ -11,6 +11,7 @@ import { DatosEmpresa } from '../../context/AIAnalysisContext'
 import './PlantillaOrganizacion.css'
 import logoGovernex from "../../assets/logo_governex3.png";
 import { uploadFile, openSignedFile } from '../../services/api'
+import { csrfHeaders } from '../../services/api'
 
 /* ── Props ─────────────────────────────────────────────────── */
 interface Props {
@@ -328,14 +329,13 @@ function leerArchivoComoBase64(f: File): Promise<string> {
 
 /* ── Generación de Misión, Visión y Política de Calidad con IA ─ */
 async function generarIdearioConIA(datos: Partial<DatosEmpresa>): Promise<TextosIdeario> {
-  const token = localStorage.getItem('governex_token')
   const BASE  = import.meta.env.VITE_API_URL || ''
 
   const response = await fetch(`${BASE}/api/gemini/generar-ideario`, {
     method:  'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...csrfHeaders(),
     },
     body: JSON.stringify({ datosEmpresa: datos }),
   })

@@ -72,20 +72,16 @@ app.use((_req, res, next) => {
 // En producción el frontend lo sirve este mismo Express (mismo origen) y en
 // desarrollo Vite hace de proxy, así que ninguno depende de CORS. Si se
 // define CORS_ORIGINS (lista separada por comas), solo esos orígenes externos
-// quedan autorizados. Si no se define, se mantiene el comportamiento anterior
-// (cualquier origen) para no romper integraciones existentes, con un aviso.
+// quedan autorizados. Si NO se define, no se autoriza ningún origen externo
+// (V14). Antes, vacío significaba "cualquier origen con credenciales", algo
+// inaceptable ahora que la sesión viaja en cookies.
 const corsOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean)
 
-if (corsOrigins.length === 0 && process.env.NODE_ENV === 'production') {
-  console.warn('[seguridad] CORS_ORIGINS no está definida: se acepta cualquier origen. Defínela en Railway.')
-}
-
 app.use(cors({
   origin: (origin, callback) => {
-    if (corsOrigins.length === 0) return callback(null, true) // comportamiento anterior
     if (!origin || corsOrigins.includes(origin)) return callback(null, true)
     return callback(null, false) // sin cabeceras CORS: el navegador bloquea la respuesta
   },

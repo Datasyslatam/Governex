@@ -10,7 +10,7 @@ Permite levantar Governex completo en tu máquina, con una BD PostgreSQL desecha
 
 ```bash
 npm ci
-npm run local:env      # crea .env con secretos aleatorios (no sobrescribe uno existente)
+npm run local:env      # crea .env con secretos aleatorios, incluida MFA_ENCRYPTION_KEY (no sobrescribe uno existente)
 npm run local:db       # PostgreSQL 16 en 127.0.0.1:5433 (solo accesible desde tu equipo)
 npm run local:reset    # construye la BD: schema.sql + migrations/ + datos de prueba
 npm run dev            # API en :3001 y frontend en http://localhost:5173
@@ -32,6 +32,8 @@ npm run test:security
 | `platform@governex.test` | platform_admin | n/a |
 
 Contraseña de todos: el valor de `LOCAL_SEED_PASSWORD` en tu `.env`.
+
+**MFA (Fase 2):** `super.*` y `platform@governex.test` deben configurar una app autenticadora en su primer ingreso (Google Authenticator, Microsoft Authenticator, Authy…). Para volver a dejarlos sin MFA en local, ejecuta `npm run test:security` (al inicio restablece el estado de los usuarios de prueba) o `npm run local:reset`.
 
 ## Salvaguardas
 - `setup-db.cjs` y `api-security-tests.cjs` **se niegan a ejecutarse** si `DATABASE_URL` / `API_URL` no apuntan a `localhost`.

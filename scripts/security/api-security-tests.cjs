@@ -30,17 +30,68 @@ if (!isLocal(API) || !isLocal(process.env.DATABASE_URL || '')) {
 const results = []
 const RUN = Date.now().toString(36)
 
-async function call(method, url, { token, body, headers = {}, raw } = {}) {
+/**
+ * "Navegador" mínimo: guarda las cookies que fija el servidor (sesión HttpOnly
+ * y CSRF) y las reenvía, igual que haría el frontend.
+ */
+class Agente {
+  constructor(nombre) { this.nombre = nombre; this.cookies = new Map(); this.setCookies = [] }
+  absorber(lista) {
+    for (const sc of lista) {
+      this.setCookies.push(sc)
+      const [par, ...attrs] = sc.split(';')
+      const i = par.indexOf('=')
+      const k = par.slice(0, i).trim(), v = par.slice(i + 1).trim()
+      const borrar = !v || attrs.some((a) => /max-age=0\b/i.test(a.trim()) || (/^expires=/i.test(a.trim()) && new Date(a.split('=')[1]) < new Date()))
+      if (borrar) this.cookies.delete(k); else this.cookies.set(k, v)
+    }
+  }
+  header() { return [...this.cookies].map(([k, v]) => `${k}=${v}`).join('; ') }
+  csrf(url) { return decodeURIComponent(this.cookies.get(url.startsWith('/api/platform-admin') ? 'gx_pcsrf' : 'gx_csrf') || '') }
+  clon(nombre) { const a = new Agente(nombre); a.cookies = new Map(this.cookies); return a }
+}
+
+/** token: un Agente (cookies de sesión) o un string (se envía como Bearer). */
+async function call(method, url, { token, body, headers = {}, raw, sinCsrf } = {}) {
   const h = { ...headers }
-  if (token) h.Authorization = `Bearer ${token}`
+  if (token instanceof Agente) {
+    const c = token.header()
+    if (c) h.Cookie = c
+    if (!['GET', 'HEAD'].includes(method) && !sinCsrf && token.csrf(url)) h['X-CSRF-Token'] = token.csrf(url)
+  } else if (token) h.Authorization = `Bearer ${token}`
   let payload
   if (raw !== undefined) { payload = raw; h['Content-Type'] = h['Content-Type'] || 'application/json' }
   else if (body !== undefined) { payload = JSON.stringify(body); h['Content-Type'] = 'application/json' }
   const res = await fetch(API + url, { method, headers: h, body: payload, redirect: 'manual' })
+  if (token instanceof Agente) token.absorber(res.headers.getSetCookie())
   let data = null
   const text = await res.text()
   try { data = JSON.parse(text) } catch { data = text }
   return { status: res.status, data, headers: res.headers }
+}
+
+// ── TOTP (RFC 6238) para simular la app autenticadora ──────────────
+const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+function b32dec(s) {
+  let bits = 0, val = 0; const out = []
+  for (const ch of s.replace(/[^A-Z2-7]/g, '')) { val = (val << 5) | B32.indexOf(ch); bits += 5; if (bits >= 8) { out.push((val >>> (bits - 8)) & 255); bits -= 8 } }
+  return Buffer.from(out)
+}
+const pasoActual = () => Math.floor(Date.now() / 30000)
+function totp(secreto, paso = pasoActual()) {
+  const c = Buffer.alloc(8); c.writeBigUInt64BE(BigInt(paso))
+  const h = crypto.createHmac('sha1', b32dec(secreto)).update(c).digest()
+  const o = h[h.length - 1] & 15
+  return String((h.readUInt32BE(o) & 0x7fffffff) % 1e6).padStart(6, '0')
+}
+const SECRETOS = new Map() // email -> secreto TOTP enrolado
+const ULTIMO_PASO = new Map() // email -> último paso usado (anti-replay)
+const esperar = (ms) => new Promise((r) => setTimeout(r, ms))
+/** Código TOTP aún no usado por ese usuario (espera al siguiente paso si hace falta). */
+async function codigoFresco(email) {
+  while (ULTIMO_PASO.get(email) != null && pasoActual() <= ULTIMO_PASO.get(email)) await esperar(1000)
+  ULTIMO_PASO.set(email, pasoActual())
+  return totp(SECRETOS.get(email))
 }
 
 async function test(id, name, ref, fn) {
@@ -60,10 +111,30 @@ const expectStatus = (r, allowed, what) => {
   return `HTTP ${r.status}`
 }
 
-async function login(email, password = PASS) {
-  const r = await call('POST', '/api/auth/login', { body: { email, password } })
+/**
+ * Inicio de sesión completo como lo hace el frontend: contraseña y, si el
+ * servidor lo pide, enrolamiento o verificación MFA. Devuelve el Agente.
+ */
+async function login(email, password = PASS, { plataforma = false } = {}) {
+  const base = plataforma ? '/api/platform-admin' : '/api/auth'
+  const ag = new Agente(email)
+  const r = await call('POST', `${base}/login`, { token: ag, body: { email, password } })
   if (r.status !== 200) throw new Error(`login ${email} -> ${r.status} ${JSON.stringify(r.data)}`)
-  return r.data.token
+  ag.ultimaRespuesta = r.data
+  if (r.data.estado === 'enrolar_mfa') {
+    const c = await call('POST', `${base}/mfa/configurar`, { token: ag, body: {} })
+    if (c.status !== 200) throw new Error(`mfa/configurar ${email} -> ${c.status} ${JSON.stringify(c.data)}`)
+    SECRETOS.set(email, c.data.secreto)
+    const a = await call('POST', `${base}/mfa/activar`, { token: ag, body: { codigo: await codigoFresco(email) } })
+    if (a.status !== 200) throw new Error(`mfa/activar ${email} -> ${a.status} ${JSON.stringify(a.data)}`)
+    ag.codigosRecuperacion = a.data.codigosRecuperacion
+    ag.ultimaRespuesta = a.data
+  } else if (r.data.estado === 'mfa') {
+    const v = await call('POST', `${base}/mfa/verificar`, { token: ag, body: { codigo: await codigoFresco(email) } })
+    if (v.status !== 200) throw new Error(`mfa/verificar ${email} -> ${v.status} ${JSON.stringify(v.data)}`)
+    ag.ultimaRespuesta = v.data
+  }
+  return ag
 }
 
 function b64url(o) { return Buffer.from(JSON.stringify(o)).toString('base64url') }
@@ -75,6 +146,15 @@ async function main() {
   const tenantA = await tid('LOCAL-A')
   const tenantB = await tid('LOCAL-B')
   const tipoB = (await db.query('SELECT id FROM tipos_proceso WHERE tenant_id = $1 LIMIT 1', [tenantB])).rows[0].id
+
+  // Estado inicial reproducible (solo BD local): sin MFA, sin bloqueos, sin contraseñas temporales.
+  await db.query(`UPDATE usuarios SET mfa_habilitado = false, mfa_secreto_cifrado = NULL, mfa_ultimo_paso = NULL,
+                    intentos_fallidos = 0, bloqueado_hasta = NULL, debe_cambiar_password = false, activo = true
+                  WHERE email LIKE '%@governex.test'`)
+  await db.query(`UPDATE platform_admins SET mfa_habilitado = false, mfa_secreto_cifrado = NULL, mfa_ultimo_paso = NULL,
+                    intentos_fallidos = 0, bloqueado_hasta = NULL, debe_cambiar_password = false
+                  WHERE email LIKE '%@governex.test'`)
+  await db.query(`DELETE FROM mfa_codigos_recuperacion`)
 
   console.log(`\nGovernex – pruebas de seguridad (${API})\n`)
 
@@ -273,23 +353,192 @@ async function main() {
     expect(!r.headers.get('ratelimit-limit') || Number(r.headers.get('ratelimit-limit')) > 0, 'sin cabecera de cuota')
     return `HTTP ${r.status} (sin GEMINI_API_KEY en local se espera error controlado)`
   })
-  await test('R07', 'Editar usuario con cambio de contraseña y entrar con la nueva', 'Regresión H11 / V08', async () => {
+  await test('R07', 'Admin restablece contraseña: el usuario entra con ella y queda obligado a cambiarla', 'Regresión H11 / V08', async () => {
     const u = (await db.query(`SELECT id, nombre, email, rol_id FROM usuarios WHERE email = 'operativo.a@governex.test'`)).rows[0]
     const nueva = `Nv-${RUN}-Gx9!`
     const r = await call('PUT', `/api/auth/users/${u.id}`, { token: superA, body: { nombre: u.nombre, email: u.email, rol_id: u.rol_id, password: nueva, activo: true } })
     expectStatus(r, 200, 'editar usuario')
-    await login(u.email, nueva)
+    const ag = await login(u.email, nueva)
+    expect(ag.ultimaRespuesta.user.debeCambiarPassword === true, 'no quedó marcado debeCambiarPassword')
     const debil = await call('PUT', `/api/auth/users/${u.id}`, { token: superA, body: { nombre: u.nombre, email: u.email, rol_id: u.rol_id, password: 'abc', activo: true } })
     await call('PUT', `/api/auth/users/${u.id}`, { token: superA, body: { nombre: u.nombre, email: u.email, rol_id: u.rol_id, password: PASS, activo: true } })
+    await db.query('UPDATE usuarios SET debe_cambiar_password = false WHERE id = $1', [u.id])
     return expectStatus(debil, 400, 'contraseña débil al editar')
   })
-  await test('R08', 'Platform admin: login OK y alta de empresa con contraseña débil → 400', 'Regresión / V08', async () => {
-    const l = await call('POST', '/api/platform-admin/login', { body: { email: 'platform@governex.test', password: PASS } })
-    expectStatus(l, 200, 'login platform')
-    const r = await call('POST', '/api/platform-admin/tenants', { token: l.data.token, body: { nombreEmpresa: 'X', nit: `NIT-${RUN}`, adminNombre: 'X', adminEmail: `x.${RUN}@governex.test`, adminPassword: 'corta123' } })
+
+  // ═══ FASE 2: autenticación y sesiones ═══════════════════════════
+  const plat = await login('platform@governex.test', PASS, { plataforma: true })
+
+  await test('R08', 'Platform admin (con MFA): alta de empresa con contraseña débil → 400', 'Regresión / V08', async () => {
+    const r = await call('POST', '/api/platform-admin/tenants', { token: plat, body: { nombreEmpresa: 'X', nit: `NIT-${RUN}`, adminNombre: 'X', adminEmail: `x.${RUN}@governex.test`, adminPassword: 'corta123' } })
     expectStatus(r, 400, 'alta empresa con clave débil')
-    const t = await call('GET', '/api/riesgos', { token: l.data.token })
-    return expectStatus(t, 401, 'token de plataforma en API de empresa')
+    return expectStatus(await call('GET', '/api/riesgos', { token: plat }), 401, 'sesión de plataforma en API de empresa')
+  })
+
+  await test('S01', 'Login no entrega token al JavaScript: cookie HttpOnly + SameSite=Strict', 'V07 / ASVS 3.4', async () => {
+    const ag = await login('gestion.b@governex.test')
+    expect(!('token' in ag.ultimaRespuesta), 'la respuesta incluye un token')
+    const sc = ag.setCookies.find((c) => c.startsWith('gx_session='))
+    expect(sc && /HttpOnly/i.test(sc) && /SameSite=Strict/i.test(sc), `cookie insegura: ${sc}`)
+    const csrf = ag.setCookies.find((c) => c.startsWith('gx_csrf='))
+    expect(csrf && !/HttpOnly/i.test(csrf), 'cookie CSRF ausente o no legible')
+    return 'sin token en el cuerpo; gx_session HttpOnly, SameSite=Strict'
+  })
+
+  await test('S02', 'Logout revoca la sesión en el servidor (la cookie robada deja de servir)', 'V06 / ASVS 3.3.1', async () => {
+    const ag = await login('gestion.b@governex.test')
+    const robada = ag.clon('copia')
+    expectStatus(await call('GET', '/api/riesgos', { token: robada }), 200, 'antes del logout')
+    expectStatus(await call('POST', '/api/auth/logout', { token: ag, body: {} }), 200, 'logout')
+    return expectStatus(await call('GET', '/api/riesgos', { token: robada }), 401, 'cookie copiada tras logout')
+  })
+
+  await test('S03', 'CSRF: POST sin X-CSRF-Token → 403; con token → permitido', 'ASVS 4.2.2 / CWE-352', async () => {
+    const sin = await call('POST', '/api/riesgos', { token: superA, sinCsrf: true, body: { codigo: `CSRF-${RUN}`, descripcion: 'x', probabilidad: 1, impacto: 1 } })
+    expectStatus(sin, 403, 'sin token CSRF')
+    expect(sin.data.code === 'CSRF', 'no es rechazo CSRF')
+    const con = await call('POST', '/api/riesgos', { token: superA, body: { codigo: `CSRF-${RUN}`, descripcion: 'x', probabilidad: 1, impacto: 1 } })
+    await db.query('DELETE FROM riesgos WHERE codigo = $1', [`CSRF-${RUN}`])
+    return expectStatus(con, 201, 'con token CSRF')
+  })
+
+  await test('S04', 'Superusuario debe enrolar MFA: la sesión previa no da acceso a datos', 'V02 / ASVS 2.8', async () => {
+    await db.query(`UPDATE usuarios SET mfa_habilitado = false, mfa_secreto_cifrado = NULL WHERE email = 'super.b@governex.test'`)
+    const ag = new Agente('pre')
+    const r = await call('POST', '/api/auth/login', { token: ag, body: { email: 'super.b@governex.test', password: PASS } })
+    expect(r.data.estado === 'enrolar_mfa', `estado=${r.data.estado}`)
+    return expectStatus(await call('GET', '/api/riesgos', { token: ag }), 401, 'datos con sesión previa')
+  })
+
+  await test('S05', 'MFA: código errado → 401; correcto → acceso; el mismo código no se reutiliza', 'V02 / ASVS 2.8.4', async () => {
+    const email = 'super.a@governex.test'
+    const ag = new Agente('mfa')
+    const r = await call('POST', '/api/auth/login', { token: ag, body: { email, password: PASS } })
+    expect(r.data.estado === 'mfa', `estado=${r.data.estado}`)
+    expectStatus(await call('POST', '/api/auth/mfa/verificar', { token: ag, body: { codigo: '000000' } }), 401, 'código errado')
+    const codigo = await codigoFresco(email)
+    expectStatus(await call('POST', '/api/auth/mfa/verificar', { token: ag, body: { codigo } }), 200, 'código correcto')
+    expectStatus(await call('GET', '/api/riesgos', { token: ag }), 200, 'acceso tras MFA')
+    const ag2 = new Agente('replay')
+    await call('POST', '/api/auth/login', { token: ag2, body: { email, password: PASS } })
+    return expectStatus(await call('POST', '/api/auth/mfa/verificar', { token: ag2, body: { codigo } }), 401, 'reutilizar el mismo código')
+  })
+
+  await test('S06', 'Código de recuperación sirve una sola vez', 'V02 / ASVS 2.6', async () => {
+    const codigo = superA.codigosRecuperacion[0]
+    const a1 = new Agente('rec1')
+    await call('POST', '/api/auth/login', { token: a1, body: { email: 'super.a@governex.test', password: PASS } })
+    expectStatus(await call('POST', '/api/auth/mfa/verificar', { token: a1, body: { codigo } }), 200, 'primer uso')
+    const a2 = new Agente('rec2')
+    await call('POST', '/api/auth/login', { token: a2, body: { email: 'super.a@governex.test', password: PASS } })
+    return expectStatus(await call('POST', '/api/auth/mfa/verificar', { token: a2, body: { codigo } }), 401, 'segundo uso')
+  })
+
+  await test('S07', 'Bloqueo por cuenta: tras 5 fallos, ni la contraseña correcta entra', 'V09 / CWE-307', async () => {
+    const email = 'gestion.a@governex.test'
+    for (let i = 0; i < 5; i++) await call('POST', '/api/auth/login', { body: { email, password: `mala-${i}` } })
+    const r = await call('POST', '/api/auth/login', { body: { email, password: PASS } })
+    const row = (await db.query('SELECT bloqueado_hasta FROM usuarios WHERE email = $1', [email])).rows[0]
+    await db.query('UPDATE usuarios SET intentos_fallidos = 0, bloqueado_hasta = NULL WHERE email = $1', [email])
+    expect(row.bloqueado_hasta && new Date(row.bloqueado_hasta) > new Date(), 'la cuenta no quedó bloqueada')
+    expectStatus(r, 401, 'contraseña correcta durante el bloqueo')
+    const otro = await call('POST', '/api/auth/login', { body: { email: `noexiste.${RUN}@governex.test`, password: 'x' } })
+    expect(r.data.error === otro.data.error, 'el mensaje de bloqueo revela que la cuenta existe')
+    return 'bloqueada 15 min; mismo mensaje que un correo inexistente'
+  })
+
+  await test('S08', 'Contraseña temporal: todo responde 403 hasta cambiarla; luego acceso normal', 'V08 / ASVS 2.1.11', async () => {
+    const u = (await db.query(`SELECT id FROM usuarios WHERE email = 'operativo.b@governex.test'`)).rows[0]
+    await db.query('UPDATE usuarios SET debe_cambiar_password = true WHERE id = $1', [u.id])
+    const ag = await login('operativo.b@governex.test')
+    const r = await call('GET', '/api/riesgos', { token: ag })
+    expectStatus(r, 403, 'acceso con contraseña temporal')
+    expect(r.data.code === 'PASSWORD_CHANGE_REQUIRED', 'código distinto')
+    const nueva = `Op-${RUN}-Nueva9!`
+    expectStatus(await call('POST', '/api/auth/password', { token: ag, body: { actual: PASS, nueva } }), 200, 'cambiar contraseña')
+    expectStatus(await call('GET', '/api/riesgos', { token: ag }), 200, 'acceso tras cambiarla')
+    await db.query('UPDATE usuarios SET password_hash = (SELECT password_hash FROM usuarios WHERE email = $1) WHERE id = $2', ['operativo.a@governex.test', u.id])
+    return 'bloqueo hasta el cambio y acceso posterior'
+  })
+
+  await test('S09', 'Cambiar la contraseña cierra las demás sesiones del usuario', 'V06 / ASVS 3.3.3', async () => {
+    const email = 'gestion.b@governex.test'
+    const a1 = await login(email), a2 = await login(email)
+    const nueva = `Ge-${RUN}-Nueva9!`
+    expectStatus(await call('POST', '/api/auth/password', { token: a1, body: { actual: PASS, nueva } }), 200, 'cambio')
+    const r1 = await call('GET', '/api/riesgos', { token: a1 }), r2 = await call('GET', '/api/riesgos', { token: a2 })
+    await db.query('UPDATE usuarios SET password_hash = (SELECT password_hash FROM usuarios WHERE email = $1) WHERE email = $2', ['gestion.a@governex.test', email])
+    expectStatus(r1, 200, 'sesión que cambió la contraseña')
+    return expectStatus(r2, 401, 'otra sesión del mismo usuario')
+  })
+
+  await test('S10', 'Desactivar un usuario corta su sesión de inmediato', 'V06 / ASVS 3.3', async () => {
+    const u = (await db.query(`SELECT id, nombre, email, rol_id FROM usuarios WHERE email = 'limitado.a@governex.test'`)).rows[0]
+    const ag = await login(u.email)
+    expectStatus(await call('GET', '/api/riesgos', { token: ag }), 200, 'antes')
+    expectStatus(await call('PUT', `/api/auth/users/${u.id}`, { token: superA, body: { nombre: u.nombre, email: u.email, rol_id: u.rol_id, activo: false, tiene_permisos_personalizados: true, permisos_ids: (await db.query(`SELECT id FROM permisos WHERE recurso='riesgos' AND accion='leer'`)).rows.map((x) => x.id) } }), 200, 'desactivar')
+    const r = await call('GET', '/api/riesgos', { token: ag })
+    await db.query('UPDATE usuarios SET activo = true WHERE id = $1', [u.id])
+    return expectStatus(r, 401, 'sesión de usuario desactivado')
+  })
+
+  await test('S11', 'Migración transparente: el hash bcrypt pasa a Argon2id al iniciar sesión', 'V08 / ASVS 2.4.1', async () => {
+    // Precondición: hash bcrypt (como el de las cuentas creadas antes de la Fase 2).
+    await db.query(`UPDATE usuarios SET password_hash = $1 WHERE email = 'limitado.b@governex.test'`, [require('bcryptjs').hashSync(PASS, 10)])
+    await login('limitado.b@governex.test')
+    const h2 = (await db.query(`SELECT password_hash FROM usuarios WHERE email = 'limitado.b@governex.test'`)).rows[0].password_hash
+    expect(h2.startsWith('$argon2id$v=19$m=19456,t=2,p=1$'), `hash resultante: ${h2.slice(0, 30)}`)
+    return 'bcrypt → $argon2id$ m=19456,t=2,p=1'
+  })
+
+  await test('S12', 'El secreto MFA se guarda cifrado (no en claro) en la BD', 'V02 / ASVS 6.2 / CWE-312', async () => {
+    const row = (await db.query(`SELECT mfa_secreto_cifrado FROM usuarios WHERE email = 'super.a@governex.test'`)).rows[0]
+    expect(row.mfa_secreto_cifrado.startsWith('v1:') && !row.mfa_secreto_cifrado.includes(SECRETOS.get('super.a@governex.test')), 'secreto legible')
+    return 'AES-256-GCM (v1:iv:tag:dato)'
+  })
+
+  await test('S13', 'Sesión inactiva 31 min expira', 'V06 / ASVS 3.3.2', async () => {
+    const ag = await login('gestion.b@governex.test')
+    await db.query(`UPDATE sesiones SET ultimo_uso_en = NOW() - interval '31 minutes' WHERE usuario_id = (SELECT id FROM usuarios WHERE email = 'gestion.b@governex.test') AND revocada_en IS NULL`)
+    return expectStatus(await call('GET', '/api/riesgos', { token: ag }), 401, 'tras inactividad')
+  })
+
+  await test('S14', 'Platform admin: MFA obligatorio antes de cualquier acceso', 'V02 / V20', async () => {
+    const email = 'platform@governex.test'
+    const ag = new Agente('pa')
+    const r = await call('POST', '/api/platform-admin/login', { token: ag, body: { email, password: PASS } })
+    expect(['mfa', 'enrolar_mfa'].includes(r.data.estado), `estado=${r.data.estado}`)
+    return expectStatus(await call('GET', '/api/platform-admin/tenants', { token: ag }), 401, 'tenants sin MFA')
+  })
+
+  await test('S15', 'Suplantación: sesión de 30 min marcada y visible en /me', 'V19 / trazabilidad', async () => {
+    const u = (await db.query(`SELECT id FROM usuarios WHERE email = 'operativo.a@governex.test'`)).rows[0]
+    const imp = plat.clon('suplantacion')
+    const r = await call('POST', `/api/platform-admin/tenants/${tenantA}/impersonate`, { token: imp, body: { usuarioId: u.id } })
+    expectStatus(r, 200, 'impersonate')
+    expect(!('token' in r.data), 'devuelve token en el cuerpo')
+    const me = await call('GET', '/api/auth/me', { token: imp })
+    expectStatus(me, 200, '/me suplantado')
+    expect(me.data.suplantacion === true, 'no marca suplantación')
+    const s = (await db.query(`SELECT suplantado_por_admin, EXTRACT(EPOCH FROM expira_en - creada_en) AS seg FROM sesiones WHERE usuario_id = $1 AND suplantado_por_admin IS NOT NULL ORDER BY creada_en DESC LIMIT 1`, [u.id])).rows[0]
+    expect(s && Math.abs(Number(s.seg) - 1800) < 5, `duración ${s && s.seg} s`)
+    return 'suplantado_por_admin registrado; 30 min'
+  })
+
+  await test('S16', 'Cambio de rol: se aplica de inmediato y cierra la sesión', 'V06 / BFLA', async () => {
+    const u = (await db.query(`SELECT id, nombre, email, rol_id FROM usuarios WHERE email = 'gestion.b@governex.test'`)).rows[0]
+    const ag = await login(u.email)
+    const operativo = (await db.query(`SELECT id FROM roles WHERE nombre = 'Operativo'`)).rows[0].id
+    const superB2 = await login('super.b@governex.test')
+    expectStatus(await call('PUT', `/api/auth/users/${u.id}`, { token: superB2, body: { nombre: u.nombre, email: u.email, rol_id: operativo, activo: true } }), 200, 'cambiar rol')
+    const r = await call('GET', '/api/riesgos', { token: ag })
+    await db.query('UPDATE usuarios SET rol_id = $2 WHERE id = $1', [u.id, u.rol_id])
+    return expectStatus(r, 401, 'sesión con el rol anterior')
+  })
+
+  await test('S17', 'Los tokens Bearer (esquema anterior) ya no se aceptan', 'V07', async () => {
+    const r = await call('GET', '/api/riesgos', { token: 'eyJhbGciOiJIUzI1NiJ9.eyJpZCI6MX0.x' })
+    return expectStatus(r, 401, 'Bearer')
   })
 
   // ── Fuerza bruta (último: deja bloqueada la clave IP+email de prueba) ──

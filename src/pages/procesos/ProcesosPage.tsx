@@ -19,6 +19,7 @@ import ContextoOrganizacionalPanel from './ContextoOrganizacionalPanel'
 import PlantillaOrganizacion       from './PlantillaOrganizacion'
 import ActividadModal from './ActividadModal'
 import { ActividadEmpresa } from '../../context/AIAnalysisContext'
+import { csrfHeaders } from '../../services/api'
 
 /* ─────────────────────────── TIPOS ─────────────────────────── */
 type Tab     = 'mapa' | 'contexto' | 'caracterizacion'
@@ -265,9 +266,8 @@ const UploadAI: React.FC<{ onSave: (m: MapaData) => void; onCancel: () => void }
       try {
         const toBase64 = (f: File): Promise<string> => new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve((r.result as string).split(',')[1]); r.onerror = reject; r.readAsDataURL(f) })
         const base64 = await toBase64(file)
-        const token  = localStorage.getItem('governex_token')
         const BASE   = import.meta.env.VITE_API_URL || ''
-        const res = await fetch(`${BASE}/api/gemini/extraer-procesos-imagen`, { method:'POST', headers:{ 'Content-Type':'application/json', ...(token?{Authorization:`Bearer ${token}`}:{}) }, body: JSON.stringify({ base64, mimeType: file.type, fileName: file.name }) })
+        const res = await fetch(`${BASE}/api/gemini/extraer-procesos-imagen`, { method:'POST', headers:{ 'Content-Type':'application/json', ...csrfHeaders() }, body: JSON.stringify({ base64, mimeType: file.type, fileName: file.name }) })
         if (!res.ok) throw new Error(`Error ${res.status}`)
         const generated: MapaData = await res.json()
         injectAIDetails(generated); setLoading(false)
@@ -358,11 +358,10 @@ const ProcesosPage: React.FC = () => {
   const callGovernexIA = useCallback(async (newMapa: MapaData, datos: DatosEmpresa) => {
     setGovernexIALoading(true)
     try {
-      const token = localStorage.getItem('governex_token')
       const BASE  = import.meta.env.VITE_API_URL || ''
       const res = await fetch(`${BASE}/api/gemini/analizar-organigrama`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         body: JSON.stringify({ mapa: newMapa, nombreEmpresa: datos.nombreEmpresa, sector: datos.sector, datosEmpresa: datos, guardarEnBD: true }),
       })
       if (!res.ok) { const err = await res.json().catch(() => ({ error:'Error desconocido' })); throw new Error(err.error || `Error ${res.status}`) }
@@ -449,11 +448,10 @@ const ProcesosPage: React.FC = () => {
       // Hay organigrama: extraer procesos con la misma ruta que UploadAI imagen
       setGovernexIALoading(true)
       try {
-        const token = localStorage.getItem('governex_token')
         const BASE  = import.meta.env.VITE_API_URL || ''
         const res   = await fetch(`${BASE}/api/gemini/extraer-procesos-imagen`, {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
           body:    JSON.stringify({ base64: orgBase64, mimeType: orgMime, fileName: orgNombre }),
         })
         if (!res.ok) throw new Error(`Error ${res.status}`)

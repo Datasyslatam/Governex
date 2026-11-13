@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import "./Topbar.css";
 
@@ -12,7 +13,10 @@ const Topbar: React.FC = () => {
         )}
       </div> <div className="topbar__right"> <span className="topbar__user">
           {user?.name ?? "Usuario"} · {user?.role ?? "Invitado"}
-        </span> <button className="topbar__logout" onClick={logout}>
+        </span>
+        <Link className="topbar__logout topbar__link" to="/cuenta/seguridad" title="Contraseña, verificación en dos pasos y sesiones activas">
+          Mi seguridad
+        </Link> <button className="topbar__logout" onClick={logout}>
           Cerrar sesión
         </button> </div> </header>
   );
