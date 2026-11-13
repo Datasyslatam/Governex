@@ -13,7 +13,7 @@ router.use(authMiddleware)
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/riesgo-evidencias/:codigo
-router.get('/:codigo', async (req: AuthRequest, res: Response) => {
+router.get('/:codigo', requirePermission('riesgos', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user!.tenantId
     const { rows } = await pool.query(
@@ -77,7 +77,7 @@ router.delete('/:id', requirePermission('riesgos', 'eliminar'), async (req: Auth
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/riesgo-evidencias/eficacia/todos
-router.get('/eficacia/todos', async (req: AuthRequest, res: Response) => {
+router.get('/eficacia/todos', requirePermission('riesgos', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(`SELECT * FROM riesgo_eficacia WHERE tenant_id = $1`, [req.user!.tenantId])
     res.json(rows)

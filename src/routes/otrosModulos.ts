@@ -7,7 +7,7 @@ import { requirePermission } from '../middleware/rbac'
 export const politicaRouter = Router()
 politicaRouter.use(authMiddleware)
 
-politicaRouter.get('/', async (req: AuthRequest, res: Response) => {
+politicaRouter.get('/', requirePermission('politica_calidad', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT p.*, u.nombre AS aprobado_por_nombre
@@ -70,7 +70,7 @@ politicaRouter.put('/:id', requirePermission('politica_calidad', 'editar'), asyn
 })
 
 // GET /api/politica/lecturas
-politicaRouter.get('/lecturas', async (req: AuthRequest, res: Response) => {
+politicaRouter.get('/lecturas', requirePermission('politica_calidad', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM politica_lecturas WHERE tenant_id = $1 ORDER BY creado_en DESC`,
@@ -113,7 +113,7 @@ politicaRouter.post('/lecturas', requirePermission('politica_calidad', 'crear'),
 export const revDireccionRouter = Router()
 revDireccionRouter.use(authMiddleware)
 
-revDireccionRouter.get('/', async (req: AuthRequest, res: Response) => {
+revDireccionRouter.get('/', requirePermission('rev_direccion', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM rev_direccion WHERE tenant_id = $1 ORDER BY fecha DESC`,

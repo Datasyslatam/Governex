@@ -2,12 +2,13 @@ import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/rbac'
+import { requireTenantRefs } from '../middleware/tenantRefs'
 
 const router = Router()
 router.use(authMiddleware)
 
 // GET /api/toma-consciencia
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('toma_consciencia', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT tc.*,
@@ -28,7 +29,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 })
 
 // GET /api/toma-consciencia/:id
-router.get('/:id', async (req: AuthRequest, res: Response) => {
+router.get('/:id', requirePermission('toma_consciencia', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM toma_consciencia WHERE id=$1 AND tenant_id=$2`, [req.params.id, req.user!.tenantId]
@@ -42,7 +43,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // POST /api/toma-consciencia
-router.post('/', requirePermission('toma_consciencia', 'crear'), async (req: AuthRequest, res: Response) => {
+router.post('/', requirePermission('toma_consciencia', 'crear'), requireTenantRefs({ personal_id: 'personal' }), async (req: AuthRequest, res: Response) => {
   const { colaborador, cargo, proceso, tema, fecha,
           modalidad, evidencia, estado, personal_id } = req.body
   if (!colaborador || !tema || !modalidad) {
@@ -75,7 +76,7 @@ router.post('/', requirePermission('toma_consciencia', 'crear'), async (req: Aut
 })
 
 // PUT /api/toma-consciencia/:id
-router.put('/:id', requirePermission('toma_consciencia', 'editar'), async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('toma_consciencia', 'editar'), requireTenantRefs({ personal_id: 'personal' }), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { colaborador, cargo, proceso, tema, fecha,
           modalidad, evidencia, estado, personal_id } = req.body

@@ -13,7 +13,12 @@
     "migrate": "tsx run_migration.ts",
     "build": "node node_modules/typescript/bin/tsc -p tsconfig.server.json && node -e \"require('fs').writeFileSync('dist-server/package.json', JSON.stringify({type:'commonjs'}))\" && node node_modules/vite/bin/vite.js build",
     "start": "node dist-server/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "local:env": "node scripts/local/init-env.cjs",
+    "local:db": "docker compose --env-file .env up -d --wait",
+    "local:setup": "node scripts/local/setup-db.cjs",
+    "local:reset": "node scripts/local/setup-db.cjs --reset",
+    "test:security": "node scripts/security/api-security-tests.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1081.0",
@@ -22,7 +27,7 @@
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
+    "express": "^4.22.3",
     "jsonwebtoken": "^9.0.2",
     "mammoth": "^1.12.0",
     "multer": "^2.2.0",

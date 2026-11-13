@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
+import { PLATFORM_JWT_VERIFY } from './securityConfig'
 
 // Estructuralmente distinto del AuthRequest de tenants (middleware/auth.ts):
 // nunca tiene tenantId ni rol de negocio. Un platform_admin administra la
@@ -25,7 +26,7 @@ export function platformAdminMiddleware(req: PlatformAdminRequest, res: Response
 
   const token = header.split(' ')[1]
   try {
-    const payload = jwt.verify(token, process.env.PLATFORM_ADMIN_JWT_SECRET!) as PlatformAdminJwtPayload
+    const payload = jwt.verify(token, process.env.PLATFORM_ADMIN_JWT_SECRET!, PLATFORM_JWT_VERIFY) as PlatformAdminJwtPayload
 
     // Un token de tenant firmado con la OTRA secret nunca pasaría el verify
     // de arriba. Este chequeo de `type` es una segunda capa de defensa por

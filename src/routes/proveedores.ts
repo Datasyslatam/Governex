@@ -7,7 +7,7 @@ const router = Router()
 router.use(authMiddleware)
 
 // GET /api/proveedores
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('proveedores', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT pv.*,
@@ -101,7 +101,7 @@ router.post('/:id/evaluaciones', requirePermission('proveedores', 'crear'), asyn
 })
 
 // GET /api/proveedores/:id/evaluaciones
-router.get('/:id/evaluaciones', async (req: AuthRequest, res: Response) => {
+router.get('/:id/evaluaciones', requirePermission('proveedores', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM proveedor_evaluaciones WHERE proveedor_id=$1 AND tenant_id=$2 ORDER BY fecha DESC`,
@@ -115,7 +115,9 @@ router.get('/:id/evaluaciones', async (req: AuthRequest, res: Response) => {
 })
 
 // DELETE /api/proveedores/:id
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+// Antes no exigía permiso: cualquier usuario autenticado de la empresa podía
+// borrar proveedores y sus evaluaciones (V04 / CWE-862).
+router.delete('/:id', requirePermission('proveedores', 'eliminar'), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   try {
     await pool.query(`DELETE FROM proveedor_evaluaciones WHERE proveedor_id=$1 AND tenant_id=$2`, [id, req.user!.tenantId])

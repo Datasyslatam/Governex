@@ -3,6 +3,11 @@ import express from 'express'
 import cors from 'cors'
 import path from 'path'
 import { logActivityMiddleware } from './middleware/activityLogger'
+import { assertSecurityConfig } from './middleware/securityConfig'
+import { requestRateLimit } from './middleware/rateLimit'
+
+// Falla rápido si los secretos JWT no son seguros (ver securityConfig.ts).
+assertSecurityConfig()
 
 // ── Rutas existentes ────────────────────────────────────────
 import authRouter               from './routes/auth'
@@ -87,10 +92,23 @@ app.use(cors({
   credentials: true,
 }))
 
-// 100 KB (valor por defecto de Express) no alcanzaba para las imágenes en
-// base64 que se envían a /api/gemini/extraer-procesos-imagen (organigramas):
-// cualquier imagen de más de ~75 KB fallaba con 413. Ajustable con JSON_BODY_LIMIT.
-app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '15mb' }))
+// ── Límite general de peticiones a la API (V15 / CWE-770) ───
+// Freno contra abuso y automatización, no contra el uso normal: el valor es
+// alto porque varios usuarios de una empresa pueden compartir la IP de salida
+// de su red corporativa. Ajustable con API_RATE_LIMIT_MAX (por IP / 5 min).
+app.use('/api', requestRateLimit({
+  windowMs: 5 * 60_000,
+  max: Number(process.env.API_RATE_LIMIT_MAX || 3000),
+}))
+
+// ── Tamaño de los cuerpos JSON (V15 / CWE-400) ──────────────
+// Solo la IA recibe imágenes y documentos en base64 (organigramas, manuales
+// de funciones, cotizaciones), así que solo /api/gemini admite cuerpos
+// grandes (JSON_BODY_LIMIT_IA, 15 MB por defecto). El resto de la API usa
+// JSON_BODY_LIMIT (1 MB por defecto). Antes los 15 MB aplicaban a todo.
+// El parser de /api/gemini va primero; el global omite cuerpos ya leídos.
+app.use('/api/gemini', express.json({ limit: process.env.JSON_BODY_LIMIT_IA || '15mb' }))
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }))
 app.use(logActivityMiddleware)
 
 // ── API Routes ──────────────────────────────────────────────
@@ -133,6 +151,12 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 // index.html de Vite con 200 y mostraría "en línea" aunque el backend no corra.)
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }))
 
+// Cualquier /api/* no reconocido responde 404 JSON (antes, en producción, el
+// catch-all del frontend devolvía index.html con 200 a rutas de API inexistentes).
+app.use('/api', (_req, res) => {
+  res.status(404).json({ error: 'Ruta no encontrada' })
+})
+
 // ── Frontend estático (Vite build) ──────────────────────────
 // Solo en producción: en dev, Vite (puerto 5173) sirve el frontend y
 // maneja su propio SPA routing. Si este catch-all corriera en dev,
@@ -149,6 +173,21 @@ if (process.env.NODE_ENV === 'production') {
     res.status(404).json({ error: 'Ruta no encontrada' })
   })
 }
+
+// ── Manejador final de errores (V17 / CWE-209) ──────────────
+// Respuestas JSON genéricas: nunca se devuelve el mensaje ni la traza
+// interna al cliente; el detalle queda solo en el log del servidor.
+app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (res.headersSent) return next(err)
+  if (err?.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'El contenido enviado supera el tamaño máximo permitido', code: 'PAYLOAD_TOO_LARGE' })
+  }
+  if (err?.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'El contenido enviado no es un JSON válido', code: 'INVALID_JSON' })
+  }
+  console.error('[error no controlado]', err)
+  res.status(500).json({ error: 'Error interno del servidor' })
+})
 
 app.listen(PORT, () => {
   console.log(`Governex API + Frontend corriendo en puerto ${PORT}`)

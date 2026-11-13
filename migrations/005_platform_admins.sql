@@ -24,8 +24,8 @@ COMMENT ON TABLE platform_admins IS 'Staff de Governex con acceso de administrac
 
 COMMIT;
 
-INSERT INTO platform_admins (nombre, email, password_hash)
-VALUES ('SuperAdmin', 'luismj.dev@gmail.com', '$2a$10$yDFtxb/PoBcbCU6HS5RTp.2gTbLGh0LiRkcdlFeSx6a.CTmV62c5y');
+-- (Eliminado) Aquí se insertaba un platform_admin con correo personal y hash fijo.
+-- Ver el procedimiento manual a continuación o scripts/admin/create-platform-admin.cjs.
 
 -- ============================================================
 -- Alta del primer platform_admin (ejecutar manualmente, UNA vez).

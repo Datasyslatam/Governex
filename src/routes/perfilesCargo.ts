@@ -2,11 +2,12 @@ import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/rbac'
+import { requireTenantRefs } from '../middleware/tenantRefs'
 
 const router = Router()
 router.use(authMiddleware)
 
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('competencias', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT pc.*, p.nombre AS proceso_nombre
@@ -23,7 +24,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   }
 })
 
-router.post('/', requirePermission('competencias', 'crear'), async (req: AuthRequest, res: Response) => {
+router.post('/', requirePermission('competencias', 'crear'), requireTenantRefs({ proceso_id: 'procesos' }), async (req: AuthRequest, res: Response) => {
   const { cargo, proceso_id, archivo_key, archivo_nombre } = req.body
   if (!cargo) return res.status(400).json({ error: 'cargo es requerido' })
   try {

@@ -7,7 +7,7 @@ const router = Router()
 router.use(authMiddleware)
 
 // GET /api/objetivos-calidad
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('objetivos_calidad', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT oc.*,
@@ -155,7 +155,7 @@ router.post('/:id/mediciones', requirePermission('objetivos_calidad', 'crear'), 
 })
 
 // GET /api/objetivos-calidad/:id/mediciones
-router.get('/:id/mediciones', async (req: AuthRequest, res: Response) => {
+router.get('/:id/mediciones', requirePermission('objetivos_calidad', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM objetivos_calidad_mediciones

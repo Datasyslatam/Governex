@@ -7,7 +7,7 @@ const router = Router()
 router.use(authMiddleware)
 
 // GET /api/diseno-desarrollo
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('diseno_desarrollo', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT pd.*, u.nombre AS creado_por_nombre
@@ -25,7 +25,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 })
 
 // GET /api/diseno-desarrollo/:id
-router.get('/:id', async (req: AuthRequest, res: Response) => {
+router.get('/:id', requirePermission('diseno_desarrollo', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM proyectos_diseno WHERE id=$1 AND tenant_id=$2`, [req.params.id, req.user!.tenantId]

@@ -2,13 +2,14 @@ import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/rbac'
+import { requireTenantRefs } from '../middleware/tenantRefs'
 import { resolveFileUrl } from '../services/storageService'
 
 const router = Router()
 router.use(authMiddleware)
 
 // GET /api/documentos
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('documentos', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user!.tenantId
     const { rows } = await pool.query(
@@ -32,7 +33,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 })
 
 // GET /api/documentos/:id/versiones
-router.get('/:id/versiones', async (req: AuthRequest, res: Response) => {
+router.get('/:id/versiones', requirePermission('documentos', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user!.tenantId
     const { rows } = await pool.query(
@@ -82,7 +83,7 @@ router.post('/', requirePermission('documentos', 'crear'), async (req: AuthReque
 })
 
 // PUT /api/documentos/:id
-router.put('/:id', requirePermission('documentos', 'editar'), async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('documentos', 'editar'), requireTenantRefs({ proceso_id: 'procesos' }), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { titulo, tipo, proceso_id, version, estado, archivo_url, hash_sha256 } = req.body
   try {

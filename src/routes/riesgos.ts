@@ -2,12 +2,13 @@ import { Router, Response } from 'express'
 import { pool } from '../db'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/rbac'
+import { requireTenantRefs } from '../middleware/tenantRefs'
 
 const router = Router()
 router.use(authMiddleware)
 
 // GET /api/riesgos
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('riesgos', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT r.*, p.nombre AS proceso_nombre
@@ -103,7 +104,7 @@ router.post('/upsert', requirePermission('riesgos', 'crear'), async (req: AuthRe
 })
 
 // PUT /api/riesgos/:id
-router.put('/:id', requirePermission('riesgos', 'editar'), async (req: AuthRequest, res: Response) => {
+router.put('/:id', requirePermission('riesgos', 'editar'), requireTenantRefs({ proceso_id: 'procesos' }), async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { descripcion, proceso_id, probabilidad, impacto, estado, responsable, tipo } = req.body
   try {

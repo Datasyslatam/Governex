@@ -7,7 +7,7 @@ const router = Router()
 router.use(authMiddleware)
 
 // GET /api/planificacion-cambios
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('planificacion_cambios', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM planificacion_cambios WHERE tenant_id = $1 ORDER BY creado_en DESC`,

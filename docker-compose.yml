@@ -1,0 +1,24 @@
+# Entorno LOCAL de pruebas de Governex (solo desarrollo).
+# Levanta PostgreSQL 16 en 127.0.0.1:5433 (no se expone a la red local).
+# Uso: ver docs/seguridad/ENTORNO_LOCAL.md
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: governex-db-local
+    environment:
+      POSTGRES_DB: governex
+      POSTGRES_USER: governex
+      # Contraseña solo para el contenedor local; se toma de .env (no versionado).
+      POSTGRES_PASSWORD: ${LOCAL_DB_PASSWORD:?Define LOCAL_DB_PASSWORD en .env}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - governex_db_local:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U governex -d governex"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  governex_db_local:

@@ -1,0 +1,190 @@
+{
+  "fecha": "2026-11-13T19:25:15.179Z",
+  "api": "http://127.0.0.1:3001",
+  "passed": 16,
+  "total": 26,
+  "results": [
+    {
+      "id": "T01",
+      "name": "Health check responde",
+      "ref": "Regresión",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "T02",
+      "name": "Usuario con permiso lee su módulo (riesgos)",
+      "ref": "Regresión",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "T03",
+      "name": "Superusuario lista usuarios de su empresa",
+      "ref": "Regresión",
+      "ok": true,
+      "detail": "4 usuarios, todos de la empresa A"
+    },
+    {
+      "id": "T04",
+      "name": "Login con contraseña incorrecta → 401 genérico",
+      "ref": "V13 / ASVS 2.2",
+      "ok": true,
+      "detail": "mismo mensaje para ambos casos"
+    },
+    {
+      "id": "T05",
+      "name": "Empresa suspendida: clave errada NO revela el estado de la empresa",
+      "ref": "V13 / CWE-204",
+      "ok": false,
+      "detail": "clave errada en empresa suspendida: se esperaba 401 y llegó 403 {\"error\":\"La cuenta de tu empresa no está activa. Contacta a soporte de Governex.\"}"
+    },
+    {
+      "id": "T06",
+      "name": "JWT con alg \"none\" es rechazado",
+      "ref": "V18 / CWE-347",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "T07",
+      "name": "JWT firmado con otra clave es rechazado",
+      "ref": "V18 / CWE-347",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "T08",
+      "name": "Token de empresa no sirve en API de plataforma",
+      "ref": "Separación de privilegios",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "T09",
+      "name": "Endpoints de negocio exigen sesión",
+      "ref": "ASVS 4.1",
+      "ok": true,
+      "detail": "4 endpoints → 401"
+    },
+    {
+      "id": "T10",
+      "name": "Política de contraseñas al crear usuario (rechaza \"123456\")",
+      "ref": "V08 / ASVS 2.1",
+      "ok": false,
+      "detail": "contraseña débil: se esperaba 400 y llegó 201 {\"id\":10,\"nombre\":\"Débil\",\"email\":\"debil.mwfd9fls@governex.test\"}"
+    },
+    {
+      "id": "T11",
+      "name": "Contraseña fuerte sí se acepta",
+      "ref": "Regresión",
+      "ok": true,
+      "detail": "HTTP 201"
+    },
+    {
+      "id": "T12",
+      "name": "Usuario sin \"leer\" en proveedores no puede listarlos",
+      "ref": "V03 / API5 BFLA",
+      "ok": false,
+      "detail": "limitado GET proveedores: se esperaba 403 y llegó 200 []"
+    },
+    {
+      "id": "T13",
+      "name": "Usuario sin \"leer\" en documentos/auditorías/procesos no puede listarlos",
+      "ref": "V03 / API5 BFLA",
+      "ok": false,
+      "detail": "limitado GET /api/documentos: se esperaba 403 y llegó 200 []"
+    },
+    {
+      "id": "T14",
+      "name": "Operativo NO puede eliminar proveedores",
+      "ref": "V04 / CWE-862",
+      "ok": false,
+      "detail": "el proveedor fue eliminado por un Operativo"
+    },
+    {
+      "id": "T15",
+      "name": "Usuario sin permiso no puede usar la IA (consumo de costos)",
+      "ref": "V12 / API4",
+      "ok": false,
+      "detail": "limitado POST gemini: se esperaba 403 y llegó 400 {\"error\":\"Se requiere al menos el nombre de la empresa\"}"
+    },
+    {
+      "id": "T16",
+      "name": "Empresa A no ve procesos de B",
+      "ref": "API1 BOLA",
+      "ok": true,
+      "detail": "no aparece"
+    },
+    {
+      "id": "T17",
+      "name": "Empresa A no puede modificar un riesgo de B",
+      "ref": "API1 BOLA",
+      "ok": true,
+      "detail": "HTTP 404"
+    },
+    {
+      "id": "T18",
+      "name": "No se puede enlazar una auditoría a un proceso de otra empresa",
+      "ref": "V05 / CWE-639",
+      "ok": false,
+      "detail": "auditoría con proceso ajeno: se esperaba 400 y llegó 201 {\"id\":1,\"codigo\":\"AUD-mwfd9fls\",\"programa_id\":null,\"proceso_id\":1,\"fecha_inicio\":\"2026-12-01T05:00:00.000Z\",\"duracion_dias\":1,\"auditor_lider\":null,\"estado\":\"Pla"
+    },
+    {
+      "id": "T19",
+      "name": "No se puede enlazar un indicador a un proceso de otra empresa",
+      "ref": "V05 / CWE-639",
+      "ok": false,
+      "detail": "indicador con proceso ajeno: se esperaba 400 y llegó 201 {\"id\":1,\"codigo\":\"IND-mwfd9fls\",\"titulo\":\"x\",\"proceso_id\":1,\"frecuencia\":\"Mensual\",\"meta\":\"1\",\"activo\":true,\"creado_en\":\"2026-11-13T19:25:15.583Z\",\"tenant_id\":2"
+    },
+    {
+      "id": "T20",
+      "name": "Archivos: no se firma una key de otra empresa",
+      "ref": "API1 BOLA",
+      "ok": true,
+      "detail": "HTTP 404"
+    },
+    {
+      "id": "T21",
+      "name": "Cabeceras de seguridad presentes y sin X-Powered-By",
+      "ref": "ASVS 14.4",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "id": "T22",
+      "name": "CORS no autoriza un origen externo",
+      "ref": "V14 / CWE-942",
+      "ok": true,
+      "detail": "sin Access-Control-Allow-Origin"
+    },
+    {
+      "id": "T23",
+      "name": "Cuerpo JSON de 2 MB en ruta normal → 413",
+      "ref": "V15 / CWE-400",
+      "ok": false,
+      "detail": "payload 2MB: se esperaba 413 y llegó 201 {\"id\":2,\"codigo\":\"BIG-mwfd9fls\",\"descripcion\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "id": "T24",
+      "name": "Errores 404 de API no exponen detalles internos",
+      "ref": "V17 / CWE-209",
+      "ok": true,
+      "detail": "HTTP 404"
+    },
+    {
+      "id": "T25",
+      "name": "schema.sql y migraciones no siembran credenciales",
+      "ref": "V11 / CWE-798",
+      "ok": false,
+      "detail": "hashes de contraseña sembrados en: schema.sql, migrations/005_platform_admins.sql"
+    },
+    {
+      "id": "T26",
+      "name": "Login: 11 intentos fallidos → 429",
+      "ref": "V09 / CWE-307",
+      "ok": true,
+      "detail": "HTTP 429"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ router.use(authMiddleware)
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/produccion
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('produccion', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user!.tenantId
     const { rows } = await pool.query(
@@ -59,7 +59,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 })
 
 // GET /api/produccion/:id
-router.get('/:id', async (req: AuthRequest, res: Response) => {
+router.get('/:id', requirePermission('produccion', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM ordenes_produccion WHERE id=$1 AND tenant_id=$2`, [req.params.id, req.user!.tenantId]
@@ -202,7 +202,7 @@ router.delete('/:id', requirePermission('produccion', 'eliminar'), async (req: A
    ══════════════════════════════════════════════════════════════ */
 
 // GET /api/produccion/:id/puntos-control
-router.get('/:id/puntos-control', async (req: AuthRequest, res: Response) => {
+router.get('/:id/puntos-control', requirePermission('produccion', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user!.tenantId
     const { rowCount } = await pool.query(

@@ -7,7 +7,7 @@ const router = Router()
 router.use(authMiddleware)
 
 // GET /api/planes-operacion
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', requirePermission('planes_operacion', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT po.*, u.nombre AS creado_por_nombre
@@ -25,7 +25,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 })
 
 // GET /api/planes-operacion/:id
-router.get('/:id', async (req: AuthRequest, res: Response) => {
+router.get('/:id', requirePermission('planes_operacion', 'leer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM planes_operacion WHERE id = $1 AND tenant_id = $2`,
