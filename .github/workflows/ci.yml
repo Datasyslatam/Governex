@@ -1,0 +1,170 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Dos jobs en paralelo, cada uno con su propia BD Postgres 16 efímera:
+#  - build-y-pruebas: build + tests/security.test.mjs (aislamiento entre
+#    empresas, integridad padre/hijo, archivos, RBAC, cabeceras, CSP).
+#  - pruebas-api-seguridad: scripts/security/api-security-tests.cjs
+#    (autenticación, sesiones, MFA, CSRF, bloqueo, BFLA, IDOR, límites).
+# Todos los valores son de prueba: R2/Gemini no se contactan y las claves
+# de abajo no se usan en ningún otro entorno.
+
+jobs:
+  build-y-pruebas:
+    name: Build y pruebas de aislamiento
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # NODE_ENV=production NO va aquí: con él, `npm ci` omite las
+      # devDependencies (TypeScript, Vite, tsx) y el build falla. Se define
+      # solo en el paso que arranca el servidor.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/governex_ci_test
+      PORT: 3001
+      BASE_URL: http://localhost:3001
+      # Clave de PRUEBA para cifrar secretos MFA (exigida al arrancar).
+      MFA_ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000001
+      R2_ENDPOINT: https://ci-placeholder.r2.cloudflarestorage.com
+      R2_KEY: ci-placeholder
+      R2_SECRET: ci-placeholder
+      R2_BUCKET: ci-placeholder
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12'
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Auditoría de dependencias (falla con vulnerabilidades altas o críticas)
+        run: npm audit --audit-level=high
+
+      - name: Build (servidor + frontend)
+        run: npm run build
+
+      - name: Crear BD de pruebas (schema + migraciones + datos de prueba)
+        run: bash tests/setup-db.sh
+
+      - name: Arrancar servidor
+        env:
+          NODE_ENV: production
+        run: |
+          node dist-server/index.js > server.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf "$BASE_URL/health" > /dev/null && exit 0
+            sleep 1
+          done
+          echo "El servidor no arrancó"; cat server.log; exit 1
+
+      - name: Pruebas de seguridad y aislamiento entre empresas
+        run: npm test
+
+      - name: Log del servidor (si algo falló)
+        if: failure()
+        run: cat server.log || true
+
+  pruebas-api-seguridad:
+    name: Pruebas de autenticación, sesiones y API
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: governex
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/governex
+      PORT: 3001
+      API_URL: http://127.0.0.1:3001
+      MFA_ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000002
+      # Contraseña de los usuarios de prueba que siembra setup-db.cjs (solo CI).
+      LOCAL_SEED_PASSWORD: Ci-Prueba-2026-Gx!
+      TRUST_PROXY: '0'
+      R2_ENDPOINT: https://ci-placeholder.r2.cloudflarestorage.com
+      R2_KEY: ci-placeholder
+      R2_SECRET: ci-placeholder
+      R2_BUCKET: ci-placeholder
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12'
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Build del servidor
+        run: npm run build
+
+      - name: Crear BD (schema + migraciones + usuarios de prueba)
+        run: node scripts/local/setup-db.cjs
+
+      - name: Arrancar servidor
+        env:
+          NODE_ENV: production
+        run: |
+          node dist-server/index.js > server.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf "$API_URL/health" > /dev/null && exit 0
+            sleep 1
+          done
+          echo "El servidor no arrancó"; cat server.log; exit 1
+
+      - name: Pruebas de seguridad de la API
+        run: node scripts/security/api-security-tests.cjs --json api-security-results.json
+
+      - name: Guardar evidencia de las pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencia-pruebas-seguridad
+          path: api-security-results.json
+          if-no-files-found: ignore
+
+      - name: Log del servidor (si algo falló)
+        if: failure()
+        run: cat server.log || true

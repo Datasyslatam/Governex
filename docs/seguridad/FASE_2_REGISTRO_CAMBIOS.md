@@ -97,7 +97,7 @@ S01 cookie HttpOnly sin token en el cuerpo · S02 la cookie copiada deja de serv
    ```
    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    ```
-2. **Ejecutar `migrations/021_sesiones_mfa_bloqueo.sql`** en producción antes del despliegue (es idempotente).
+2. **Aplicar las migraciones 021 y 022 en producción** antes del despliegue, con el gestor `npm run migrate` (ver [INTEGRACION_PR5.md §4](INTEGRACION_PR5.md)).
 3. **Avisar a los usuarios:**
    - Todos deberán iniciar sesión de nuevo, porque los tokens anteriores dejan de valer.
    - Los **Superusuarios** y **platform_admins** configurarán su app autenticadora en el primer ingreso.

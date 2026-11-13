@@ -6,10 +6,9 @@
  * localhost. Nunca debe correr contra Railway ni contra producción.
  *
  * Pasos:
- *   1. schema.sql
- *   2. migrations/*.sql en orden (cada una aislada; los errores de
- *      "ya existe" se reportan y se continúa)
- *      (la 020 consolida el DDL que antes solo creaban scripts sueltos)
+ *   1. schema.sql (equivale al estado tras la migración 005)
+ *   2. Gestor de migraciones (scripts/migrate.ts): línea base 005 y luego
+ *      006..última, igual que en CI y que en producción.
  *   3. Siembra: 2 empresas (A y B), 3 usuarios por empresa (uno por rol),
  *      1 usuario Operativo con permisos personalizados y 1 platform_admin.
  *      Contraseña de todos: LOCAL_SEED_PASSWORD (.env).
@@ -20,6 +19,7 @@ require('dotenv').config()
 const fs = require('fs')
 const path = require('path')
 const { Client } = require('pg')
+const { execFileSync } = require('child_process')
 const bcrypt = require('bcryptjs')
 
 const root = path.join(__dirname, '..', '..')
@@ -49,17 +49,11 @@ async function run() {
     console.log('[setup-db] Aplicando schema.sql')
     await client.query(fs.readFileSync(path.join(root, 'schema.sql'), 'utf8'))
 
-    const migDir = path.join(root, 'migrations')
-    for (const f of fs.readdirSync(migDir).filter((x) => x.endsWith('.sql')).sort()) {
-      try {
-        await client.query(fs.readFileSync(path.join(migDir, f), 'utf8'))
-        console.log(`[setup-db]   ok   ${f}`)
-      } catch (e) {
-        // Si la migración abrió su propio BEGIN y falló, se cierra la transacción abortada.
-        await client.query('ROLLBACK').catch(() => {})
-        console.log(`[setup-db]   skip ${f}: ${e.message.split('\n')[0]}`)
-      }
-    }
+    // Mismo camino que CI y producción: gestor con tabla schema_migrations.
+    const tsx = (args) => execFileSync('npx', ['tsx', path.join('scripts', 'migrate.ts'), ...args],
+      { cwd: root, stdio: 'inherit', shell: process.platform === 'win32', env: process.env })
+    tsx(['--baseline=005'])
+    tsx([])
 
     // ── Siembra ─────────────────────────────────────────────
     const hash = await bcrypt.hash(seedPassword, 10)

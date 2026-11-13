@@ -1,0 +1,365 @@
+{
+  "fecha": "2026-11-13T21:23:32.560Z",
+  "api": "http://127.0.0.1:3001",
+  "passed": 51,
+  "total": 51,
+  "results": [
+    {
+      "id": "T01",
+      "name": "Health check responde",
+      "ref": "Regresión",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "T02",
+      "name": "Usuario con permiso lee su módulo (riesgos)",
+      "ref": "Regresión",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "T03",
+      "name": "Superusuario lista usuarios de su empresa",
+      "ref": "Regresión",
+      "ok": true,
+      "detail": "4 usuarios, todos de la empresa A"
+    },
+    {
+      "id": "T04",
+      "name": "Login con contraseña incorrecta → 401 genérico",
+      "ref": "V13 / ASVS 2.2",
+      "ok": true,
+      "detail": "mismo mensaje para ambos casos"
+    },
+    {
+      "id": "T05",
+      "name": "Empresa suspendida: clave errada NO revela el estado de la empresa",
+      "ref": "V13 / CWE-204",
+      "ok": true,
+      "detail": "responde 401 genérico"
+    },
+    {
+      "id": "T06",
+      "name": "JWT con alg \"none\" es rechazado",
+      "ref": "V18 / CWE-347",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "T07",
+      "name": "JWT firmado con otra clave es rechazado",
+      "ref": "V18 / CWE-347",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "T08",
+      "name": "Token de empresa no sirve en API de plataforma",
+      "ref": "Separación de privilegios",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "T09",
+      "name": "Endpoints de negocio exigen sesión",
+      "ref": "ASVS 4.1",
+      "ok": true,
+      "detail": "4 endpoints → 401"
+    },
+    {
+      "id": "T10",
+      "name": "Política de contraseñas al crear usuario (rechaza \"123456\")",
+      "ref": "V08 / ASVS 2.1",
+      "ok": true,
+      "detail": "HTTP 400"
+    },
+    {
+      "id": "T11",
+      "name": "Contraseña fuerte sí se acepta",
+      "ref": "Regresión",
+      "ok": true,
+      "detail": "HTTP 201"
+    },
+    {
+      "id": "T12",
+      "name": "Usuario sin \"leer\" en proveedores no puede listarlos",
+      "ref": "V03 / API5 BFLA",
+      "ok": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "T13",
+      "name": "Usuario sin \"leer\" en documentos/auditorías/procesos no puede listarlos",
+      "ref": "V03 / API5 BFLA",
+      "ok": true,
+      "detail": "6 módulos → 403"
+    },
+    {
+      "id": "T14",
+      "name": "Operativo NO puede eliminar proveedores",
+      "ref": "V04 / CWE-862",
+      "ok": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "T15",
+      "name": "Usuario sin permiso no puede usar la IA (consumo de costos)",
+      "ref": "V12 / API4",
+      "ok": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "T16",
+      "name": "Empresa A no ve procesos de B",
+      "ref": "API1 BOLA",
+      "ok": true,
+      "detail": "no aparece"
+    },
+    {
+      "id": "T17",
+      "name": "Empresa A no puede modificar un riesgo de B",
+      "ref": "API1 BOLA",
+      "ok": true,
+      "detail": "HTTP 404"
+    },
+    {
+      "id": "T18",
+      "name": "No se puede enlazar una auditoría a un proceso de otra empresa",
+      "ref": "V05 / CWE-639",
+      "ok": true,
+      "detail": "HTTP 400"
+    },
+    {
+      "id": "T19",
+      "name": "No se puede enlazar un indicador a un proceso de otra empresa",
+      "ref": "V05 / CWE-639",
+      "ok": true,
+      "detail": "HTTP 400"
+    },
+    {
+      "id": "T20",
+      "name": "Archivos: no se firma una key de otra empresa",
+      "ref": "API1 BOLA",
+      "ok": true,
+      "detail": "HTTP 404"
+    },
+    {
+      "id": "T21",
+      "name": "Cabeceras de seguridad presentes y sin X-Powered-By",
+      "ref": "ASVS 14.4",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "id": "T22",
+      "name": "CORS no autoriza un origen externo",
+      "ref": "V14 / CWE-942",
+      "ok": true,
+      "detail": "sin Access-Control-Allow-Origin"
+    },
+    {
+      "id": "T23",
+      "name": "Cuerpo JSON de 2 MB en ruta normal → 413",
+      "ref": "V15 / CWE-400",
+      "ok": true,
+      "detail": "HTTP 413"
+    },
+    {
+      "id": "T24",
+      "name": "Errores 404 de API no exponen detalles internos",
+      "ref": "V17 / CWE-209",
+      "ok": true,
+      "detail": "HTTP 404"
+    },
+    {
+      "id": "T25",
+      "name": "schema.sql y migraciones no siembran credenciales",
+      "ref": "V11 / CWE-798",
+      "ok": true,
+      "detail": "sin hashes activos"
+    },
+    {
+      "id": "R01",
+      "name": "Superusuario: los 42 listados de módulos siguen respondiendo (sin 403)",
+      "ref": "Regresión V03",
+      "ok": true,
+      "detail": "42 rutas sin 401/403"
+    },
+    {
+      "id": "R02",
+      "name": "Gestión: los 42 listados de módulos siguen respondiendo (sin 403)",
+      "ref": "Regresión V03",
+      "ok": true,
+      "detail": "42 rutas sin 401/403"
+    },
+    {
+      "id": "R03",
+      "name": "Operativo: los 42 listados de módulos siguen respondiendo (sin 403)",
+      "ref": "Regresión V03",
+      "ok": true,
+      "detail": "42 rutas sin 401/403"
+    },
+    {
+      "id": "R04",
+      "name": "Enlazar una auditoría a un proceso PROPIO sigue funcionando",
+      "ref": "Regresión V05",
+      "ok": true,
+      "detail": "HTTP 201"
+    },
+    {
+      "id": "R05",
+      "name": "Referencia con id no numérico → 400 (no 500)",
+      "ref": "Robustez V05",
+      "ok": true,
+      "detail": "HTTP 400"
+    },
+    {
+      "id": "R06",
+      "name": "IA con permiso llega al controlador (no 403) y admite cuerpos grandes",
+      "ref": "Regresión V12/V15",
+      "ok": true,
+      "detail": "HTTP 500 (sin GEMINI_API_KEY en local se espera error controlado)"
+    },
+    {
+      "id": "R07",
+      "name": "Admin restablece contraseña: el usuario entra con ella y queda obligado a cambiarla",
+      "ref": "Regresión H11 / V08",
+      "ok": true,
+      "detail": "HTTP 400"
+    },
+    {
+      "id": "R08",
+      "name": "Platform admin (con MFA): alta de empresa con contraseña débil → 400",
+      "ref": "Regresión / V08",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "S01",
+      "name": "Login no entrega token al JavaScript: cookie HttpOnly + SameSite=Strict",
+      "ref": "V07 / ASVS 3.4",
+      "ok": true,
+      "detail": "sin token en el cuerpo; gx_session HttpOnly, SameSite=Strict"
+    },
+    {
+      "id": "S02",
+      "name": "Logout revoca la sesión en el servidor (la cookie robada deja de servir)",
+      "ref": "V06 / ASVS 3.3.1",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "S03",
+      "name": "CSRF: POST sin X-CSRF-Token → 403; con token → permitido",
+      "ref": "ASVS 4.2.2 / CWE-352",
+      "ok": true,
+      "detail": "HTTP 201"
+    },
+    {
+      "id": "S04",
+      "name": "Superusuario debe enrolar MFA: la sesión previa no da acceso a datos",
+      "ref": "V02 / ASVS 2.8",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "S05",
+      "name": "MFA: código errado → 401; correcto → acceso; el mismo código no se reutiliza",
+      "ref": "V02 / ASVS 2.8.4",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "S06",
+      "name": "Código de recuperación sirve una sola vez",
+      "ref": "V02 / ASVS 2.6",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "S07",
+      "name": "Bloqueo por cuenta: tras 5 fallos, ni la contraseña correcta entra",
+      "ref": "V09 / CWE-307",
+      "ok": true,
+      "detail": "bloqueada 15 min; mismo mensaje que un correo inexistente"
+    },
+    {
+      "id": "S08",
+      "name": "Contraseña temporal: todo responde 403 hasta cambiarla; luego acceso normal",
+      "ref": "V08 / ASVS 2.1.11",
+      "ok": true,
+      "detail": "bloqueo hasta el cambio y acceso posterior"
+    },
+    {
+      "id": "S09",
+      "name": "Cambiar la contraseña cierra las demás sesiones del usuario",
+      "ref": "V06 / ASVS 3.3.3",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "S10",
+      "name": "Desactivar un usuario corta su sesión de inmediato",
+      "ref": "V06 / ASVS 3.3",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "S11",
+      "name": "Migración transparente: el hash bcrypt pasa a Argon2id al iniciar sesión",
+      "ref": "V08 / ASVS 2.4.1",
+      "ok": true,
+      "detail": "bcrypt → $argon2id$ m=19456,t=2,p=1"
+    },
+    {
+      "id": "S12",
+      "name": "El secreto MFA se guarda cifrado (no en claro) en la BD",
+      "ref": "V02 / ASVS 6.2 / CWE-312",
+      "ok": true,
+      "detail": "AES-256-GCM (v1:iv:tag:dato)"
+    },
+    {
+      "id": "S13",
+      "name": "Sesión inactiva 31 min expira",
+      "ref": "V06 / ASVS 3.3.2",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "S14",
+      "name": "Platform admin: MFA obligatorio antes de cualquier acceso",
+      "ref": "V02 / V20",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "S15",
+      "name": "Suplantación: sesión de 30 min marcada y visible en /me",
+      "ref": "V19 / trazabilidad",
+      "ok": true,
+      "detail": "suplantado_por_admin registrado; 30 min"
+    },
+    {
+      "id": "S16",
+      "name": "Cambio de rol: se aplica de inmediato y cierra la sesión",
+      "ref": "V06 / BFLA",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "S17",
+      "name": "Los tokens Bearer (esquema anterior) ya no se aceptan",
+      "ref": "V07",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "T26",
+      "name": "Login: 11 intentos fallidos → 429",
+      "ref": "V09 / CWE-307",
+      "ok": true,
+      "detail": "HTTP 429"
+    }
+  ]
+}
