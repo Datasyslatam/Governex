@@ -67,5 +67,5 @@ Remove-Item Env:DATABASE_URL
 ## 5. Cómo resolver el PR #5 en GitHub
 1. Abre un PR nuevo desde `security/integracion-pr5` hacia `main`: incluye las Fases 0–2, el PR #5 adaptado y este documento.
 2. Espera a que el CI pase sus dos jobs.
-3. **Cierra el PR #5 sin fusionarlo**, con un comentario que apunte al nuevo PR. Su contenido ya está incluido y adaptado.
+3. **PR #5:** la rama de integración contiene sus commits originales (`413ae96`, `4c98c0a`), así que al fusionar el nuevo PR en `main` GitHub debería marcarlo como fusionado automáticamente. Si no lo hace, ciérralo manualmente con un comentario que apunte al nuevo PR. Su contenido ya está incluido y adaptado.
 4. El PR de `security/fase-2`, si lo llegaste a abrir, también queda reemplazado por el nuevo.
