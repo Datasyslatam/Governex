@@ -46,10 +46,11 @@ jobs:
       # devDependencies (TypeScript, Vite, tsx) y el build falla. Se define
       # solo en el paso que arranca el servidor.
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/governex_ci_test
-      PORT: 3001
+      PORT: '3001'
       BASE_URL: http://localhost:3001
       # Clave de PRUEBA para cifrar secretos MFA (exigida al arrancar).
-      MFA_ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000001
+      # Entre comillas: sin ellas YAML la interpreta como el número 1.
+      MFA_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000001'
       R2_ENDPOINT: https://ci-placeholder.r2.cloudflarestorage.com
       R2_KEY: ci-placeholder
       R2_SECRET: ci-placeholder
@@ -115,11 +116,11 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/governex
-      PORT: 3001
+      PORT: '3001'
       API_URL: http://127.0.0.1:3001
-      MFA_ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000002
+      MFA_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000002'
       # Contraseña de los usuarios de prueba que siembra setup-db.cjs (solo CI).
-      LOCAL_SEED_PASSWORD: Ci-Prueba-2026-Gx!
+      LOCAL_SEED_PASSWORD: 'Ci-Prueba-2026-Gx!'
       TRUST_PROXY: '0'
       R2_ENDPOINT: https://ci-placeholder.r2.cloudflarestorage.com
       R2_KEY: ci-placeholder
