@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react'
 import Swal from 'sweetalert2'
 import { usuariosService, Usuario, PermisoItem, RoleItem, LogActividad } from '../../services'
 import './UsuariosPage.css'
+import EventosSeguridadPanel from './EventosSeguridadPanel'
 
 const UsuariosPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'usuarios' | 'logs'>('usuarios')
+  const [activeTab, setActiveTab] = useState<'usuarios' | 'logs' | 'seguridad'>('usuarios')
   
   const [users, setUsers] = useState<Usuario[]>([])
   const [roles, setRoles] = useState<RoleItem[]>([])
@@ -246,6 +247,11 @@ const UsuariosPage: React.FC = () => {
           onClick={() => setActiveTab('logs')}
         >
            Bitácora de Actividades (Logs)
+        </button> <button
+          className={`usuarios-tab-btn ${activeTab === 'seguridad' ? 'active' : ''}`}
+          onClick={() => setActiveTab('seguridad')}
+        >
+           Eventos de Seguridad
         </button> </div>
 
       {/* TAB 1: USUARIOS */}
@@ -290,6 +296,9 @@ const UsuariosPage: React.FC = () => {
         </>
       )}
 
+      {/* TAB 3: EVENTOS DE SEGURIDAD (bitácora inmutable, Fase 3) */}
+      {activeTab === 'seguridad' && <EventosSeguridadPanel />}
+
       {/* TAB 2: BITÁCORA DE ACTIVIDADES (LOGS) */}
       {activeTab === 'logs' && (
         <div className="logs-panel"> <div className="logs-panel__toolbar"> <input
@@ -322,6 +331,8 @@ const UsuariosPage: React.FC = () => {
                             {log.recurso || 'sistema'}
                           </span> </td> <td style={{ color: '#374151', fontSize: '0.8rem', lineHeight: '1.4' }}>
                           {log.detalle}
+                          {log.via_soporte && <div style={{ color: '#FE7F03', fontSize: '0.72rem', marginTop: '0.2rem' }}>Realizado por soporte de Governex</div>}
+                          {log.ip && <div style={{ color: '#9ca3af', fontSize: '0.7rem', marginTop: '0.2rem' }}>IP {log.ip}</div>}
                         </td> </tr>
                     ))
                   )}

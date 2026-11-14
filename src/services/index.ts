@@ -273,6 +273,28 @@ export interface LogActividad {
   recurso: string;
   detalle: string;
   fecha_hora: string;
+  ip?: string | null;
+  correlation_id?: string | null;
+  via_soporte?: boolean;
+}
+
+/** Evento de la bitácora de seguridad inmutable (Fase 3). */
+export interface EventoSeguridad {
+  id: number;
+  fecha: string;
+  correlation_id: string | null;
+  tenant_id: number | null;
+  actor_tipo: 'usuario' | 'platform_admin' | 'anonimo' | 'sistema';
+  actor_id: number | null;
+  actor_email: string | null;
+  suplantado_por_admin: number | null;
+  categoria: string;
+  accion: string;
+  resultado: 'exito' | 'fallo' | 'denegado';
+  recurso: string | null;
+  recurso_id: string | null;
+  ip: string | null;
+  detalle: Record<string, any>;
 }
 
 export const usuariosService = {
@@ -283,6 +305,10 @@ export const usuariosService = {
   update: (id: number, body: any) => api.put<{ success: boolean }>(`/api/auth/users/${id}`, body),
   delete: (id: number) => api.delete<{ success: boolean; message?: string }>(`/api/auth/users/${id}`),
   getActivityLogs: () => api.get<LogActividad[]>('/api/auth/activity-logs'),
+  getEventosSeguridad: (f: { categoria?: string; resultado?: string } = {}) => {
+    const q = new URLSearchParams(Object.entries(f).filter(([, v]) => v) as [string, string][]).toString()
+    return api.get<EventoSeguridad[]>(`/api/auth/eventos-seguridad${q ? `?${q}` : ''}`)
+  },
   restablecerMfa: (id: number) => api.post<{ ok: true }>(`/api/auth/users/${id}/restablecer-mfa`, {}),
 }
 

@@ -21,7 +21,7 @@ const emptyTenantForm: CreateTenantPayload = {
   adminPassword: '',
 }
 
-const emptyAdminForm = { nombre: '', email: '', password: '' }
+const emptyAdminForm: { nombre: string; email: string; password: string; rol: 'propietario' | 'operador' } = { nombre: '', email: '', password: '', rol: 'operador' }
 
 type Tab = 'dashboard' | 'tenants' | 'admins' | 'auditoria'
 
@@ -203,8 +203,8 @@ const PlatformAdminDashboardPage: React.FC = () => {
   /* ── Administradores: handlers ────────────────────────────── */
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (adminForm.password.length < 8) {
-      Swal.fire({ icon: 'warning', title: 'Contraseña muy corta', text: 'Debe tener al menos 8 caracteres' })
+    if (adminForm.password.length < 12) {
+      Swal.fire({ icon: 'warning', title: 'Contraseña muy corta', text: 'Debe tener al menos 12 caracteres y combinar 3 tipos de caracteres' })
       return
     }
     setCreatingAdmin(true)
@@ -385,10 +385,17 @@ const PlatformAdminDashboardPage: React.FC = () => {
                   <input type="email" value={adminForm.email} required
                     onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))} /> </label> <label>
                   Contraseña temporal
-                  <input type="password" value={adminForm.password} required minLength={8}
-                    onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))} /> </label> </div> <p className="pa-dashboard__form-hint">
-                Este usuario tendrá acceso completo a la administración de la plataforma: podrá
-                crear/suspender tenants y crear/desactivar otros administradores.
+                  <input type="password" value={adminForm.password} required minLength={12}
+                    onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))} /> </label> <label>
+                  Rol
+                  <select value={adminForm.rol}
+                    onChange={e => setAdminForm(f => ({ ...f, rol: e.target.value as 'propietario' | 'operador' }))}>
+                    <option value="operador">Operador</option>
+                    <option value="propietario">Propietario</option>
+                  </select> </label> </div> <p className="pa-dashboard__form-hint">
+                <b>Operador:</b> gestiona empresas, restablece contraseñas y da soporte (suplantación con motivo).
+                {' '}<b>Propietario:</b> además crea y desactiva administradores y verifica la integridad de la bitácora.
+                Deberá cambiar la contraseña temporal y configurar MFA en su primer ingreso.
               </p> <button type="submit" className="pa-dashboard__btn-primary" disabled={creatingAdmin}>
                 {creatingAdmin ? 'Creando...' : 'Crear administrador'}
               </button> </form>
@@ -398,9 +405,9 @@ const PlatformAdminDashboardPage: React.FC = () => {
             {loadingAdmins ? (
               <p>Cargando...</p>
             ) : (
-              <table className="pa-dashboard__table"> <thead> <tr> <th>Nombre</th> <th>Email</th> <th>Creado</th> <th>Estado</th> <th></th> </tr> </thead> <tbody>
+              <table className="pa-dashboard__table"> <thead> <tr> <th>Nombre</th> <th>Email</th> <th>Rol</th> <th>Creado</th> <th>Estado</th> <th></th> </tr> </thead> <tbody>
                   {admins.map(a => (
-                    <tr key={a.id}> <td>{a.nombre}{a.id === admin?.id && <span className="pa-dashboard__tag-self"> (tú)</span>}</td> <td>{a.email}</td> <td>{new Date(a.creado_en).toLocaleDateString()}</td> <td> <span className={`pa-dashboard__badge pa-dashboard__badge--${a.activo ? 'activo' : 'inactivo'}`}>
+                    <tr key={a.id}> <td>{a.nombre}{a.id === admin?.id && <span className="pa-dashboard__tag-self"> (tú)</span>}</td> <td>{a.email}</td> <td>{a.rol === 'propietario' ? 'Propietario' : 'Operador'}</td> <td>{new Date(a.creado_en).toLocaleDateString()}</td> <td> <span className={`pa-dashboard__badge pa-dashboard__badge--${a.activo ? 'activo' : 'inactivo'}`}>
                           {a.activo ? 'Activo' : 'Inactivo'}
                         </span> </td> <td> <button
                           className="pa-dashboard__btn-link"

@@ -5,6 +5,7 @@ import path from 'path'
 import { logActivityMiddleware } from './middleware/activityLogger'
 import { assertSecurityConfig } from './middleware/securityConfig'
 import { requestRateLimit } from './middleware/rateLimit'
+import { requestContext } from './middleware/requestContext'
 
 // Falla rápido si los secretos JWT no son seguros (ver securityConfig.ts).
 assertSecurityConfig()
@@ -53,6 +54,9 @@ const PORT = process.env.PORT || 3001
 // clientes. Ajustable con TRUST_PROXY (número de saltos de proxy de confianza).
 app.set('trust proxy', Number(process.env.TRUST_PROXY ?? 1))
 app.disable('x-powered-by')
+
+// ID de correlación (X-Request-Id) y log JSON de acceso por petición (Fase 3).
+app.use(requestContext)
 
 // ── Content-Security-Policy (modo SOLO REPORTE) ─────────────
 // Se publica como Content-Security-Policy-Report-Only: el navegador NO bloquea

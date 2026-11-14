@@ -83,10 +83,18 @@ const TenantDetailModal: React.FC<Props> = ({ tenantId, onClose, onUpdated }) =>
   }
 
   const handleImpersonate = async (usuarioId: number, usuarioNombre: string, usuarioEmail: string) => {
+    // V19: la suplantación exige un motivo (ticket, solicitud del cliente…).
+    // Queda en la bitácora inmutable y la empresa lo ve en su bitácora.
     const confirm = await Swal.fire({
       icon: 'warning',
       title: `¿Entrar como ${usuarioNombre}?`,
-      html: `Verás la plataforma exactamente como <b>${usuarioEmail}</b> la ve. La sesión dura 30 minutos y queda registrada en la bitácora de auditoría.`,
+      html: `Verás la plataforma exactamente como <b>${usuarioEmail}</b> la ve. La sesión dura 30 minutos, ` +
+            `queda en la bitácora de auditoría y <b>la empresa verá el motivo</b>.`,
+      input: 'textarea',
+      inputLabel: 'Motivo (obligatorio)',
+      inputPlaceholder: 'Ej.: Ticket #1234 — el usuario reporta un error al guardar un riesgo',
+      inputAttributes: { maxlength: '300' },
+      inputValidator: (v: string) => (!v || v.trim().length < 10 ? 'Describe el motivo (mínimo 10 caracteres)' : undefined),
       showCancelButton: true,
       confirmButtonText: 'Sí, entrar',
       cancelButtonText: 'Cancelar',
@@ -94,7 +102,7 @@ const TenantDetailModal: React.FC<Props> = ({ tenantId, onClose, onUpdated }) =>
     if (!confirm.isConfirmed) return
 
     try {
-      const { user, tenant } = await platformAdminApi.impersonateUser(tenantId, usuarioId)
+      const { user, tenant } = await platformAdminApi.impersonateUser(tenantId, usuarioId, String(confirm.value).trim())
 
       // El backend ya dejó en este navegador la cookie HttpOnly de la sesión
       // suplantada (30 min, marcada con el admin que la abrió). La sesión

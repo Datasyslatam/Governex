@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { pool } from '../db'
 import { obtenerSesion, csrfValido, SesionDB } from '../security/sessions'
+import { auditar } from '../security/audit'
 
 /**
  * Autenticación de usuarios de empresa por SESIÓN DEL SERVIDOR (Fase 2).
@@ -98,6 +99,10 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
   }
 
   if (!csrfValido(req, sesion)) {
+    await auditar(req, {
+      categoria: 'seguridad', accion: 'csrf_rechazado', resultado: 'denegado', tenantId: e.tenantId,
+      actor: { tipo: 'usuario', id: sesion.usuario_id }, suplantadoPor: sesion.suplantado_por_admin,
+    })
     return res.status(403).json({ error: 'Solicitud rechazada por protección CSRF. Recarga la página.', code: 'CSRF' })
   }
 

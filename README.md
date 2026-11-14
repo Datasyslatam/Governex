@@ -416,6 +416,7 @@ En el archivo `package.json` se encuentran definidos los siguientes comandos:
 | `npm run migrate` / `npm run migrate:status` | Aplica o lista las migraciones (gestor con tabla `schema_migrations`). |
 | `npm test` | Pruebas de aislamiento entre empresas e integridad (`tests/security.test.mjs`, BD de `tests/setup-db.sh`). |
 | `npm run test:security` | Pruebas de autenticación, sesiones, MFA, CSRF y API (`scripts/security/api-security-tests.cjs`). |
+| `npm run audit:verify` | Verifica la integridad de la bitácora de seguridad inmutable (cadena SHA-256) e imprime el ancla a guardar fuera de la BD. |
 | `npm run local:env` / `local:db` / `local:reset` | Entorno local con Docker (ver `docs/seguridad/ENTORNO_LOCAL.md`). |
 | `npm run build` | Compila el backend a CommonJS (`dist-server/`) y empaqueta el frontend optimizado con Vite (`dist/`). |
 | `npm start` | Ejecuta el servidor compilado en producción (`node dist-server/index.js`). |

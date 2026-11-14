@@ -514,7 +514,7 @@ async function main() {
   await test('S15', 'Suplantación: sesión de 30 min marcada y visible en /me', 'V19 / trazabilidad', async () => {
     const u = (await db.query(`SELECT id FROM usuarios WHERE email = 'operativo.a@governex.test'`)).rows[0]
     const imp = plat.clon('suplantacion')
-    const r = await call('POST', `/api/platform-admin/tenants/${tenantA}/impersonate`, { token: imp, body: { usuarioId: u.id } })
+    const r = await call('POST', `/api/platform-admin/tenants/${tenantA}/impersonate`, { token: imp, body: { usuarioId: u.id, motivo: 'Prueba S15 de suplantación' } })
     expectStatus(r, 200, 'impersonate')
     expect(!('token' in r.data), 'devuelve token en el cuerpo')
     const me = await call('GET', '/api/auth/me', { token: imp })
@@ -539,6 +539,155 @@ async function main() {
   await test('S17', 'Los tokens Bearer (esquema anterior) ya no se aceptan', 'V07', async () => {
     const r = await call('GET', '/api/riesgos', { token: 'eyJhbGciOiJIUzI1NiJ9.eyJpZCI6MX0.x' })
     return expectStatus(r, 401, 'Bearer')
+  })
+
+  // ═══ FASE 3: trazabilidad y auditoría ═══════════════════════════
+  const eventosPorCid = async (cid) => (await db.query('SELECT * FROM auditoria_eventos WHERE correlation_id = $1 ORDER BY id', [cid])).rows
+
+  await test('A01', 'ID de correlación: se respeta X-Request-Id válido y se genera uno si no viene', 'V10 / ASVS 7.1', async () => {
+    const propio = `prueba-${RUN}-cid`
+    const r1 = await call('GET', '/api/health', { headers: { 'X-Request-Id': propio } })
+    expect(r1.headers.get('x-request-id') === propio, `devolvió ${r1.headers.get('x-request-id')}`)
+    const r2 = await call('GET', '/api/health', { headers: { 'X-Request-Id': 'malo<script>' } })
+    expect(/^[0-9a-f-]{36}$/.test(r2.headers.get('x-request-id') || ''), `id generado inválido: ${r2.headers.get('x-request-id')}`)
+    return 'propio respetado; inválido reemplazado por UUID'
+  })
+
+  await test('A02', 'Login fallido queda en la bitácora con IP, motivo y sin la contraseña', 'V10 / ASVS 7.2.1', async () => {
+    const email = `fantasma.${RUN}@governex.test`
+    const r = await call('POST', '/api/auth/login', { body: { email, password: 'ClaveSecreta-NoDebeAparecer-9' } })
+    expectStatus(r, 401, 'login fallido')
+    const ev = (await eventosPorCid(r.headers.get('x-request-id')))[0]
+    expect(ev && ev.accion === 'login' && ev.resultado === 'fallo' && ev.actor_tipo === 'anonimo', `evento: ${JSON.stringify(ev)}`)
+    expect(ev.detalle.motivo === 'usuario_inexistente' && ev.ip, 'falta motivo o IP')
+    expect(!JSON.stringify(ev).includes('ClaveSecreta'), 'la contraseña quedó en la bitácora')
+    return `evento #${ev.id}: fallo / usuario_inexistente / IP ${ev.ip}`
+  })
+
+  await test('A03', 'Login exitoso queda en la bitácora con el mismo ID de correlación', 'V10', async () => {
+    const ag = new Agente('a03')
+    const r = await call('POST', '/api/auth/login', { token: ag, body: { email: 'gestion.b@governex.test', password: PASS } })
+    expectStatus(r, 200, 'login')
+    const ev = (await eventosPorCid(r.headers.get('x-request-id'))).find((e) => e.accion === 'login')
+    expect(ev && ev.resultado === 'exito' && ev.actor_tipo === 'usuario' && ev.tenant_id === tenantB, `evento: ${JSON.stringify(ev)}`)
+    return `evento #${ev.id}`
+  })
+
+  await test('A04', 'Acceso denegado por RBAC queda registrado', 'V10 / ASVS 7.2.2', async () => {
+    // Sesión nueva: S10 desactiva a este usuario y revoca sus sesiones anteriores.
+    const r = await call('GET', '/api/proveedores', { token: await login('limitado.a@governex.test') })
+    expectStatus(r, 403, 'GET proveedores sin permiso')
+    const ev = (await eventosPorCid(r.headers.get('x-request-id')))[0]
+    expect(ev && ev.categoria === 'acceso' && ev.accion === 'permiso_denegado' && ev.resultado === 'denegado', `evento: ${JSON.stringify(ev)}`)
+    expect(ev.detalle.permiso === 'proveedores:leer', `permiso: ${ev.detalle.permiso}`)
+    return 'acceso / permiso_denegado / proveedores:leer'
+  })
+
+  await test('A05', 'Intento de enlazar datos de otra empresa queda registrado', 'V10 / V05', async () => {
+    const otro = (await db.query('SELECT id FROM procesos WHERE tenant_id = $1 LIMIT 1', [tenantB])).rows[0]
+    const pid = otro ? otro.id : 999999
+    const r = await call('POST', '/api/indicadores', { token: superA, body: { codigo: `IA5-${RUN}`, titulo: 'x', proceso_id: pid, frecuencia: 'Mensual', meta: '1' } })
+    expectStatus(r, 400, 'indicador con proceso ajeno')
+    const ev = (await eventosPorCid(r.headers.get('x-request-id')))[0]
+    expect(ev && ev.categoria === 'seguridad' && ev.accion === 'referencia_otra_empresa', `evento: ${JSON.stringify(ev)}`)
+    return 'seguridad / referencia_otra_empresa'
+  })
+
+  await test('A06', 'Bitácoras de solo inserción: UPDATE, DELETE y TRUNCATE rechazados', 'V10 / ASVS 7.3.3', async () => {
+    const intentos = ['UPDATE auditoria_eventos SET accion = \'x\' WHERE id = (SELECT max(id) FROM auditoria_eventos)',
+      'DELETE FROM auditoria_eventos WHERE id = (SELECT max(id) FROM auditoria_eventos)', 'TRUNCATE auditoria_eventos',
+      'DELETE FROM logs_actividad WHERE id = (SELECT max(id) FROM logs_actividad)', 'UPDATE platform_admin_audit_log SET accion = \'x\'']
+    const permitidos = []
+    for (const q of intentos) { try { await db.query(q); permitidos.push(q) } catch { /* rechazado: correcto */ } }
+    expect(permitidos.length === 0, `se permitió: ${permitidos.join(' | ')}`)
+    return `${intentos.length} intentos rechazados`
+  })
+
+  await test('A07', 'Escrituras de datos quedan en la bitácora inmutable', 'V10', async () => {
+    const r = await call('POST', '/api/riesgos', { token: superA, body: { codigo: `RA7-${RUN}`, descripcion: 'x', probabilidad: 1, impacto: 1 } })
+    expectStatus(r, 201, 'crear riesgo')
+    await esperar(300) // el registro se escribe al terminar la respuesta
+    const ev = (await eventosPorCid(r.headers.get('x-request-id'))).find((e) => e.categoria === 'datos')
+    await db.query('DELETE FROM riesgos WHERE codigo = $1', [`RA7-${RUN}`])
+    expect(ev && ev.accion === 'crear_riesgos' && ev.detalle.elemento === `RA7-${RUN}`, `evento: ${JSON.stringify(ev)}`)
+    return 'datos / crear_riesgos'
+  })
+
+  await test('A08', 'Cambio de usuario registra el valor anterior y el nuevo', 'V10 / ASVS 7.2', async () => {
+    const u = (await db.query(`SELECT id, nombre, email, rol_id FROM usuarios WHERE email = 'operativo.a@governex.test'`)).rows[0]
+    const body = (nombre) => ({ nombre, email: u.email, rol_id: u.rol_id, activo: true })
+    const r = await call('PUT', `/api/auth/users/${u.id}`, { token: superA, body: body(`${u.nombre} X`) })
+    await call('PUT', `/api/auth/users/${u.id}`, { token: superA, body: body(u.nombre) })
+    expectStatus(r, 200, 'editar')
+    const ev = (await eventosPorCid(r.headers.get('x-request-id'))).find((e) => e.accion === 'usuario_modificado')
+    const c = ev && ev.detalle.cambios && ev.detalle.cambios.nombre
+    expect(c && c.antes === u.nombre && c.despues === `${u.nombre} X`, `evento: ${JSON.stringify(ev && ev.detalle)}`)
+    return 'usuarios / usuario_modificado con antes → después'
+  })
+
+  await test('A09', 'El código MFA nunca queda en las bitácoras', 'V10 / ASVS 7.1.1', async () => {
+    const codigo = await codigoFresco('super.a@governex.test')
+    const r = await call('POST', '/api/auth/mfa/codigos-recuperacion', { token: superA, body: { codigo } })
+    expectStatus(r, 200, 'regenerar códigos')
+    superA.codigosRecuperacion = r.data.codigosRecuperacion
+    await esperar(300)
+    const a = (await db.query('SELECT count(*)::int n FROM auditoria_eventos WHERE detalle::text LIKE $1', [`%${codigo}%`])).rows[0].n
+    const l = (await db.query('SELECT count(*)::int n FROM logs_actividad WHERE detalle LIKE $1', [`%${codigo}%`])).rows[0].n
+    const rec = (await db.query('SELECT count(*)::int n FROM auditoria_eventos WHERE detalle::text LIKE $1', [`%${r.data.codigosRecuperacion[0]}%`])).rows[0].n
+    expect(a === 0 && l === 0 && rec === 0, `apariciones: auditoría ${a}, actividad ${l}, códigos recuperación ${rec}`)
+    return 'ni el TOTP ni los códigos de recuperación aparecen'
+  })
+
+  await test('A10', 'Suplantación: exige motivo, queda registrada y la empresa la ve', 'V19', async () => {
+    const u = (await db.query(`SELECT id FROM usuarios WHERE email = 'gestion.a@governex.test'`)).rows[0]
+    const sin = await call('POST', `/api/platform-admin/tenants/${tenantA}/impersonate`, { token: plat.clon('s'), body: { usuarioId: u.id } })
+    expectStatus(sin, 400, 'sin motivo')
+    const motivo = `Ticket #${RUN} - prueba de soporte`
+    const imp = plat.clon('imp')
+    const r = await call('POST', `/api/platform-admin/tenants/${tenantA}/impersonate`, { token: imp, body: { usuarioId: u.id, motivo } })
+    expectStatus(r, 200, 'con motivo')
+    const ev = (await eventosPorCid(r.headers.get('x-request-id'))).find((e) => e.accion === 'impersonar_usuario')
+    expect(ev && ev.detalle.motivo === motivo && ev.tenant_id === tenantA, `evento: ${JSON.stringify(ev)}`)
+    const visible = (await db.query(`SELECT 1 FROM logs_actividad WHERE tenant_id = $1 AND accion = 'Acceso de soporte' AND detalle LIKE $2`, [tenantA, `%${motivo}%`])).rowCount
+    expect(visible === 1, 'la empresa no ve el acceso de soporte en su bitácora')
+    const w = await call('POST', '/api/riesgos', { token: imp, body: { codigo: `RA10-${RUN}`, descripcion: 'x', probabilidad: 1, impacto: 1 } })
+    expectStatus(w, 201, 'escritura suplantada')
+    await esperar(300)
+    const marca = (await db.query('SELECT suplantado_por_admin FROM logs_actividad WHERE correlation_id = $1', [w.headers.get('x-request-id')])).rows[0]
+    await db.query('DELETE FROM riesgos WHERE codigo = $1', [`RA10-${RUN}`])
+    expect(marca && marca.suplantado_por_admin, 'la escritura suplantada no quedó marcada')
+    return 'motivo obligatorio, visible para la empresa, acciones marcadas'
+  })
+
+  await test('A11', 'Separación de funciones: un operador no puede crear administradores', 'V20', async () => {
+    const email = `oper.${RUN}@governex.test`
+    const c = await call('POST', '/api/platform-admin/platform-admins', { token: plat, body: { nombre: 'Operador Prueba', email, password: PASS, rol: 'operador' } })
+    expectStatus(c, 201, 'crear operador')
+    const op = await login(email, PASS, { plataforma: true })
+    expectStatus(await call('POST', '/api/platform-admin/password', { token: op, body: { actual: PASS, nueva: `Op3-${RUN}-Nueva!` } }), 200, 'cambiar temporal')
+    expectStatus(await call('GET', '/api/platform-admin/tenants', { token: op }), 200, 'operador lista empresas')
+    const r = await call('POST', '/api/platform-admin/platform-admins', { token: op, body: { nombre: 'X', email: `x2.${RUN}@governex.test`, password: PASS } })
+    await db.query('UPDATE platform_admins SET activo = false WHERE email = $1', [email])
+    expectStatus(r, 403, 'operador crea admin')
+    const ev = (await eventosPorCid(r.headers.get('x-request-id')))[0]
+    expect(ev && ev.accion === 'rol_plataforma_insuficiente', `evento: ${JSON.stringify(ev)}`)
+    return 'operador → 403 registrado; propietario sí puede'
+  })
+
+  await test('A12', 'Integridad: la cadena verifica y una alteración directa se detecta', 'V10 / ASVS 7.3.4', async () => {
+    expect((await db.query('SELECT * FROM gx_auditoria_verificar()')).rowCount === 0, 'la cadena ya estaba rota')
+    const { id, accion } = (await db.query('SELECT id, accion FROM auditoria_eventos ORDER BY id DESC OFFSET 3 LIMIT 1')).rows[0]
+    // Simula un atacante con privilegios de dueño que desactiva la protección.
+    await db.query('ALTER TABLE auditoria_eventos DISABLE TRIGGER gx_solo_insercion')
+    await db.query('UPDATE auditoria_eventos SET accion = $2 WHERE id = $1', [id, 'alterado'])
+    await db.query('ALTER TABLE auditoria_eventos ENABLE TRIGGER gx_solo_insercion')
+    const det = (await db.query('SELECT * FROM gx_auditoria_verificar()')).rows
+    await db.query('ALTER TABLE auditoria_eventos DISABLE TRIGGER gx_solo_insercion')
+    await db.query('UPDATE auditoria_eventos SET accion = $2 WHERE id = $1', [id, accion])
+    await db.query('ALTER TABLE auditoria_eventos ENABLE TRIGGER gx_solo_insercion')
+    expect(det.some((x) => Number(x.id) === Number(id)), `no detectó la alteración de #${id}: ${JSON.stringify(det)}`)
+    expect((await db.query('SELECT * FROM gx_auditoria_verificar()')).rowCount === 0, 'no quedó íntegra tras restaurar')
+    return `alteración de #${id} detectada; restaurada`
   })
 
   // ── Fuerza bruta (último: deja bloqueada la clave IP+email de prueba) ──

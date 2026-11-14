@@ -53,6 +53,7 @@ export interface PlatformAdminInfo {
   email: string
   mfaHabilitado?: boolean
   debeCambiarPassword?: boolean
+  rol?: 'propietario' | 'operador'
 }
 
 export type RespuestaLoginPlataforma =
@@ -83,6 +84,7 @@ export interface PlatformAdminSummary {
   id: number
   nombre: string
   email: string
+  rol?: 'propietario' | 'operador'
   activo: boolean
   creado_en: string
 }
@@ -147,7 +149,7 @@ export const platformAdminApi = {
     
   listAdmins: () => request<PlatformAdminSummary[]>('/api/platform-admin/platform-admins'),
 
-  createAdmin: (payload: { nombre: string; email: string; password: string }) =>
+  createAdmin: (payload: { nombre: string; email: string; password: string; rol: 'propietario' | 'operador' }) =>
     request<PlatformAdminSummary>('/api/platform-admin/platform-admins', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -175,13 +177,13 @@ export const platformAdminApi = {
       body: JSON.stringify({ password }),
     }),
   
-  impersonateUser: (tenantId: number, usuarioId: number) =>
+  impersonateUser: (tenantId: number, usuarioId: number, motivo: string) =>
     request<{
       user: { id: number; nombre: string; email: string; rol: string; permissions?: string[] }
       tenant: { id: number; nombre: string }
     }>(`/api/platform-admin/tenants/${tenantId}/impersonate`, {
       method: 'POST',
-      body: JSON.stringify({ usuarioId }),
+      body: JSON.stringify({ usuarioId, motivo }),
     }),
 
   getGlobalStats: () => request<GlobalStats>('/api/platform-admin/global-stats'),

@@ -5,6 +5,7 @@ import { registrarActividadDirecto } from '../middleware/activityLogger'
 import { loginRateLimit } from '../middleware/rateLimit'
 import { validarPassword } from '../middleware/passwordPolicy'
 import { olvidarPermisos } from '../middleware/rbac'
+import { auditar, Categoria, Resultado } from '../security/audit'
 import { hashPassword, verifyPassword } from '../security/passwords'
 import { estaBloqueada, registrarFallo, desbloquear } from '../security/lockout'
 import { mfaObligatorioParaRol } from '../security/mfa'
@@ -74,8 +75,24 @@ async function perfil(u: any, extra: Record<string, unknown> = {}) {
   }
 }
 
-function log(u: any, accion: string, detalle: string) {
-  return registrarActividadDirecto(u.tenant_id, u.id, u.nombre, u.email, u.rol, accion, 'auth', detalle)
+function log(u: any, accion: string, detalle: string, req?: Request) {
+  return registrarActividadDirecto(u.tenant_id, u.id, u.nombre, u.email, u.rol, accion, 'auth', detalle, req)
+}
+
+/** Entrada en la bitácora de actividad de la empresa a nombre del usuario de la sesión. */
+async function logActor(req: AuthRequest, accion: string, detalle: string) {
+  const actor = await cargarUsuario(req.user!.id)
+  if (actor) await log(actor, accion, detalle, req)
+}
+
+/** Evento en la bitácora de seguridad inmutable con el usuario `u` como actor. */
+function aud(req: Request, u: any, categoria: Categoria, accion: string, resultado: Resultado, detalle: Record<string, unknown> = {}) {
+  return auditar(req, {
+    categoria, accion, resultado,
+    tenantId: u?.tenant_id ?? null,
+    actor: u ? { tipo: 'usuario', id: u.id, email: u.email } : { tipo: 'anonimo' },
+    detalle,
+  })
 }
 
 // POST /api/auth/login
@@ -93,16 +110,27 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
     // La contraseña se verifica SIEMPRE (hash ficticio si no existe el usuario)
     // antes de revelar nada: ni existencia, ni bloqueo, ni estado de la empresa.
     const { ok, needsRehash } = await verifyPassword(password, user?.password_hash)
-    if (!user) return res.status(401).json({ error: CREDENCIALES })
-    if (estaBloqueada(user.bloqueado_hasta)) return res.status(401).json({ error: CREDENCIALES })
+    if (!user) {
+      // El correo intentado se registra para detectar enumeración / credential stuffing.
+      await aud(req, null, 'autenticacion', 'login', 'fallo', { motivo: 'usuario_inexistente', email_intentado: email.trim().slice(0, 150) })
+      return res.status(401).json({ error: CREDENCIALES })
+    }
+    if (estaBloqueada(user.bloqueado_hasta)) {
+      await aud(req, user, 'autenticacion', 'login', 'denegado', { motivo: 'cuenta_bloqueada' })
+      return res.status(401).json({ error: CREDENCIALES })
+    }
     if (!ok) {
-      if (await registrarFallo('usuarios', user.id)) {
-        await log(user, 'Cuenta bloqueada', 'Cuenta bloqueada temporalmente por intentos fallidos de inicio de sesión.')
+      const bloqueada = await registrarFallo('usuarios', user.id)
+      await aud(req, user, 'autenticacion', 'login', 'fallo', { motivo: 'password_incorrecta' })
+      if (bloqueada) {
+        await log(user, 'Cuenta bloqueada', 'Cuenta bloqueada temporalmente por intentos fallidos de inicio de sesión.', req)
+        await aud(req, user, 'seguridad', 'cuenta_bloqueada', 'exito', { motivo: 'intentos_fallidos' })
       }
       return res.status(401).json({ error: CREDENCIALES })
     }
 
     if (user.tenant_estado !== 'Activo') {
+      await aud(req, user, 'autenticacion', 'login', 'denegado', { motivo: 'empresa_inactiva', estado: user.tenant_estado })
       return res.status(403).json({ error: 'La cuenta de tu empresa no está activa. Contacta a soporte de Governex.' })
     }
 
@@ -112,9 +140,14 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
     }
 
     const { etapa } = await abrirSesionTrasPassword(req, res, 'tenant', user as Principal, mfaObligatorioParaRol(user.rol))
-    if (etapa !== 'activa') return res.json({ estado: etapa })
+    if (needsRehash) await aud(req, user, 'seguridad', 'hash_actualizado_argon2id', 'exito')
+    if (etapa !== 'activa') {
+      await aud(req, user, 'autenticacion', 'login_password_correcta', 'exito', { siguiente_paso: etapa })
+      return res.json({ estado: etapa })
+    }
 
-    await log(user, 'Inicio de sesión', `El usuario ${user.nombre} inició sesión con éxito.`)
+    await log(user, 'Inicio de sesión', `El usuario ${user.nombre} inició sesión con éxito.`, req)
+    await aud(req, user, 'autenticacion', 'login', 'exito', { mfa: false })
     res.json({ estado: 'activa', ...(await perfil(user)) })
   } catch (err) {
     console.error(err)
@@ -130,13 +163,18 @@ router.post('/mfa/verificar', mfaLimiter, async (req: Request, res: Response) =>
     const user = await cargarUsuario(previa.usuario_id!)
     if (!user || !user.activo || estaBloqueada(user.bloqueado_hasta)) {
       await revocarSesion(previa.id, 'mfa_rechazado')
+      await aud(req, user, 'autenticacion', 'mfa_verificacion', 'denegado', { motivo: !user?.activo ? 'usuario_inactivo' : 'cuenta_bloqueada' })
       return res.status(401).json({ error: CREDENCIALES })
     }
     const tipo = await verificarCodigo('tenant', user, req.body?.codigo)
-    if (!tipo) return res.status(401).json({ error: 'Código incorrecto' })
+    if (!tipo) {
+      await aud(req, user, 'autenticacion', 'mfa_verificacion', 'fallo')
+      return res.status(401).json({ error: 'Código incorrecto' })
+    }
 
     await activarSesion(req, res, 'tenant', previa)
-    await log(user, 'Inicio de sesión', `El usuario ${user.nombre} inició sesión con MFA${tipo === 'recuperacion' ? ' (código de recuperación)' : ''}.`)
+    await log(user, 'Inicio de sesión', `El usuario ${user.nombre} inició sesión con MFA${tipo === 'recuperacion' ? ' (código de recuperación)' : ''}.`, req)
+    await aud(req, user, 'autenticacion', 'login', 'exito', { mfa: true, tipo_codigo: tipo })
     res.json({ estado: 'activa', ...(await perfil(user, { codigosRestantes: await codigosRestantes('tenant', user.id) })) })
   } catch (err) {
     console.error(err)
@@ -177,13 +215,18 @@ router.post('/mfa/activar', mfaLimiter, async (req: Request, res: Response) => {
     if (!s) return res.status(401).json({ error: 'Sesión no válida', code: 'NO_SESSION' })
     const user = await cargarUsuario(s.usuario_id!)
     const codigos = await confirmarEnrolamiento('tenant', user, req.body?.codigo)
-    if (!codigos) return res.status(400).json({ error: 'Código incorrecto. Verifica la hora de tu teléfono e intenta de nuevo.' })
+    if (!codigos) {
+      await aud(req, user, 'autenticacion', 'mfa_activacion', 'fallo')
+      return res.status(400).json({ error: 'Código incorrecto. Verifica la hora de tu teléfono e intenta de nuevo.' })
+    }
 
-    await log(user, 'MFA activado', `El usuario ${user.nombre} activó la verificación en dos pasos.`)
+    await log(user, 'MFA activado', `El usuario ${user.nombre} activó la verificación en dos pasos.`, req)
+    await aud(req, user, 'autenticacion', 'mfa_activado', 'exito', { primer_ingreso: s.etapa === 'enrolar_mfa' })
     const extra: Record<string, unknown> = { codigosRecuperacion: codigos }
     if (s.etapa === 'enrolar_mfa') {
       await activarSesion(req, res, 'tenant', s)
-      await log(user, 'Inicio de sesión', `El usuario ${user.nombre} inició sesión (primer enrolamiento MFA).`)
+      await log(user, 'Inicio de sesión', `El usuario ${user.nombre} inició sesión (primer enrolamiento MFA).`, req)
+      await aud(req, user, 'autenticacion', 'login', 'exito', { mfa: true, tipo_codigo: 'enrolamiento' })
       return res.json({ estado: 'activa', ...(await perfil({ ...user, mfa_habilitado: true }, extra)) })
     }
     res.json(extra)
@@ -198,14 +241,17 @@ router.post('/mfa/desactivar', authMiddleware, async (req: AuthRequest, res: Res
   try {
     const user = await cargarUsuario(req.user!.id)
     if (mfaObligatorioParaRol(user.rol)) {
+      await aud(req, user, 'seguridad', 'mfa_desactivacion', 'denegado', { motivo: 'obligatorio_para_rol' })
       return res.status(403).json({ error: 'Tu rol exige verificación en dos pasos; no se puede desactivar.' })
     }
     const { ok } = await verifyPassword(String(req.body?.password ?? ''), user.password_hash)
     if (!ok || !(await verificarCodigo('tenant', user, req.body?.codigo))) {
+      await aud(req, user, 'seguridad', 'mfa_desactivacion', 'fallo')
       return res.status(401).json({ error: 'Contraseña o código incorrectos' })
     }
     await desactivarMfa('tenant', user.id)
-    await log(user, 'MFA desactivado', `El usuario ${user.nombre} desactivó la verificación en dos pasos.`)
+    await log(user, 'MFA desactivado', `El usuario ${user.nombre} desactivó la verificación en dos pasos.`, req)
+    await aud(req, user, 'seguridad', 'mfa_desactivado', 'exito')
     res.json({ ok: true })
   } catch (err) {
     console.error(err)
@@ -218,10 +264,12 @@ router.post('/mfa/codigos-recuperacion', authMiddleware, mfaLimiter, async (req:
   try {
     const user = await cargarUsuario(req.user!.id)
     if (!user.mfa_habilitado || !(await verificarCodigo('tenant', user, req.body?.codigo))) {
+      await aud(req, user, 'seguridad', 'mfa_codigos_regenerados', 'fallo')
       return res.status(401).json({ error: 'Código incorrecto' })
     }
     const codigos = await regenerarCodigos('tenant', user.id)
-    await log(user, 'MFA códigos regenerados', `El usuario ${user.nombre} regeneró sus códigos de recuperación.`)
+    await log(user, 'MFA códigos regenerados', `El usuario ${user.nombre} regeneró sus códigos de recuperación.`, req)
+    await aud(req, user, 'seguridad', 'mfa_codigos_regenerados', 'exito')
     res.json({ codigosRecuperacion: codigos })
   } catch (err) {
     console.error(err)
@@ -252,6 +300,7 @@ router.post('/password', authMiddleware, loginLimiter, async (req: AuthRequest, 
     const { ok } = await verifyPassword(String(actual ?? ''), user.password_hash)
     if (!ok) {
       await registrarFallo('usuarios', user.id)
+      await aud(req, user, 'autenticacion', 'cambio_password', 'fallo', { motivo: 'password_actual_incorrecta' })
       return res.status(401).json({ error: 'La contraseña actual no es correcta' })
     }
     const pwError = validarPassword(nueva, { email: user.email, nombre: user.nombre })
@@ -266,7 +315,8 @@ router.post('/password', authMiddleware, loginLimiter, async (req: AuthRequest, 
     // Cierra todas las demás sesiones (si alguien más tenía la contraseña, queda fuera).
     await revocarSesionesUsuario(user.id, 'cambio_password', req.user!.sesionId)
     olvidarEstadoUsuario(user.id)
-    await log(user, 'Cambio de contraseña', `El usuario ${user.nombre} cambió su contraseña; se cerraron sus otras sesiones.`)
+    await log(user, 'Cambio de contraseña', `El usuario ${user.nombre} cambió su contraseña; se cerraron sus otras sesiones.`, req)
+    await aud(req, user, 'autenticacion', 'cambio_password', 'exito', { era_temporal: !!user.debe_cambiar_password })
     res.json({ ok: true })
   } catch (err) {
     console.error(err)
@@ -300,6 +350,7 @@ router.delete('/sesiones/:id', authMiddleware, async (req: AuthRequest, res: Res
     )
     if (!rowCount) return res.status(404).json({ error: 'Sesión no encontrada' })
     await revocarSesion(req.params.id, 'cerrada_por_usuario')
+    await auditar(req, { categoria: 'autenticacion', accion: 'sesion_cerrada_remota', resultado: 'exito', recurso: 'sesiones', recursoId: req.params.id })
     res.json({ ok: true })
   } catch (err) {
     console.error(err)
@@ -311,6 +362,7 @@ router.delete('/sesiones/:id', authMiddleware, async (req: AuthRequest, res: Res
 router.post('/sesiones/cerrar-otras', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     await revocarSesionesUsuario(req.user!.id, 'cerrada_por_usuario', req.user!.sesionId)
+    await auditar(req, { categoria: 'autenticacion', accion: 'sesiones_otras_cerradas', resultado: 'exito', recurso: 'sesiones' })
     res.json({ ok: true })
   } catch (err) {
     console.error(err)
@@ -340,6 +392,9 @@ router.post('/register', authMiddleware, async (req: AuthRequest, res: Response)
        RETURNING id, nombre, email`,
       [nombre, email, hash, rol_id, req.user!.tenantId]
     )
+    await auditar(req, { categoria: 'usuarios', accion: 'usuario_creado', resultado: 'exito', recurso: 'usuarios',
+      recursoId: rows[0].id, detalle: { usuario: rows[0].email, rol_id: Number(rol_id) } })
+    await logActor(req, 'Crear usuario', `Creó el usuario ${rows[0].email}.`)
     res.status(201).json(rows[0])
   } catch (err: any) {
     if (err.code === '23505') return res.status(409).json({ error: 'Email ya registrado' })
@@ -441,6 +496,13 @@ router.post('/users', authMiddleware, async (req: AuthRequest, res: Response) =>
     }
 
     await client.query('COMMIT')
+    await auditar(req, { categoria: 'usuarios', accion: 'usuario_creado', resultado: 'exito', recurso: 'usuarios',
+      recursoId: newUser.id, detalle: {
+        usuario: newUser.email, rol_id: Number(rol_id),
+        permisos_personalizados: !!tiene_permisos_personalizados,
+        permisos_ids: tiene_permisos_personalizados && Array.isArray(permisos_ids) ? permisos_ids.map(Number) : [],
+      } })
+    await logActor(req, 'Crear usuario', `Creó el usuario ${newUser.email}.`)
     res.status(201).json(newUser)
   } catch (err: any) {
     await client.query('ROLLBACK')
@@ -476,7 +538,9 @@ router.put('/users/:id', authMiddleware, async (req: AuthRequest, res: Response)
 
     // Verificar tenant
     const { rows: check } = await client.query(
-      `SELECT id, rol_id, activo FROM usuarios WHERE id = $1 AND tenant_id = $2`,
+      `SELECT u.id, u.rol_id, u.activo, u.email, u.nombre, u.tiene_permisos_personalizados,
+              COALESCE((SELECT array_agg(up.permiso_id ORDER BY up.permiso_id) FROM usuario_permisos up WHERE up.usuario_id = u.id), '{}') AS permisos
+       FROM usuarios u WHERE u.id = $1 AND u.tenant_id = $2`,
       [id, req.user!.tenantId]
     )
     if (check.length === 0) {
@@ -534,6 +598,30 @@ router.put('/users/:id', authMiddleware, async (req: AuthRequest, res: Response)
       : Number(rol_id) !== anterior.rol_id ? 'rol_cambiado' : null
     if (motivo) await revocarSesionesUsuario(uid, motivo, esOtroUsuario ? undefined : req.user!.sesionId)
 
+    // Trazabilidad de cambios en usuarios, roles y permisos (V10): qué cambió, antes → después.
+    const permisosNuevos = tiene_permisos_personalizados && Array.isArray(permisos_ids)
+      ? [...new Set(permisos_ids.map(Number))].sort((a, b) => a - b) : []
+    const cambios: Record<string, unknown> = {}
+    if (anterior.email !== email) cambios.email = { antes: anterior.email, despues: email }
+    if (anterior.nombre !== nombre) cambios.nombre = { antes: anterior.nombre, despues: nombre }
+    if (anterior.rol_id !== Number(rol_id)) cambios.rol_id = { antes: anterior.rol_id, despues: Number(rol_id) }
+    if (anterior.activo !== nuevoActivo) cambios.activo = { antes: anterior.activo, despues: nuevoActivo }
+    if (anterior.tiene_permisos_personalizados !== !!tiene_permisos_personalizados) {
+      cambios.permisos_personalizados = { antes: anterior.tiene_permisos_personalizados, despues: !!tiene_permisos_personalizados }
+    }
+    const permisosAntes = (anterior.permisos || []).map(Number)
+    if (JSON.stringify(permisosAntes) !== JSON.stringify(permisosNuevos)) {
+      cambios.permisos = {
+        agregados: permisosNuevos.filter((x) => !permisosAntes.includes(x)),
+        quitados: permisosAntes.filter((x: number) => !permisosNuevos.includes(x)),
+      }
+    }
+    if (esUnReset) cambios.password = 'restablecida (temporal)'
+    await auditar(req, { categoria: 'usuarios', accion: 'usuario_modificado', resultado: 'exito', recurso: 'usuarios',
+      recursoId: uid, detalle: { usuario: email, cambios, sesiones_cerradas: motivo } })
+    const resumen = Object.keys(cambios).join(', ') || 'sin cambios'
+    await logActor(req, 'Modificar usuario', `Modificó el usuario ${email} (${resumen}).`)
+
     res.json({ success: true })
   } catch (err: any) {
     await client.query('ROLLBACK')
@@ -559,7 +647,8 @@ router.post('/users/:id/restablecer-mfa', authMiddleware, async (req: AuthReques
     await desbloquear('usuarios', objetivo.id)
     await revocarSesionesUsuario(objetivo.id, 'mfa_restablecido')
     const actor = await cargarUsuario(req.user!.id)
-    await log(actor, 'MFA restablecido', `${actor.nombre} restableció la verificación en dos pasos de ${objetivo.email}.`)
+    await log(actor, 'MFA restablecido', `${actor.nombre} restableció la verificación en dos pasos de ${objetivo.email}.`, req)
+    await auditar(req, { categoria: 'usuarios', accion: 'mfa_restablecido', resultado: 'exito', recurso: 'usuarios', recursoId: objetivo.id, detalle: { usuario: objetivo.email } })
     res.json({ ok: true })
   } catch (err) {
     console.error(err)
@@ -595,10 +684,15 @@ router.delete('/users/:id', authMiddleware, async (req: AuthRequest, res: Respon
     olvidarEstadoUsuario(Number(id))
     try {
       await pool.query(`DELETE FROM usuarios WHERE id = $1`, [id])
+      await auditar(req, { categoria: 'usuarios', accion: 'usuario_eliminado', resultado: 'exito', recurso: 'usuarios', recursoId: Number(id) })
+      await logActor(req, 'Eliminar usuario', `Eliminó el usuario #${id}.`)
       res.json({ success: true, message: 'Usuario eliminado' })
     } catch (dbErr) {
       // Si tiene dependencias lo deactivamos
       await pool.query(`UPDATE usuarios SET activo = false WHERE id = $1`, [id])
+      await auditar(req, { categoria: 'usuarios', accion: 'usuario_desactivado', resultado: 'exito', recurso: 'usuarios',
+        recursoId: Number(id), detalle: { motivo: 'tiene_registros_asociados' } })
+      await logActor(req, 'Desactivar usuario', `Desactivó el usuario #${id} (tiene registros asociados).`)
       res.json({ success: true, message: 'El usuario tiene registros asociados en el sistema, por lo que fue desactivado en su lugar.' })
     }
   } catch (err) {
@@ -618,7 +712,11 @@ router.post('/logout', async (req: Request, res: Response) => {
       await revocarSesion(s.id, 'logout')
       if (s.etapa === 'activa' && s.usuario_id) {
         const user = await cargarUsuario(s.usuario_id)
-        if (user) await log(user, 'Cierre de sesión', `El usuario ${user.nombre} cerró su sesión.`)
+        if (user) {
+          await log(user, 'Cierre de sesión', `El usuario ${user.nombre} cerró su sesión.`, req)
+          await auditar(req, { categoria: 'autenticacion', accion: 'logout', resultado: 'exito', tenantId: user.tenant_id,
+            actor: { tipo: 'usuario', id: user.id, email: user.email }, suplantadoPor: s.suplantado_por_admin })
+        }
       }
     }
     limpiarCookies(res, 'tenant')
@@ -629,6 +727,30 @@ router.post('/logout', async (req: Request, res: Response) => {
   }
 })
 
+// GET /api/auth/eventos-seguridad?categoria=&resultado=
+// Bitácora de seguridad inmutable de la PROPIA empresa (Superusuario): inicios
+// de sesión, fallos, bloqueos, MFA, cambios de usuarios y permisos, accesos
+// denegados y accesos de soporte de Governex.
+router.get('/eventos-seguridad', authMiddleware, async (req: AuthRequest, res: Response) => {
+  if (req.user!.rol !== 'Superusuario') return res.status(403).json({ error: 'No autorizado', code: 'FORBIDDEN' })
+  const categoria = typeof req.query.categoria === 'string' ? req.query.categoria : null
+  const resultado = typeof req.query.resultado === 'string' ? req.query.resultado : null
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, fecha, correlation_id, tenant_id, actor_tipo, actor_id, actor_email, suplantado_por_admin, categoria, accion, resultado, recurso, recurso_id, ip, detalle
+       FROM auditoria_eventos
+       WHERE tenant_id = $1 AND ($2::text IS NULL OR categoria = $2) AND ($3::text IS NULL OR resultado = $3)
+       ORDER BY id DESC
+       LIMIT 500`,
+      [req.user!.tenantId, categoria, resultado]
+    )
+    res.json(rows)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al obtener los eventos de seguridad' })
+  }
+})
+
 // GET /api/auth/activity-logs
 router.get('/activity-logs', authMiddleware, async (req: AuthRequest, res: Response) => {
   if (req.user!.rol !== 'Superusuario') {
@@ -636,7 +758,8 @@ router.get('/activity-logs', authMiddleware, async (req: AuthRequest, res: Respo
   }
   try {
     const { rows } = await pool.query(
-      `SELECT id, usuario_nombre, usuario_email, usuario_rol, accion, recurso, detalle, fecha_hora
+      `SELECT id, usuario_nombre, usuario_email, usuario_rol, accion, recurso, detalle, fecha_hora,
+              ip, correlation_id, (suplantado_por_admin IS NOT NULL) AS via_soporte
        FROM logs_actividad
        WHERE tenant_id = $1
        ORDER BY fecha_hora DESC

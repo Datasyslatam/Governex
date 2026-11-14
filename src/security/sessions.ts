@@ -62,6 +62,7 @@ interface NuevaSesion {
   platformAdminId?: number
   tenantId?: number
   suplantadoPorAdmin?: number
+  motivoSuplantacion?: string
   duracionMs?: number
 }
 
@@ -74,10 +75,11 @@ export async function crearSesion(req: Request, res: Response, s: NuevaSesion) {
 
   await pool.query(
     `INSERT INTO sesiones (id, token_hash, tipo, etapa, usuario_id, platform_admin_id, tenant_id, suplantado_por_admin,
-                           csrf_token, ip, user_agent, expira_en)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+                           csrf_token, ip, user_agent, expira_en, motivo_suplantacion)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
     [id, hashToken(token), s.tipo, s.etapa, s.usuarioId ?? null, s.platformAdminId ?? null, s.tenantId ?? null,
-     s.suplantadoPorAdmin ?? null, csrf, clientIp(req), String(req.headers['user-agent'] || '').slice(0, 300), expira]
+     s.suplantadoPorAdmin ?? null, csrf, clientIp(req), String(req.headers['user-agent'] || '').slice(0, 300), expira,
+     s.motivoSuplantacion ? s.motivoSuplantacion.slice(0, 300) : null]
   )
 
   const c = COOKIES[s.tipo]
