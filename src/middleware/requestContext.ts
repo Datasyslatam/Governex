@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import { Request, Response, NextFunction } from 'express'
+import { sinContexto } from '../db'
 
 /**
  * Contexto de cada petición (Fase 3, V10):
@@ -44,7 +45,9 @@ export function requestContext(req: Request, res: Response, next: NextFunction) 
       })
     })
   }
-  next()
+  // Fase 5: sin contexto de BD hasta que la autenticación lo fije (empresa o
+  // sistema). Las tablas con RLS no devuelven filas sin contexto.
+  sinContexto(() => next())
 }
 
 /** Escribe un evento estructurado (una línea JSON) en stdout. */

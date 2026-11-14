@@ -23,9 +23,15 @@ npx tsx scripts/migrate.ts | tail -1
 docker exec -i "$CONT" psql -U governex -d "$TEST_DB" -q -v ON_ERROR_STOP=1 < tests/fixtures.sql
 
 # node directo (no npx) para que el PID sea el del servidor y el trap lo detenga
-PORT=3002 node --import tsx src/index.ts > /tmp/governex-pr-tests.log 2>&1 &
+# Fase 5: la API corre con el rol de mínimo privilegio (RLS efectivo), como en
+# producción; las pruebas y la preparación de la BD usan el rol dueño.
+DATABASE_URL="postgresql://governex_app:${GX_APP_DB_PASSWORD}@127.0.0.1:5433/${TEST_DB}"   PORT=3002 node --import tsx src/index.ts > /tmp/governex-pr-tests.log 2>&1 &
 API_PID=$!
 trap 'kill $API_PID 2>/dev/null || true' EXIT
 for i in $(seq 1 60); do curl -sf "$BASE_URL/health" > /dev/null && break; sleep 1; done
 
 node --test tests/security.test.mjs
+
+# Fase 5: RLS, mínimo privilegio, TLS y retención (en la BD, con el rol de la app)
+node node_modules/typescript/bin/tsc -p tsconfig.server.json   # rls-tests usa dist-server/db.js
+APP_DATABASE_URL="postgresql://governex_app:${GX_APP_DB_PASSWORD}@127.0.0.1:5433/${TEST_DB}"   node scripts/security/rls-tests.cjs

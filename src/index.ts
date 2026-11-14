@@ -7,6 +7,9 @@ import { assertSecurityConfig } from './middleware/securityConfig'
 import { requestRateLimit } from './middleware/rateLimit'
 import { requestContext } from './middleware/requestContext'
 import { securityHeaders, recibirReporteCsp } from './middleware/securityHeaders'
+import { logJson } from './middleware/requestContext'
+import { comoSistema, verificarRolBD } from './db'
+import { iniciarRetencion } from './security/retention'
 
 // Falla rápido si los secretos JWT no son seguros (ver securityConfig.ts).
 assertSecurityConfig()
@@ -109,6 +112,11 @@ app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }))
 app.use(logActivityMiddleware)
 
 // ── API Routes ──────────────────────────────────────────────
+// Fase 5 (RLS): el login, el MFA y el panel de plataforma consultan la BD
+// "como sistema" (aún no se sabe la empresa, o el actor es Governex). Las
+// rutas de /api/auth que exigen sesión pasan después a contexto de empresa
+// en authMiddleware.
+app.use(['/api/auth', '/api/platform-admin'], (_req, _res, next) => comoSistema(() => next()))
 app.use('/api/auth',                  authRouter)
 app.use('/api/riesgos',               riesgosRouter)
 app.use('/api/auditorias',            auditoriasRouter)
@@ -188,4 +196,16 @@ app.use((err: any, _req: express.Request, res: express.Response, next: express.N
 
 app.listen(PORT, () => {
   console.log(`Governex API + Frontend corriendo en puerto ${PORT}`)
+  // Fase 5: informa si RLS es efectivo con el rol de conexión actual.
+  verificarRolBD()
+    .then(({ rol, rlsEfectivo, tablasSinRls }) => {
+      logJson({ tipo: 'bd', rol, rls_efectivo: rlsEfectivo, tablas_tenant_sin_rls: tablasSinRls.length })
+      if (tablasSinRls.length) console.warn(`[db] ATENCIÓN: tablas con tenant_id sin RLS: ${tablasSinRls.join(', ')}`)
+      if (!rlsEfectivo) {
+        console.warn(`[db] ATENCIÓN: la app se conecta como "${rol}" (superusuario, BYPASSRLS o dueño de tablas): ` +
+          'las políticas RLS no se aplican. Usar el rol governex_app (docs/seguridad/FASE_5_REGISTRO_CAMBIOS.md).')
+      }
+    })
+    .catch((err) => console.error('[db] no se pudo verificar el rol de conexión:', err.message))
+  iniciarRetencion()
 })

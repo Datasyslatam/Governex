@@ -39,13 +39,13 @@ Estado al 2026-11-14 (tras la Fase 4). "Corregido" significa que una prueba auto
 | V13 | Autenticación | Enumeración de correos y del estado de la empresa | Medio | Alta / Baja | CWE-204 | Respuesta y tiempo uniformes | Corregido |
 | V14 | CORS | Abierto si `CORS_ORIGINS` está vacío | Medio | Media / Media | CWE-942 | Cerrado por defecto | Corregido (Fase 2) |
 | V15 | DoS | JSON de 15 MB global, sin límite general | Medio | Media / Media | CWE-400 | Límites por ruta + rate limit | Corregido |
-| V16 | BD | TLS sin validar, usuario dueño, sin RLS. **2026-11-14: se eliminó el acceso público a la BD (proxy TCP)**; la app usa la red privada | Medio | Baja / Alta | CWE-295 | TLS verificado, mínimo privilegio, RLS | Abierto (Fase 5) |
+| V16 | BD | TLS sin validar, usuario dueño, sin RLS. **2026-11-14: se eliminó el acceso público a la BD (proxy TCP)**; la app usa la red privada | Medio | Baja / Alta | CWE-295 | TLS verificado, mínimo privilegio, RLS | Corregido en código (Fase 5): rol `governex_app`, RLS en 58 tablas, TLS verificado hacia servidores externos. Activación en producción en 3 pasos ([FASE_5](FASE_5_REGISTRO_CAMBIOS.md#4-activación-en-producción-en-tres-pasos-con-vuelta-atrás)) |
 | V17 | Errores | `error.message` expuesto | Medio | Media / Baja | CWE-209 | Errores genéricos | Corregido |
 | V18 | JWT | Sin algoritmo fijo ni validación de secretos | Medio | Baja / Alta | CWE-347 | HS256 fijo + validación al arrancar | Corregido |
 | V19 | Suplantación | Misma secret, sin rastro visible para la empresa, sin motivo | Medio | Baja / Alta | CWE-269 | Token marcado + bitácora + motivo | Corregido (Fase 3) |
 | V20 | Platform admin | Sin separación de funciones ni restricción de IP | Medio | Baja / Muy alta | CWE-269 | Roles de plataforma + allowlist de IP | Corregido (Fase 3) |
-| V21 | Esquema | Migraciones no reproducibles. ALTER en cada arranque | Medio | Media / Media | n/a | Gestor de migraciones | Parcial (migración 020) |
-| V22 | Datos personales | Sin cifrado de campo, retención ni enmascaramiento | Medio | Media / Media | CWE-311 | Clasificación + cifrado + retención | Abierto (Fase 5) |
+| V21 | Esquema | Migraciones no reproducibles. ALTER en cada arranque | Medio | Media / Media | n/a | Gestor de migraciones | Corregido: gestor de migraciones aplicado automáticamente en el pre-deploy de Railway |
+| V22 | Datos personales | Sin cifrado de campo, retención ni enmascaramiento | Medio | Media / Media | CWE-311 | Clasificación + cifrado + retención | Parcial (Fase 5): clasificación, retención de sesiones; cifrado de campos evaluado y no aplicable hoy; plazo de bitácoras por definir con el cliente |
 | V23 | DevSecOps | Sin CI, SAST, SCA ni escaneo de secretos | Medio | Media / Media | n/a | GitHub Actions + Dependabot + CodeQL + gitleaks | Abierto (Fase 6) |
 | V24 | Continuidad | Sin evidencia de backups, restauración, RPO/RTO ni plan de incidentes | Medio | Media / Alta | n/a | DRP/BCP con pruebas | Abierto (Fase 7) |
 | V25 | Dev | `vite.config.ts` con `allowedHosts: true` | Bajo | Baja / Baja | CWE-350 | Lista de hosts | Corregido (Fase 4) |
@@ -59,7 +59,7 @@ Estado al 2026-11-14 (tras la Fase 4). "Corregido" significa que una prueba auto
 | 2 | MFA TOTP, Argon2id, bloqueo por cuenta, sesión del servidor en cookie HttpOnly + CSRF, logout real, sesiones activas, cambio de contraseña, CORS cerrado | ✔ **completada** (recuperación por correo pendiente: requiere SMTP) |
 | 3 | Bitácora de seguridad inmutable, suplantación trazable, separación de funciones del platform_admin | ✔ **completada** (envío a SIEM externo: según el proveedor que se elija) |
 | 4 | CSP bloqueante, Permissions-Policy, COOP/CORP, no-store en la API, hosts de Vite (CORS cerrado ya en la Fase 2) | ✔ **completada** |
-| 5 | RLS, usuario de BD de mínimo privilegio, TLS verificado, gestor de migraciones, cifrado de campos, retención | Posible KMS |
+| 5 | RLS, usuario de BD de mínimo privilegio, TLS verificado, gestor de migraciones, cifrado de campos, retención | ✔ **completada en código** (activación en producción en 3 pasos; KMS no requerido hoy) |
 | 6 | CI: typecheck, pruebas de seguridad, CodeQL/Semgrep, gitleaks, Dependabot, protección de rama. DAST con OWASP ZAP en local o staging | No |
 | 7 | Entregables: matriz final, roles × permisos, catálogo de controles, DRP/BCP (RPO/RTO), checklist de puesta en producción | Depende del plan de Railway |
 

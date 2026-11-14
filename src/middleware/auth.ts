@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { pool } from '../db'
+import { pool, comoSistema, conTenant } from '../db'
 import { obtenerSesion, csrfValido, SesionDB } from '../security/sessions'
 import { auditar } from '../security/audit'
 
@@ -49,12 +49,13 @@ async function estadoUsuario(usuarioId: number): Promise<EstadoUsuario | null | 
   const c = estadoCache.get(usuarioId)
   if (c && c.hasta > now) return c.e
   try {
-    const { rows } = await pool.query(
+    // Como sistema: se busca al usuario antes de saber a qué empresa pertenece.
+    const { rows } = await comoSistema(() => pool.query(
       `SELECT u.activo, u.tenant_id, u.debe_cambiar_password, r.nombre AS rol, t.estado AS tenant_estado
        FROM usuarios u JOIN roles r ON r.id = u.rol_id JOIN tenants t ON t.id = u.tenant_id
        WHERE u.id = $1`,
       [usuarioId]
-    )
+    ))
     if (!rows[0]) return null
     const e: EstadoUsuario = {
       activo: rows[0].activo,
@@ -78,7 +79,7 @@ const PERMITIDAS_CAMBIO_PASSWORD = new Set(['/api/auth/me', '/api/auth/password'
 export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
   let sesion: SesionDB | null
   try {
-    sesion = await obtenerSesion(req, 'tenant')
+    sesion = await comoSistema(() => obtenerSesion(req, 'tenant'))
   } catch (err) {
     console.error('[authMiddleware] error consultando sesión:', err)
     return res.status(503).json({ error: 'Servicio temporalmente no disponible. Intenta de nuevo en unos segundos.' })
@@ -120,5 +121,7 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
     suplantadoPor: sesion.suplantado_por_admin,
     debeCambiarPassword: e.debeCambiarPassword,
   }
-  next()
+  // Fase 5: todo lo que sigue en esta petición consulta la BD restringido a la
+  // empresa del usuario (RLS, migración 024).
+  conTenant(e.tenantId, () => next())
 }

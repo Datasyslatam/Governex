@@ -51,6 +51,10 @@ jobs:
       # Clave de PRUEBA para cifrar secretos MFA (exigida al arrancar).
       # Entre comillas: sin ellas YAML la interpreta como el número 1.
       MFA_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000001'
+      # Fase 5: contraseña de PRUEBA del rol de mínimo privilegio governex_app.
+      # La fija `npm run migrate` (setup de la BD); el servidor se conecta con
+      # ese rol para que RLS sea efectivo, como en producción.
+      GX_APP_DB_PASSWORD: ci-solo-pruebas-rol-app-2026-gx
       R2_ENDPOINT: https://ci-placeholder.r2.cloudflarestorage.com
       R2_KEY: ci-placeholder
       R2_SECRET: ci-placeholder
@@ -76,9 +80,10 @@ jobs:
       - name: Crear BD de pruebas (schema + migraciones + datos de prueba)
         run: bash tests/setup-db.sh
 
-      - name: Arrancar servidor
+      - name: Arrancar servidor (rol governex_app, RLS efectivo)
         env:
           NODE_ENV: production
+          DATABASE_URL: postgresql://governex_app:ci-solo-pruebas-rol-app-2026-gx@localhost:5432/governex_ci_test
         run: |
           node dist-server/index.js > server.log 2>&1 &
           for i in $(seq 1 30); do
@@ -87,8 +92,29 @@ jobs:
           done
           echo "El servidor no arrancó"; cat server.log; exit 1
 
+      - name: Confirmar que el servidor usa RLS efectivo
+        run: |
+          for i in $(seq 1 15); do
+            grep -q '"rls_efectivo":true' server.log && exit 0
+            sleep 1
+          done
+          echo "El servidor no corre con RLS efectivo"; cat server.log; exit 1
+
       - name: Pruebas de seguridad y aislamiento entre empresas
         run: npm test
+
+      - name: Pruebas de RLS, mínimo privilegio, TLS y retención (Fase 5)
+        env:
+          APP_DATABASE_URL: postgresql://governex_app:ci-solo-pruebas-rol-app-2026-gx@localhost:5432/governex_ci_test
+        run: node scripts/security/rls-tests.cjs --json rls-results.json
+
+      - name: Guardar evidencia de RLS
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencia-pruebas-rls
+          path: rls-results.json
+          if-no-files-found: ignore
 
       - name: Log del servidor (si algo falló)
         if: failure()
@@ -119,6 +145,7 @@ jobs:
       PORT: '3001'
       API_URL: http://127.0.0.1:3001
       MFA_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000002'
+      GX_APP_DB_PASSWORD: ci-solo-pruebas-rol-app-2026-gx
       # Contraseña de los usuarios de prueba que siembra setup-db.cjs (solo CI).
       LOCAL_SEED_PASSWORD: 'Ci-Prueba-2026-Gx!'
       TRUST_PROXY: '0'
@@ -144,9 +171,10 @@ jobs:
       - name: Crear BD (schema + migraciones + usuarios de prueba)
         run: node scripts/local/setup-db.cjs
 
-      - name: Arrancar servidor
+      - name: Arrancar servidor (rol governex_app, RLS efectivo)
         env:
           NODE_ENV: production
+          DATABASE_URL: postgresql://governex_app:ci-solo-pruebas-rol-app-2026-gx@127.0.0.1:5432/governex
         run: |
           node dist-server/index.js > server.log 2>&1 &
           for i in $(seq 1 30); do
@@ -154,6 +182,14 @@ jobs:
             sleep 1
           done
           echo "El servidor no arrancó"; cat server.log; exit 1
+
+      - name: Confirmar que el servidor usa RLS efectivo
+        run: |
+          for i in $(seq 1 15); do
+            grep -q '"rls_efectivo":true' server.log && exit 0
+            sleep 1
+          done
+          echo "El servidor no corre con RLS efectivo"; cat server.log; exit 1
 
       - name: Pruebas de seguridad de la API
         run: node scripts/security/api-security-tests.cjs --json api-security-results.json

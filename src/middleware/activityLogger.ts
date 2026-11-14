@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { AuthRequest } from './auth'
-import { pool } from '../db'
+import { pool, comoSistema } from '../db'
 import { auditar } from '../security/audit'
 
 /**
@@ -22,13 +22,13 @@ export async function registrarActividadDirecto(
 ) {
   const r = req as any
   try {
-    await pool.query(
+    await comoSistema(() => pool.query(
       `INSERT INTO logs_actividad (tenant_id, usuario_id, usuario_nombre, usuario_email, usuario_rol, accion, recurso, detalle,
                                    ip, correlation_id, suplantado_por_admin)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [tenantId, userId, usuarioNombre, usuarioEmail, usuarioRol, accion, recurso, detalle,
        req?.ip ? String(req.ip).slice(0, 64) : null, req?.correlationId ?? null, r?.user?.suplantadoPor ?? null]
-    )
+    ))
   } catch (err) {
     console.error('[registrarActividadDirecto] error al guardar log:', err)
   }
@@ -72,7 +72,7 @@ export async function logActivityMiddleware(req: AuthRequest, res: Response, nex
     const recursoId = urlParts[3] && /^[\w-]{1,60}$/.test(urlParts[3]) ? urlParts[3] : null
 
     try {
-      const { rows } = await pool.query('SELECT nombre, email FROM usuarios WHERE id = $1', [userId])
+      const { rows } = await comoSistema(() => pool.query('SELECT nombre, email FROM usuarios WHERE id = $1', [userId]))
       const userName = rows[0]?.nombre || 'Usuario Desconocido'
       const userEmail = rows[0]?.email || ''
 

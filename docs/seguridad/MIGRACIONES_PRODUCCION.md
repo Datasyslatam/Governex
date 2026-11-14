@@ -90,3 +90,10 @@ Solo para casos excepcionales, como registrar una línea base. Como la base de d
 
 ## Variables obsoletas del servicio Governex
 `JWT_SECRET`, `PLATFORM_ADMIN_JWT_SECRET`, `R2_PUBLIC_URL` y `NIXPACKS_NODE_VERSION` no se usaban en el código. **Se eliminaron de Railway el 2026-11-14.** El servicio quedó con `DATABASE_URL`, `GEMINI_API_KEY`, `MFA_ENCRYPTION_KEY`, `R2_BUCKET`, `R2_ENDPOINT`, `R2_KEY` y `R2_SECRET`.
+
+## Rol de la app y rol de migraciones (Fase 5)
+Desde la Fase 5 hay dos conexiones:
+- **`DATABASE_URL`**: la usa la app. Rol de mínimo privilegio `governex_app`, con RLS efectivo.
+- **`MIGRATION_DATABASE_URL`**: la usa solo `npm run migrate` en el pre-deploy. Rol dueño (`${{Postgres.DATABASE_URL}}`).
+
+Si falta `MIGRATION_DATABASE_URL`, el pre-deploy intentará migrar con `governex_app` y fallará por falta de permisos. El despliegue se detiene sin afectar la versión activa. Ver [FASE_5_REGISTRO_CAMBIOS.md](FASE_5_REGISTRO_CAMBIOS.md).

@@ -1,0 +1,97 @@
+{
+  "fecha": "2026-11-14T16:33:03.660Z",
+  "total": 15,
+  "superadas": 15,
+  "resultados": [
+    {
+      "id": "R01",
+      "nombre": "La app se conecta con un rol sin superusuario, sin BYPASSRLS y sin ser dueño de tablas",
+      "ok": true,
+      "detalle": "governex_app"
+    },
+    {
+      "id": "R02",
+      "nombre": "Todas las tablas con tenant_id tienen RLS forzado (salvo sesiones y auditoria_eventos)",
+      "ok": true,
+      "detalle": "58 tablas con política"
+    },
+    {
+      "id": "R03",
+      "nombre": "Sin contexto la BD no devuelve filas de empresa",
+      "ok": true,
+      "detalle": "0 usuarios visibles"
+    },
+    {
+      "id": "R04",
+      "nombre": "Con contexto de empresa A solo se ven filas de A, aunque la consulta no filtre",
+      "ok": true,
+      "detalle": "solo tenant 2"
+    },
+    {
+      "id": "R05",
+      "nombre": "Empresa A no puede modificar ni borrar filas de B (0 filas afectadas)",
+      "ok": true,
+      "detalle": "update 0, delete 0"
+    },
+    {
+      "id": "R06",
+      "nombre": "Empresa A no puede insertar filas a nombre de B",
+      "ok": true,
+      "detalle": "42501: new row violates row-level security policy for table \"tipos_proceso\""
+    },
+    {
+      "id": "R07",
+      "nombre": "Empresa A no puede mover una fila suya a B",
+      "ok": true,
+      "detalle": "42501: new row violates row-level security policy for table \"tipos_proceso\""
+    },
+    {
+      "id": "R08",
+      "nombre": "Integridad padre→hijo (022) sigue bloqueando referencias a otra empresa con RLS activo",
+      "ok": true,
+      "detalle": "23503: Referencia entre empresas no permitida: procesos.tipo_id = 7 pertenece"
+    },
+    {
+      "id": "R09",
+      "nombre": "Contexto \"sistema\" (login, plataforma) ve todas las empresas",
+      "ok": true,
+      "detalle": "2 empresas"
+    },
+    {
+      "id": "R10",
+      "nombre": "El rol de la app no puede crear, borrar ni alterar tablas, ni desactivar RLS",
+      "ok": true,
+      "detalle": "3 intentos rechazados"
+    },
+    {
+      "id": "R11",
+      "nombre": "El rol de la app no lee el control de migraciones ni modifica bitácoras",
+      "ok": true,
+      "detalle": "3 intentos rechazados"
+    },
+    {
+      "id": "R12",
+      "nombre": "La app (pool real) aplica el contexto: empresa / sin contexto / sistema",
+      "ok": true,
+      "detalle": "empresa=1, sin contexto=0, sistema>=2"
+    },
+    {
+      "id": "R13",
+      "nombre": "El contexto no se filtra entre peticiones concurrentes que comparten el pool",
+      "ok": true,
+      "detalle": "400 consultas concurrentes correctas"
+    },
+    {
+      "id": "R14",
+      "nombre": "Retención: se borran sesiones vencidas/revocadas hace más de 30 días, no las vigentes",
+      "ok": true,
+      "detalle": "2 borradas, 1 vigente conservada"
+    },
+    {
+      "id": "R15",
+      "nombre": "TLS hacia una BD externa valida el certificado; red privada y local sin TLS",
+      "ok": true,
+      "detalle": "externo=verifica, interno/local=sin TLS, exención solo explícita"
+    }
+  ]
+}

@@ -37,6 +37,11 @@ PORT=3001
 LOCAL_DB_PASSWORD=${dbPassword}
 DATABASE_URL=postgresql://governex:${dbPassword}@127.0.0.1:5433/governex
 
+# Fase 5: contraseña del rol de mínimo privilegio governex_app (RLS). La fija
+# "npm run migrate". Para correr la app con RLS en local:
+#   DATABASE_URL=postgresql://governex_app:<esta clave>@127.0.0.1:5433/governex
+GX_APP_DB_PASSWORD=${rnd(24)}
+
 # Cifra los secretos MFA (TOTP) en la BD. 32 bytes en hex.
 MFA_ENCRYPTION_KEY=${crypto.randomBytes(32).toString('hex')}
 

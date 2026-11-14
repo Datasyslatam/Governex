@@ -11,7 +11,7 @@
  * nuevos de campos de control).
  */
 import { Request } from 'express'
-import { pool } from '../db'
+import { pool, comoSistema } from '../db'
 import { logJson } from '../middleware/requestContext'
 
 export type Categoria = 'autenticacion' | 'acceso' | 'usuarios' | 'plataforma' | 'datos' | 'seguridad'
@@ -61,7 +61,7 @@ export async function auditar(req: Request | null, ev: EventoAuditoria): Promise
   // Completa el correo del actor para que la bitácora sea legible por sí sola.
   if (actor.tipo === 'usuario' && actor.id && !actor.email) {
     try {
-      const { rows } = await pool.query('SELECT email FROM usuarios WHERE id = $1', [actor.id])
+      const { rows } = await comoSistema(() => pool.query('SELECT email FROM usuarios WHERE id = $1', [actor.id]))
       actor.email = rows[0]?.email ?? null
     } catch { /* sin correo: queda el id */ }
   }
@@ -89,14 +89,14 @@ export async function auditar(req: Request | null, ev: EventoAuditoria): Promise
     suplantado_por: fila.suplantado_por_admin, recurso: fila.recurso, recurso_id: fila.recurso_id, ip: fila.ip })
 
   try {
-    await pool.query(
+    await comoSistema(() => pool.query(
       `INSERT INTO auditoria_eventos (correlation_id, tenant_id, actor_tipo, actor_id, actor_email, suplantado_por_admin,
          categoria, accion, resultado, recurso, recurso_id, ip, user_agent, metodo, ruta, detalle, hash_anterior, hash)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'','')`,
       [fila.correlation_id, fila.tenant_id, fila.actor_tipo, fila.actor_id, fila.actor_email, fila.suplantado_por_admin,
        fila.categoria, fila.accion, fila.resultado, fila.recurso, fila.recurso_id, fila.ip, fila.user_agent,
        fila.metodo, fila.ruta, JSON.stringify(fila.detalle)]
-    )
+    ))
   } catch (err) {
     console.error('[auditoria] no se pudo registrar el evento en la BD:', (err as Error).message)
   }

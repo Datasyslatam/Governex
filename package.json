@@ -21,7 +21,8 @@
     "local:setup": "node scripts/local/setup-db.cjs",
     "local:reset": "node scripts/local/setup-db.cjs --reset",
     "test:security": "node scripts/security/api-security-tests.cjs",
-    "audit:verify": "node scripts/security/verificar-bitacora.cjs"
+    "audit:verify": "node scripts/security/verificar-bitacora.cjs",
+    "test:rls": "node scripts/security/rls-tests.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1081.0",

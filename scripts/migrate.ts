@@ -23,12 +23,13 @@
  * apliquen migraciones a la vez; cada archivo corre en su propia transacción
  * (salvo los que ya traen BEGIN/COMMIT propios), y se detiene al primer error.
  */
-import 'dotenv/config'
+import './migrate-env' // antes que src/db: usa MIGRATION_DATABASE_URL si existe
 import { parse } from 'dotenv'
-import { createHash } from 'crypto'
+import { createHash, pbkdf2Sync, createHmac, randomBytes } from 'crypto'
 import { readdirSync, readFileSync } from 'fs'
 import path from 'path'
-import { pool } from '../src/db'
+import type { PoolClient } from 'pg'
+import { pool, comoSistema } from '../src/db'
 
 const DIR = path.join(process.cwd(), 'migrations')
 const LOCK_ID = 727_001 // identificador arbitrario y fijo del advisory lock
@@ -64,12 +65,47 @@ function describirDestino(url: string): string {
     const u = new URL(url)
     destino = `${u.hostname}:${u.port || '5432'}${u.pathname}`
   } catch { /* se muestra el texto genérico */ }
-  let origen = 'variable de entorno'
+  let origen = process.env.GX_ORIGEN_URL_MIGRACION || 'variable de entorno'
   try {
     const envArchivo = parse(readFileSync(path.join(process.cwd(), '.env')))
     if (envArchivo.DATABASE_URL === url) origen = 'archivo .env (¿olvidó definir DATABASE_URL en esta terminal?)'
   } catch { /* sin .env */ }
   return `Base de datos destino: ${destino}  ·  conexión tomada de: ${origen}`
+}
+
+/**
+ * Verificador SCRAM-SHA-256 (RFC 5802/7677) de una contraseña. Se envía a
+ * PostgreSQL ya derivado, así la contraseña en claro nunca viaja en la
+ * sentencia ni puede quedar en un log del servidor de BD.
+ */
+function verificadorScram(password: string): string {
+  const sal = randomBytes(16)
+  const iteraciones = 4096
+  const salted = pbkdf2Sync(password.normalize('NFKC'), sal, iteraciones, 32, 'sha256')
+  const clientKey = createHmac('sha256', salted).update('Client Key').digest()
+  const storedKey = createHash('sha256').update(clientKey).digest()
+  const serverKey = createHmac('sha256', salted).update('Server Key').digest()
+  return `SCRAM-SHA-256$${iteraciones}:${sal.toString('base64')}$${storedKey.toString('base64')}:${serverKey.toString('base64')}`
+}
+
+/**
+ * Fase 5: si existe el rol governex_app (migración 024) y GX_APP_DB_PASSWORD
+ * está definida, le da LOGIN con esa contraseña. Sin la variable el rol queda
+ * como esté (NOLOGIN al crearse): la app sigue con su conexión actual.
+ */
+async function configurarRolApp(client: PoolClient) {
+  const { rows } = await client.query(`SELECT 1 FROM pg_roles WHERE rolname = 'governex_app'`)
+  if (!rows[0]) return
+  const pw = process.env.GX_APP_DB_PASSWORD
+  if (!pw) {
+    console.log('Rol governex_app: sin GX_APP_DB_PASSWORD, no se modifica su acceso.')
+    return
+  }
+  if (pw.length < 24) throw new Error('GX_APP_DB_PASSWORD debe tener al menos 24 caracteres')
+  const { rows: s } = await client.query(
+    `SELECT format('ALTER ROLE governex_app WITH LOGIN PASSWORD %L', $1::text) AS sql`, [verificadorScram(pw)])
+  await client.query(s[0].sql)
+  console.log('Rol governex_app: acceso habilitado con la contraseña de GX_APP_DB_PASSWORD.')
 }
 
 async function main() {
@@ -159,6 +195,7 @@ async function main() {
 
     if (pendientes.length === 0) {
       console.log('No hay migraciones pendientes.')
+      await configurarRolApp(client)
       return
     }
 
@@ -182,6 +219,7 @@ async function main() {
       }
     }
     console.log(`${pendientes.length} migración(es) aplicadas.`)
+    await configurarRolApp(client)
   } finally {
     await client.query('SELECT pg_advisory_unlock($1)', [LOCK_ID]).catch(() => {})
     client.release()
@@ -189,7 +227,7 @@ async function main() {
   }
 }
 
-main().catch(err => {
+comoSistema(() => main()).catch(err => {
   console.error(err.message || err)
   process.exitCode = 1
 })

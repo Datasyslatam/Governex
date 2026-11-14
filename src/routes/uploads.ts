@@ -3,7 +3,7 @@ import multer from 'multer'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { ACCEPTED_MIME_TYPES } from '../constants/uploads'
 import { uploadObject, normalizeKey, isKeyOwnedByTenant, getSignedDownloadUrl } from '../services/storageService'
-import { pool } from '../db'
+import { pool, conTenant } from '../db'
 
 const router = Router()
 
@@ -48,7 +48,9 @@ const upload = multer({
 // pero desde ahora su contenido es una key de R2, no una URL pública) y pide
 // una URL de descarga firmada bajo demanda vía GET /api/uploads/signed-url.
 router.post('/', (req: AuthRequest, res: Response) => {
-  upload.single('file')(req, res, async (err) => {
+  // multer procesa el cuerpo con eventos del stream, que pierden el contexto
+  // de BD de la petición (Fase 5): se restablece el de la empresa del usuario.
+  upload.single('file')(req, res, (err) => conTenant(req.user!.tenantId, async () => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({ error: 'El archivo supera el tamaño máximo permitido (20 MB)' })
@@ -101,7 +103,7 @@ router.post('/', (req: AuthRequest, res: Response) => {
       console.error(uploadErr)
       res.status(500).json({ error: 'Error al subir archivo' })
     }
-  })
+  }))
 })
 
 // GET /api/uploads/signed-url?key=...
