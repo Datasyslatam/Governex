@@ -8,6 +8,9 @@
  *   npm run migrate                    aplica las migraciones pendientes
  *   npm run migrate -- --status        muestra aplicadas y pendientes (no cambia nada)
  *   npm run migrate -- --baseline=NNN  registra 001..NNN como ya aplicadas SIN ejecutarlas
+ *   npm run migrate -- --baseline-si-vacia=NNN  como el anterior, pero SOLO si schema_migrations
+ *                                     está vacía en una BD con esquema; luego aplica lo pendiente
+ *                                     (lo usa el pre-deploy de Railway; con la tabla poblada no hace nada)
  *
  * Primera vez:
  *   - BD existente (producción), donde 001..019 se aplicaron a mano:
@@ -32,6 +35,7 @@ const LOCK_ID = 727_001 // identificador arbitrario y fijo del advisory lock
 const args = process.argv.slice(2)
 const soloEstado = args.includes('--status')
 const baselineArg = args.find(a => a.startsWith('--baseline='))?.split('=')[1]
+const baselineSiVaciaArg = args.find(a => a.startsWith('--baseline-si-vacia='))?.split('=')[1]
 
 interface Archivo { version: string; nombre: string; sql: string; checksum: string }
 
@@ -108,7 +112,7 @@ async function main() {
       return
     }
 
-    const pendientes = archivos.filter(a => !registradas.has(a.version))
+    let pendientes = archivos.filter(a => !registradas.has(a.version))
 
     if (soloEstado) {
       for (const a of archivos) {
@@ -118,6 +122,28 @@ async function main() {
       console.log(`\n${pendientes.length} pendiente(s).`)
       return
     }
+
+    // --baseline-si-vacia=NNN (pre-deploy de Railway): si la BD ya tiene
+    // esquema pero schema_migrations está vacía, registra 001..NNN como línea
+    // base y continúa. Solo es seguro si las migraciones posteriores a NNN se
+    // pueden re-ejecutar sin efecto (020..023 lo son: IF NOT EXISTS / OR
+    // REPLACE / DROP ... IF EXISTS). Con la tabla ya poblada no hace nada.
+    if (registradas.size === 0 && baselineSiVaciaArg && !soloEstado) {
+      if (!/^\d{3}$/.test(baselineSiVaciaArg)) throw new Error('--baseline-si-vacia debe ser un número de 3 dígitos')
+      const { rows: t } = await client.query(`SELECT to_regclass('public.tenants') IS NOT NULL AS existe`)
+      if (t[0].existe) {
+        const base = archivos.filter(a => a.version <= baselineSiVaciaArg)
+        for (const a of base) {
+          await client.query(
+            `INSERT INTO schema_migrations (version, nombre, checksum, modo) VALUES ($1, $2, $3, 'baseline')`,
+            [a.version, a.nombre, a.checksum])
+          registradas.set(a.version, { checksum: a.checksum, modo: 'baseline' })
+        }
+        console.log(`schema_migrations estaba vacía en una BD con esquema: línea base registrada hasta ${baselineSiVaciaArg} (${base.length} migraciones).`)
+      }
+    }
+
+    pendientes = archivos.filter(a => !registradas.has(a.version))
 
     if (registradas.size === 0) {
       const { rows: t } = await client.query(`SELECT to_regclass('public.tenants') IS NOT NULL AS existe`)
