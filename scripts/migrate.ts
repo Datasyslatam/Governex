@@ -21,6 +21,7 @@
  * (salvo los que ya traen BEGIN/COMMIT propios), y se detiene al primer error.
  */
 import 'dotenv/config'
+import { parse } from 'dotenv'
 import { createHash } from 'crypto'
 import { readdirSync, readFileSync } from 'fs'
 import path from 'path'
@@ -47,8 +48,29 @@ function leerMigraciones(): Archivo[] {
     })
 }
 
+/**
+ * Indica contra qué base de datos se va a trabajar (servidor, puerto y nombre,
+ * nunca usuario ni contraseña) y de dónde salió la conexión. Evita aplicar sin
+ * querer las migraciones a la BD local: si $env:DATABASE_URL no se definió en
+ * la misma terminal, dotenv toma la del archivo .env.
+ */
+function describirDestino(url: string): string {
+  let destino = '(URL no reconocible)'
+  try {
+    const u = new URL(url)
+    destino = `${u.hostname}:${u.port || '5432'}${u.pathname}`
+  } catch { /* se muestra el texto genérico */ }
+  let origen = 'variable de entorno'
+  try {
+    const envArchivo = parse(readFileSync(path.join(process.cwd(), '.env')))
+    if (envArchivo.DATABASE_URL === url) origen = 'archivo .env (¿olvidó definir DATABASE_URL en esta terminal?)'
+  } catch { /* sin .env */ }
+  return `Base de datos destino: ${destino}  ·  conexión tomada de: ${origen}`
+}
+
 async function main() {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL no está definida')
+  console.log(describirDestino(process.env.DATABASE_URL))
   const client = await pool.connect()
   try {
     await client.query('SELECT pg_advisory_lock($1)', [LOCK_ID])
