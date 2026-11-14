@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppRoutes } from "./routes/AppRoutes";
 import ImpersonationBanner from "./components/ImpersonationBanner";
+import AvisoNuevaVersion from "./components/AvisoNuevaVersion";
 
 function App() {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ function App() {
   }, [navigate]);
 
   return (
-    <div className="App"> <ImpersonationBanner /> <AppRoutes /> </div>
+    <div className="App"> <ImpersonationBanner /> <AppRoutes /> <AvisoNuevaVersion /> </div>
   );
 }
 
