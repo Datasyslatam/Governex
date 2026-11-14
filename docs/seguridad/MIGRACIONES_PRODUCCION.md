@@ -26,8 +26,24 @@ Aplicando 0NN_....sql... OK
 
 **Ya no hay que abrir el acceso público ni ejecutar migraciones desde un PC.** Antes de fusionar un PR que trae una migración nueva, haz un backup (Postgres → Backups).
 
+### Línea base automática (`--baseline-si-vacia=019`)
+El comando real del pre-deploy es `npm run migrate -- --baseline-si-vacia=019`. Si la BD ya tiene esquema pero `schema_migrations` está vacía, registra 001–019 como línea base y aplica 020 en adelante. Si la tabla ya tiene filas, no hace nada distinto de `npm run migrate`.
+
+Producción estaba en ese caso: 001–019 se aplicaron a mano y 020–022 desde el panel de Railway, sin registrar la línea base. El primer intento de despliegue (PR #13) se detuvo con *Pre-deploy command failed*. La versión anterior siguió atendiendo y `governex.app/api/health` respondió 200.
+
+Es seguro re-ejecutar 020–023 sobre una BD que ya las tenga, porque todas sus sentencias son idempotentes (`IF NOT EXISTS`, `OR REPLACE`, `DROP … IF EXISTS`). **Toda migración nueva debe mantener esa propiedad.**
+
+Prueba local con una BD en el estado de producción (001–022 aplicadas, sin `schema_migrations`, con datos):
+
+| Paso | Resultado |
+|---|---|
+| `npm run migrate` (pre-deploy del PR #13) | Error: `La tabla schema_migrations está vacía` (igual que en Railway) |
+| `npm run migrate -- --baseline-si-vacia=019` | Línea base 001–019. 020, 021, 022 y 023 aplicadas OK |
+| La misma orden de nuevo (siguiente despliegue) | `No hay migraciones pendientes.` |
+| Logins (plataforma con correo inexistente / plataforma y empresa con credenciales correctas) | 401 / 200 / 200; datos existentes intactos |
+| `gx_auditoria_verificar()` | 0 problemas |
+
 ### Si el pre-deploy falla
-- `La tabla schema_migrations está vacía`: la BD no tiene línea base. Hay que registrarla una vez con el procedimiento manual de abajo (`npm run migrate -- --baseline=NNN`).
 - `Se detuvo en 0NN_...`: la migración tiene un error. La BD queda como estaba, porque esa migración se revierte completa. Se corrige el archivo en un PR nuevo.
 
 ## Incidente que motivó el cambio (2026-11-14)
