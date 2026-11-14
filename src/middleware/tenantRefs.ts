@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express'
 import { pool } from '../db'
 import { AuthRequest } from './auth'
+import { auditar } from '../security/audit'
 
 /**
  * Validación de llaves foráneas recibidas en el cuerpo de la petición
@@ -71,6 +72,11 @@ export function requireTenantRefs(campos: Record<string, TablaTenant>) {
         if (valor === undefined || valor === null || valor === '') continue
         const ids = Array.isArray(valor) ? valor.filter((v) => v !== null && v !== '') : [valor]
         if (!(await referenciasValidas(tabla, ids, tenantId))) {
+          // Posible intento de acceso a datos de otra empresa (IDOR): se registra.
+          await auditar(req, {
+            categoria: 'seguridad', accion: 'referencia_otra_empresa', resultado: 'denegado', recurso: tabla,
+            detalle: { campo, valores: ids.slice(0, 10).map(String) },
+          })
           return res.status(400).json({ error: `${campo} no pertenece a tu organización` })
         }
       }

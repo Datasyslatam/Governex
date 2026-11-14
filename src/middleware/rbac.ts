@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express'
 import { pool } from '../db'
 import { AuthRequest } from './auth'
+import { auditar } from '../security/audit'
 
 type Accion = 'leer' | 'crear' | 'editar' | 'eliminar' | 'aprobar'
 
@@ -18,6 +19,15 @@ const cache = new Map<string, { allowed: boolean; expiresAt: number }>()
  * Uso:
  *   router.delete('/:id', authMiddleware, requirePermission('riesgos', 'eliminar'), handler)
  */
+/** Responde 403 y deja constancia en la bitácora de seguridad (V10). */
+async function denegar(req: AuthRequest, res: Response, recurso: string, accion: string) {
+  await auditar(req, {
+    categoria: 'acceso', accion: 'permiso_denegado', resultado: 'denegado', recurso,
+    detalle: { permiso: `${recurso}:${accion}`, rol: req.user?.rol },
+  })
+  return res.status(403).json({ error: `No tienes permiso para ${accion} en ${recurso}`, code: 'FORBIDDEN' })
+}
+
 export function requirePermission(recurso: string, accion: Accion) {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
     const rol = req.user?.rol
@@ -31,7 +41,7 @@ export function requirePermission(recurso: string, accion: Accion) {
     const now = Date.now()
 
     if (cached && cached.expiresAt > now) {
-      if (!cached.allowed) return res.status(403).json({ error: `No tienes permiso para ${accion} en ${recurso}`, code: 'FORBIDDEN' })
+      if (!cached.allowed) return denegar(req, res, recurso, accion)
       return next()
     }
 
@@ -48,7 +58,7 @@ export function requirePermission(recurso: string, accion: Accion) {
       const allowed = (rows.length ?? 0) > 0
       cache.set(cacheKey, { allowed, expiresAt: now + TTL_MS })
 
-      if (!allowed) return res.status(403).json({ error: `No tienes permiso para ${accion} en ${recurso}`, code: 'FORBIDDEN' })
+      if (!allowed) return denegar(req, res, recurso, accion)
       next()
     } catch (err) {
       console.error('[requirePermission] error consultando RBAC:', err)

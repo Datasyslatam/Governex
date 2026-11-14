@@ -20,7 +20,7 @@
 
 ## 2. Matriz de vulnerabilidades y riesgos
 
-Estado al 2026-11-13 (tras la Fase 2). "Corregido" significa que una prueba automatizada lo demuestra (ver los registros de las Fases 0–1 y 2).
+Estado al 2026-11-13 (tras la Fase 3). "Corregido" significa que una prueba automatizada lo demuestra (ver los registros de las Fases 0–1 y 2).
 
 | ID | Componente | Hallazgo | Crit. | Prob. / Impacto | CWE | Control recomendado | Estado |
 |---|---|---|---|---|---|---|---|
@@ -33,7 +33,7 @@ Estado al 2026-11-13 (tras la Fase 2). "Corregido" significa que una prueba auto
 | V07 | Frontend | JWT en `localStorage`, sin CSP | Alto | Media / Alta | CWE-922 | Cookie HttpOnly + CSP | Parcial (cookie HttpOnly; CSP en Fase 4) |
 | V08 | Contraseñas | Sin política. bcrypt 10. Sin cambio ni recuperación | Alto | Alta / Media | CWE-521 | Política + Argon2id + flujo de recuperación | Corregido salvo recuperación por correo (requiere SMTP) |
 | V09 | Fuerza bruta | Límite por IP+email en memoria, sin bloqueo por cuenta | Alto | Media / Alta | CWE-307 | Bloqueo por cuenta en BD | Corregido (Fase 2) |
-| V10 | Auditoría | Bitácora sin IP, correlación ni resultado. No registra fallos ni 403. Es mutable | Alto | Alta / Alta | CWE-778 | Bitácora de seguridad inmutable, exportable a SIEM | Abierto (Fase 3) |
+| V10 | Auditoría | Bitácora sin IP, correlación ni resultado. No registra fallos ni 403. Es mutable | Alto | Alta / Alta | CWE-778 | Bitácora de seguridad inmutable, exportable a SIEM | Corregido (Fase 3; envío a SIEM externo pendiente de proveedor) |
 | V11 | Repositorio | Credenciales sembradas (hash fijo, correo personal) | Alto | Media / Muy alta | CWE-798 | Quitar la siembra y rotar | Corregido en el repo (rotar en prod) |
 | V12 | IA | 17 endpoints sin permiso ni cuota. Datos a un tercero | Medio | Alta / Media | CWE-770 | Permiso + cuota + minimización | Corregido (permiso y cuota) |
 | V13 | Autenticación | Enumeración de correos y del estado de la empresa | Medio | Alta / Baja | CWE-204 | Respuesta y tiempo uniformes | Corregido |
@@ -42,8 +42,8 @@ Estado al 2026-11-13 (tras la Fase 2). "Corregido" significa que una prueba auto
 | V16 | BD | TLS sin validar, usuario dueño, sin RLS | Medio | Baja / Alta | CWE-295 | TLS verificado, mínimo privilegio, RLS | Abierto (Fase 5) |
 | V17 | Errores | `error.message` expuesto | Medio | Media / Baja | CWE-209 | Errores genéricos | Corregido |
 | V18 | JWT | Sin algoritmo fijo ni validación de secretos | Medio | Baja / Alta | CWE-347 | HS256 fijo + validación al arrancar | Corregido |
-| V19 | Suplantación | Misma secret, sin rastro visible para la empresa, sin motivo | Medio | Baja / Alta | CWE-269 | Token marcado + bitácora + motivo | Parcial (sesión marcada; motivo y bitácora en Fase 3) |
-| V20 | Platform admin | Sin separación de funciones ni restricción de IP | Medio | Baja / Muy alta | CWE-269 | Roles de plataforma + allowlist de IP | Abierto (Fase 3) |
+| V19 | Suplantación | Misma secret, sin rastro visible para la empresa, sin motivo | Medio | Baja / Alta | CWE-269 | Token marcado + bitácora + motivo | Corregido (Fase 3) |
+| V20 | Platform admin | Sin separación de funciones ni restricción de IP | Medio | Baja / Muy alta | CWE-269 | Roles de plataforma + allowlist de IP | Corregido (Fase 3) |
 | V21 | Esquema | Migraciones no reproducibles. ALTER en cada arranque | Medio | Media / Media | n/a | Gestor de migraciones | Parcial (migración 020) |
 | V22 | Datos personales | Sin cifrado de campo, retención ni enmascaramiento | Medio | Media / Media | CWE-311 | Clasificación + cifrado + retención | Abierto (Fase 5) |
 | V23 | DevSecOps | Sin CI, SAST, SCA ni escaneo de secretos | Medio | Media / Media | n/a | GitHub Actions + Dependabot + CodeQL + gitleaks | Abierto (Fase 6) |
@@ -57,7 +57,7 @@ Estado al 2026-11-13 (tras la Fase 2). "Corregido" significa que una prueba auto
 | 0 | Entorno local reproducible (Docker) | Docker ✔ |
 | 1 | V01, V03, V04, V05, V08 (política), V11, V12, V13, V15, V17, V18, V21 (parcial) | No ✔ **completada** |
 | 2 | MFA TOTP, Argon2id, bloqueo por cuenta, sesión del servidor en cookie HttpOnly + CSRF, logout real, sesiones activas, cambio de contraseña, CORS cerrado | ✔ **completada** (recuperación por correo pendiente: requiere SMTP) |
-| 3 | Bitácora de seguridad inmutable, suplantación trazable, separación de funciones del platform_admin | SIEM del cliente o servicio externo (costo) |
+| 3 | Bitácora de seguridad inmutable, suplantación trazable, separación de funciones del platform_admin | ✔ **completada** (envío a SIEM externo: según el proveedor que se elija) |
 | 4 | CSP (Report-Only → enforce), Permissions-Policy, CORS cerrado, hosts de Vite | No |
 | 5 | RLS, usuario de BD de mínimo privilegio, TLS verificado, gestor de migraciones, cifrado de campos, retención | Posible KMS |
 | 6 | CI: typecheck, pruebas de seguridad, CodeQL/Semgrep, gitleaks, Dependabot, protección de rama. DAST con OWASP ZAP en local o staging | No |

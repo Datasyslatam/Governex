@@ -40,7 +40,10 @@ function leerMigraciones(): Archivo[] {
     .sort()
     .map(nombre => {
       const sql = readFileSync(path.join(DIR, nombre), 'utf8')
-      return { version: nombre.slice(0, 3), nombre, sql, checksum: createHash('sha256').update(sql).digest('hex') }
+      // Checksum sobre saltos de línea normalizados: Git en Windows convierte LF→CRLF
+      // y eso no debe contar como "archivo modificado".
+      const normalizado = sql.replace(/\r\n/g, '\n')
+      return { version: nombre.slice(0, 3), nombre, sql, checksum: createHash('sha256').update(normalizado).digest('hex') }
     })
 }
 

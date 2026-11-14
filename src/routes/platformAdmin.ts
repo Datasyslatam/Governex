@@ -17,8 +17,20 @@ import {
   confirmarEnrolamiento, codigosRestantes,
 } from '../security/authFlow'
 import { olvidarEstadoUsuario } from '../middleware/auth'
+import { auditar } from '../security/audit'
+import { registrarActividadDirecto } from '../middleware/activityLogger'
+import { requirePlatformRole, ipPermitida } from '../middleware/platformAdminAuth'
 
 const router = Router()
+
+// Restricción opcional por IP de origen (PLATFORM_ADMIN_IP_ALLOWLIST). Va
+// antes del login: desde una IP no autorizada ni siquiera se puede intentar.
+router.use(async (req: Request, res: Response, next) => {
+  if (ipPermitida(req.ip)) return next()
+  await auditar(req, { categoria: 'seguridad', accion: 'ip_no_autorizada_plataforma', resultado: 'denegado',
+    detalle: { ruta: req.originalUrl.split('?')[0] } })
+  return res.status(403).json({ error: 'Acceso no permitido desde esta ubicación', code: 'IP_NOT_ALLOWED' })
+})
 
 // Un platform_admin puede crear/suspender empresas y suplantar usuarios:
 // límite por IP+email, bloqueo por cuenta en BD (lockout.ts) y MFA
@@ -28,7 +40,7 @@ const loginLimiter = loginRateLimit({ windowMs: 15 * 60_000, maxFailures: 5 })
 const mfaLimiter = loginRateLimit({ windowMs: 15 * 60_000, maxFailures: 10 })
 const CREDENCIALES = 'Credenciales incorrectas o cuenta bloqueada temporalmente'
 
-const SELECT_ADMIN = `SELECT id, nombre, email, password_hash, activo, mfa_habilitado, mfa_secreto_cifrado,
+const SELECT_ADMIN = `SELECT id, nombre, email, rol, password_hash, activo, mfa_habilitado, mfa_secreto_cifrado,
                              mfa_ultimo_paso, bloqueado_hasta, debe_cambiar_password
                       FROM platform_admins`
 
@@ -36,11 +48,13 @@ const SELECT_ADMIN = `SELECT id, nombre, email, password_hash, activo, mfa_habil
 // Nunca debe tumbar la operación principal: si el insert del log falla,
 // se registra en consola pero la acción que originó el log ya se hizo.
 async function registrarAuditoria(
+  req: Request,
   actor: { id: number; email: string },
   accion: string,
   entidadTipo: 'tenant' | 'platform_admin',
   entidadId: string | number | null,
-  detalle: Record<string, any> = {}
+  detalle: Record<string, any> = {},
+  resultado: 'exito' | 'fallo' | 'denegado' = 'exito'
 ) {
   try {
     await pool.query(
@@ -51,10 +65,21 @@ async function registrarAuditoria(
   } catch (err) {
     console.error('[auditoria] No se pudo registrar:', err)
   }
+  // Fase 3: también en la bitácora de seguridad inmutable (con IP y correlación).
+  await auditar(req, {
+    categoria: 'plataforma',
+    accion,
+    resultado,
+    actor: { tipo: 'platform_admin', id: actor.id, email: actor.email },
+    tenantId: entidadTipo === 'tenant' && entidadId != null && /^\d+$/.test(String(entidadId)) ? Number(entidadId) : null,
+    recurso: entidadTipo,
+    recursoId: entidadId,
+    detalle,
+  })
 }
 
 function perfilAdmin(a: any) {
-  return { id: a.id, nombre: a.nombre, email: a.email, mfaHabilitado: a.mfa_habilitado, debeCambiarPassword: a.debe_cambiar_password }
+  return { id: a.id, nombre: a.nombre, email: a.email, rol: a.rol, mfaHabilitado: a.mfa_habilitado, debeCambiarPassword: a.debe_cambiar_password }
 }
 
 // POST /api/platform-admin/login
@@ -68,10 +93,17 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
     const { rows } = await pool.query(`${SELECT_ADMIN} WHERE email = $1 AND activo = true`, [email.trim()])
     const admin = rows[0]
     const { ok, needsRehash } = await verifyPassword(password, admin?.password_hash)
-    if (!admin || estaBloqueada(admin.bloqueado_hasta)) return res.status(401).json({ error: CREDENCIALES })
+    if (!admin || estaBloqueada(admin.bloqueado_hasta)) {
+      await auditar(req, { categoria: 'autenticacion', accion: 'login_plataforma', resultado: admin ? 'denegado' : 'fallo',
+        actor: admin ? { tipo: 'platform_admin', id: admin.id, email: admin.email } : { tipo: 'anonimo' },
+        detalle: { motivo: admin ? 'cuenta_bloqueada' : 'usuario_inexistente', email_intentado: email.trim().slice(0, 150) } })
+      return res.status(401).json({ error: CREDENCIALES })
+    }
     if (!ok) {
+      await auditar(req, { categoria: 'autenticacion', accion: 'login_plataforma', resultado: 'fallo',
+        actor: { tipo: 'platform_admin', id: admin.id, email: admin.email }, detalle: { motivo: 'password_incorrecta' } })
       if (await registrarFallo('platform_admins', admin.id)) {
-        await registrarAuditoria(admin, 'cuenta_bloqueada', 'platform_admin', admin.id, { motivo: 'intentos_fallidos' })
+        await registrarAuditoria(req, admin, 'cuenta_bloqueada', 'platform_admin', admin.id, { motivo: 'intentos_fallidos' })
       }
       return res.status(401).json({ error: CREDENCIALES })
     }
@@ -98,9 +130,13 @@ router.post('/mfa/verificar', mfaLimiter, async (req: Request, res: Response) =>
       return res.status(401).json({ error: CREDENCIALES })
     }
     const tipo = await verificarCodigo('platform', admin, req.body?.codigo)
-    if (!tipo) return res.status(401).json({ error: 'Código incorrecto' })
+    if (!tipo) {
+      await auditar(req, { categoria: 'autenticacion', accion: 'mfa_verificacion_plataforma', resultado: 'fallo',
+        actor: { tipo: 'platform_admin', id: admin.id, email: admin.email } })
+      return res.status(401).json({ error: 'Código incorrecto' })
+    }
     await activarSesion(req, res, 'platform', previa)
-    await registrarAuditoria(admin, 'inicio_sesion', 'platform_admin', admin.id, { mfa: tipo })
+    await registrarAuditoria(req, admin, 'inicio_sesion', 'platform_admin', admin.id, { mfa: tipo })
     res.json({ estado: 'activa', admin: perfilAdmin(admin), codigosRestantes: await codigosRestantes('platform', admin.id) })
   } catch (err) {
     console.error(err)
@@ -131,7 +167,7 @@ router.post('/mfa/activar', mfaLimiter, async (req: Request, res: Response) => {
     const codigos = await confirmarEnrolamiento('platform', admin, req.body?.codigo)
     if (!codigos) return res.status(400).json({ error: 'Código incorrecto. Verifica la hora de tu teléfono e intenta de nuevo.' })
     await activarSesion(req, res, 'platform', s)
-    await registrarAuditoria(admin, 'mfa_activado', 'platform_admin', admin.id)
+    await registrarAuditoria(req, admin, 'mfa_activado', 'platform_admin', admin.id)
     res.json({ estado: 'activa', admin: perfilAdmin({ ...admin, mfa_habilitado: true }), codigosRecuperacion: codigos })
   } catch (err) {
     console.error(err)
@@ -180,7 +216,7 @@ router.post('/password', loginLimiter, async (req: PlatformAdminRequest, res: Re
       [admin.id, await hashPassword(nueva)]
     )
     await revocarSesionesPlatform(admin.id, 'cambio_password', req.platformAdmin!.sesionId)
-    await registrarAuditoria(admin, 'cambio_password', 'platform_admin', admin.id)
+    await registrarAuditoria(req, admin, 'cambio_password', 'platform_admin', admin.id)
     res.json({ ok: true })
   } catch (err) {
     console.error(err)
@@ -251,7 +287,7 @@ router.post('/tenants', async (req: PlatformAdminRequest, res: Response) => {
     )
 
     await client.query('COMMIT')
-    await registrarAuditoria(req.platformAdmin!, 'crear_tenant', 'tenant', tenant.id, {
+    await registrarAuditoria(req, req.platformAdmin!, 'crear_tenant', 'tenant', tenant.id, {
       nombre: tenant.nombre, nit: tenant.nit, plan: tenant.plan, adminEmail: userRows[0].email,
     })
     res.status(201).json({ tenant, adminUser: userRows[0] })
@@ -288,7 +324,7 @@ router.put('/tenants/:id/estado', async (req: PlatformAdminRequest, res: Respons
       [estado, id]
     )
     if (!rows[0]) return res.status(404).json({ error: 'Tenant no encontrado' })
-    await registrarAuditoria(req.platformAdmin!, 'cambiar_estado_tenant', 'tenant', id, {
+    await registrarAuditoria(req, req.platformAdmin!, 'cambiar_estado_tenant', 'tenant', id, {
       nombre: rows[0].nombre, nuevoEstado: estado,
     })
     res.json(rows[0])
@@ -306,7 +342,13 @@ router.put('/tenants/:id/estado', async (req: PlatformAdminRequest, res: Respons
 router.post('/tenants/:id/impersonate', async (req: PlatformAdminRequest, res: Response) => {
   const { id } = req.params
   const { usuarioId } = req.body
+  const motivo = typeof req.body?.motivo === 'string' ? req.body.motivo.trim() : ''
   if (!usuarioId) return res.status(400).json({ error: 'usuarioId es requerido' })
+  // V19: toda suplantación exige una justificación (ticket, solicitud del cliente…)
+  // que queda en la bitácora inmutable y es visible para la empresa.
+  if (motivo.length < 10 || motivo.length > 300) {
+    return res.status(400).json({ error: 'Indica el motivo de la suplantación (entre 10 y 300 caracteres), p. ej. el número de ticket de soporte.' })
+  }
 
   try {
     const { rows } = await pool.query(
@@ -336,11 +378,16 @@ router.post('/tenants/:id/impersonate', async (req: PlatformAdminRequest, res: R
       tenantId: usuario.tenant_id,
       suplantadoPorAdmin: req.platformAdmin!.id,
       duracionMs: SUPLANTACION_MS,
+      motivoSuplantacion: motivo,
     })
 
-    await registrarAuditoria(req.platformAdmin!, 'impersonar_usuario', 'tenant', id, {
-      usuarioEmail: usuario.email, tenantNombre: usuario.tenant_nombre,
+    await registrarAuditoria(req, req.platformAdmin!, 'impersonar_usuario', 'tenant', id, {
+      usuarioEmail: usuario.email, tenantNombre: usuario.tenant_nombre, motivo,
     })
+    // Visible para el Superusuario de la empresa en su bitácora de actividad.
+    await registrarActividadDirecto(usuario.tenant_id, usuario.id, usuario.nombre, usuario.email, usuario.rol,
+      'Acceso de soporte', 'auth',
+      `Soporte de Governex (${req.platformAdmin!.email}) inició una sesión de 30 min como ${usuario.email}. Motivo: ${motivo}`, req)
 
     const permissions = await getUserPermissions(usuario.id)
 
@@ -360,7 +407,7 @@ router.post('/tenants/:id/impersonate', async (req: PlatformAdminRequest, res: R
 router.get('/platform-admins', async (_req: PlatformAdminRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, nombre, email, activo, creado_en FROM platform_admins ORDER BY creado_en ASC`
+      `SELECT id, nombre, email, rol, activo, creado_en FROM platform_admins ORDER BY creado_en ASC`
     )
     res.json(rows)
   } catch (err) {
@@ -370,8 +417,9 @@ router.get('/platform-admins', async (_req: PlatformAdminRequest, res: Response)
 })
 
 // POST /api/platform-admin/platform-admins
-router.post('/platform-admins', async (req: PlatformAdminRequest, res: Response) => {
+router.post('/platform-admins', requirePlatformRole('propietario'), async (req: PlatformAdminRequest, res: Response) => {
   const { nombre, email, password } = req.body
+  const rol = req.body?.rol === 'propietario' ? 'propietario' : 'operador'
   if (!nombre || !email || !password) {
     return res.status(400).json({ error: 'nombre, email y password son requeridos' })
   }
@@ -380,12 +428,12 @@ router.post('/platform-admins', async (req: PlatformAdminRequest, res: Response)
   try {
     const passwordHash = await hashPassword(password)
     const { rows } = await pool.query(
-      `INSERT INTO platform_admins (nombre, email, password_hash, debe_cambiar_password) VALUES ($1, $2, $3, true)
-       RETURNING id, nombre, email, activo, creado_en`,
-      [nombre, email, passwordHash]
+      `INSERT INTO platform_admins (nombre, email, password_hash, debe_cambiar_password, rol) VALUES ($1, $2, $3, true, $4)
+       RETURNING id, nombre, email, rol, activo, creado_en`,
+      [nombre, email, passwordHash, rol]
     )
     const nuevoAdmin = rows[0]
-    await registrarAuditoria(req.platformAdmin!, 'crear_admin', 'platform_admin', nuevoAdmin.id, { nombre, email })
+    await registrarAuditoria(req, req.platformAdmin!, 'crear_admin', 'platform_admin', nuevoAdmin.id, { nombre, email, rol })
     res.status(201).json(nuevoAdmin)
   } catch (err: any) {
     if (err.code === '23505') {
@@ -397,7 +445,7 @@ router.post('/platform-admins', async (req: PlatformAdminRequest, res: Response)
 })
 
 // PUT /api/platform-admin/platform-admins/:id/estado
-router.put('/platform-admins/:id/estado', async (req: PlatformAdminRequest, res: Response) => {
+router.put('/platform-admins/:id/estado', requirePlatformRole('propietario'), async (req: PlatformAdminRequest, res: Response) => {
   const { id } = req.params
   const { activo } = req.body
   if (typeof activo !== 'boolean') {
@@ -430,7 +478,7 @@ router.put('/platform-admins/:id/estado', async (req: PlatformAdminRequest, res:
     if (!rows[0]) return res.status(404).json({ error: 'Administrador no encontrado' })
     if (!activo) await revocarSesionesPlatform(Number(id), 'admin_desactivado')
 
-    await registrarAuditoria(req.platformAdmin!, 'cambiar_estado_admin', 'platform_admin', id, {
+    await registrarAuditoria(req, req.platformAdmin!, 'cambiar_estado_admin', 'platform_admin', id, {
       email: rows[0].email, nuevoEstado: activo,
     })
 
@@ -438,6 +486,44 @@ router.put('/platform-admins/:id/estado', async (req: PlatformAdminRequest, res:
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Error al actualizar estado del administrador' })
+  }
+})
+
+// GET /api/platform-admin/eventos-seguridad?tenant_id=&categoria=&resultado=&limite=
+router.get('/eventos-seguridad', async (req: PlatformAdminRequest, res: Response) => {
+  const num = (v: unknown) => (typeof v === 'string' && /^\d+$/.test(v) ? Number(v) : null)
+  const txt = (v: unknown) => (typeof v === 'string' && v ? v : null)
+  const limite = Math.min(num(req.query.limite) ?? 500, 2000)
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, fecha, correlation_id, tenant_id, actor_tipo, actor_id, actor_email, suplantado_por_admin, categoria, accion, resultado, recurso, recurso_id, ip, detalle
+       FROM auditoria_eventos
+       WHERE ($1::int IS NULL OR tenant_id = $1) AND ($2::text IS NULL OR categoria = $2) AND ($3::text IS NULL OR resultado = $3)
+       ORDER BY id DESC
+       LIMIT $4`,
+      [num(req.query.tenant_id), txt(req.query.categoria), txt(req.query.resultado), limite]
+    )
+    res.json(rows)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al obtener los eventos de seguridad' })
+  }
+})
+
+// GET /api/platform-admin/auditoria/verificar
+// Recalcula la cadena de hashes de toda la bitácora (V10). Solo propietario.
+router.get('/auditoria/verificar', requirePlatformRole('propietario'), async (req: PlatformAdminRequest, res: Response) => {
+  try {
+    const [{ rows: problemas }, { rows: tot }] = await Promise.all([
+      pool.query('SELECT id, problema FROM gx_auditoria_verificar() LIMIT 100'),
+      pool.query('SELECT count(*)::int AS total, max(id) AS ultimo_id, (SELECT hash FROM auditoria_eventos ORDER BY id DESC LIMIT 1) AS ultimo_hash FROM auditoria_eventos'),
+    ])
+    await registrarAuditoria(req, req.platformAdmin!, 'verificar_bitacora', 'platform_admin', null,
+      { integra: problemas.length === 0, problemas: problemas.length }, problemas.length === 0 ? 'exito' : 'fallo')
+    res.json({ integra: problemas.length === 0, total: tot[0].total, ultimo_id: tot[0].ultimo_id, ultimo_hash: tot[0].ultimo_hash, problemas })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al verificar la bitácora' })
   }
 })
 
@@ -509,7 +595,7 @@ router.put('/tenants/:id', async (req: PlatformAdminRequest, res: Response) => {
     )
     if (!rows[0]) return res.status(404).json({ error: 'Tenant no encontrado' })
 
-    await registrarAuditoria(req.platformAdmin!, 'editar_tenant', 'tenant', id, { nombre, nit, plan })
+    await registrarAuditoria(req, req.platformAdmin!, 'editar_tenant', 'tenant', id, { nombre, nit, plan })
     res.json(rows[0])
   } catch (err: any) {
     if (err.code === '23505') {
@@ -550,7 +636,7 @@ router.post('/tenants/:id/usuarios/:usuarioId/reset-password', async (req: Platf
     await revocarSesionesUsuario(Number(usuarioId), 'password_restablecido')
     olvidarEstadoUsuario(Number(usuarioId))
 
-    await registrarAuditoria(req.platformAdmin!, 'resetear_password_usuario', 'tenant', id, {
+    await registrarAuditoria(req, req.platformAdmin!, 'resetear_password_usuario', 'tenant', id, {
       usuarioEmail: usuarioRows[0].email,
     })
 
