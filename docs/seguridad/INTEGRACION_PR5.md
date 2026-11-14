@@ -47,6 +47,8 @@ En producción las migraciones 001–020 se aplicaron a mano, así que la tabla 
 SELECT to_regclass('public.sesiones') IS NOT NULL AS ya_tiene_021;
 ```
 
+> **Actualización 2026-11-14:** la base de datos de producción ya no tiene URL pública. Para migraciones nuevas sigue el procedimiento de [MIGRACIONES_PRODUCCION.md](MIGRACIONES_PRODUCCION.md), que abre el acceso solo durante la migración.
+
 **Paso 2.** Desde tu equipo, con la URL **pública** de la BD de producción (variable `DATABASE_PUBLIC_URL` del servicio PostgreSQL en Railway), en PowerShell:
 
 ```powershell
