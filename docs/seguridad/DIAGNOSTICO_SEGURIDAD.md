@@ -39,7 +39,7 @@ Estado al 2026-11-14 (tras la Fase 4). "Corregido" significa que una prueba auto
 | V13 | Autenticación | Enumeración de correos y del estado de la empresa | Medio | Alta / Baja | CWE-204 | Respuesta y tiempo uniformes | Corregido |
 | V14 | CORS | Abierto si `CORS_ORIGINS` está vacío | Medio | Media / Media | CWE-942 | Cerrado por defecto | Corregido (Fase 2) |
 | V15 | DoS | JSON de 15 MB global, sin límite general | Medio | Media / Media | CWE-400 | Límites por ruta + rate limit | Corregido |
-| V16 | BD | TLS sin validar, usuario dueño, sin RLS | Medio | Baja / Alta | CWE-295 | TLS verificado, mínimo privilegio, RLS | Abierto (Fase 5) |
+| V16 | BD | TLS sin validar, usuario dueño, sin RLS. **2026-11-14: se eliminó el acceso público a la BD (proxy TCP)**; la app usa la red privada | Medio | Baja / Alta | CWE-295 | TLS verificado, mínimo privilegio, RLS | Abierto (Fase 5) |
 | V17 | Errores | `error.message` expuesto | Medio | Media / Baja | CWE-209 | Errores genéricos | Corregido |
 | V18 | JWT | Sin algoritmo fijo ni validación de secretos | Medio | Baja / Alta | CWE-347 | HS256 fijo + validación al arrancar | Corregido |
 | V19 | Suplantación | Misma secret, sin rastro visible para la empresa, sin motivo | Medio | Baja / Alta | CWE-269 | Token marcado + bitácora + motivo | Corregido (Fase 3) |
