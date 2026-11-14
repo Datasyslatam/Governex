@@ -661,10 +661,13 @@ async function main() {
 
   await test('A11', 'Separación de funciones: un operador no puede crear administradores', 'V20', async () => {
     const email = `oper.${RUN}@governex.test`
-    const c = await call('POST', '/api/platform-admin/platform-admins', { token: plat, body: { nombre: 'Operador Prueba', email, password: PASS, rol: 'operador' } })
+    // Contraseña propia (no LOCAL_SEED_PASSWORD): la política rechaza contraseñas
+    // que contienen el nombre, y la de CI ("Ci-Prueba-…") contenía "Prueba".
+    const temporal = `Zq7-${RUN}-Kw!x`
+    const c = await call('POST', '/api/platform-admin/platform-admins', { token: plat, body: { nombre: 'Operador Soporte', email, password: temporal, rol: 'operador' } })
     expectStatus(c, 201, 'crear operador')
-    const op = await login(email, PASS, { plataforma: true })
-    expectStatus(await call('POST', '/api/platform-admin/password', { token: op, body: { actual: PASS, nueva: `Op3-${RUN}-Nueva!` } }), 200, 'cambiar temporal')
+    const op = await login(email, temporal, { plataforma: true })
+    expectStatus(await call('POST', '/api/platform-admin/password', { token: op, body: { actual: temporal, nueva: `Op3-${RUN}-Nueva!` } }), 200, 'cambiar temporal')
     expectStatus(await call('GET', '/api/platform-admin/tenants', { token: op }), 200, 'operador lista empresas')
     const r = await call('POST', '/api/platform-admin/platform-admins', { token: op, body: { nombre: 'X', email: `x2.${RUN}@governex.test`, password: PASS } })
     await db.query('UPDATE platform_admins SET activo = false WHERE email = $1', [email])
