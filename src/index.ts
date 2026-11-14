@@ -6,6 +6,7 @@ import { logActivityMiddleware } from './middleware/activityLogger'
 import { assertSecurityConfig } from './middleware/securityConfig'
 import { requestRateLimit } from './middleware/rateLimit'
 import { requestContext } from './middleware/requestContext'
+import { securityHeaders, recibirReporteCsp } from './middleware/securityHeaders'
 
 // Falla rápido si los secretos JWT no son seguros (ver securityConfig.ts).
 assertSecurityConfig()
@@ -58,61 +59,14 @@ app.disable('x-powered-by')
 // ID de correlación (X-Request-Id) y log JSON de acceso por petición (Fase 3).
 app.use(requestContext)
 
-// ── Content-Security-Policy (modo SOLO REPORTE) ─────────────
-// Se publica como Content-Security-Policy-Report-Only: el navegador NO bloquea
-// nada, solo informa a /api/csp-report lo que la política habría bloqueado.
-// Tras revisar los reportes en producción, se puede pasar a la cabecera
-// Content-Security-Policy (bloqueante) con CSP_ENFORCE=true.
-// - 'unsafe-inline' en style-src: la app usa estilos en línea (style={...}).
-// - R2: las miniaturas y descargas usan URLs firmadas del bucket.
-const r2Origin = (() => {
-  try { return process.env.R2_ENDPOINT ? new URL(process.env.R2_ENDPOINT).origin : '' } catch { return '' }
-})()
-const CSP = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: https://*.r2.cloudflarestorage.com ${r2Origin}`.trim(),
-  `connect-src 'self' https://*.r2.cloudflarestorage.com ${r2Origin}`.trim(),
-  "font-src 'self' data:",
-  "frame-src 'self' blob:",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'self'",
-  'report-uri /api/csp-report',
-].join('; ')
-const CSP_HEADER = process.env.CSP_ENFORCE === 'true' ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only'
-
-// ── Cabeceras de seguridad básicas ──────────────────────────
-app.use((_req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff')
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN')
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
-  res.setHeader(CSP_HEADER, CSP)
-  if (process.env.NODE_ENV === 'production') {
-    res.setHeader('Strict-Transport-Security', 'max-age=15552000')
-  }
-  next()
-})
-
-// Receptor de reportes CSP: público (lo llama el navegador), cuerpo pequeño y
-// registro limitado a 30 líneas por minuto para que no se pueda inundar el log.
-let cspReportsThisMinute = 0
-setInterval(() => { cspReportsThisMinute = 0 }, 60_000).unref()
+// ── Cabeceras de seguridad del navegador (Fase 4) ───────────
+// CSP bloqueante, Permissions-Policy, COOP/CORP, HSTS y no-store en la API.
+// Ver src/middleware/securityHeaders.ts.
+app.use(securityHeaders)
 app.post(
   '/api/csp-report',
   express.json({ type: ['application/csp-report', 'application/reports+json', 'application/json'], limit: '10kb' }),
-  (req, res) => {
-    if (cspReportsThisMinute++ < 30) {
-      const raw = req.body?.['csp-report'] ?? (Array.isArray(req.body) ? req.body[0]?.body : req.body) ?? {}
-      const directiva = raw['violated-directive'] ?? raw.effectiveDirective ?? '?'
-      const bloqueado = raw['blocked-uri'] ?? raw.blockedURL ?? '?'
-      const pagina = raw['document-uri'] ?? raw.documentURL ?? '?'
-      console.warn(`[csp] ${directiva} bloquearía ${String(bloqueado).slice(0, 200)} en ${String(pagina).slice(0, 200)}`)
-    }
-    res.status(204).end()
-  }
+  recibirReporteCsp
 )
 
 // ── CORS ────────────────────────────────────────────────────
