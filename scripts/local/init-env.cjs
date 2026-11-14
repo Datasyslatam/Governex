@@ -29,7 +29,8 @@ const content = `# ============================================================
 #  .env LOCAL generado por scripts/local/init-env.cjs
 #  SOLO PARA PRUEBAS LOCALES. No usar estos valores en producción.
 # ============================================================
-NODE_ENV=development
+# NODE_ENV no se define aquí: Vite lo lee del .env y "npm run build" generaría
+# un bundle de desarrollo. Sin definir, el servidor se comporta como desarrollo.
 PORT=3001
 
 # PostgreSQL del contenedor docker-compose (127.0.0.1:5433)

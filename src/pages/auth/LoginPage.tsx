@@ -9,6 +9,7 @@ import MfaPaso from '../../components/auth/MfaPaso'
 import './LoginPage.css'
 import logoLight from '../../assets/logo-governex-light.webp'
 import logoColor from '../../assets/logo-governex-color.webp'
+import { hayNuevaVersion } from '../../services/version'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 const ENTORNO = import.meta.env.PROD ? 'Producción' : 'Desarrollo'
@@ -107,6 +108,13 @@ const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email || !password) { setError('Completa el correo y la contraseña'); return }
+    // Si se desplegó una versión nueva con esta pestaña abierta, el código
+    // viejo podría no entender al servidor nuevo: se recarga antes de enviar.
+    if (await hayNuevaVersion()) {
+      setError('Hay una versión nueva de Governex. Recargando la página…')
+      window.location.reload()
+      return
+    }
     setLoading(true)
     setError('')
     try {

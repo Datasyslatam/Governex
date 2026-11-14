@@ -1,0 +1,51 @@
+.aviso-version {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  z-index: 10000;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.7rem 0.9rem 0.7rem 1.1rem;
+  border-radius: 0.75rem;
+  background: #0B1F4D;
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(11, 31, 77, 0.3);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.aviso-version button {
+  flex: none;
+  padding: 0.4rem 0.9rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #FF7A00;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.aviso-version button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.aviso-version .aviso-version__cerrar {
+  padding: 0.2rem 0.5rem;
+  background: transparent;
+  font-size: 1.1rem;
+  font-weight: 400;
+}
+
+@media (max-width: 600px) {
+  .aviso-version {
+    left: 1rem;
+    right: 1rem;
+    transform: none;
+    flex-wrap: wrap;
+  }
+}

@@ -5,6 +5,7 @@ import { platformAdminApi, RespuestaLoginPlataforma } from '../../services/platf
 import MfaPaso from '../../components/auth/MfaPaso'
 import '../auth/LoginPage.css'
 import './PlatformAdminLoginPage.css'
+import { hayNuevaVersion } from '../../services/version'
 
 // Pantalla de acceso SOLO para staff de Governex (super-admins de
 // plataforma). Deliberadamente separada de /login: usa su propio
@@ -29,6 +30,13 @@ const PlatformAdminLoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email || !password) { setError('Completa el correo y la contraseña'); return }
+    // Si se desplegó una versión nueva con esta pestaña abierta, el código
+    // viejo podría no entender al servidor nuevo: se recarga antes de enviar.
+    if (await hayNuevaVersion()) {
+      setError('Hay una versión nueva de Governex. Recargando la página…')
+      window.location.reload()
+      return
+    }
     setLoading(true)
     setError('')
     try {
