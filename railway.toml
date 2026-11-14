@@ -7,6 +7,11 @@ RAILPACK_NO_SPA = "1"
 RAILPACK_NODE_VERSION = "22.12"
 
 [deploy]
+# Aplica las migraciones pendientes antes de cada despliegue, por la red
+# privada de Railway (la BD no tiene acceso público). Si falla, el despliegue
+# se detiene y la versión anterior sigue atendiendo. Ver
+# docs/seguridad/MIGRACIONES_PRODUCCION.md.
+preDeployCommand = ["npm run migrate"]
 startCommand = "node dist-server/index.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
