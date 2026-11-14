@@ -20,7 +20,7 @@
 
 ## 2. Matriz de vulnerabilidades y riesgos
 
-Estado al 2026-11-13 (tras la Fase 3). "Corregido" significa que una prueba automatizada lo demuestra (ver los registros de las Fases 0–1 y 2).
+Estado al 2026-11-14 (tras la Fase 4). "Corregido" significa que una prueba automatizada lo demuestra (ver los registros de las Fases 0–1 y 2).
 
 | ID | Componente | Hallazgo | Crit. | Prob. / Impacto | CWE | Control recomendado | Estado |
 |---|---|---|---|---|---|---|---|
@@ -30,7 +30,7 @@ Estado al 2026-11-13 (tras la Fase 3). "Corregido" significa que una prueba auto
 | V04 | Autorización | `DELETE /proveedores/:id` sin permiso | Alto | Alta / Media | CWE-862 | Permiso `eliminar` | Corregido |
 | V05 | Autorización | IDOR por llave foránea de otra empresa | Alto | Media / Alta | CWE-639 | `requireTenantRefs` | Corregido |
 | V06 | Sesiones | JWT de 8 h sin revocación ni timeout por inactividad. El logout no invalida | Alto | Media / Alta | CWE-613 | Sesiones del servidor revocables | Corregido (Fase 2) |
-| V07 | Frontend | JWT en `localStorage`, sin CSP | Alto | Media / Alta | CWE-922 | Cookie HttpOnly + CSP | Parcial (cookie HttpOnly; CSP en Fase 4) |
+| V07 | Frontend | JWT en `localStorage`, sin CSP | Alto | Media / Alta | CWE-922 | Cookie HttpOnly + CSP | Corregido (cookie HttpOnly en Fase 2; CSP bloqueante en Fase 4) |
 | V08 | Contraseñas | Sin política. bcrypt 10. Sin cambio ni recuperación | Alto | Alta / Media | CWE-521 | Política + Argon2id + flujo de recuperación | Corregido salvo recuperación por correo (requiere SMTP) |
 | V09 | Fuerza bruta | Límite por IP+email en memoria, sin bloqueo por cuenta | Alto | Media / Alta | CWE-307 | Bloqueo por cuenta en BD | Corregido (Fase 2) |
 | V10 | Auditoría | Bitácora sin IP, correlación ni resultado. No registra fallos ni 403. Es mutable | Alto | Alta / Alta | CWE-778 | Bitácora de seguridad inmutable, exportable a SIEM | Corregido (Fase 3; envío a SIEM externo pendiente de proveedor) |
@@ -48,7 +48,7 @@ Estado al 2026-11-13 (tras la Fase 3). "Corregido" significa que una prueba auto
 | V22 | Datos personales | Sin cifrado de campo, retención ni enmascaramiento | Medio | Media / Media | CWE-311 | Clasificación + cifrado + retención | Abierto (Fase 5) |
 | V23 | DevSecOps | Sin CI, SAST, SCA ni escaneo de secretos | Medio | Media / Media | n/a | GitHub Actions + Dependabot + CodeQL + gitleaks | Abierto (Fase 6) |
 | V24 | Continuidad | Sin evidencia de backups, restauración, RPO/RTO ni plan de incidentes | Medio | Media / Alta | n/a | DRP/BCP con pruebas | Abierto (Fase 7) |
-| V25 | Dev | `vite.config.ts` con `allowedHosts: true` | Bajo | Baja / Baja | CWE-350 | Lista de hosts | Abierto (Fase 4) |
+| V25 | Dev | `vite.config.ts` con `allowedHosts: true` | Bajo | Baja / Baja | CWE-350 | Lista de hosts | Corregido (Fase 4) |
 
 ## 3. Plan de tratamiento
 
@@ -58,7 +58,7 @@ Estado al 2026-11-13 (tras la Fase 3). "Corregido" significa que una prueba auto
 | 1 | V01, V03, V04, V05, V08 (política), V11, V12, V13, V15, V17, V18, V21 (parcial) | No ✔ **completada** |
 | 2 | MFA TOTP, Argon2id, bloqueo por cuenta, sesión del servidor en cookie HttpOnly + CSRF, logout real, sesiones activas, cambio de contraseña, CORS cerrado | ✔ **completada** (recuperación por correo pendiente: requiere SMTP) |
 | 3 | Bitácora de seguridad inmutable, suplantación trazable, separación de funciones del platform_admin | ✔ **completada** (envío a SIEM externo: según el proveedor que se elija) |
-| 4 | CSP (Report-Only → enforce), Permissions-Policy, CORS cerrado, hosts de Vite | No |
+| 4 | CSP bloqueante, Permissions-Policy, COOP/CORP, no-store en la API, hosts de Vite (CORS cerrado ya en la Fase 2) | ✔ **completada** |
 | 5 | RLS, usuario de BD de mínimo privilegio, TLS verificado, gestor de migraciones, cifrado de campos, retención | Posible KMS |
 | 6 | CI: typecheck, pruebas de seguridad, CodeQL/Semgrep, gitleaks, Dependabot, protección de rama. DAST con OWASP ZAP en local o staging | No |
 | 7 | Entregables: matriz final, roles × permisos, catálogo de controles, DRP/BCP (RPO/RTO), checklist de puesta en producción | Depende del plan de Railway |

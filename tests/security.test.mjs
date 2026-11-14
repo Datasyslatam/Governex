@@ -290,10 +290,14 @@ describe('HTTP', () => {
     assert.equal(r.headers.get('x-frame-options'), 'SAMEORIGIN')
     assert.equal(r.headers.get('x-powered-by'), null)
   })
-  test('CSP en modo solo-reporte presente en el frontend', async () => {
+  // Fase 4: la CSP pasó de "solo reporte" a BLOQUEANTE (válvula: CSP_REPORT_ONLY=true).
+  test('CSP bloqueante presente en el frontend, sin scripts en línea ni eval', async () => {
     const r = await req('GET', '/login')
-    assert.ok(r.headers.get('content-security-policy-report-only'), 'falta Content-Security-Policy-Report-Only')
-    assert.equal(r.headers.get('content-security-policy'), null, 'la CSP no debe bloquear todavía')
+    const csp = r.headers.get('content-security-policy')
+    assert.ok(csp, 'falta Content-Security-Policy')
+    assert.match(csp, /script-src 'self'(;|$)/)
+    assert.doesNotMatch(csp, /script-src[^;]*'unsafe-(inline|eval)'/)
+    assert.equal(r.headers.get('content-security-policy-report-only'), null, 'no debe quedar en modo solo reporte')
   })
 })
 

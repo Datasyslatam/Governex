@@ -693,6 +693,52 @@ async function main() {
     return `alteración de #${id} detectada; restaurada`
   })
 
+  // ═══ FASE 4: cabeceras de seguridad del navegador ═══════════════
+  await test('H01', 'CSP bloqueante: scripts solo del propio sitio, sin en línea ni eval', 'V07 / ASVS 14.4.3', async () => {
+    const r = await call('GET', '/login')
+    const csp = r.headers.get('content-security-policy') || ''
+    expect(csp, 'falta Content-Security-Policy (¿quedó en modo solo reporte?)')
+    const dir = Object.fromEntries(csp.split(';').map((d) => d.trim().split(/\s+/)).map(([k, ...v]) => [k, v]))
+    expect(JSON.stringify(dir['script-src']) === JSON.stringify(["'self'"]), `script-src: ${dir['script-src']}`)
+    expect(JSON.stringify(dir['script-src-attr']) === JSON.stringify(["'none'"]), `script-src-attr: ${dir['script-src-attr']}`)
+    for (const d of ['object-src', 'frame-ancestors', 'base-uri', 'form-action', 'default-src']) expect(dir[d], `falta ${d}`)
+    expect(dir['object-src'][0] === "'none'", 'object-src debe ser none')
+    expect(!/unsafe-eval/.test(csp), 'contiene unsafe-eval')
+    expect(!r.headers.get('content-security-policy-report-only'), 'sigue enviándose la versión solo reporte')
+    return 'script-src self · script-src-attr none · object-src none · sin unsafe-eval'
+  })
+
+  await test('H02', 'Permissions-Policy desactiva cámara, micrófono, geolocalización, pagos, USB…', 'ASVS 14.4 / OWASP Secure Headers', async () => {
+    const pp = (await call('GET', '/login')).headers.get('permissions-policy') || ''
+    const faltan = ['camera=()', 'microphone=()', 'geolocation=()', 'payment=()', 'usb=()', 'clipboard-write=(self)'].filter((x) => !pp.includes(x))
+    expect(faltan.length === 0, `faltan: ${faltan.join(', ')}`)
+    return `${pp.split(',').length} funciones controladas`
+  })
+
+  await test('H03', 'Aislamiento entre orígenes: COOP, CORP y anti-clickjacking', 'ASVS 14.4.7 / 14.5', async () => {
+    const h = (await call('GET', '/login')).headers
+    expect(h.get('cross-origin-opener-policy') === 'same-origin', `COOP: ${h.get('cross-origin-opener-policy')}`)
+    expect(h.get('cross-origin-resource-policy') === 'same-origin', `CORP: ${h.get('cross-origin-resource-policy')}`)
+    expect(h.get('x-frame-options') === 'SAMEORIGIN' && /frame-ancestors 'self'/.test(h.get('content-security-policy') || ''), 'falta protección de clickjacking')
+    return 'COOP same-origin · CORP same-origin · frame-ancestors self'
+  })
+
+  await test('H04', 'Las respuestas de la API no se guardan en caché', 'ASVS 8.2.1', async () => {
+    const r = await call('GET', '/api/riesgos', { token: superA })
+    expectStatus(r, 200, 'GET riesgos')
+    expect(r.headers.get('cache-control') === 'no-store', `cache-control: ${r.headers.get('cache-control')}`)
+    return 'Cache-Control: no-store'
+  })
+
+  await test('H05', 'Receptor de reportes CSP: acepta el formato del navegador y no expone nada', 'V07', async () => {
+    const body = JSON.stringify({ 'csp-report': { 'document-uri': 'http://x/riesgos', 'violated-directive': 'script-src-elem', 'blocked-uri': 'inline' } })
+    const r = await call('POST', '/api/csp-report', { raw: body, headers: { 'Content-Type': 'application/csp-report' } })
+    expectStatus(r, 204, 'reporte CSP')
+    const grande = await call('POST', '/api/csp-report', { raw: JSON.stringify({ x: 'a'.repeat(20000) }), headers: { 'Content-Type': 'application/csp-report' } })
+    expectStatus(grande, 413, 'reporte de más de 10 KB')
+    return '204 normal · 413 si supera 10 KB'
+  })
+
   // ── Fuerza bruta (último: deja bloqueada la clave IP+email de prueba) ──
   await test('T26', 'Login: 11 intentos fallidos → 429', 'V09 / CWE-307', async () => {
     let last

@@ -33,10 +33,17 @@ export default defineConfig({
   define: {
     __APP_BUILD_ID__: JSON.stringify(BUILD_ID),
   },
+  // Servidor de DESARROLLO (no afecta a producción). Antes escuchaba en todas
+  // las interfaces (host: true) y aceptaba cualquier cabecera Host
+  // (allowedHosts: true): quedaba expuesto a la red local y a DNS rebinding (V25).
+  // Para probar desde otro equipo de la red: VITE_DEV_HOST=0.0.0.0 y
+  // VITE_ALLOWED_HOSTS=mi-equipo.local
   server: {
-    host: true,
+    host: process.env.VITE_DEV_HOST || "localhost",
     port: 5173,
-    allowedHosts: true,
+    strictPort: true,
+    allowedHosts: ["localhost", "127.0.0.1", ".localhost",
+      ...(process.env.VITE_ALLOWED_HOSTS || "").split(",").map((h) => h.trim()).filter(Boolean)],
     proxy: {
       "/api": {
         target: "http://localhost:3001",
